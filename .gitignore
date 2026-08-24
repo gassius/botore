@@ -1,0 +1,33 @@
+# Dependencies / builds
+node_modules/
+dist/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+coverage/
+
+# Environment — never commit credentials
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Supabase local runtime artifacts (config.toml stays)
+supabase/.branches/
+supabase/.temp/
+supabase/.runtime/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Cocos Creator editor-generated content is added deliberately when present;
+# ignore its transient caches only.
+apps/game/library/
+apps/game/temp/
+apps/game/local/
+apps/game/build/
+apps/game/profiles/
