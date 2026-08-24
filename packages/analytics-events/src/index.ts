@@ -136,3 +136,6 @@ export function validateAnalyticsEvent(raw: unknown): AnalyticsEvent {
 function ValueCheck(names: Record<string, unknown>, value: unknown): boolean {
   return typeof value === 'string' && value in names;
 }
+
+export { NoopSink, ConsoleSink } from './sink.js';
+export type { AnalyticsSink } from './sink.js';

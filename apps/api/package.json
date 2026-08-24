@@ -1,0 +1,38 @@
+{
+  "name": "@botore/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@botore/analytics-events": "workspace:*",
+    "@botore/combat-engine": "workspace:*",
+    "@botore/contracts": "workspace:*",
+    "@botore/domain": "workspace:*",
+    "@botore/replay": "workspace:*",
+    "@botore/rng": "workspace:*",
+    "@botore/config": "workspace:*",
+    "@botore/test-fixtures": "workspace:*",
+    "@fastify/sensible": "^6.0.3",
+    "@sinclair/typebox": "^0.34.41",
+    "fastify": "^5.6.2",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@botore/eslint-config": "workspace:*",
+    "@botore/tsconfig": "workspace:*",
+    "@types/node": "^24.10.9",
+    "@types/pg": "^8.15.6",
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.11"
+  }
+}

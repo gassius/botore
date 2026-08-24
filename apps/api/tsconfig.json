@@ -1,0 +1,5 @@
+{
+  "extends": "@botore/tsconfig/base.json",
+  "include": ["src", "test", "vitest.config.ts", "vitest.integration.config.ts"],
+  "exclude": ["**/dist"]
+}
