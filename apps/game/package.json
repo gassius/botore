@@ -1,0 +1,26 @@
+{
+  "name": "@botore/game",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cocos Creator game client scaffold. Editor project is created manually (see README-COCOS.md); this package holds the TypeScript adapter sources that the Creator project consumes via assets/scripts symlink or copy.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@botore/replay": "workspace:*",
+    "@botore/contracts": "workspace:*",
+    "@botore/rng": "workspace:*",
+    "@botore/combat-engine": "workspace:*",
+    "@botore/test-fixtures": "workspace:*"
+  },
+  "devDependencies": {
+    "@botore/eslint-config": "workspace:*",
+    "@botore/tsconfig": "workspace:*",
+    "@cocos/creator-types": "^3.8.7",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.11"
+  }
+}

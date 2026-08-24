@@ -94,6 +94,40 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(tsx@4.23.12))
 
+  apps/game:
+    dependencies:
+      '@botore/combat-engine':
+        specifier: workspace:*
+        version: link:../../packages/combat-engine
+      '@botore/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@botore/replay':
+        specifier: workspace:*
+        version: link:../../packages/replay
+      '@botore/rng':
+        specifier: workspace:*
+        version: link:../../packages/rng
+      '@botore/test-fixtures':
+        specifier: workspace:*
+        version: link:../../packages/test-fixtures
+    devDependencies:
+      '@botore/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
+      '@botore/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@cocos/creator-types':
+        specifier: ^3.8.7
+        version: 3.8.8
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(tsx@4.23.12))
+
   apps/worker:
     dependencies:
       '@botore/analytics-events':
@@ -324,6 +358,9 @@ importers:
   packages/tsconfig: {}
 
 packages:
+
+  '@cocos/creator-types@3.8.8':
+    resolution: {integrity: sha512-VAn8lWxUZ7LwPWwU/Lj7BOjsy0EoNFtjTqO7jz9bysYdjAJu7Jht/WKJbWYNHeZEC/omE7rTw98giuVRiTuELg==}
 
   '@ecies/ciphers@0.2.6':
     resolution: {integrity: sha512-patgsRPKGkhhoBjETV4XxD0En4ui5fbX0hzayqI3M8tvNMGUoUvmyYAIWwlxBc1KX5cturfqByYdj5bYGRpN9g==}
@@ -1747,6 +1784,8 @@ packages:
     engines: {node: '>=10'}
 
 snapshots:
+
+  '@cocos/creator-types@3.8.8': {}
 
   '@ecies/ciphers@0.2.6(@noble/ciphers@1.3.0)':
     dependencies:
