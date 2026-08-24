@@ -49,6 +49,12 @@ export interface BattleReplay {
   readonly checksum: string;
 }
 
+/** Distributive Omit — preserves union members instead of collapsing keys. */
+export type DistributiveOmit<T, K extends keyof never> = T extends unknown ? Omit<T, K> : never;
+
+/** A semantic event without its sequence number (engine assigns it). */
+export type BattleEventDraft = DistributiveOmit<BattleEvent, 'seq'>;
+
 // ---------------------------------------------------------------------------
 // Validation (runtime — replays cross process/network boundaries)
 // ---------------------------------------------------------------------------

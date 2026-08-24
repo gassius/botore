@@ -1,9 +1,6 @@
 /**
- * Versioned seeded PRNG abstraction.
- *
+ * Public entry: versioned seeded PRNG abstraction + sha256-counter-v1.
  * PURE PACKAGE — no Node/browser APIs, no clocks, no Math.random().
- * All randomness in the platform flows through `Rng` created by a named,
- * versioned algorithm so replays remain reproducible across runtimes.
  */
 
 /** Uniform integer interface consumed by the combat engine. */
@@ -16,3 +13,7 @@ export interface Rng {
 }
 
 export const SHA256_ALGORITHM = 'sha256-counter-v1';
+
+export { createSha256Rng } from './sha256-counter.js';
+export { seedToKeyMaterial, deriveSeed } from './seed.js';
+export type { Seed } from './seed.js';

@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`combat v1 — determinism > golden fixture: byte-stable events + outcome (frozen vector) 1`] = `
+{
+  "checksum": "d2a7c18d60ac6f5b27fcd9cfb4f183905e9c95c2b0cb8b1983549b57e8d49e2f",
+  "eventCount": 36,
+  "lastDamage": {
+    "amount": 8,
+    "seq": 33,
+    "target": "knight",
+    "targetHpAfter": 0,
+    "type": "damage_applied",
+  },
+  "outcome": {
+    "loser": "knight",
+    "reason": "defeat",
+    "winner": "rogue",
+  },
+}
+`;
