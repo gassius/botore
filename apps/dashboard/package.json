@@ -1,0 +1,30 @@
+{
+  "name": "@botore/dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@botore/eslint-config": "workspace:*",
+    "@botore/tsconfig": "workspace:*",
+    "@types/node": "^24.10.9",
+    "@types/react": "^18.3.27",
+    "@types/react-dom": "^18.3.7",
+    "eslint-config-next": "14.2.35",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.11",
+    "@types/pg": "^8.15.6"
+  }
+}
