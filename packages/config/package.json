@@ -1,0 +1,31 @@
+{
+  "name": "@botore/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.41",
+    "@botore/analytics-events": "workspace:*"
+  },
+  "devDependencies": {
+    "@botore/eslint-config": "workspace:*",
+    "@botore/tsconfig": "workspace:*",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.11"
+  }
+}
