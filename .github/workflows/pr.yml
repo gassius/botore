@@ -1,0 +1,88 @@
+name: PR
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: lint · typecheck · unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Prettier check
+        run: pnpm exec prettier --check .
+
+      - name: Lint, typecheck, unit/property/golden tests (turbo)
+        run: pnpm exec turbo run lint typecheck test
+
+      - name: Architecture boundary check
+        run: node scripts/check-boundaries.mjs
+
+      - name: Secret scan
+        run: bash scripts/scan-secrets.sh
+
+      - name: License inventory
+        run: bash scripts/license-inventory.sh
+
+      - name: Dashboard production build
+        run: pnpm --filter @botore/dashboard build
+
+      - name: API production build
+        run: pnpm --filter @botore/api build
+
+  database:
+    name: supabase migrations + db tests + api integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Start Supabase local stack
+        run: pnpm exec supabase start --ignore-health-check || pnpm exec supabase start
+
+      - name: Reset database (migrations + seed)
+        run: |
+          export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          pnpm exec supabase db reset --no-backup
+
+      - name: Database tests (RLS, idempotency, append-only)
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+            -v ON_ERROR_STOP=1 -q -f supabase/tests/run.sql
+
+      - name: API integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: pnpm --filter @botore/api test:integration
