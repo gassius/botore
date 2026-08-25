@@ -7,7 +7,11 @@ import {
   PlaybackController,
   commandDuration,
 } from '../src/replay-playback.js';
-import { BattleReplayController, type ReplayStage, type StageNode } from '../src/BattleReplayController.js';
+import {
+  BattleReplayController,
+  type ReplayStage,
+  type StageNode,
+} from '../src/BattleReplayController.js';
 
 function fixtureReplay(): Record<string, unknown> {
   const seed = deriveSeed('game/fixture/1');
@@ -80,7 +84,9 @@ describe('replay playback (headless)', () => {
     }
     expect(controller.update(16, now + 5000)).toBe(false);
     expect(stage.resultPanel.active).toBe(true);
-    const winner = (stage.resultPanel as StageNode & { attrs?: Map<string, unknown> }).attrs?.get('winner');
+    const winner = (stage.resultPanel as StageNode & { attrs?: Map<string, unknown> }).attrs?.get(
+      'winner',
+    );
     expect(['player-hero', SEEDED_OPPONENTS[0]!.characterId, 'draw']).toContain(winner);
     void commandDuration;
   });

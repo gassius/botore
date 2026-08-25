@@ -9,10 +9,7 @@
  * stored replays reference it.
  */
 import { sha256 } from '@noble/hashes/sha2.js';
-import {
-  type Rng,
-  SHA256_ALGORITHM,
-} from './index.js';
+import { type Rng, SHA256_ALGORITHM } from './index.js';
 
 const BLOCK_BYTES = 32;
 const DRAW_BYTES = 8;

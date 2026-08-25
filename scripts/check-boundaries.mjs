@@ -16,12 +16,28 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const errors = [];
 
-const PURE_PACKAGES = ['packages/rng', 'packages/replay', 'packages/domain', 'packages/combat-engine'];
+const PURE_PACKAGES = [
+  'packages/rng',
+  'packages/replay',
+  'packages/domain',
+  'packages/combat-engine',
+];
 
 // Specifiers that indicate non-pure dependencies.
 const FORBIDDEN_IN_PURE = [
-  'fastify', 'pg', '@supabase', 'next', 'react', 'react-dom',
-  'node:', 'cocos', 'cc', 'expo', 'ws', 'redis', 'ioredis',
+  'fastify',
+  'pg',
+  '@supabase',
+  'next',
+  'react',
+  'react-dom',
+  'node:',
+  'cocos',
+  'cc',
+  'expo',
+  'ws',
+  'redis',
+  'ioredis',
 ];
 // Files in pure packages may not use these APIs at all.
 const FORBIDDEN_PURE_CALLS = [/\bMath\.random\s*\(/, /\bDate\.now\s*\(/, /\bnew Date\s*\(\s*\)/];
@@ -68,7 +84,11 @@ function checkFile(path, isPure) {
         errors.push(`${rel}: pure package imports non-allowlisted package '${spec}'`);
       }
     }
-    if (spec.startsWith('apps/') || spec.includes('/apps/api') || spec.includes('/apps/dashboard')) {
+    if (
+      spec.startsWith('apps/') ||
+      spec.includes('/apps/api') ||
+      spec.includes('/apps/dashboard')
+    ) {
       errors.push(`${rel}: package imports application code '${spec}'`);
     }
   }
@@ -94,7 +114,12 @@ function checkFile(path, isPure) {
 for (const pkg of PURE_PACKAGES) {
   for (const f of walk(join(root, pkg))) checkFile(f, true);
 }
-for (const dir of ['apps/game/src', 'apps/game/test', 'apps/dashboard/lib', 'packages/test-fixtures/src']) {
+for (const dir of [
+  'apps/game/src',
+  'apps/game/test',
+  'apps/dashboard/lib',
+  'packages/test-fixtures/src',
+]) {
   const full = join(root, dir);
   if (existsSync(full)) for (const f of walk(full)) checkFile(f, false);
 }

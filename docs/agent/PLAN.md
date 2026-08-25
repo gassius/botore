@@ -10,7 +10,7 @@ verified blocker.
    pnpm workspace, Turborepo, shared tsconfig/eslint/prettier packages, license
    inventory script.
 2. **Pure packages** (`packages/rng|domain|replay|combat-engine|contracts|
-   analytics-events|config|test-fixtures`): zero runtime deps except contracts'
+analytics-events|config|test-fixtures`): zero runtime deps except contracts'
    TypeBox; no Node/browser APIs; seeded PRNG interface with versioned algorithms;
    deterministic combat v1 emitting semantic events; golden + fast-check property
    tests.
@@ -31,14 +31,14 @@ verified blocker.
 
 ## Key risks
 
-| Risk | Mitigation |
-|---|---|
-| Supabase CLI needs Docker + first-run image pull (slow/net-dependent) | Start `supabase start` early in background; document exact failure modes |
-| Cross-runtime determinism drift | Integer math only in engine, injected PRNG, golden fixtures, property tests |
-| pnpm/Cocos interplay (Creator can't resolve workspace imports) | Game app consumes compiled ESM artifacts via relative paths; documented sync script |
-| Idempotency bugs double-awarding XP | Unique constraint on (command, key) + single transaction + DB test |
-| RLS gaps let clients write protected tables | Deny-by-default policies + explicit DB tests |
-| Scope creep into product mechanics | Vertical-slice checklist is the contract; anything else rejected |
+| Risk                                                                  | Mitigation                                                                          |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Supabase CLI needs Docker + first-run image pull (slow/net-dependent) | Start `supabase start` early in background; document exact failure modes            |
+| Cross-runtime determinism drift                                       | Integer math only in engine, injected PRNG, golden fixtures, property tests         |
+| pnpm/Cocos interplay (Creator can't resolve workspace imports)        | Game app consumes compiled ESM artifacts via relative paths; documented sync script |
+| Idempotency bugs double-awarding XP                                   | Unique constraint on (command, key) + single transaction + DB test                  |
+| RLS gaps let clients write protected tables                           | Deny-by-default policies + explicit DB tests                                        |
+| Scope creep into product mechanics                                    | Vertical-slice checklist is the contract; anything else rejected                    |
 
 ## Environment findings (2026-08-24)
 

@@ -9,11 +9,7 @@
  */
 import type pg from 'pg';
 import { randomUUID } from 'node:crypto';
-import {
-  type BattleEvent,
-  type BattleReplay,
-  type FighterSnapshot,
-} from '@botore/replay';
+import { type BattleEvent, type BattleReplay, type FighterSnapshot } from '@botore/replay';
 import { XP_FOR_WIN, XP_FOR_LOSS } from '@botore/domain';
 
 export class AllowanceExhaustedError extends Error {
@@ -74,7 +70,7 @@ export async function persistBattle(
       winner_id: string | null;
       end_reason: string;
     }>(
-      `SELECT b.battle_id, b.xp_awarded, r.checksum, b.winner_id, b.end_reason
+      `SELECT b.battle_id, r.checksum, b.winner_id, b.end_reason
          FROM battle_commands c
          JOIN battles b USING (battle_id)
          LEFT JOIN battle_replays r USING (battle_id)
@@ -84,10 +80,16 @@ export async function persistBattle(
 
     if (existing.rows.length > 0 && existing.rows[0]) {
       const row = existing.rows[0];
+      // XP for the original command derives from its ledger entry.
+      const xpRow = await client.query<{ n: string }>(
+        `SELECT coalesce(sum(delta_xp), 0)::text AS n
+           FROM progression_ledger WHERE account_id = $1 AND battle_id = $2`,
+        [args.accountId, row.battle_id],
+      );
       await client.query('ROLLBACK');
       return {
         battleId: row.battle_id,
-        xpAwarded: row.xp_awarded ?? 0,
+        xpAwarded: Number.parseInt(xpRow.rows[0]?.n ?? '0', 10),
         replayChecksum: row.checksum,
         winnerId: row.winner_id,
         reason: row.end_reason === 'action_limit_tiebreak' ? 'action_limit_tiebreak' : 'defeat',
@@ -130,8 +132,7 @@ export async function persistBattle(
     const battleId = randomUUID();
     const xp = args.won ? XP_FOR_WIN : XP_FOR_LOSS;
     const won = args.won;
-    const winnerId =
-      args.replay.outcome.reason === 'defeat' ? args.replay.outcome.winner : null;
+    const winnerId = args.replay.outcome.reason === 'defeat' ? args.replay.outcome.winner : null;
 
     await client.query(
       `INSERT INTO battles (battle_id, rules_version, seed, started_at, ended_at, winner_id, end_reason)
@@ -161,7 +162,13 @@ export async function persistBattle(
     await client.query(
       `INSERT INTO battle_replays (battle_id, replay_version, payload, input_hash, checksum)
        VALUES ($1,$2,$3,$4,$5)`,
-      [battleId, args.replay.replayVersion, JSON.stringify(replayForStorage(args.replay)), args.replay.inputHash, args.replay.checksum],
+      [
+        battleId,
+        args.replay.replayVersion,
+        JSON.stringify(replayForStorage(args.replay)),
+        args.replay.inputHash,
+        args.replay.checksum,
+      ],
     );
 
     await client.query(
@@ -187,7 +194,14 @@ export async function persistBattle(
     );
 
     await client.query('COMMIT');
-    return { battleId, xpAwarded: xp, replayChecksum: args.replay.checksum, winnerId, reason: args.replay.outcome.reason, repeated: false };
+    return {
+      battleId,
+      xpAwarded: xp,
+      replayChecksum: args.replay.checksum,
+      winnerId,
+      reason: args.replay.outcome.reason,
+      repeated: false,
+    };
   } catch (err) {
     try {
       await client.query('ROLLBACK');
@@ -208,7 +222,9 @@ function finalHp(replay: BattleReplay, characterId: string): number {
       e.type === 'damage_applied' && e.target === characterId,
   );
   const last = damages.at(-1);
-  return last ? last.targetHpAfter : replay.fighters.find((f) => f.characterId === characterId)?.hp ?? 0;
+  return last
+    ? last.targetHpAfter
+    : (replay.fighters.find((f) => f.characterId === characterId)?.hp ?? 0);
 }
 
 function replayForStorage(replay: BattleReplay): Record<string, unknown> {

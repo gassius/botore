@@ -10,7 +10,12 @@
  * The controller consumes the shared replay schema and executes the
  * animation queue against scene nodes. It contains NO gameplay logic.
  */
-import { compileAnimationQueue, PlaybackController, commandDuration, type AnimationCommand } from './replay-playback.js';
+import {
+  compileAnimationQueue,
+  PlaybackController,
+  commandDuration,
+  type AnimationCommand,
+} from './replay-playback.js';
 
 /** Minimal node surface the controller needs; satisfied by cc.Node. */
 export interface StageNode {
@@ -80,12 +85,16 @@ export class BattleReplayController {
         // Adapter maps to tween: quick sidestep + afterimage. Placeholder no-op.
         break;
       case 'damage_pop': {
-        const target = cmd.target === this.stage.defender.name ? this.stage.defenderHpBar : this.stage.attackerHpBar;
+        const target =
+          cmd.target === this.stage.defender.name
+            ? this.stage.defenderHpBar
+            : this.stage.attackerHpBar;
         if (target.setAttribute) target.setAttribute('hpRatio', cmd.hpAfter);
         break;
       }
       case 'defeat_anim':
-        const defeated = cmd.characterId === this.stage.defender.name ? this.stage.defender : this.stage.attacker;
+        const defeated =
+          cmd.characterId === this.stage.defender.name ? this.stage.defender : this.stage.attacker;
         // defeat visual handled by adapter tweens; keep node active for layout
         void defeated;
         break;

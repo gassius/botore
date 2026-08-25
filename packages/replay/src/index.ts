@@ -23,17 +23,43 @@ export interface FighterSnapshot {
 
 /** Semantic combat events. Sequence numbers are monotonic; no wall clocks. */
 export type BattleEvent =
-  | { readonly seq: number; readonly type: 'battle_started'; readonly attacker: string; readonly defender: string }
+  | {
+      readonly seq: number;
+      readonly type: 'battle_started';
+      readonly attacker: string;
+      readonly defender: string;
+    }
   | { readonly seq: number; readonly type: 'turn_started'; readonly actor: string }
-  | { readonly seq: number; readonly type: 'attack_selected'; readonly actor: string; readonly attack: 'basic' | 'weapon' }
+  | {
+      readonly seq: number;
+      readonly type: 'attack_selected';
+      readonly actor: string;
+      readonly attack: 'basic' | 'weapon';
+    }
   | { readonly seq: number; readonly type: 'dodged'; readonly actor: string }
-  | { readonly seq: number; readonly type: 'damage_applied'; readonly target: string; readonly amount: number; readonly targetHpAfter: number }
+  | {
+      readonly seq: number;
+      readonly type: 'damage_applied';
+      readonly target: string;
+      readonly amount: number;
+      readonly targetHpAfter: number;
+    }
   | { readonly seq: number; readonly type: 'character_defeated'; readonly characterId: string }
-  | { readonly seq: number; readonly type: 'battle_ended'; readonly winner: string | null; readonly reason: 'defeat' | 'action_limit_tiebreak' };
+  | {
+      readonly seq: number;
+      readonly type: 'battle_ended';
+      readonly winner: string | null;
+      readonly reason: 'defeat' | 'action_limit_tiebreak';
+    };
 
 export type BattleOutcome =
   | { readonly winner: string; readonly loser: string; readonly reason: 'defeat' }
-  | { readonly winner: null; readonly loser: null; readonly reason: 'action_limit_tiebreak'; readonly winnerByTiebreak: string | null };
+  | {
+      readonly winner: null;
+      readonly loser: null;
+      readonly reason: 'action_limit_tiebreak';
+      readonly winnerByTiebreak: string | null;
+    };
 
 export interface BattleReplay {
   readonly replayVersion: number;
@@ -82,7 +108,16 @@ function validateFighter(v: unknown, issues: string[], idx: number): void {
     issues.push(`fighters[${idx}] not an object`);
     return;
   }
-  for (const key of ['characterId', 'displayName', 'hp', 'strength', 'agility', 'speed', 'weaponKind', 'weaponPower']) {
+  for (const key of [
+    'characterId',
+    'displayName',
+    'hp',
+    'strength',
+    'agility',
+    'speed',
+    'weaponKind',
+    'weaponPower',
+  ]) {
     if (!(key in v)) issues.push(`fighters[${idx}].${key} missing`);
   }
   if (typeof v['characterId'] !== 'string') issues.push(`fighters[${idx}].characterId not string`);

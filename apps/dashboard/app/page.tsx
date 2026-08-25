@@ -1,4 +1,10 @@
-import { dailyActiveAccounts, battleStats, replayCompletionRate, fetchHealth, recentBattles } from '@/lib/data';
+import {
+  dailyActiveAccounts,
+  battleStats,
+  replayCompletionRate,
+  fetchHealth,
+  recentBattles,
+} from '@/lib/data';
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (

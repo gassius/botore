@@ -99,10 +99,7 @@ export function validateAnalyticsEvent(raw: unknown): AnalyticsEvent {
   if (typeof r['eventId'] !== 'string' || r['eventId'].length === 0) {
     issues.push('eventId missing');
   }
-  if (
-    typeof r['name'] !== 'string' ||
-    !ValueCheck(EventPayloadSchemas, r['name'])
-  ) {
+  if (typeof r['name'] !== 'string' || !ValueCheck(EventPayloadSchemas, r['name'])) {
     issues.push(`unknown event name: ${String(r['name'])}`);
   }
   if (r['source'] !== 'server') {
@@ -121,7 +118,8 @@ export function validateAnalyticsEvent(raw: unknown): AnalyticsEvent {
   if (typeof r['payload'] !== 'object' || r['payload'] === null) {
     issues.push('payload missing');
   }
-  if (issues.length > 0) throw new AnalyticsValidationError('analytics event failed validation', issues);
+  if (issues.length > 0)
+    throw new AnalyticsValidationError('analytics event failed validation', issues);
 
   return {
     eventId: r['eventId'] as string,

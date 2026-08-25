@@ -23,9 +23,7 @@ describe('sha256-counter-v1', () => {
   it('produces golden values (frozen v1 vector)', () => {
     // Frozen test vector. If this fails, the algorithm changed — bump the version.
     const rng = createSha256Rng(new Uint8Array(32).fill(7));
-    expect([rng.nextInt(6), rng.nextInt(6), rng.nextInt(6), rng.nextInt(6)]).toEqual([
-      2, 5, 4, 1,
-    ]);
+    expect([rng.nextInt(6), rng.nextInt(6), rng.nextInt(6), rng.nextInt(6)]).toEqual([2, 5, 4, 1]);
   });
 
   it('stays in range and hits every bucket (uniformity smoke)', () => {

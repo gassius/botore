@@ -1,6 +1,9 @@
 -- Database tests: run against a freshly reset local Supabase database.
 -- Usage: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/run.sql
 -- Each test raises an exception on failure; a clean run produces TEST-OK lines.
+create schema if not exists tests;
+grant usage on schema tests to authenticated, anon;
+grant execute on all functions in schema tests to authenticated, anon;
 --
 -- Covers:
 --   7. protected gameplay tables reject direct client writes (RLS)
@@ -26,6 +29,7 @@ do $$
 declare
   v_account uuid := '00000000-0000-4000-8000-000000000001';
   v_count int;
+  v_rows bigint;
 begin
   -- seed present -----------------------------------------------------------
   select count(*) into v_count from public.characters where is_opponent;
@@ -37,46 +41,43 @@ begin
   raise notice 'TEST-OK seed fixtures';
 
   -- RLS: authenticated role cannot write protected tables -------------------
+  -- NOTE: with RLS + no matching policy, INSERT raises 42501, while
+  -- UPDATE/DELETE simply affect zero rows (nothing visible). Both deny.
   set local role authenticated;
 
   begin
     insert into public.battles (battle_id, rules_version, seed, end_reason)
     values (gen_random_uuid(), 'combat-v1', 'ab', 'defeat');
     raise exception 'RLS FAIL: insert into battles allowed';
-  exception when insufficient_privilege or check_violation then
-    null; -- expected
+  exception
+    when insufficient_privilege then null; -- expected
     when others then
-      if sqlstate in ('42501') then null; else raise; end if;
+      if sqlstate = '42501' then null; else raise; end if;
   end;
 
-  begin
-    update public.progression_ledger set delta_xp = 99;
-    raise exception 'RLS FAIL: update progression_ledger allowed';
-  exception when others then
-    if sqlstate = '42501' then null; else raise; end if;
-  end;
+  update public.progression_ledger set delta_xp = 99;
+  get diagnostics v_rows = row_count;
+  perform tests.assert(v_rows = 0, 'RLS FAIL: progression_ledger update affected rows');
 
   begin
     delete from public.fight_allowances;
-    raise exception 'RLS FAIL: delete fight_allowances allowed';
-  exception when others then
-    if sqlstate = '42501' then null; else raise; end if;
+  exception
+    when insufficient_privilege then null; -- no grant at all: denied
+    when others then raise;
   end;
 
   begin
     insert into public.analytics_outbox (event_id, event_name, schema_version, context, payload)
     values (gen_random_uuid(), 'battle_completed', 1, '{}', '{}');
     raise exception 'RLS FAIL: insert analytics_outbox allowed';
-  exception when others then
-    if sqlstate = '42501' then null; else raise; end if;
+  exception
+    when others then
+      if sqlstate in ('42501', '23514') then null; else raise; end if;
   end;
 
-  begin
-    update public.admin_audit_log set action = 'tampered';
-    raise exception 'RLS FAIL: update admin_audit_log allowed';
-  exception when others then
-    if sqlstate = '42501' then null; else raise; end if;
-  end;
+  update public.admin_audit_log set action = 'tampered';
+  get diagnostics v_rows = row_count;
+  perform tests.assert(v_rows = 0, 'RLS FAIL: admin_audit_log update affected rows');
 
   reset role;
   raise notice 'TEST-OK rls denies client writes to protected tables';

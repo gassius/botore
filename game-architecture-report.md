@@ -12,19 +12,19 @@ The system must run locally from a clean clone. Supabase CLI supplies the local 
 
 ### Recommended stack
 
-| Layer | Decision | Rationale |
-|---|---|---|
-| Game client | Cocos Creator 3.x + TypeScript | Mobile-first exports, official TypeScript workflow, 2D/3D tooling |
-| Alternative engine | Godot 4.x | Strong open-source fallback if editor/tooling or Cocos constraints become unacceptable |
-| Monorepo | pnpm workspaces + Turborepo | Familiar TypeScript tooling, task caching, clear package boundaries |
-| API | Node.js LTS + TypeScript + Fastify | Lean, fast, schema-driven HTTP service; fewer framework conventions than NestJS |
-| Contracts | TypeBox or Zod + OpenAPI | Runtime validation and generated/documented interfaces |
-| Database/platform | PostgreSQL + Supabase | SQL source of truth, Auth, Storage, local CLI workflow |
-| Jobs | PostgreSQL-backed queue initially | Avoid Redis until workload proves it necessary |
-| Dashboard | Next.js + React + TypeScript | Reuses existing expertise and shared contracts |
-| Analytics | Typed first-party event pipeline; PostHog initially | Product analytics now; warehouse/ClickHouse later |
-| Local stack | Supabase CLI + Docker Compose | Reproducible, provider-neutral development |
-| CI | GitHub Actions | Lint, types, unit/integration tests, migrations, builds |
+| Layer              | Decision                                            | Rationale                                                                              |
+| ------------------ | --------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Game client        | Cocos Creator 3.x + TypeScript                      | Mobile-first exports, official TypeScript workflow, 2D/3D tooling                      |
+| Alternative engine | Godot 4.x                                           | Strong open-source fallback if editor/tooling or Cocos constraints become unacceptable |
+| Monorepo           | pnpm workspaces + Turborepo                         | Familiar TypeScript tooling, task caching, clear package boundaries                    |
+| API                | Node.js LTS + TypeScript + Fastify                  | Lean, fast, schema-driven HTTP service; fewer framework conventions than NestJS        |
+| Contracts          | TypeBox or Zod + OpenAPI                            | Runtime validation and generated/documented interfaces                                 |
+| Database/platform  | PostgreSQL + Supabase                               | SQL source of truth, Auth, Storage, local CLI workflow                                 |
+| Jobs               | PostgreSQL-backed queue initially                   | Avoid Redis until workload proves it necessary                                         |
+| Dashboard          | Next.js + React + TypeScript                        | Reuses existing expertise and shared contracts                                         |
+| Analytics          | Typed first-party event pipeline; PostHog initially | Product analytics now; warehouse/ClickHouse later                                      |
+| Local stack        | Supabase CLI + Docker Compose                       | Reproducible, provider-neutral development                                             |
+| CI                 | GitHub Actions                                      | Lint, types, unit/integration tests, migrations, builds                                |
 
 This is a starting decision, not an irreversible commitment. Run a short Cocos proof-of-concept before full production.
 
@@ -41,19 +41,19 @@ This is a starting decision, not an irreversible commitment. Run a short Cocos p
 
 ## 3. Cocos Creator versus Godot
 
-| Criterion | Cocos Creator | Godot |
-|---|---|---|
-| Primary scripting | TypeScript/JavaScript is first-class | GDScript first-class; C# also supported; TypeScript is not a standard first-class path |
-| Fit with React/Node skills | High | Medium-low |
-| VSCode/Cursor workflow | Strong for scripts and shared TS packages | External editors work, but engine language/tooling differs |
-| Visual authoring | Cocos Creator editor required for scenes, assets, animation, native builds | Godot editor required for scenes, resources, animation, export |
-| Mobile/web targets | Android, iOS, web, desktop and mini-game targets | Android, iOS, web and desktop |
-| 2D suitability | Strong and mobile-oriented | Strong, mature general-purpose 2D workflow |
-| Ecosystem | Commercially proven; less Western learning material | Larger Western indie community and tutorial ecosystem |
-| AI-agent friendliness here | Higher because gameplay/application code is TypeScript | Lower because agents must cross TS and GDScript/C# boundaries |
-| Engine license | Runtime engine repository uses MIT; Creator/editor terms must also be reviewed for the selected release | MIT |
-| Engine royalties/runtime fees | No engine royalty/runtime fee identified for ordinary game distribution | None |
-| Main risk | Smaller local talent/tutorial pool; Creator tooling and editor terms need release-by-release review | Language/context switch and weaker TypeScript reuse |
+| Criterion                     | Cocos Creator                                                                                           | Godot                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Primary scripting             | TypeScript/JavaScript is first-class                                                                    | GDScript first-class; C# also supported; TypeScript is not a standard first-class path |
+| Fit with React/Node skills    | High                                                                                                    | Medium-low                                                                             |
+| VSCode/Cursor workflow        | Strong for scripts and shared TS packages                                                               | External editors work, but engine language/tooling differs                             |
+| Visual authoring              | Cocos Creator editor required for scenes, assets, animation, native builds                              | Godot editor required for scenes, resources, animation, export                         |
+| Mobile/web targets            | Android, iOS, web, desktop and mini-game targets                                                        | Android, iOS, web and desktop                                                          |
+| 2D suitability                | Strong and mobile-oriented                                                                              | Strong, mature general-purpose 2D workflow                                             |
+| Ecosystem                     | Commercially proven; less Western learning material                                                     | Larger Western indie community and tutorial ecosystem                                  |
+| AI-agent friendliness here    | Higher because gameplay/application code is TypeScript                                                  | Lower because agents must cross TS and GDScript/C# boundaries                          |
+| Engine license                | Runtime engine repository uses MIT; Creator/editor terms must also be reviewed for the selected release | MIT                                                                                    |
+| Engine royalties/runtime fees | No engine royalty/runtime fee identified for ordinary game distribution                                 | None                                                                                   |
+| Main risk                     | Smaller local talent/tutorial pool; Creator tooling and editor terms need release-by-release review     | Language/context switch and weaker TypeScript reuse                                    |
 
 ### Licensing conclusion
 
@@ -237,18 +237,18 @@ Start with PostHog for funnels, cohorts, feature flags, experiments, and retenti
 
 ### Core metrics
 
-| Area | Metrics |
-|---|---|
-| Acquisition | installs, source/campaign, store conversion, CAC when paid acquisition begins |
-| Activation | tutorial completion, first character, first fight, first replay watched, time to value |
-| Engagement | DAU/WAU/MAU, sessions, fights per active, allowance utilization, replay completion |
-| Retention | D1/D7/D30 and rolling retention by cohort/source/platform/build |
-| Match quality | expected-vs-actual win rate, candidate selection rate, upset rate, opponent diversity, rematches |
-| Progression | XP velocity, level time, unlock distribution, roster/slot use, churn by progression state |
-| Reliability | crash-free users/sessions, ANR, API latency/error rate, simulation failures, replay checksum failures |
-| Economy | sources/sinks, balances, inflation, purchase conversion, payer rate, ARPDAU, ARPPU, LTV |
-| Advertising | impressions, fill, eCPM, opt-in rate, reward completion, revenue per DAU |
-| Fairness/abuse | suspicious fights, farming pairs, duplicate commands, impossible event sequences |
+| Area           | Metrics                                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------------------- |
+| Acquisition    | installs, source/campaign, store conversion, CAC when paid acquisition begins                         |
+| Activation     | tutorial completion, first character, first fight, first replay watched, time to value                |
+| Engagement     | DAU/WAU/MAU, sessions, fights per active, allowance utilization, replay completion                    |
+| Retention      | D1/D7/D30 and rolling retention by cohort/source/platform/build                                       |
+| Match quality  | expected-vs-actual win rate, candidate selection rate, upset rate, opponent diversity, rematches      |
+| Progression    | XP velocity, level time, unlock distribution, roster/slot use, churn by progression state             |
+| Reliability    | crash-free users/sessions, ANR, API latency/error rate, simulation failures, replay checksum failures |
+| Economy        | sources/sinks, balances, inflation, purchase conversion, payer rate, ARPDAU, ARPPU, LTV               |
+| Advertising    | impressions, fill, eCPM, opt-in rate, reward completion, revenue per DAU                              |
+| Fairness/abuse | suspicious fights, farming pairs, duplicate commands, impossible event sequences                      |
 
 Integrate App Store Connect and Google Play Console reporting for store funnel, crashes/ANRs, subscriptions, refunds, and revenue reconciliation. Treat those as external reporting sources, not replacements for first-party gameplay telemetry.
 
@@ -327,15 +327,15 @@ Deferring these keeps the first system inexpensive and comprehensible without cl
 
 ## 15. Principal risks
 
-| Risk | Mitigation |
-|---|---|
-| Cocos/editor automation friction | Time-boxed proof, pin version, document native build steps |
-| Cross-runtime nondeterminism | Integer math, explicit PRNG, golden cross-target fixtures |
-| Shared package incompatibility in Creator | Thin adapter, compiled ESM artifacts, feasibility gate |
-| Supabase-specific coupling | Ports/adapters, SQL migrations, export/restore tests |
-| Analytics sprawl/privacy | Typed allowlist, schema review, consent and retention policy |
-| Premature platform complexity | Modular monolith, Postgres queue, measurement-based extraction |
-| AI-generated architectural drift | AGENTS.md, dependency rules, ADRs, CI boundary tests |
+| Risk                                      | Mitigation                                                     |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| Cocos/editor automation friction          | Time-boxed proof, pin version, document native build steps     |
+| Cross-runtime nondeterminism              | Integer math, explicit PRNG, golden cross-target fixtures      |
+| Shared package incompatibility in Creator | Thin adapter, compiled ESM artifacts, feasibility gate         |
+| Supabase-specific coupling                | Ports/adapters, SQL migrations, export/restore tests           |
+| Analytics sprawl/privacy                  | Typed allowlist, schema review, consent and retention policy   |
+| Premature platform complexity             | Modular monolith, Postgres queue, measurement-based extraction |
+| AI-generated architectural drift          | AGENTS.md, dependency rules, ADRs, CI boundary tests           |
 
 ## 16. Sources and verification notes
 

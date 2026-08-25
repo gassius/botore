@@ -9,14 +9,20 @@ import { Value } from '@sinclair/typebox/value';
 import { loadConfig } from '@botore/config';
 import { createSha256Rng, seedToKeyMaterial } from '@botore/rng';
 import { simulateBattle } from '@botore/combat-engine';
+import { CreateBattleRequestSchema, OpponentListResponseSchema } from '@botore/contracts';
 import {
-  CreateBattleRequestSchema,
-  OpponentListResponseSchema,
-} from '@botore/contracts';
-import { validateAnalyticsEvent, ConsoleSink, type AnalyticsEvent, type AnalyticsSink } from '@botore/analytics-events';
+  validateAnalyticsEvent,
+  ConsoleSink,
+  type AnalyticsEvent,
+  type AnalyticsSink,
+} from '@botore/analytics-events';
 import { SEEDED_OPPONENTS, DEFAULT_PLAYER } from '@botore/test-fixtures';
 import { getPool, closePool } from './db.js';
-import { persistBattle, AllowanceExhaustedError, UnknownOpponentError } from './battle-transaction.js';
+import {
+  persistBattle,
+  AllowanceExhaustedError,
+  UnknownOpponentError,
+} from './battle-transaction.js';
 import { utcDay, allowancesRemaining } from './allowances.js';
 import { createBattleSeed } from './seeds.js';
 
@@ -70,7 +76,11 @@ export async function buildServer(opts: BuildOptions): Promise<FastifyInstance> 
   // --- battles ----------------------------------------------------------------
   app.post('/v1/battles', async (req, reply) => {
     const idempotencyKey = req.headers['idempotency-key'];
-    if (typeof idempotencyKey !== 'string' || idempotencyKey.length < 8 || idempotencyKey.length > 128) {
+    if (
+      typeof idempotencyKey !== 'string' ||
+      idempotencyKey.length < 8 ||
+      idempotencyKey.length > 128
+    ) {
       return reply.status(400).send({ error: 'Idempotency-Key header required (8..128 chars)' });
     }
     if (!Value.Check(CreateBattleRequestSchema, req.body)) {
@@ -117,7 +127,11 @@ export async function buildServer(opts: BuildOptions): Promise<FastifyInstance> 
         eventId: crypto.randomUUID(),
         name: 'xp_awarded',
         source: 'server',
-        context: { schemaVersion: 1, occurredAt: new Date().toISOString(), accountId: devAccountId },
+        context: {
+          schemaVersion: 1,
+          occurredAt: new Date().toISOString(),
+          accountId: devAccountId,
+        },
         payload: { battleId: result.battleId, amount: result.xpAwarded },
       });
 

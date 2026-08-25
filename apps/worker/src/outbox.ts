@@ -14,13 +14,23 @@ export interface DrainResult {
   failed: number;
 }
 
-export async function drainOutbox(pool: pg.Pool, sink: AnalyticsSink, batchSize = 50): Promise<DrainResult> {
+export async function drainOutbox(
+  pool: pg.Pool,
+  sink: AnalyticsSink,
+  batchSize = 50,
+): Promise<DrainResult> {
   const client = await pool.connect();
   let delivered = 0;
   let failed = 0;
   try {
     await client.query('BEGIN');
-    const claim = await client.query<{ event_id: string; event_name: string; schema_version: number; context: unknown; payload: unknown }>(
+    const claim = await client.query<{
+      event_id: string;
+      event_name: string;
+      schema_version: number;
+      context: unknown;
+      payload: unknown;
+    }>(
       `SELECT event_id, event_name, schema_version, context, payload
          FROM analytics_outbox
         WHERE processed_at IS NULL

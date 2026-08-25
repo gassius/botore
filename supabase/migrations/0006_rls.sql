@@ -33,8 +33,9 @@ create policy "opponent roster read" on public.characters
 create policy "own character read" on public.characters
     for select using (account_id = auth.uid());
 
-create policy "current builds read" on public.current_character_builds
-    for select using (true);
+-- current_character_builds is a VIEW: RLS policies do not apply. Access is
+-- governed by the underlying tables' policies plus a grant:
+grant select on public.current_character_builds to authenticated, anon;
 
 create policy "own battles read" on public.battles
     for select using (initiator_account_id = auth.uid());

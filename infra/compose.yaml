@@ -1,4 +1,4 @@
-version: "3.9" # compose spec legacy key; kept for compatibility
+version: '3.9' # compose spec legacy key; kept for compatibility
 
 services:
   api:
@@ -7,19 +7,19 @@ services:
       dockerfile: infra/Dockerfile.node
       args:
         APP_PATH: apps/api
-        START_CMD: "node dist/server.js"
+        START_CMD: 'node dist/server.js'
     image: botore/api:local
-    profiles: ["full"]
+    profiles: ['full']
     environment:
       BOTORE_ENV: development
-      PORT: "8080"
+      PORT: '8080'
       DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:54322/postgres
       SERVICE_VERSION: 0.1.0-local
     ports:
-      - "8080:8080"
+      - '8080:8080'
     depends_on: []
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
 
   worker:
     build:
@@ -27,13 +27,13 @@ services:
       dockerfile: infra/Dockerfile.node
       args:
         APP_PATH: apps/worker
-        START_CMD: "node dist/worker.js"
+        START_CMD: 'node dist/worker.js'
     image: botore/worker:local
-    profiles: ["full"]
+    profiles: ['full']
     environment:
       BOTORE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:54322/postgres
     ports:
-      - "8081:8081"
+      - '8081:8081'
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'

@@ -25,9 +25,7 @@ describe('API contracts', () => {
       replayChecksum: 'a'.repeat(64),
     };
     expect(Value.Check(BattleStartedResponseSchema, ok)).toBe(true);
-    expect(
-      Value.Check(BattleStartedResponseSchema, { ...ok, xpAwarded: 3 }),
-    ).toBe(false);
+    expect(Value.Check(BattleStartedResponseSchema, { ...ok, xpAwarded: 3 })).toBe(false);
     expect(Value.Check(BattleStartedResponseSchema, { ...ok, battleId: 'nope' })).toBe(false);
   });
 

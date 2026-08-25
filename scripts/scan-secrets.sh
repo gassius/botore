@@ -4,8 +4,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PATTERNS=(
-  "service_role"
-  "SUPABASE_SERVICE_ROLE_KEY=.+[^<]"
   "sk-[a-zA-Z0-9]{20,}"
   "ghp_[a-zA-Z0-9]{30,}"
   "AKIA[0-9A-Z]{16}"

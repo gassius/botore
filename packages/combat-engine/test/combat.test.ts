@@ -6,9 +6,36 @@ import { MAX_ACTIONS, RULES_VERSION, simulateBattle } from '../src/index.js';
 
 export function fixture(name: string): FighterSnapshot {
   const presets: Record<string, FighterSnapshot> = {
-    knight: { characterId: 'knight', displayName: 'Sir Bot', hp: 34, strength: 6, agility: 4, speed: 5, weaponKind: 'sword', weaponPower: 3 },
-    rogue: { characterId: 'rogue', displayName: 'Dex Bot', hp: 26, strength: 4, agility: 7, speed: 8, weaponKind: 'dagger', weaponPower: 2 },
-    brute: { characterId: 'brute', displayName: 'HP Bot', hp: 44, strength: 8, agility: 2, speed: 3, weaponKind: 'axe', weaponPower: 5 },
+    knight: {
+      characterId: 'knight',
+      displayName: 'Sir Bot',
+      hp: 34,
+      strength: 6,
+      agility: 4,
+      speed: 5,
+      weaponKind: 'sword',
+      weaponPower: 3,
+    },
+    rogue: {
+      characterId: 'rogue',
+      displayName: 'Dex Bot',
+      hp: 26,
+      strength: 4,
+      agility: 7,
+      speed: 8,
+      weaponKind: 'dagger',
+      weaponPower: 2,
+    },
+    brute: {
+      characterId: 'brute',
+      displayName: 'HP Bot',
+      hp: 44,
+      strength: 8,
+      agility: 2,
+      speed: 3,
+      weaponKind: 'axe',
+      weaponPower: 5,
+    },
   };
   const f = presets[name];
   if (!f) throw new Error(`unknown fixture ${name}`);
@@ -28,7 +55,12 @@ function run(battleId: string, seedHex: string, a: FighterSnapshot, b: FighterSn
 describe('combat v1 — determinism', () => {
   it('golden fixture: byte-stable events + outcome (frozen vector)', () => {
     // FROZEN. Any diff means rules/PRNG changed → new rulesVersion required.
-    const replay = run('b-golden-1', deriveSeed('botore/golden/1'), fixture('knight'), fixture('rogue'));
+    const replay = run(
+      'b-golden-1',
+      deriveSeed('botore/golden/1'),
+      fixture('knight'),
+      fixture('rogue'),
+    );
     const summary = {
       outcome: replay.outcome,
       checksum: replay.checksum,
@@ -71,7 +103,11 @@ describe('combat v1 — invariants (property tests)', () => {
 
   const arbBattle = fc
     .string({ minLength: 8, maxLength: 60 })
-    .map((s) => Array.from({ length: 32 }, (_, i) => ((s.charCodeAt(i % s.length) + i) % 16).toString(16)).join(''))
+    .map((s) =>
+      Array.from({ length: 32 }, (_, i) =>
+        ((s.charCodeAt(i % s.length) + i) % 16).toString(16),
+      ).join(''),
+    )
     .chain((seed) =>
       fc.record({
         seed: fc.constant(seed),

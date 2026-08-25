@@ -28,10 +28,7 @@ export async function closePool(): Promise<void> {
 }
 
 /** Runs `fn` inside a transaction; rolls back on throw. */
-export async function withTransaction<T>(
-  client: pg.PoolClient,
-  fn: () => Promise<T>,
-): Promise<T> {
+export async function withTransaction<T>(client: pg.PoolClient, fn: () => Promise<T>): Promise<T> {
   await client.query('BEGIN');
   try {
     const result = await fn();

@@ -32,9 +32,7 @@ export class ConsoleSink implements AnalyticsSink {
 
   emit(event: AnalyticsEvent): void {
     const safe =
-      event.classification === 'sensitive'
-        ? { ...event, payload: { redacted: true } }
-        : event;
+      event.classification === 'sensitive' ? { ...event, payload: { redacted: true } } : event;
     this.write(JSON.stringify(safe));
   }
 }

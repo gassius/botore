@@ -11,7 +11,13 @@ import tseslint from 'typescript-eslint';
 export function makeConfig(extraIgnores = []) {
   return tseslint.config(
     {
-      ignores: ['**/dist/**', '**/node_modules/**', '**/.next/**', '**/coverage/**', ...extraIgnores],
+      ignores: [
+        '**/dist/**',
+        '**/node_modules/**',
+        '**/.next/**',
+        '**/coverage/**',
+        ...extraIgnores,
+      ],
     },
     ...tseslint.configs.recommended,
     {

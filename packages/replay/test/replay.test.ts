@@ -17,8 +17,26 @@ function sampleEnvelope(): Omit<BattleReplay, 'checksum'> {
     seed: 'aabbccdd00112233aabbccdd00112233',
     inputHash: 'e'.repeat(64),
     fighters: [
-      { characterId: 'c1', displayName: 'A', hp: 30, strength: 6, agility: 4, speed: 5, weaponKind: 'sword', weaponPower: 3 },
-      { characterId: 'c2', displayName: 'B', hp: 28, strength: 5, agility: 6, speed: 4, weaponKind: 'dagger', weaponPower: 2 },
+      {
+        characterId: 'c1',
+        displayName: 'A',
+        hp: 30,
+        strength: 6,
+        agility: 4,
+        speed: 5,
+        weaponKind: 'sword',
+        weaponPower: 3,
+      },
+      {
+        characterId: 'c2',
+        displayName: 'B',
+        hp: 28,
+        strength: 5,
+        agility: 6,
+        speed: 4,
+        weaponKind: 'dagger',
+        weaponPower: 2,
+      },
     ],
     events: [
       { seq: 0, type: 'battle_started', attacker: 'c1', defender: 'c2' },

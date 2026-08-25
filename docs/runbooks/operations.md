@@ -8,7 +8,7 @@ Symptom: local stack broken/migrated into a bad state.
 3. Re-run integration path: `pnpm --filter @botore/api test:integration`
    with `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres`.
 4. If Docker images are wedged: `pnpm env:down && docker volume ls | grep
-   supabase`, remove only volumes prefixed with the botore project id, then
+supabase`, remove only volumes prefixed with the botore project id, then
    `pnpm env:up` again (re-pulls ~5 min).
 
 # Runbook: migration failure
@@ -29,7 +29,7 @@ Symptom: dashboard shows checksum INVALID, or client render diverges.
 
 1. Fetch the row:
    `psql $DATABASE_URL -c "select payload->>'checksum' as stored,
-   battle_id from battle_replays where battle_id = '<id>'"`.
+battle_id from battle_replays where battle_id = '<id>'"`.
 2. Recompute locally: load payload JSON, strip nothing, run
    `verifyReplay(payload)` from `@botore/replay` in a node script.
 3. Classify:
@@ -44,6 +44,7 @@ Symptom: dashboard shows checksum INVALID, or client render diverges.
 # Runbook: backup / restore drill
 
 Local (monthly):
+
 1. `pg_dump "$DATABASE_URL" -Fc -f backup-$(date +%F).dump`
 2. Restore to a scratch database:
    `createdb botore_restore && pg_restore -d botore_restore backup-*.dump`.

@@ -6,12 +6,12 @@ root copy is the canonical entry point requested by the bootstrap task).
 
 ## Package boundaries (CI-enforced)
 
-| Path | May import | Must never import |
-|---|---|---|
-| `packages/rng`, `packages/replay`, `packages/domain`, `packages/combat-engine` | each other (`@botore/*`), `@noble/hashes` | `fastify`, `pg`, `@supabase/*`, `next`, `react`, `node:*`, `cc`, anything with side effects |
-| `apps/game/src` | `@botore/replay`, vendored pure builds, `cc` (in Creator) | `fastify`, `pg`, `@supabase/*`, server code |
-| `apps/dashboard/lib` | `pg` (read-only reporting credential) | service-role keys, API write paths |
-| `packages/*` generally | other `packages/*` | anything from `apps/*` |
+| Path                                                                           | May import                                                | Must never import                                                                           |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `packages/rng`, `packages/replay`, `packages/domain`, `packages/combat-engine` | each other (`@botore/*`), `@noble/hashes`                 | `fastify`, `pg`, `@supabase/*`, `next`, `react`, `node:*`, `cc`, anything with side effects |
+| `apps/game/src`                                                                | `@botore/replay`, vendored pure builds, `cc` (in Creator) | `fastify`, `pg`, `@supabase/*`, server code                                                 |
+| `apps/dashboard/lib`                                                           | `pg` (read-only reporting credential)                     | service-role keys, API write paths                                                          |
+| `packages/*` generally                                                         | other `packages/*`                                        | anything from `apps/*`                                                                      |
 
 Pure packages must not call `Math.random()`, `Date.now()`, or `new Date()`.
 The only CSPRNG boundary is `apps/api/src/seeds.ts`.
@@ -46,7 +46,7 @@ pnpm test:integration   # requires env:up && db:reset && DATABASE_URL
 - Compiled output (`dist/**`, `.next/**`) is gitignored; never commit.
 - Vitest snapshots are committed and reviewed like code.
 - Cocos editor files: `.meta` files are committed; `library/ temp/ local/
-  build/ profiles/` are ignored. Scene changes go in separate commits from
+build/ profiles/` are ignored. Scene changes go in separate commits from
   logic changes.
 - Lockfile is committed; dependency changes require regenerating it.
 

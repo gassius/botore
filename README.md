@@ -7,13 +7,13 @@ stack. See `game-architecture-report.md` for the founding analysis and
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-|---|---|---|
-| Node.js | 24.x (pinned via `engines`) | required |
-| pnpm | 11.x (`corepack enable` uses `packageManager`) | required |
-| Docker-compatible runtime | any recent | needed by Supabase CLI only |
-| Supabase CLI | pinned devDependency (`pnpm exec supabase`) | auto-installed by pnpm |
-| Cocos Creator | 3.8.x | optional until native/web builds; see apps/game/README-COCOS.md |
+| Tool                      | Version                                        | Notes                                                           |
+| ------------------------- | ---------------------------------------------- | --------------------------------------------------------------- |
+| Node.js                   | 24.x (pinned via `engines`)                    | required                                                        |
+| pnpm                      | 11.x (`corepack enable` uses `packageManager`) | required                                                        |
+| Docker-compatible runtime | any recent                                     | needed by Supabase CLI only                                     |
+| Supabase CLI              | pinned devDependency (`pnpm exec supabase`)    | auto-installed by pnpm                                          |
+| Cocos Creator             | 3.8.x                                          | optional until native/web builds; see apps/game/README-COCOS.md |
 
 No cloud accounts are required for local development.
 

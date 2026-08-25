@@ -15,7 +15,12 @@ export type AnimationCommand =
   | { readonly kind: 'turn_banner'; readonly actor: string }
   | { readonly kind: 'attack_anim'; readonly actor: string; readonly attack: 'basic' | 'weapon' }
   | { readonly kind: 'dodge_anim'; readonly actor: string }
-  | { readonly kind: 'damage_pop'; readonly target: string; readonly amount: number; readonly hpAfter: number }
+  | {
+      readonly kind: 'damage_pop';
+      readonly target: string;
+      readonly amount: number;
+      readonly hpAfter: number;
+    }
   | { readonly kind: 'defeat_anim'; readonly characterId: string }
   | { readonly kind: 'victory_screen'; readonly winner: string | null };
 
