@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "dev": "tsx watch src/worker.ts",
-    "start": "node dist/worker.js",
+    "dev": "tsx watch --env-file=.env.local src/worker.ts",
+    "start": "node --env-file=.env.local dist/worker.js",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint ."
