@@ -3,33 +3,39 @@
   "version": "0.1.0",
   "private": true,
   "description": "Expo + React Native game client for deterministic replay playback. Framework-free core logic with React Native rendering.",
-  "main": "node_modules/expo/AppEntry.js",
+  "main": "index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "tsc -p tsconfig.json --noEmit",
+    "export:web": "expo export --platform web",
+    "build": "pnpm run export:web",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint ."
   },
   "dependencies": {
+    "@babel/runtime": "^7.25.0",
     "@botore/replay": "workspace:*",
     "@botore/contracts": "workspace:*",
     "@botore/rng": "workspace:*",
     "@botore/combat-engine": "workspace:*",
     "@botore/test-fixtures": "workspace:*",
+    "@expo/metro-runtime": "~4.0.1",
     "expo": "^52.0.0",
     "expo-status-bar": "~2.0.0",
     "react": "18.3.1",
-    "react-native": "0.76.6"
+    "react-dom": "18.3.1",
+    "react-native": "0.76.6",
+    "react-native-web": "~0.19.13"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
     "@botore/eslint-config": "workspace:*",
     "@botore/tsconfig": "workspace:*",
     "@types/react": "~18.3.12",
+    "@types/react-dom": "~18.3.5",
     "babel-preset-expo": "^12.0.2",
     "typescript": "^5.8.3",
     "vitest": "^4.1.11"
