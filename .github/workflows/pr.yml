@@ -68,6 +68,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Build packages
+        run: pnpm exec turbo run build
+
       - name: Start Supabase local stack
         run: pnpm exec supabase start --ignore-health-check || pnpm exec supabase start
 
