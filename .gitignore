@@ -24,10 +24,6 @@ supabase/.runtime/
 .vscode/*
 !.vscode/extensions.json
 
-# Cocos Creator editor-generated content is added deliberately when present;
-# ignore its transient caches only.
-apps/game/library/
-apps/game/temp/
-apps/game/local/
-apps/game/build/
-apps/game/profiles/
+# Expo / React Native
+apps/game/.expo/
+apps/game/dist/

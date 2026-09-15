@@ -2,16 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { createSha256Rng, deriveSeed, seedToKeyMaterial } from '@botore/rng';
 import { simulateBattle } from '@botore/combat-engine';
 import { SEEDED_OPPONENTS, DEFAULT_PLAYER } from '@botore/test-fixtures';
-import {
-  compileAnimationQueue,
-  PlaybackController,
-  commandDuration,
-} from '../src/replay-playback.js';
+import { compileAnimationQueue, PlaybackController, commandDuration } from '../src/replay-playback';
 import {
   BattleReplayController,
   type ReplayStage,
   type StageNode,
-} from '../src/BattleReplayController.js';
+} from '../src/BattleReplayController';
 
 function fixtureReplay(): Record<string, unknown> {
   const seed = deriveSeed('game/fixture/1');
@@ -75,7 +71,6 @@ describe('replay playback (headless)', () => {
     const total = controller.load(fixtureReplay());
     expect(total).toBeGreaterThan(0);
 
-    // Drive with a fake clock; durations are deterministic.
     let now = 0;
     let guard = 0;
     while (controller.update(16, now) && guard < 10_000) {

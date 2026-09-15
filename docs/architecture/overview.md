@@ -7,8 +7,8 @@ authoritative; deterministic combat; replay-centric.
 
 ```mermaid
 flowchart LR
-    subgraph client["Game client (Cocos Creator 3.x)"]
-        UI[Scene + BattleReplayController]
+    subgraph client["Game client (Expo + React Native)"]
+        UI[BattleReplayScreen + BattleStage]
     end
     subgraph server["Application services"]
         API[Fastify API :8080]
@@ -33,7 +33,7 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     actor P as Player
-    C as Client (Cocos)
+    C as Client (Expo)
     A as API
     E as combat-engine (pure)
     DB as PostgreSQL

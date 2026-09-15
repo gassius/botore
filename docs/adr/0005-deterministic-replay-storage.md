@@ -25,7 +25,7 @@ replay service later).
 ## Consequences
 
 - Old replays stay renderable by shipping per-version render adapters in the
-  client (the Cocos adapter switches on `rulesVersion`).
+  client (the React Native adapter switches on `rulesVersion` when needed).
 - Regenerating events from seed+inputs is possible but never required.
 - Tampering is detectable: any payload edit breaks `verifyReplay`.
 - Changing combat formulas requires a NEW rulesVersion string and new golden
