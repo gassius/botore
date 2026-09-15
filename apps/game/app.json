@@ -13,6 +13,9 @@
     "android": {
       "package": "com.botore.game"
     },
-    "web": {}
+    "web": {
+      "output": "single",
+      "bundler": "metro"
+    }
   }
 }
