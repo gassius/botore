@@ -7,13 +7,13 @@ stack. See `game-architecture-report.md` for the founding analysis and
 
 ## Prerequisites
 
-| Tool                      | Version                                        | Notes                                                           |
-| ------------------------- | ---------------------------------------------- | --------------------------------------------------------------- |
-| Node.js                   | 24.x (pinned via `engines`)                    | required                                                        |
-| pnpm                      | 11.x (`corepack enable` uses `packageManager`) | required                                                        |
-| Docker-compatible runtime | any recent                                     | needed by Supabase CLI only                                     |
-| Supabase CLI              | pinned devDependency (`pnpm exec supabase`)    | auto-installed by pnpm                                          |
-| Cocos Creator             | 3.8.x                                          | optional until native/web builds; see apps/game/README-COCOS.md |
+| Tool                      | Version                                                 | Notes                                |
+| ------------------------- | ------------------------------------------------------- | ------------------------------------ |
+| Node.js                   | 24.x (pinned via `engines`)                             | required                             |
+| pnpm                      | 11.x (`corepack enable` uses `packageManager`)          | required                             |
+| Docker-compatible runtime | any recent                                              | needed by Supabase CLI only          |
+| Supabase CLI              | pinned devDependency (`pnpm exec supabase`)             | auto-installed by pnpm               |
+| Expo CLI                  | installed via pnpm (`pnpm --filter @botore/game start`) | optional; for mobile app development |
 
 No cloud accounts are required for local development.
 
@@ -73,7 +73,7 @@ Until the editor project exists, playback logic is covered headlessly
 ## Repository map
 
 ```text
-apps/        api (Fastify) · worker · dashboard (Next.js) · game (Cocos scaffold)
+apps/        api (Fastify) · worker · dashboard (Next.js) · game (Expo/React Native)
 packages/    combat-engine · domain · contracts · rng · replay ·
              analytics-events · config · test-fixtures · eslint-config · tsconfig
 supabase/    migrations · tests · config.toml (local project)

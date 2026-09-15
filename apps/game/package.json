@@ -2,8 +2,13 @@
   "name": "@botore/game",
   "version": "0.1.0",
   "private": true,
-  "description": "Cocos Creator game client scaffold. Editor project is created manually (see README-COCOS.md); this package holds the TypeScript adapter sources that the Creator project consumes via assets/scripts symlink or copy.",
+  "description": "Expo + React Native game client for deterministic replay playback. Framework-free core logic with React Native rendering.",
+  "main": "node_modules/expo/AppEntry.js",
   "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
     "build": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -14,12 +19,18 @@
     "@botore/contracts": "workspace:*",
     "@botore/rng": "workspace:*",
     "@botore/combat-engine": "workspace:*",
-    "@botore/test-fixtures": "workspace:*"
+    "@botore/test-fixtures": "workspace:*",
+    "expo": "^52.0.0",
+    "expo-status-bar": "~2.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.6"
   },
   "devDependencies": {
+    "@babel/core": "^7.25.0",
     "@botore/eslint-config": "workspace:*",
     "@botore/tsconfig": "workspace:*",
-    "@cocos/creator-types": "^3.8.7",
+    "@types/react": "~18.3.12",
+    "babel-preset-expo": "^12.0.2",
     "typescript": "^5.8.3",
     "vitest": "^4.1.11"
   }

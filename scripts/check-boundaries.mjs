@@ -23,7 +23,6 @@ const PURE_PACKAGES = [
   'packages/combat-engine',
 ];
 
-// Specifiers that indicate non-pure dependencies.
 const FORBIDDEN_IN_PURE = [
   'fastify',
   'pg',
@@ -32,8 +31,6 @@ const FORBIDDEN_IN_PURE = [
   'react',
   'react-dom',
   'node:',
-  'cocos',
-  'cc',
   'expo',
   'ws',
   'redis',

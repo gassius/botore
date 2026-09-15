@@ -45,9 +45,7 @@ pnpm test:integration   # requires env:up && db:reset && DATABASE_URL
 
 - Compiled output (`dist/**`, `.next/**`) is gitignored; never commit.
 - Vitest snapshots are committed and reviewed like code.
-- Cocos editor files: `.meta` files are committed; `library/ temp/ local/
-build/ profiles/` are ignored. Scene changes go in separate commits from
-  logic changes.
+- Expo build artifacts: `.expo/` is ignored per `.gitignore`.
 - Lockfile is committed; dependency changes require regenerating it.
 
 ## Task contract for agents
