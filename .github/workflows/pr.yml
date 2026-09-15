@@ -54,7 +54,6 @@ jobs:
   database:
     name: supabase migrations + db tests + api integration
     runs-on: ubuntu-latest
-    if: false # TODO: re-enable when local Supabase infra is ready
     steps:
       - uses: actions/checkout@v4
 
@@ -68,6 +67,9 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm exec turbo run build
 
       - name: Start Supabase local stack
         run: pnpm exec supabase start --ignore-health-check || pnpm exec supabase start
