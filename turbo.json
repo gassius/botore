@@ -17,6 +17,7 @@
       "outputs": ["coverage/**"]
     },
     "test:integration": {
+      "dependsOn": ["^build"],
       "outputs": []
     },
     "dev": {
