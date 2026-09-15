@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd ../.. && pnpm install && pnpm --filter @botore/game run build",
+  "buildCommand": "cd ../.. && pnpm install && pnpm turbo run build --filter=@botore/game...",
   "outputDirectory": "dist",
   "installCommand": "echo 'Skipping default install, using buildCommand'"
 }
