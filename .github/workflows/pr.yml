@@ -74,7 +74,7 @@ jobs:
       - name: Reset database (migrations + seed)
         run: |
           export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-          pnpm exec supabase db reset --no-backup
+          pnpm exec supabase db reset --local
 
       - name: Database tests (RLS, idempotency, append-only)
         run: |
