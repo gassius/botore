@@ -76,6 +76,6 @@ Committed agent config:
 - `.cursor/mcp.json` — Expo MCP at `https://mcp.expo.dev/mcp`
 
 If Expo is already configured in Cursor (MCP/Skills), no per-machine redo is
-needed. Optional on *other* machines only: Expo MCP OAuth when prompted, and
+needed. Optional on _other_ machines only: Expo MCP OAuth when prompted, and
 `pnpm dlx skills add expo/skills`. Local MCP automation (`expo-mcp`) needs
 SDK 54+ — skip until the client is upgraded.
