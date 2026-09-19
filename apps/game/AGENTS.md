@@ -24,8 +24,10 @@ Project context for agents is committed at the monorepo root (`AGENTS.md`,
 `CLAUDE.md`, `.claude/settings.json`) and here. Also:
 
 - **Expo MCP (Cursor):** `.cursor/mcp.json` registers
-  `https://mcp.expo.dev/mcp` (OAuth). Authenticate once in Cursor after clone.
-- **Expo Skills (per machine):**
+  `https://mcp.expo.dev/mcp`. If Expo is already connected in Cursor, nothing
+  further is required for this setup. On a new machine only, complete OAuth
+  when Cursor prompts.
+- **Expo Skills (per machine, optional if already installed):**
   `pnpm dlx skills add expo/skills` — then reopen Cursor and confirm skills
   under Settings → Rules, Skills, Subagents.
 - **Local MCP capabilities** (`expo-mcp`, simulator screenshots/automation)

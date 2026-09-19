@@ -73,7 +73,9 @@ Committed agent config:
 - `apps/game/AGENTS.md` — Expo SDK docs pointers and game-client rules
 - `CLAUDE.md` — imports this file for Claude Code (`@AGENTS.md`)
 - `.claude/settings.json` — enables `expo@claude-plugins-official`
-- `.cursor/mcp.json` — Expo MCP at `https://mcp.expo.dev/mcp` (OAuth in Cursor)
+- `.cursor/mcp.json` — Expo MCP at `https://mcp.expo.dev/mcp`
 
-Per-machine (not committed): `pnpm dlx skills add expo/skills`. Local MCP
-automation (`expo-mcp`) needs SDK 54+ — skip until the client is upgraded.
+If Expo is already configured in Cursor (MCP/Skills), no per-machine redo is
+needed. Optional on *other* machines only: Expo MCP OAuth when prompted, and
+`pnpm dlx skills add expo/skills`. Local MCP automation (`expo-mcp`) needs
+SDK 54+ — skip until the client is upgraded.
