@@ -62,3 +62,20 @@ verification command output.
 - Committing credentials (`.env*` except `.example`).
 - Bypassing or weakening RLS policies to make a test pass.
 - Editing pinned versions of combat rules without a new `rulesVersion` + ADR.
+
+## Expo App Client (`apps/game`) — agent tooling
+
+The game client is Expo (SDK 52, web export now; native later). For Expo/EAS/RN
+work, also read `apps/game/AGENTS.md` and https://docs.expo.dev/agents.md.
+
+Committed agent config:
+
+- `apps/game/AGENTS.md` — Expo SDK docs pointers and game-client rules
+- `CLAUDE.md` — imports this file for Claude Code (`@AGENTS.md`)
+- `.claude/settings.json` — enables `expo@claude-plugins-official`
+- `.cursor/mcp.json` — Expo MCP at `https://mcp.expo.dev/mcp`
+
+If Expo is already configured in Cursor (MCP/Skills), no per-machine redo is
+needed. Optional on _other_ machines only: Expo MCP OAuth when prompted, and
+`pnpm dlx skills add expo/skills`. Local MCP automation (`expo-mcp`) needs
+SDK 54+ — skip until the client is upgraded.
