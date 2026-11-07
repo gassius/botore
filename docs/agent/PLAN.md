@@ -1,6 +1,6 @@
 # Implementation Plan — Bootstrap (2026-08-24)
 
-> **Historical / superseded.** This file is the 2026-08-24 bootstrap plan. Its Fastify API/worker and Cocos Creator directions are **superseded** by the 7 November 2026 decisions. For the current draft/mirror of the product architecture see [`game-architecture-report.md`](../../game-architecture-report.md). Agent guidelines: [`AGENTS.md`](../../AGENTS.md) and [`docs/agent/AGENT_GUIDELINES.md`](AGENT_GUIDELINES.md). The dated environment findings below are history, not current verification.
+> **Historical / superseded.** This file is the 2026-08-24 bootstrap plan. Its Fastify API/worker and Cocos Creator directions are **superseded** by the 7 November 2026 decisions. Canonical product documentation: [Overall Product Vision](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1852). Technical mirror in-repo: [`game-architecture-report.md`](../../game-architecture-report.md). Agent guidelines: [`AGENTS.md`](../../AGENTS.md) and [`docs/agent/AGENT_GUIDELINES.md`](AGENT_GUIDELINES.md). The dated environment findings below are history, not current verification.
 
 Scope: repository foundation + narrow vertical slice per tasking. No product mechanics
 beyond the slice. Every requirement is either implemented or has a documented,
