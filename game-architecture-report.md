@@ -1,11 +1,11 @@
 # Game Architecture Report
 
-**Status:** Current product/architecture plan — aligned with final 7 November 2026 decisions; implementation and phone validation remain to be demonstrated.  
+**Status:** Draft/mirror of the product architecture — aligned with final 7 November 2026 decisions; implementation and phone validation remain to be demonstrated.  
 **Date:** 24 August 2026 (original)  
 **Revised:** 8 November 2026  
 **Audience:** Product owner, technical lead, and AI coding agents
 
-This document is the selected product/architecture plan. It is not a claim that the target stack, customisation path, or phone performance has already shipped or been proven. Bootstrap-era Fastify, Cocos, and Docker Compose application-service wording elsewhere in the repository is historical unless a later ADR or this report says otherwise.
+> **Canonical product documentation belongs in ClickUp.** Publishing that product architecture doc is **pending**: ClickUp returned Access denied, so no product-doc URL is recorded here. This repository file is a **draft and a mirror**, not the canonical source of truth. It is not a claim that the target stack, customisation path, or phone performance has already shipped or been proven. Bootstrap-era Fastify, Cocos, and Docker Compose application-service wording elsewhere in the repository is historical unless a later ADR or this report says otherwise.
 
 ## 1. Executive decision
 
@@ -60,7 +60,7 @@ The mobile client authenticates, manages bots/loadouts, selects an opponent, req
 
 Target request path: client → Supabase Edge Functions → PostgreSQL, with Supabase Auth and versioned media Storage. React/Next.js remains a read-only operations dashboard. Async processing, if needed, uses pg_cron plus an Edge Function or approved Postgres/Supabase queue, not a Fastify process.
 
-The checked-in overview diagram in `docs/architecture/overview.md` is the current source of truth for container relationships after this alignment. It distinguishes the target Edge/database-function boundary from leftover Fastify bootstrap code. Do not treat an external downloadable SVG as current.
+`docs/architecture/overview.md` is a **subordinate technical diagram** of the intended container and sequence shape after this alignment. It is not the product source of truth and is not a substitute for the pending ClickUp product architecture doc. It distinguishes the target Edge/database-function boundary from leftover Fastify bootstrap code. Do not treat an external downloadable SVG as current.
 
 ## 5. Monorepo structure
 
@@ -346,7 +346,7 @@ Keep deferred: tournaments, guilds, monetization (subscriptions/ads/shop/IAP), R
 
 ## 16. Sources and verification notes
 
-Current plan:
+Canonical product documentation belongs in ClickUp (publication pending; Access denied — no product-doc URL). The list below is repository technical material that this draft/mirror points at; it is not the product source of truth.
 
 - [ADR-0001: Expo + React Native](docs/adr/0001-expo-react-native-game-client.md) — selected client; renderer-sufficiency language there is historical rationale, not measured proof of the modular kit.
 - [ADR-0003: TypeBox](docs/adr/0003-typebox.md) — contracts already chosen.
@@ -355,7 +355,7 @@ Current plan:
 - [ADR-0006: Fastify](docs/adr/0006-fastify.md) — superseded by the 7 November 2026 server decision.
 - [ADR-0007: Supabase portability](docs/adr/0007-supabase-portability.md) — dedicated amendment pending; supersession note records Edge/database-function coupling.
 - Frozen combat spec: [docs/architecture/combat-v1.md](docs/architecture/combat-v1.md)
-- Checked-in overview: [docs/architecture/overview.md](docs/architecture/overview.md)
+- Subordinate technical diagram: [docs/architecture/overview.md](docs/architecture/overview.md) — not the product source of truth
 - Agent guidelines: `AGENTS.md` / `docs/agent/AGENT_GUIDELINES.md`; pending kickoff PR https://github.com/gassius/botore/pull/6
 - [Art Direction v0.1](https://app.clickup.com/90122060531/docs/2kxv30qk-232/2kxv30qk-332)
 - [Sound FX & Music Guidelines](https://app.clickup.com/90122060531/docs/2kxv30qk-1072)
@@ -374,6 +374,7 @@ Existing vendor links are references, not newly verified capabilities or legal a
 
 ### Still open (report to Carlos; this assignment does not close them)
 
+- ClickUp product doc publication (pending: ClickUp returned Access denied; no product-doc URL).
 - Art style and visual tokens remain undecided / provisional.
 - Audio mood and unapproved audio technical proposals remain provisional.
 - PNG customisation sufficiency on a representative phone is unproven.
