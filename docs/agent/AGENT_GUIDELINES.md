@@ -11,7 +11,7 @@ Canonical ClickUp docs (source of truth; do not invent architecture here):
 [Art Direction v0.1](https://app.clickup.com/90122060531/docs/2kxv30qk-232/2kxv30qk-332),
 [Sound FX & Music Guidelines](https://app.clickup.com/90122060531/docs/2kxv30qk-1072).
 Implementation notes: `docs/architecture/overview.md`, `docs/audio/README.md`.
-Repository ADRs are not authority for new work when they conflict with ClickUp.
+Architecture decisions live in [Technical Architecture](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1892); do not invent them here.
 
 ## Package boundaries (CI-enforced)
 
@@ -46,7 +46,7 @@ pnpm test:integration   # requires env:up && db:reset && DATABASE_URL
 
 - Schema changes ONLY through new files in `supabase/migrations/` with
   sequential numeric prefixes. Never edit an applied migration.
-- Never `DROP` columns/tables without an ADR and a deprecation migration.
+- Never `DROP` columns/tables without updating [Technical Architecture](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1892) and a deprecation migration.
 - Seed data lives in numbered seed migrations (`1xxx_`) — idempotent.
 - DB tests live in `supabase/tests/run.sql`; extend them when adding tables,
   especially RLS coverage for any new client-visible table.
@@ -71,7 +71,7 @@ verification command output.
 - Any cloud analytics account requirement for local development.
 - Committing credentials (`.env*` except `.example`).
 - Bypassing or weakening RLS policies to make a test pass.
-- Editing pinned versions of combat rules without a new `rulesVersion` + ADR.
+- Editing pinned versions of combat rules without a new `rulesVersion` and an update in [Technical Architecture](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1892).
 
 ## Expo App Client (`apps/game`) — agent tooling
 
