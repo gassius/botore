@@ -6,8 +6,8 @@ Status: accepted (deployment shape partially superseded) · Date: 2026-08-24
 **one API process and one worker process** deployment (`apps/api` +
 `apps/worker`, Fastify) is superseded. Server-side work is cohesive Supabase
 Edge Functions plus shared domain modules. Async work, if needed, uses
-pg_cron plus an Edge Function or an approved Postgres/Supabase-hosted queue
-— not a Fastify worker. Do not extend the leftover processes.
+**pg_cron** for the analytics outbox — not a Fastify worker. Do not extend
+the leftover processes. Media packs live in Supabase Storage at `atlas/vN/`.
 
 The **modular monolith** decision remains valid: cohesive in-repo modules, no
 premature microservices, no Redis/Kubernetes until measurements demand them.

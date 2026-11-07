@@ -15,10 +15,10 @@ Versioned media lives in Supabase Storage. Sound files are **separate from
 images** (not stored inside PNG pixels) and listed in the **same versioned
 manifest** as part art.
 
-| Pack       | Path (example)                    | Ships in   | Downloaded                  |
-| ---------- | --------------------------------- | ---------- | --------------------------- |
-| Base pack  | `atlas/<version>/base/`           | App bundle | Always present              |
-| Part packs | `atlas/<version>/parts/<partId>/` | Storage    | Stable + current fight only |
+| Pack       | Path (example)             | Ships in   | Downloaded                  |
+| ---------- | -------------------------- | ---------- | --------------------------- |
+| Base pack  | `atlas/vN/base/`           | App bundle | Always present              |
+| Part packs | `atlas/vN/parts/<partId>/` | Storage    | Stable + current fight only |
 
 Saved fights reference an **immutable asset version** so replays keep original
 sounds. Do not invent a Storage layout beyond this; the first real manifest

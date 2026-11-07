@@ -21,7 +21,8 @@ Implementation audio index: `docs/audio/README.md`.
 | `packages/*` generally                                                         | other `packages/*`                                | anything from `apps/*`                                                                      |
 
 Pure packages must not call `Math.random()`, `Date.now()`, or `new Date()`.
-The only CSPRNG boundary is `apps/api/src/seeds.ts`.
+The only CSPRNG boundary is the fight Edge Function (`combat-v1`). Do not add
+new CSPRNG sites. Leftover `apps/api/src/seeds.ts` is not the target.
 
 Run the checker: `node scripts/check-boundaries.mjs`.
 

@@ -20,7 +20,9 @@ Store the **full semantic event stream** plus:
 
 Replays persist as JSONB in `battle_replays`; the checksum is verified on
 read paths that matter (dashboard integrity column today; full verify in the
-replay service later).
+replay service later). Saved fights also keep **immutable build/media version
+references** (Storage `atlas/vN/`) so historical appearance and sound can be
+reconstructed. That retention does not change envelope fields or checksums.
 
 ## Consequences
 

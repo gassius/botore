@@ -1,48 +1,70 @@
-# ADR-0007: Supabase locally, PostgreSQL everywhere, adapters at the edge
+# ADR-0007: Supabase locally, selected Edge/database-function deployment
 
-Status: accepted · **portability promise in conflict — dedicated amendment pending** · Date: 2026-08-24
+Status: **accepted, amended 2026-11-08** · Original: 2026-08-24
 
-**Supersession note (8 November 2026) — amendment not complete:**
-
-The selected server deployment uses **Supabase Edge Functions** and
-**Postgres database functions**. Pure combat/domain packages remain portable.
-The rest of the deployment does not: other providers require runtime, auth,
-storage and operations adaptation. Plain PostgreSQL alone is not an
-equivalent replacement for the entire deployment. `apps/api` is **not** the
-current adapter location. A no-change provider switch is **not** promised.
-
-This note records the conflict with the original accepted decision. It is
-**not** the dedicated ADR-0007 amendment. Follow-up: write that amendment
-when the Edge Function migration is implemented (see
-`docs/architecture/overview.md`). Until then, do not copy the original
-no-change portability wording into new work.
+This is the dedicated amendment. The original “plain PostgreSQL is an
+equivalent no-change replacement” promise is **withdrawn**.
 
 ## Context
 
-Local development must be reproducible without cloud accounts. The original
-bootstrap portability promise (managed Supabase, self-hosted Supabase, or
-vanilla Postgres plus replacement auth/storage as equivalents) is superseded
-as a deployment promise.
+Local development must stay reproducible without cloud accounts. The 24 August
+2026 decision treated managed Supabase, self-hosted Supabase, and vanilla
+Postgres plus replacement auth/storage as equivalent deployments, with
+provider-specific code isolated in `apps/api` adapters.
 
-## Decision
+The 7 November 2026 kickoff selected **Supabase Edge Functions** for fight
+computation and **Postgres database functions** for atomic persistence. That
+couples the gameplay server to the Supabase runtime, Auth, Storage, and
+`pg_cron`. Leaving the original promise “accepted” contradicted the selected
+stack.
+
+## Decision (amended)
+
+### Still in force
 
 - The **Supabase CLI** (pinned devDependency) is canonical for local
   Postgres/Auth/Storage. It is never exposed publicly.
-- All migrations are **ordinary PostgreSQL SQL** files — no Supabase-specific
-  migration features.
-- Provider-specific code originally lived only in adapters in `apps/api`.
-  **That adapter location is superseded.** Target coupling is Edge Functions
-  plus database functions; a dedicated amendment will describe the remaining
-  portability surface when the migration exists.
-- Domain/combat packages import no provider code at all (CI-enforced). This
-  part remains valid.
+- Migrations are **ordinary PostgreSQL SQL** files in `supabase/migrations/`.
+- Domain/combat packages (`packages/{rng,domain,replay,combat-engine}`) import
+  **no** provider, framework, IO, or clock code (CI-enforced). That core stays
+  portable.
+
+### Amended — selected deployment
+
+| Concern        | Selected location                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Fight compute  | Supabase Edge Function; `combat-v1` in-process                                                                            |
+| CSPRNG seed    | That Edge Function (do not add new CSPRNG sites)                                                                          |
+| Atomic persist | Postgres **database function**: idempotency, `SKIP LOCKED` allowance, battle/replay/rewards/outbox in **one transaction** |
+| Outbox drain   | **`pg_cron`** (optionally invoking an Edge Function). Not a Fastify worker                                                |
+| Media          | Supabase Storage prefix **`atlas/vN/`** (versioned manifests, PNGs, masks, geometry, separate audio)                      |
+| Auth           | Supabase Auth; gameplay commands terminate at the Edge Function, not PostgREST writes                                     |
+
+`apps/api` is **not** the current adapter location. Leftover Fastify
+`apps/api` / `apps/worker` are bootstrap remnants; do not extend them.
+
+### What is not portable without adaptation
+
+Switching provider requires new work for: Edge runtime, Auth verification,
+Storage (`atlas/vN/`), database functions, and `pg_cron` scheduling. **Plain
+PostgreSQL alone is not an equivalent replacement** for the entire
+deployment. A no-change provider switch is **not** promised.
+
+Self-hosting Supabase remains possible in principle and transfers backups,
+upgrades, security, monitoring, and availability to the team. Accept that
+only after load/backup runbooks exist (see `docs/runbooks/operations.md`).
 
 ## Consequences
 
-- `supabase db reset` gives a byte-fresh database on every developer machine.
-- Portability drills (export/restore) are documented in runbooks before any
-  production deployment.
-- Self-hosting transfers operational burden; that trade-off is accepted only
-  after the load/backup runbooks exist.
-- Switching away from Supabase Edge Functions / database functions is an
-  adaptation project, not a configuration swap.
+- `supabase db reset` remains the local byte-fresh database path.
+- Implementers follow `docs/architecture/overview.md` for the Edge /
+  database-function / `atlas/vN/` / `pg_cron` shape.
+- Export/restore drills stay required before production.
+- Do not copy the original no-change portability wording into new work.
+
+## Notes
+
+TypeBox contracts (ADR-0003) and modular-monolith cohesion without
+microservices (ADR-0004) are unchanged. ADR-0006 (Fastify) remains superseded.
+This amendment does not invent an RPC signature, Edge Function path, or
+migration, and does not claim those have shipped.

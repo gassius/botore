@@ -53,5 +53,6 @@ Local (monthly):
 4. Record duration + size in the ops log.
 
 Production posture (future): managed Supabase PITR OR self-hosted WAL
-archiving per ADR-0007; document restore RTO/RPO before live launch
-(Phase 3 gate).
+archiving per ADR-0007 (amended: Edge Functions + database functions +
+`atlas/vN/` are not a no-change Postgres swap); document restore RTO/RPO
+before live launch.

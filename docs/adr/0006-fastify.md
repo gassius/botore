@@ -5,8 +5,8 @@ Status: **superseded** · Date: 2026-08-24
 **Superseded by:** final 7 November 2026 kickoff server decision (documented
 8 November 2026). Server-authoritative fight computation runs in **Supabase
 Edge Functions** using combat-v1. Persistence is PostgreSQL (database
-functions for the atomic fight transaction). Async work, if needed, is
-pg_cron plus an Edge Function or approved Postgres/Supabase-hosted queue.
+functions for the atomic fight transaction). The analytics outbox drains on
+**pg_cron**. Media is `atlas/vN/` in Supabase Storage.
 
 Do not add Fastify routes, a Fastify outbox worker, or new Fastify surface.
 Leftover `apps/api` and `apps/worker` are bootstrap-era remnants, not current
