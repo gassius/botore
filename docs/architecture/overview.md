@@ -3,10 +3,11 @@
 TypeScript-first monorepo for an asynchronous auto-battler. Server
 authoritative; deterministic combat; replay-centric.
 
-This file describes the **target** plan aligned with the 7 November 2026
-decisions (see `game-architecture-report.md`). It is not a claim that Edge
-Functions, database-function persistence, or modular media packs have already
-shipped.
+Product vision lives in ClickUp
+([Overall Product Vision](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1852)).
+This file is the **implementer** container and sequence diagram for the
+target stack. It is not a claim that Edge Functions, database-function
+persistence, or modular media packs have already shipped.
 
 **Implemented today (bootstrap remnant):** leftover Fastify `apps/api` and
 `apps/worker` still serve the vertical-slice HTTP path (`POST /v1/battles`,

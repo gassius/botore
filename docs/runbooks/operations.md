@@ -38,7 +38,7 @@ battle_id from battle_replays where battle_id = '<id>'"`.
    - Checksum valid but events violate combat-v1 expectations → engine bug;
      freeze the seed + inputs, open an issue with both hashes.
    - Client renders differently but replay verifies → renderer bug in the
-     Cocos adapter; compare PlaybackController step list vs scene timeline.
+     Expo/RN adapter; compare PlaybackController step list vs animation queue.
 4. Never hand-edit replay rows. Corrections go through a new battle.
 
 # Runbook: backup / restore drill

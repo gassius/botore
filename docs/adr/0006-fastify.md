@@ -13,7 +13,7 @@ Leftover `apps/api` and `apps/worker` are bootstrap-era remnants, not current
 dependencies to extend.
 
 TypeBox + OpenAPI contracts from ADR-0003 remain. See
-`game-architecture-report.md` and the ADR-0004 deployment-shape notice.
+`docs/architecture/overview.md` and the ADR-0004 deployment-shape notice.
 
 ## Context
 

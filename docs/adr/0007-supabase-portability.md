@@ -14,16 +14,15 @@ current adapter location. A no-change provider switch is **not** promised.
 This note records the conflict with the original accepted decision. It is
 **not** the dedicated ADR-0007 amendment. Follow-up: write that amendment
 when the Edge Function migration is implemented (see
-`game-architecture-report.md` §8 and pending guidelines
-https://github.com/gassius/botore/pull/6). Until then, do not copy the
-original no-change portability wording into new work.
+`docs/architecture/overview.md`). Until then, do not copy the original
+no-change portability wording into new work.
 
 ## Context
 
-Local development must be reproducible without cloud accounts. Production may
-be managed Supabase, self-hosted Supabase, or vanilla Postgres + replacement
-auth/storage (original report §8; that equivalence is superseded as a
-deployment promise).
+Local development must be reproducible without cloud accounts. The original
+bootstrap portability promise (managed Supabase, self-hosted Supabase, or
+vanilla Postgres plus replacement auth/storage as equivalents) is superseded
+as a deployment promise.
 
 ## Decision
 

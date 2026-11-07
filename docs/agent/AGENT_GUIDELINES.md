@@ -1,8 +1,15 @@
 # AGENTS.md — botore
 
 Instructions for AI coding agents (and humans) working in this repository.
-The equivalent content also lives at `docs/agent/AGENT_GUIDELINES.md` (this
-root copy is the canonical entry point requested by the bootstrap task).
+The equivalent content also lives at the repository root `AGENTS.md` (that
+root copy is the canonical entry point requested by the bootstrap task). Keep
+both files in sync.
+
+Product and creative docs live in ClickUp, not this repo:
+[Overall Product Vision](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1852),
+[Art Direction v0.1](https://app.clickup.com/90122060531/docs/2kxv30qk-232/2kxv30qk-332),
+[Sound FX & Music Guidelines](https://app.clickup.com/90122060531/docs/2kxv30qk-1072).
+Implementation audio index: `docs/audio/README.md`.
 
 ## Package boundaries (CI-enforced)
 

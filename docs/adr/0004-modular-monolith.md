@@ -11,13 +11,12 @@ pg_cron plus an Edge Function or an approved Postgres/Supabase-hosted queue
 
 The **modular monolith** decision remains valid: cohesive in-repo modules, no
 premature microservices, no Redis/Kubernetes until measurements demand them.
-See `game-architecture-report.md` §2 and §7, and the notice on ADR-0006.
+See `docs/architecture/overview.md` and the notice on ADR-0006.
 
 ## Context
 
 The platform must ship a vertical slice quickly while keeping future service
-extraction possible. Premature microservices were rejected in the architecture
-report §2.6.
+extraction possible. Premature microservices remain rejected.
 
 ## Decision
 
@@ -41,5 +40,4 @@ functions.
   not across separate HTTP requests holding `BEGIN`.
 - Extraction later means replacing an in-process function call with an HTTP/
   queue call; no data model rewrite.
-- Redis/Kubernetes are explicitly out of scope until measurements demand them
-  (report §14).
+- Redis/Kubernetes are explicitly out of scope until measurements demand them.

@@ -18,7 +18,7 @@ while IFS= read -r file; do
       FAILED=1
     fi
   done
-done < <(git ls-files | grep -vE '\.(lock|snap)$' | grep -v '^game-architecture-report.md$')
+done < <(git ls-files | grep -vE '\.(lock|snap)$')
 
 if [ "$FAILED" = "0" ]; then
   echo "secret scan OK"

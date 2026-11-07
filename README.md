@@ -2,8 +2,13 @@
 
 TypeScript-first asynchronous auto-battler platform. Deterministic
 server-authoritative combat, replay-centric rendering, reproducible local
-stack. See `game-architecture-report.md` for the founding analysis and
-`docs/architecture/overview.md` for the current system shape.
+stack. See `docs/architecture/overview.md` for the target system shape.
+
+Product and creative docs live in ClickUp, not this repo:
+[Overall Product Vision](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1852),
+[Art Direction v0.1](https://app.clickup.com/90122060531/docs/2kxv30qk-232/2kxv30qk-332),
+[Sound FX & Music Guidelines](https://app.clickup.com/90122060531/docs/2kxv30qk-1072).
+Implementation audio index: `docs/audio/README.md`.
 
 ## Prerequisites
 
@@ -62,13 +67,10 @@ Each app ships `.env.example` with safe placeholders — copy to `.env.local`
 when needed. Never commit `.env*`. The API's server credential bypasses RLS
 by design; clients never receive it.
 
-## Cocos game app
+## Game client
 
-`apps/game` contains the editor-ready scaffold: framework-free playback core,
-BattleReplayController adapter, and verified manual steps for creating the
-Creator project at the pinned release. See `apps/game/README-COCOS.md`.
-Until the editor project exists, playback logic is covered headlessly
-(`pnpm --filter @botore/game test`).
+`apps/game` is Expo / React Native. Web export is a preview. Playback is
+covered headlessly (`pnpm --filter @botore/game test`). See `apps/game/AGENTS.md`.
 
 ## Repository map
 
@@ -78,7 +80,7 @@ packages/    combat-engine · domain · contracts · rng · replay ·
              analytics-events · config · test-fixtures · eslint-config · tsconfig
 supabase/    migrations · tests · config.toml (local project)
 infra/       env-up/down · db-reset · verify · compose.yaml
-docs/        architecture (+ combat-v1, overview, diagrams) · adr · runbooks · agent
+docs/        architecture (combat-v1, overview) · adr · audio · runbooks · agent
 scripts/     boundary checker · secret scan · license inventory
 ```
 
