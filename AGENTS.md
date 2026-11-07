@@ -5,18 +5,20 @@ The equivalent content also lives at `docs/agent/AGENT_GUIDELINES.md` (this
 root copy is the canonical entry point requested by the bootstrap task). Keep
 both files in sync.
 
-Product and creative docs live in ClickUp, not this repo:
+Canonical ClickUp docs (source of truth; do not invent architecture here):
+[Technical Architecture](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1892),
 [Overall Product Vision](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1852),
 [Art Direction v0.1](https://app.clickup.com/90122060531/docs/2kxv30qk-232/2kxv30qk-332),
 [Sound FX & Music Guidelines](https://app.clickup.com/90122060531/docs/2kxv30qk-1072).
-Implementation audio index: `docs/audio/README.md`.
+Implementation notes: `docs/architecture/overview.md`, `docs/audio/README.md`.
+Repository ADRs are not authority for new work when they conflict with ClickUp.
 
 ## Package boundaries (CI-enforced)
 
 | Path                                                                           | May import                                                | Must never import                                                                           |
 | ------------------------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `packages/rng`, `packages/replay`, `packages/domain`, `packages/combat-engine` | each other (`@botore/*`), `@noble/hashes`                 | `fastify`, `pg`, `@supabase/*`, `next`, `react`, `node:*`, `cc`, anything with side effects |
-| `apps/game/src`                                                                | `@botore/replay`, vendored pure builds, `cc` (in Creator) | `fastify`, `pg`, `@supabase/*`, server code                                                 |
+| `apps/game/src`                                                                | `@botore/replay`, `react`, `react-native`, `expo`         | `fastify`, `pg`, `@supabase/*`, server code                                                 |
 | `apps/dashboard/lib`                                                           | `pg` (read-only reporting credential)                     | service-role keys, API write paths                                                          |
 | `packages/*` generally                                                         | other `packages/*`                                        | anything from `apps/*`                                                                      |
 

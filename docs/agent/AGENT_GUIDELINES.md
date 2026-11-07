@@ -5,11 +5,13 @@ The equivalent content also lives at the repository root `AGENTS.md` (that
 root copy is the canonical entry point requested by the bootstrap task). Keep
 both files in sync.
 
-Product and creative docs live in ClickUp, not this repo:
+Canonical ClickUp docs (source of truth; do not invent architecture here):
+[Technical Architecture](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1892),
 [Overall Product Vision](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1852),
 [Art Direction v0.1](https://app.clickup.com/90122060531/docs/2kxv30qk-232/2kxv30qk-332),
 [Sound FX & Music Guidelines](https://app.clickup.com/90122060531/docs/2kxv30qk-1072).
-Implementation audio index: `docs/audio/README.md`.
+Implementation notes: `docs/architecture/overview.md`, `docs/audio/README.md`.
+Repository ADRs are not authority for new work when they conflict with ClickUp.
 
 ## Package boundaries (CI-enforced)
 
