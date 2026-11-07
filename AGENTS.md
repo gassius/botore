@@ -145,7 +145,7 @@ Owned outside Engineering. Do not edit these documents from an engineering
 change; follow them.
 
 - **Audio** — Music and Sound FX Director: [Botore Sound FX & Music Guidelines](https://app.clickup.com/90122060531/docs/2kxv30qk-1072)
-- **Art Direction** (product visual guidelines, app screens, independent visual review) — UI/UX and Art Supervisor: _link to be added_
+- **Art Direction** (product visual guidelines, app screens, independent visual review) — UI/UX and Art Supervisor: [Art Direction v0.1](https://app.clickup.com/90122060531/docs/2kxv30qk-232/2kxv30qk-332). Visual style is still undecided.
 
 ## Package boundaries (CI-enforced)
 
