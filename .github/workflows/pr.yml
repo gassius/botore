@@ -143,6 +143,18 @@ jobs:
           export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
           pnpm exec supabase db reset --local
 
+      - name: Atlas Storage bootstrap (upload proof pack + publish + race test)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          SUPABASE_URL: http://127.0.0.1:54321
+        run: |
+          eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
+          export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
+          sudo apt-get update && sudo apt-get install -y postgresql-client ffmpeg
+          node scripts/seed-atlas-storage.mjs
+          node scripts/atlas-publish-race.mjs
+
       - name: Database tests (RLS, idempotency, append-only, bots-as-data)
         shell: bash
         env:

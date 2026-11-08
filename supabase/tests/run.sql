@@ -1088,6 +1088,8 @@ end $$;
 
 -- =========================================================================
 -- Atlas media packs (F5)
+-- Requires scripts/seed-atlas-storage.mjs to have published v1 with real
+-- Storage payloads before this suite runs (see infra/db-reset.sh / CI).
 -- =========================================================================
 do $$
 declare
@@ -1098,14 +1100,26 @@ declare
   v_version_id uuid;
   v_battle uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
   v_atlas text;
-  v_rows bigint;
+  v_obj_name text;
+  v_draft text := 'v77';
+  v_draft_b text := 'v78';
 begin
-  -- Published v1 proof pack -------------------------------------------------
+  -- Published v1 proof pack (bootstrap must have uploaded + published) ------
   select count(*) into v_count from public.atlas_versions where version = 'v1' and status = 'published';
-  perform tests.assert(v_count = 1, 'expected published atlas v1');
+  perform tests.assert(v_count = 1, 'expected published atlas v1 (run seed-atlas-storage.mjs)');
 
   select count(*) into v_count from public.atlas_manifest_entries where version = 'v1';
   perform tests.assert(v_count >= 20, format('expected >=20 manifest entries, got %s', v_count));
+
+  perform tests.assert(
+    coalesce(array_length(public.atlas_missing_storage_paths('v1'), 1), 0) = 0,
+    'v1 has no missing Storage paths'
+  );
+
+  select count(*) into v_count
+    from storage.objects
+   where bucket_id = 'atlas' and name like 'v1/%';
+  perform tests.assert(v_count >= 20, format('expected >=20 storage objects for v1, got %s', v_count));
 
   select count(distinct part_id) into v_count
     from public.atlas_manifest_entries
@@ -1155,13 +1169,30 @@ begin
   );
   raise notice 'TEST-OK atlas v1 proof pack + get_atlas_manifest';
 
-  -- Immutability: published version cannot change --------------------------
+  -- Publish rejects missing Storage objects --------------------------------
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
+  values (v_draft, 'draft', null, jsonb_build_object('version', v_draft), false, 'missing-objects fixture');
+  insert into public.atlas_manifest_entries (version, asset_key, kind, part_id, role, path)
+  values (v_draft, 'missing.root', 'manifest', null, 'manifest', 'manifest.json');
+  begin
+    perform public.publish_atlas_version(v_draft);
+    raise exception 'PUBLISH FAIL: published draft with missing Storage objects';
+  exception
+    when others then
+      if sqlstate = '22023' and sqlerrm like 'atlas_publish_missing_objects%' then null;
+      else raise;
+      end if;
+  end;
+  raise notice 'TEST-OK publish rejects missing Storage objects';
+
+  -- Immutability: published version cannot change (strict SQLSTATE) --------
   begin
     update public.atlas_versions set notes = 'hacked' where version = 'v1';
     raise exception 'IMMUTABILITY FAIL: updated published atlas_versions';
   exception
     when others then
-      if sqlerrm like 'atlas_version_immutable%' then null;
+      if sqlstate = '55000' and sqlerrm like 'atlas_version_immutable%' then null;
       else raise;
       end if;
   end;
@@ -1173,46 +1204,68 @@ begin
     raise exception 'IMMUTABILITY FAIL: inserted into published manifest';
   exception
     when others then
-      if sqlerrm like 'atlas_manifest_immutable%' then null;
+      if sqlstate = '55000' and sqlerrm like 'atlas_manifest_immutable%' then null;
+      else raise;
+      end if;
+  end;
+
+  -- Source-side reparent from published → draft must fail
+  insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
+  values (v_draft_b, 'draft', null, jsonb_build_object('version', v_draft_b), false, 'reparent dest')
+  on conflict do nothing;
+  begin
+    update public.atlas_manifest_entries
+       set version = v_draft_b, asset_key = 'hack.moved', path = 'fx/moved.png'
+     where version = 'v1' and asset_key = 'manifest.root';
+    raise exception 'IMMUTABILITY FAIL: reparented published manifest entry';
+  exception
+    when others then
+      if sqlstate = '55000' and sqlerrm like 'atlas_manifest_immutable%' then null;
+      else raise;
+      end if;
+  end;
+
+  select o.name into v_obj_name
+    from storage.objects o
+   where o.bucket_id = 'atlas' and o.name like 'v1/%'
+   order by o.name
+   limit 1;
+  perform tests.assert(v_obj_name is not null, 'expected at least one v1 storage object fixture');
+
+  begin
+    update storage.objects
+       set metadata = coalesce(metadata, '{}'::jsonb) || '{"hacked":true}'::jsonb
+     where bucket_id = 'atlas' and name = v_obj_name;
+    raise exception 'IMMUTABILITY FAIL: updated published storage object';
+  exception
+    when others then
+      if sqlstate = '55000' and sqlerrm like 'atlas_storage_immutable%' then null;
       else raise;
       end if;
   end;
 
   begin
     update storage.objects
-       set metadata = coalesce(metadata, '{}'::jsonb) || '{"hacked":true}'::jsonb
-     where bucket_id = 'atlas'
-       and name = (
-         select o.name from storage.objects o
-          where o.bucket_id = 'atlas' and o.name like 'v1/%'
-          limit 1
-       );
-    get diagnostics v_rows = row_count;
-    if v_rows > 0 then
-      raise exception 'IMMUTABILITY FAIL: updated published storage object';
-    end if;
+       set name = replace(v_obj_name, 'v1/', v_draft_b || '/')
+     where bucket_id = 'atlas' and name = v_obj_name;
+    raise exception 'IMMUTABILITY FAIL: renamed published storage object off v1';
   exception
     when others then
-      if sqlerrm like 'atlas_storage_immutable%' then null;
-      elsif sqlerrm like 'IMMUTABILITY FAIL%' then raise;
-      else null; -- some environments may lack updatable storage.objects
+      if sqlstate = '55000' and sqlerrm like 'atlas_storage_immutable%' then null;
+      else raise;
       end if;
   end;
 
   begin
-    delete from storage.objects where bucket_id = 'atlas' and name like 'v1/%';
-    get diagnostics v_rows = row_count;
-    if v_rows > 0 then
-      raise exception 'IMMUTABILITY FAIL: deleted published storage objects';
-    end if;
+    delete from storage.objects where bucket_id = 'atlas' and name = v_obj_name;
+    raise exception 'IMMUTABILITY FAIL: deleted published storage object';
   exception
     when others then
-      if sqlerrm like 'atlas_storage_immutable%' then null;
-      elsif sqlerrm like 'IMMUTABILITY FAIL%' then raise;
-      else null;
+      if sqlstate = '55000' and sqlerrm like 'atlas_storage_immutable%' then null;
+      else raise;
       end if;
   end;
-  raise notice 'TEST-OK published atlas immutability';
+  raise notice 'TEST-OK published atlas immutability (incl. source reparent/rename)';
 
   -- RLS: clients cannot write atlas tables --------------------------------
   set local role authenticated;
@@ -1269,7 +1322,6 @@ begin
     'admin_recent_battles exposes attacker_atlas_version'
   );
 
-  -- cleanup fight fixture
   delete from public.battle_participants where battle_id = v_battle;
   delete from public.battles where battle_id = v_battle;
 

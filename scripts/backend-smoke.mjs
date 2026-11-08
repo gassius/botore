@@ -389,6 +389,9 @@ if ((health.checks?.bot_loadouts?.current_count ?? 0) < 4) {
 if (!health.checks?.storage?.atlas_bucket) {
   fail('atlas storage bucket missing');
 }
+if (!health.checks?.storage?.proof_pack_ok) {
+  fail(`atlas proof pack not OK (run seed-atlas-storage.mjs): ${healthJson}`);
+}
 if (health.checks?.fight?.edge_function !== 'combat-v1') {
   fail(`expected fight.edge_function=combat-v1, got ${JSON.stringify(health.checks?.fight)}`);
 }

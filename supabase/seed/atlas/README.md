@@ -4,16 +4,26 @@ Byte placeholders for Supabase Storage layout `atlas/vN/…`.
 
 | Path                 | Role                                                          |
 | -------------------- | ------------------------------------------------------------- |
-| `v1/manifest.json`   | Versioned manifest (also stored in `atlas_versions.manifest`) |
-| `v1/base/audio/*`    | Small base pack fallbacks (UI, music, hit/dodge/defeat/…)     |
+| `v1/manifest.json`   | Versioned manifest (also in `atlas_versions.manifest`)        |
+| `v1/base/audio/*`    | Small base-pack AAC fallbacks (UI, music, hit/dodge/defeat/…) |
 | `v1/parts/<partId>/` | Proof catalogue part images + optional audio                  |
-| `v1/arenas/quiet/`   | Quiet arena background + ambient stub                         |
+| `v1/arenas/quiet/`   | Quiet arena background + ambient                              |
 | `v1/fx/`             | Hit / dodge / defeat FX placeholders                          |
 
-These files are **not** final art or audio. Export sizes and cache budgets
-remain provisional (`budgets_final = false` in `atlas_versions`).
+## Bootstrap (required)
 
-Schema, RLS/policies, immutability, and DB manifest rows are applied by
-migration `0017_atlas_media_packs.sql`. That migration also registers
-matching `storage.objects` keys for local/CI. Upload these bytes to a hosted
-bucket when promoting a pack outside local seed metadata.
+Migrations register **draft** `v1` + relational manifest rows only. They do
+**not** insert `storage.objects` metadata — SQL rows are not Storage payloads.
+
+Upload + publish:
+
+```bash
+# after supabase start && db migrations
+node scripts/seed-atlas-storage.mjs
+```
+
+That script uploads through the Storage API, verifies downloads (manifest +
+image + audio), refuses publish when paths are missing, then calls
+`publish_atlas_version('v1')`. `infra/db-reset.sh` and CI run it automatically.
+
+These files are **not** final art or audio. `budgets_final` stays false.

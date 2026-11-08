@@ -75,8 +75,58 @@ comment on table public.atlas_manifest_entries is
   'Maps catalogue parts / base / arena / FX assets to files inside atlas/vN/.';
 
 -- ---------------------------------------------------------------------------
--- Immutability of published versions (DB rows)
+-- Per-version lock + immutability of published versions (DB rows)
 -- ---------------------------------------------------------------------------
+-- Publication and every manifest/object mutation take row locks on
+-- atlas_versions in sorted version order, then re-check status. This closes
+-- the draft-mutation / publish race: an in-flight mutation either commits
+-- before publish sees the draft, or is rejected after publish commits.
+
+create or replace function public.atlas_lock_versions(p_versions text[])
+returns void
+language plpgsql
+as $$
+declare
+    v text;
+begin
+    if p_versions is null then
+        return;
+    end if;
+    for v in
+        select ver
+          from (
+            select distinct x as ver
+              from unnest(p_versions) as u(x)
+             where x is not null and x ~ '^v[0-9]+$'
+          ) s
+         order by ver
+    loop
+        perform 1
+          from public.atlas_versions av
+         where av.version = v
+         for update;
+    end loop;
+end;
+$$;
+
+revoke all on function public.atlas_lock_versions(text[]) from public;
+grant execute on function public.atlas_lock_versions(text[]) to service_role;
+
+create or replace function public.atlas_version_status(p_version text)
+returns text
+language plpgsql
+stable
+as $$
+declare
+    v_status text;
+begin
+    if p_version is null or p_version !~ '^v[0-9]+$' then
+        return null;
+    end if;
+    select status into v_status from public.atlas_versions where version = p_version;
+    return v_status;
+end;
+$$;
 
 create or replace function public.atlas_versions_immutability()
 returns trigger
@@ -122,19 +172,48 @@ returns trigger
 language plpgsql
 as $$
 declare
-    v_status text;
-    v_version text;
+    v_old_status text;
+    v_new_status text;
 begin
-    v_version := case when tg_op = 'DELETE' then old.version else new.version end;
-    select status into v_status from public.atlas_versions where version = v_version;
-    if v_status = 'published' then
+    if tg_op = 'DELETE' then
+        perform public.atlas_lock_versions(array[old.version]);
+        v_old_status := public.atlas_version_status(old.version);
+        if v_old_status = 'published' then
+            raise exception
+                'atlas_manifest_immutable: cannot delete entries on published %',
+                old.version
+                using errcode = '55000';
+        end if;
+        return old;
+    end if;
+
+    if tg_op = 'INSERT' then
+        perform public.atlas_lock_versions(array[new.version]);
+        v_new_status := public.atlas_version_status(new.version);
+        if v_new_status = 'published' then
+            raise exception
+                'atlas_manifest_immutable: cannot insert entries on published %',
+                new.version
+                using errcode = '55000';
+        end if;
+        return new;
+    end if;
+
+    -- UPDATE: lock source + destination (sorted) and reject if either published.
+    perform public.atlas_lock_versions(array[old.version, new.version]);
+    v_old_status := public.atlas_version_status(old.version);
+    v_new_status := public.atlas_version_status(new.version);
+    if v_old_status = 'published' then
         raise exception
-            'atlas_manifest_immutable: cannot % entries on published %',
-            lower(tg_op), v_version
+            'atlas_manifest_immutable: cannot move/update entries from published %',
+            old.version
             using errcode = '55000';
     end if;
-    if tg_op = 'DELETE' then
-        return old;
+    if v_new_status = 'published' then
+        raise exception
+            'atlas_manifest_immutable: cannot move/update entries onto published %',
+            new.version
+            using errcode = '55000';
     end if;
     return new;
 end;
@@ -270,53 +349,75 @@ create policy "atlas read published packs"
 -- No client INSERT/UPDATE/DELETE policies: deny-by-default for writes.
 -- service_role bypasses RLS; the trigger below still freezes published prefixes.
 
+create or replace function public.atlas_storage_prefix(p_bucket text, p_name text)
+returns text
+language sql
+immutable
+as $$
+    select case
+        when p_bucket = 'atlas' and p_name ~ '^v[0-9]+/' then split_part(p_name, '/', 1)
+        else null
+    end;
+$$;
+
 create or replace function public.atlas_storage_objects_guard()
 returns trigger
 language plpgsql
 as $$
 declare
-    v_object_name text;
-    v_prefix text;
-    v_status text;
+    v_old_prefix text;
+    v_new_prefix text;
+    v_old_status text;
+    v_new_status text;
 begin
-    v_object_name := case when tg_op = 'DELETE' then old.name else new.name end;
-    if tg_op <> 'DELETE' and new.bucket_id is distinct from 'atlas' then
-        return new;
-    end if;
-    if tg_op = 'DELETE' and old.bucket_id is distinct from 'atlas' then
-        return old;
-    end if;
-
-    -- Object names are version/path (bucket id is 'atlas').
-    v_prefix := split_part(v_object_name, '/', 1);
-    if v_prefix ~ '^v[0-9]+$' then
-        select status into v_status
-          from public.atlas_versions
-         where version = v_prefix;
-        if v_status = 'published' then
-            if tg_op = 'INSERT' then
-                -- Seed/publish path inserts files while still draft, then
-                -- publishes. Re-inserts under a published prefix are blocked.
-                raise exception
-                    'atlas_storage_immutable: cannot insert under published %',
-                    v_prefix
-                    using errcode = '55000';
-            elsif tg_op = 'UPDATE' then
-                raise exception
-                    'atlas_storage_immutable: cannot update object under published %',
-                    v_prefix
-                    using errcode = '55000';
-            else
+    if tg_op = 'DELETE' then
+        v_old_prefix := public.atlas_storage_prefix(old.bucket_id, old.name);
+        if v_old_prefix is not null then
+            perform public.atlas_lock_versions(array[v_old_prefix]);
+            v_old_status := public.atlas_version_status(v_old_prefix);
+            if v_old_status = 'published' then
                 raise exception
                     'atlas_storage_immutable: cannot delete object under published %',
-                    v_prefix
+                    v_old_prefix
                     using errcode = '55000';
             end if;
         end if;
+        return old;
     end if;
 
-    if tg_op = 'DELETE' then
-        return old;
+    if tg_op = 'INSERT' then
+        v_new_prefix := public.atlas_storage_prefix(new.bucket_id, new.name);
+        if v_new_prefix is not null then
+            perform public.atlas_lock_versions(array[v_new_prefix]);
+            v_new_status := public.atlas_version_status(v_new_prefix);
+            if v_new_status = 'published' then
+                raise exception
+                    'atlas_storage_immutable: cannot insert under published %',
+                    v_new_prefix
+                    using errcode = '55000';
+            end if;
+        end if;
+        return new;
+    end if;
+
+    -- UPDATE: guard both source and destination (rename / bucket move / in-place).
+    v_old_prefix := public.atlas_storage_prefix(old.bucket_id, old.name);
+    v_new_prefix := public.atlas_storage_prefix(new.bucket_id, new.name);
+    perform public.atlas_lock_versions(array[v_old_prefix, v_new_prefix]);
+    v_old_status := public.atlas_version_status(v_old_prefix);
+    v_new_status := public.atlas_version_status(v_new_prefix);
+
+    if v_old_status = 'published' then
+        raise exception
+            'atlas_storage_immutable: cannot move/update object from published %',
+            v_old_prefix
+            using errcode = '55000';
+    end if;
+    if v_new_status = 'published' then
+        raise exception
+            'atlas_storage_immutable: cannot move/update object onto published %',
+            v_new_prefix
+            using errcode = '55000';
     end if;
     return new;
 end;
@@ -389,15 +490,45 @@ $$;
 revoke all on function public.get_atlas_manifest(text) from public;
 grant execute on function public.get_atlas_manifest(text) to authenticated, anon, service_role;
 
+create or replace function public.atlas_missing_storage_paths(p_version text)
+returns text[]
+language plpgsql
+stable
+security definer
+set search_path = public, storage
+as $$
+declare
+    v_missing text[];
+begin
+    select coalesce(array_agg(e.path order by e.path), '{}'::text[])
+      into v_missing
+      from public.atlas_manifest_entries e
+     where e.version = p_version
+       and not exists (
+         select 1
+           from storage.objects o
+          where o.bucket_id = 'atlas'
+            and o.name = p_version || '/' || e.path
+       );
+    return v_missing;
+end;
+$$;
+
+revoke all on function public.atlas_missing_storage_paths(text) from public;
+grant execute on function public.atlas_missing_storage_paths(text) to authenticated, anon, service_role;
+
 create or replace function public.publish_atlas_version(p_version text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, storage
 as $$
 declare
     v_jwt_role text := coalesce(auth.role(), '');
     v_entry_count integer;
+    v_object_count integer;
+    v_missing text[];
+    v_status text;
 begin
     if v_jwt_role is distinct from 'service_role' then
         raise exception 'forbidden: publish_atlas_version requires service_role'
@@ -409,6 +540,26 @@ begin
             using errcode = '22023';
     end if;
 
+    -- Serialize against concurrent manifest/object mutations.
+    perform public.atlas_lock_versions(array[p_version]);
+
+    select status into v_status from public.atlas_versions where version = p_version;
+    if not found then
+        raise exception 'unknown_atlas_version: %', p_version
+            using errcode = 'P0002';
+    end if;
+    if v_status = 'published' then
+        return jsonb_build_object(
+            'ok', true,
+            'version', p_version,
+            'alreadyPublished', true
+        );
+    end if;
+    if v_status is distinct from 'draft' then
+        raise exception 'atlas_publish_invalid_status: % is %', p_version, v_status
+            using errcode = '22023';
+    end if;
+
     select count(*) into v_entry_count
       from public.atlas_manifest_entries
      where version = p_version;
@@ -417,6 +568,23 @@ begin
             using errcode = '22023';
     end if;
 
+    -- Real Storage objects must exist for every manifest path (API uploads).
+    -- Metadata-only fabrication is not enough for publication.
+    v_missing := public.atlas_missing_storage_paths(p_version);
+    if coalesce(array_length(v_missing, 1), 0) > 0 then
+        raise exception
+            'atlas_publish_missing_objects: % missing % path(s), e.g. %',
+            p_version,
+            array_length(v_missing, 1),
+            v_missing[1]
+            using errcode = '22023';
+    end if;
+
+    select count(*) into v_object_count
+      from storage.objects o
+     where o.bucket_id = 'atlas'
+       and o.name like p_version || '/%';
+
     update public.atlas_versions
        set status = 'published',
            published_at = now()
@@ -424,18 +592,16 @@ begin
        and status = 'draft';
 
     if not found then
-        if exists (select 1 from public.atlas_versions where version = p_version and status = 'published') then
-            return jsonb_build_object('ok', true, 'version', p_version, 'alreadyPublished', true);
-        end if;
-        raise exception 'unknown_atlas_version: %', p_version
-            using errcode = 'P0002';
+        raise exception 'atlas_publish_race: % was not draft at commit', p_version
+            using errcode = '40001';
     end if;
 
     return jsonb_build_object(
         'ok', true,
         'version', p_version,
         'alreadyPublished', false,
-        'entryCount', v_entry_count
+        'entryCount', v_entry_count,
+        'objectCount', v_object_count
     );
 end;
 $$;
@@ -494,10 +660,6 @@ begin
         raise exception 'unknown_atlas_version: %', p_atlas_version
             using errcode = 'P0002';
     end if;
-    if v_atlas_status is distinct from 'published' then
-        raise exception 'unpublished_atlas_version: %', p_atlas_version
-            using errcode = '22023';
-    end if;
 
     select * into v_character
     from public.characters
@@ -509,9 +671,15 @@ begin
     end if;
 
     -- Explicit role gate: never treat "no JWT" as a privileged bypass.
+    -- Contract (F5/F6): authenticated clients may only pin a *published* pack.
+    -- service_role may pin draft during seed (before Storage bootstrap publishes).
     if v_jwt_role = 'service_role' then
         null; -- system path: seeds / Edge Functions may confirm any character
     elsif v_jwt_role = 'authenticated' then
+        if v_atlas_status is distinct from 'published' then
+            raise exception 'unpublished_atlas_version: %', p_atlas_version
+                using errcode = '22023';
+        end if;
         if v_caller is null
            or v_character.is_opponent
            or v_character.account_id is distinct from v_caller then
@@ -853,10 +1021,16 @@ begin
         v_atlas_objects := 0;
     end;
 
-    -- Proof pack: 1 chassis + 2 paints + 3 weapons + base + quiet arena + 3 FX.
+    -- Proof pack: published + complete Storage objects for every manifest path
+    -- (1 chassis + 2 paints + 3 weapons + base + quiet arena + 3 FX).
     v_atlas_proof := (
         v_storage_atlas
         and v_atlas_published >= 1
+        and v_atlas_objects >= v_atlas_entries
+        and v_atlas_entries >= 20
+        and coalesce(array_length(
+              public.atlas_missing_storage_paths(coalesce(v_latest_atlas, 'v1')), 1
+            ), 0) = 0
         and exists (
             select 1 from public.atlas_manifest_entries e
              where e.version = coalesce(v_latest_atlas, 'v1')
@@ -966,9 +1140,13 @@ revoke all on function public.backend_health_snapshot() from public;
 grant execute on function public.backend_health_snapshot() to authenticated, anon, service_role;
 
 -- ---------------------------------------------------------------------------
--- Placeholder proof pack seed (v1) — draft → files → publish
--- Byte placeholders live in supabase/seed/atlas/v1/ for upload tooling;
--- this migration registers the version, manifest rows, and storage object keys.
+-- Placeholder proof pack seed (v1) — DRAFT only
+-- ---------------------------------------------------------------------------
+-- Contract (F5/F6): migrations register the draft version + relational
+-- manifest. Real Storage payloads are uploaded via the Storage API by
+-- `node scripts/seed-atlas-storage.mjs`, which then calls
+-- publish_atlas_version('v1'). Do NOT fabricate storage.objects rows here —
+-- SQL metadata ≠ uploaded bytes.
 -- ---------------------------------------------------------------------------
 
 insert into public.atlas_versions (
@@ -977,9 +1155,9 @@ insert into public.atlas_versions (
     'v1',
     'draft',
     null,
-    '{"version": "v1", "status": "published", "note": "Placeholder proof pack. Export sizes and cache budgets are provisional \u2014 not final.", "basePack": {"uiTap": "base/audio/ui-tap.m4a", "musicLoop": "base/audio/music-loop.m4a", "hit": "base/audio/hit.m4a", "dodge": "base/audio/dodge.m4a", "defeat": "base/audio/defeat.m4a", "hush": "base/audio/hush.m4a", "win": "base/audio/win.m4a", "swing": "base/audio/swing.m4a"}, "arena": {"quiet": {"image": "arenas/quiet/bg.png", "ambient": "arenas/quiet/ambient.m4a"}}, "fx": {"hit": "fx/hit.png", "dodge": "fx/dodge.png", "defeat": "fx/defeat.png"}, "parts": {"chassis-basic": {"images": ["parts/chassis-basic/body.png", "parts/chassis-basic/mask.png"], "audio": ["parts/chassis-basic/hit.m4a"], "soundTags": ["chassis.light"]}, "paint-crimson": {"images": ["parts/paint-crimson/swatch.png"], "audio": [], "soundTags": []}, "paint-cobalt": {"images": ["parts/paint-cobalt/swatch.png"], "audio": [], "soundTags": []}, "weapon-sword": {"images": ["parts/weapon-sword/sprite.png"], "audio": ["parts/weapon-sword/swing.m4a"], "soundTags": ["weapon.sword"]}, "weapon-axe": {"images": ["parts/weapon-axe/sprite.png"], "audio": ["parts/weapon-axe/swing.m4a"], "soundTags": ["weapon.axe"]}, "weapon-dagger": {"images": ["parts/weapon-dagger/sprite.png"], "audio": ["parts/weapon-dagger/swing.m4a"], "soundTags": ["weapon.dagger"]}}}'::jsonb,
+    '{"version": "v1", "status": "draft", "note": "Placeholder proof pack. Export sizes and cache budgets are provisional \u2014 not final. Publish only after Storage API upload.", "basePack": {"uiTap": "base/audio/ui-tap.m4a", "musicLoop": "base/audio/music-loop.m4a", "hit": "base/audio/hit.m4a", "dodge": "base/audio/dodge.m4a", "defeat": "base/audio/defeat.m4a", "hush": "base/audio/hush.m4a", "win": "base/audio/win.m4a", "swing": "base/audio/swing.m4a"}, "arena": {"quiet": {"image": "arenas/quiet/bg.png", "ambient": "arenas/quiet/ambient.m4a"}}, "fx": {"hit": "fx/hit.png", "dodge": "fx/dodge.png", "defeat": "fx/defeat.png"}, "parts": {"chassis-basic": {"images": ["parts/chassis-basic/body.png", "parts/chassis-basic/mask.png"], "audio": ["parts/chassis-basic/hit.m4a"], "soundTags": ["chassis.light"]}, "paint-crimson": {"images": ["parts/paint-crimson/swatch.png"], "audio": [], "soundTags": []}, "paint-cobalt": {"images": ["parts/paint-cobalt/swatch.png"], "audio": [], "soundTags": []}, "weapon-sword": {"images": ["parts/weapon-sword/sprite.png"], "audio": ["parts/weapon-sword/swing.m4a"], "soundTags": ["weapon.sword"]}, "weapon-axe": {"images": ["parts/weapon-axe/sprite.png"], "audio": ["parts/weapon-axe/swing.m4a"], "soundTags": ["weapon.axe"]}, "weapon-dagger": {"images": ["parts/weapon-dagger/sprite.png"], "audio": ["parts/weapon-dagger/swing.m4a"], "soundTags": ["weapon.dagger"]}}}'::jsonb,
     false,
-    'Placeholder proof pack: 1 chassis, 2 paints, sword/axe/dagger, quiet arena, hit/dodge/defeat FX. Budgets not final.'
+    'Placeholder proof pack (draft until Storage bootstrap publishes). Budgets not final.'
 )
 on conflict (version) do nothing;
 
@@ -1019,33 +1197,4 @@ where exists (select 1 from public.atlas_versions where version = 'v1' and statu
      where e.version = 'v1' and e.asset_key = v.asset_key
   );
 
--- Register storage object keys under atlas/v1/… (metadata only; bytes optional).
-insert into storage.objects (bucket_id, name, owner, metadata)
-select 'atlas', 'v1/' || e.path, null,
-       jsonb_build_object(
-         'placeholder', true,
-         'kind', e.kind,
-         'assetKey', e.asset_key,
-         'mimetype', case
-           when e.path like '%.png' then 'image/png'
-           when e.path like '%.m4a' then 'audio/mp4'
-           when e.path like '%.json' then 'application/json'
-           else 'application/octet-stream'
-         end
-       )
-  from public.atlas_manifest_entries e
- where e.version = 'v1'
-   and exists (select 1 from public.atlas_versions where version = 'v1' and status = 'draft')
-   and not exists (
-     select 1 from storage.objects o
-      where o.bucket_id = 'atlas' and o.name = 'v1/' || e.path
-   );
-
--- Freeze v1 as published (immutable thereafter).
-do $$
-begin
-  perform set_config('request.jwt.claim.role', 'service_role', true);
-  if exists (select 1 from public.atlas_versions where version = 'v1' and status = 'draft') then
-    perform public.publish_atlas_version('v1');
-  end if;
-end $$;
+-- v1 remains draft until scripts/seed-atlas-storage.mjs uploads payloads and publishes.

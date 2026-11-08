@@ -1,7 +1,7 @@
 {
   "version": "v1",
-  "status": "published",
-  "note": "Placeholder proof pack. Export sizes and cache budgets are provisional \u2014 not final.",
+  "status": "draft",
+  "note": "Placeholder proof pack. Export sizes and cache budgets are provisional \u2014 not final. Publish only after Storage API upload.",
   "basePack": {
     "uiTap": "base/audio/ui-tap.m4a",
     "musicLoop": "base/audio/music-loop.m4a",
