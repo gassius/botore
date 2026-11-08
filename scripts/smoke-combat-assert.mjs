@@ -1,5 +1,5 @@
 /**
- * Shared combat Edge smoke assertions (P2).
+ * Shared combat Edge smoke assertions (F2/F3).
  * Skip only when the function is clearly unserved (HTTP 404).
  * Unexpected statuses and invalid success payloads fail.
  */
@@ -20,11 +20,17 @@ export function classifyCombatSmokeResponse(status, body) {
     return { action: 'fail', reason: 'invalid JSON body' };
   }
   const b = /** @type {Record<string, unknown>} */ (body);
-  if (b.status !== 'computed') {
+  if (b.status !== 'completed') {
     return { action: 'fail', reason: `status=${String(b.status)}` };
   }
-  if (b.persistence !== 'pending_f3') {
+  if (b.persistence !== 'persisted' && b.persistence !== 'repeated') {
     return { action: 'fail', reason: 'persistence flag' };
+  }
+  if (typeof b.xpAwarded !== 'number' || b.xpAwarded < 1 || b.xpAwarded > 2) {
+    return { action: 'fail', reason: 'xpAwarded' };
+  }
+  if (typeof b.replayChecksum !== 'string' || !/^[0-9a-f]{64}$/.test(b.replayChecksum)) {
+    return { action: 'fail', reason: 'replayChecksum' };
   }
   const replay = b.replay;
   if (!replay || typeof replay !== 'object') {

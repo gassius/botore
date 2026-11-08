@@ -75,12 +75,12 @@ export const ReplayResponseSchema = Type.Object({
 export type ReplayResponse = Static<typeof ReplayResponseSchema>;
 
 /**
- * F2 Edge Function response: full semantic replay computed server-side.
- * Persistence / XP remain F3 (`persistence: pending_f3`).
+ * F2/F3 Edge Function response: full semantic replay computed server-side,
+ * then atomically persisted (`persistence: persisted|repeated`).
  */
 export const FightComputeResponseSchema = Type.Object({
   battleId: UuidSchema,
-  status: Type.Literal('computed'),
+  status: Type.Literal('completed'),
   rulesVersion: Type.Literal('combat-v1'),
   seed: Type.String({ pattern: '^[0-9a-f]{16,128}$' }),
   outcome: Type.Object({
@@ -98,6 +98,8 @@ export const FightComputeResponseSchema = Type.Object({
     outcome: Type.Unknown(),
     checksum: Type.String({ pattern: '^[0-9a-f]{64}$' }),
   }),
+  replayChecksum: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  xpAwarded: Type.Integer({ minimum: 1, maximum: 2 }),
   loadoutVersionIds: Type.Object({
     attacker: UuidSchema,
     defender: UuidSchema,
@@ -108,7 +110,8 @@ export const FightComputeResponseSchema = Type.Object({
   }),
   allowancesRemaining: Type.Integer({ minimum: 0, maximum: 3 }),
   utcDay: Type.String({ minLength: 8, maxLength: 32 }),
-  persistence: Type.Literal('pending_f3'),
+  persistence: Type.Union([Type.Literal('persisted'), Type.Literal('repeated')]),
+  repeated: Type.Boolean(),
   service: Type.Literal('combat-v1'),
 });
 export type FightComputeResponse = Static<typeof FightComputeResponseSchema>;

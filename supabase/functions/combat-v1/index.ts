@@ -1,5 +1,5 @@
 /**
- * combat-v1 fight Edge Function entrypoint (F2).
+ * combat-v1 fight Edge Function entrypoint (F2 compute + F3 persist).
  *
  * Local: `pnpm exec supabase functions serve combat-v1`
  * Runtime evidence: `deno test -A supabase/functions/combat-v1`
