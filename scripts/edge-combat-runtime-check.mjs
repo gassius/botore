@@ -50,8 +50,10 @@ if (!deno) {
 }
 
 console.log('==> deno test Edge combat-v1 (handler golden/auth + entrypoint fail-closed deps)');
-const test = spawnSync(deno, ['test', '-A', '--quiet', denoTestDir], {
-  cwd: root,
+// Run inside the function dir with an explicit --config so Deno does not
+// pick up the Expo/React Native workspace tsconfig at the repo root.
+const test = spawnSync(deno, ['test', '-A', '--quiet', '--config=./deno.json', '.'], {
+  cwd: denoTestDir,
   encoding: 'utf8',
   env: {
     ...process.env,

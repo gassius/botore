@@ -36,14 +36,6 @@ jobs:
       - name: Lint, typecheck, unit/property/golden tests (turbo)
         run: pnpm exec turbo run lint typecheck test
 
-      - name: Backend coverage gate (domain + contracts + combat stack)
-        run: |
-          pnpm --filter @botore/domain exec vitest run --coverage
-          pnpm --filter @botore/contracts exec vitest run --coverage
-          pnpm --filter @botore/combat-engine exec vitest run --coverage
-          pnpm --filter @botore/replay exec vitest run --coverage
-          pnpm --filter @botore/rng exec vitest run --coverage
-
       - name: Setup Deno (Edge Function runtime gate)
         uses: denoland/setup-deno@v2
         with:
@@ -71,6 +63,46 @@ jobs:
 
       - name: API production build
         run: pnpm --filter @botore/api build
+
+  # B1 required check: real Vitest + Deno coverage thresholds (no invented metrics).
+  backend-coverage:
+    name: backend coverage gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Package coverage (domain + contracts + combat stack)
+        run: |
+          pnpm --filter @botore/domain exec vitest run --coverage
+          pnpm --filter @botore/contracts exec vitest run --coverage
+          pnpm --filter @botore/combat-engine exec vitest run --coverage
+          pnpm --filter @botore/replay exec vitest run --coverage
+          pnpm --filter @botore/rng exec vitest run --coverage
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.8
+
+      - name: Edge Function coverage (Deno --threshold on handlers)
+        run: |
+          pnpm exec turbo run build --filter=@botore/rng --filter=@botore/replay --filter=@botore/combat-engine
+          node scripts/vendor-edge-combat.mjs
+          node scripts/edge-coverage-gate.mjs
+
+      - name: DB test marker inventory (source of truth)
+        run: node scripts/db-test-coverage-gate.mjs
 
   database:
     name: supabase migrations + db tests + api integration
@@ -103,13 +135,49 @@ jobs:
       - name: Database tests (RLS, idempotency, append-only, bots-as-data)
         run: |
           sudo apt-get update && sudo apt-get install -y postgresql-client
+          # Do not use psql -q: RAISE NOTICE TEST-OK markers must reach the log
+          # for the B1 db-test-coverage gate.
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
-            -v ON_ERROR_STOP=1 -q -f supabase/tests/run.sql
+            -v ON_ERROR_STOP=1 -f supabase/tests/run.sql \
+            2>&1 | tee /tmp/botore-db-tests.log
 
-      - name: Backend smoke (health + catalogue + fight context + admin views)
+      - name: DB test coverage gate (100% TEST-OK marker execution)
+        run: node scripts/db-test-coverage-gate.mjs --log /tmp/botore-db-tests.log
+
+      - name: Serve Edge Functions for live smoke
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
+          export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
+          {
+            echo "SUPABASE_URL=http://127.0.0.1:54321"
+            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+          } > /tmp/botore-functions.env
+          # Attach to the running local stack; required so /functions/v1/* is live.
+          pnpm exec supabase functions serve --env-file /tmp/botore-functions.env > /tmp/botore-functions-serve.log 2>&1 &
+          echo $! > /tmp/botore-functions-serve.pid
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              -H "apikey: ${SUPABASE_ANON_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+              http://127.0.0.1:54321/functions/v1/health || true)
+            if [ "$code" != "000" ] && [ "$code" != "404" ]; then
+              echo "Edge health reachable (HTTP $code) after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "functions serve log:"
+          cat /tmp/botore-functions-serve.log || true
+          exit 1
+
+      - name: Backend smoke (health + catalogue + fight + outbox + Edge)
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
           SUPABASE_URL: http://127.0.0.1:54321
+          REQUIRE_EDGE_FUNCTIONS: '1'
         run: |
           # Export local API keys so combat smoke can Auth-login the seed fixture.
           eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
