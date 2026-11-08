@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  SafeAreaView,
-  ScrollView,
+  Image,
   StyleSheet,
   Text,
   View,
@@ -18,15 +17,17 @@ import {
 } from '../ranking/rankingSession';
 import type { RankingRow, RankingSessionState } from '../ranking/types';
 import {
-  DevBanner,
-  GarageTagBackControl,
-  GarageTagButton,
-  GarageTagNameplate,
-  GarageTagOwnershipBadge,
-  GarageTagPanel,
-  GarageTagRobotHead,
-  GarageTagTokens,
-} from '../ui/garage-tag';
+  GaragePanel,
+  Nameplate,
+  PrimaryButton,
+  ScreenChrome,
+  ScreenHeader,
+  SecondaryButton,
+  StatusErrorBanner,
+  garageTag,
+  uiKitAssets,
+} from '../garage-tag';
+import { DomainNote } from '../first-run/slots/DomainNote';
 
 export type RankingScreenProps = {
   /** Injected read port. Defaults to DEV fixture adapter (never live). */
@@ -37,7 +38,7 @@ export type RankingScreenProps = {
 };
 
 /**
- * First-run Ranking slot screen (REF-03 third panel).
+ * First-run Ranking screen (REF-03). Uses shell Garage Tag exports.
  * Fixture-backed scaffolding only — no client ranking algorithm.
  */
 export const RankingScreen: React.FC<RankingScreenProps> = ({
@@ -63,24 +64,42 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
     void runLoad();
   }, [autoLoad, runLoad]);
 
+  const footer = onBack ? (
+    <PrimaryButton label="Back to stable" onPress={onBack} testID="ranking-back" />
+  ) : undefined;
+
   return (
-    <SafeAreaView style={styles.safe} accessibilityLabel="Ranking screen">
-      <View style={styles.container}>
-        <DevBanner />
-
-        <GarageTagPanel style={styles.headerPanel} accessibilityLabel="Ranking">
-          <Text style={styles.headerTitle}>RANKING</Text>
-        </GarageTagPanel>
-
-        <RankingBody session={session} onRetry={runLoad} />
-
-        <View style={styles.footer}>
-          <GarageTagBackControl onPress={onBack} />
-        </View>
-      </View>
-    </SafeAreaView>
+    <ScreenChrome
+      testID="slot-ranking"
+      scroll={false}
+      {...(footer ? { footer } : {})}
+    >
+      <ScreenHeader
+        title="Ranking"
+        {...(onBack ? { onBack } : {})}
+        testID="ranking-header"
+      />
+      <DevFixtureBanner />
+      <RankingBody session={session} onRetry={runLoad} />
+      <DomainNote text="Domain: RankingReadPort.list() + DEV fixtures. Live ranking blocked until verified backend contract." />
+    </ScreenChrome>
   );
 };
+
+function DevFixtureBanner(): React.ReactElement {
+  return (
+    <View
+      accessibilityRole="text"
+      accessibilityLabel="Development ranking fixtures, not live players"
+      style={styles.devBanner}
+      testID="ranking-dev-banner"
+    >
+      <Text style={styles.devBannerText} allowFontScaling>
+        DEV FIXTURES — NOT LIVE PLAYERS
+      </Text>
+    </View>
+  );
+}
 
 type RankingBodyProps = {
   session: RankingSessionState;
@@ -91,25 +110,25 @@ function RankingBody({ session, onRetry }: RankingBodyProps): React.ReactElement
   if (session.phase === 'loading' || session.phase === 'idle') {
     return (
       <View style={styles.centerState} accessibilityLabel="Loading ranking">
-        <ActivityIndicator size="large" color={GarageTagTokens.graphite} />
-        <Text style={styles.stateText}>Loading ranking…</Text>
+        <ActivityIndicator size="large" color={garageTag.graphite} />
+        <Text style={styles.stateText} allowFontScaling>
+          Loading ranking…
+        </Text>
       </View>
     );
   }
 
   if (session.phase === 'unavailable_contract') {
     return (
-      <View
-        style={styles.centerState}
-        accessibilityLabel="Ranking contract unavailable"
-      >
-        <GarageTagPanel style={styles.statusPanel}>
-          <Text style={styles.stateTitle}>RANKING UNAVAILABLE</Text>
-          <Text style={styles.stateText}>
-            {session.errorMessage ??
-              'Authoritative ranking read contract is not available yet.'}
-          </Text>
-        </GarageTagPanel>
+      <View style={styles.centerState} accessibilityLabel="Ranking contract unavailable">
+        <StatusErrorBanner
+          title="Ranking unavailable"
+          detail={
+            session.errorMessage ??
+            'Authoritative ranking read contract is not available yet.'
+          }
+          testID="ranking-unavailable"
+        />
         {session.rows.length > 0 ? (
           <RankingList rows={session.rows} refreshing={false} />
         ) : null}
@@ -120,15 +139,15 @@ function RankingBody({ session, onRetry }: RankingBodyProps): React.ReactElement
   if (session.phase === 'error' && session.rows.length === 0) {
     return (
       <View style={styles.centerState} accessibilityLabel="Ranking failed to load">
-        <GarageTagPanel style={styles.statusPanel}>
-          <Text style={styles.stateTitle}>COULD NOT LOAD</Text>
-          <Text style={styles.stateText}>{session.errorMessage ?? 'Unknown error'}</Text>
-        </GarageTagPanel>
-        <GarageTagButton
+        <StatusErrorBanner
+          title="Could not load"
+          detail={session.errorMessage ?? 'Unknown error'}
+          testID="ranking-error"
+        />
+        <PrimaryButton
           label="Retry"
-          variant="primary"
           onPress={onRetry}
-          accessibilityHint="Reload development ranking fixtures"
+          testID="ranking-retry"
         />
       </View>
     );
@@ -137,40 +156,41 @@ function RankingBody({ session, onRetry }: RankingBodyProps): React.ReactElement
   if (session.phase === 'empty') {
     return (
       <View style={styles.centerState} accessibilityLabel="Ranking is empty">
-        <GarageTagPanel style={styles.statusPanel}>
-          <Text style={styles.stateTitle}>NO RANKINGS YET</Text>
-          <Text style={styles.stateText}>
+        <GaragePanel rivets={false} style={styles.statusPanel} testID="ranking-empty">
+          <Text style={styles.stateTitle} allowFontScaling>
+            No rankings yet
+          </Text>
+          <Text style={styles.stateText} allowFontScaling>
             DEV fixture returned an empty list. Live ranking remains blocked.
           </Text>
-        </GarageTagPanel>
-        <GarageTagButton label="Retry" variant="secondary" onPress={onRetry} />
+        </GaragePanel>
+        <SecondaryButton label="Retry" onPress={onRetry} testID="ranking-empty-retry" />
       </View>
     );
   }
 
-  // populated (possibly with refresh error banner)
   return (
     <View style={styles.listWrap}>
       {session.errorMessage ? (
-        <GarageTagPanel style={styles.errorBanner} accessibilityLabel="Ranking refresh failed">
-          <Text style={styles.stateTitle}>REFRESH FAILED</Text>
-          <Text style={styles.stateText}>{session.errorMessage}</Text>
-          <Text style={styles.stateHint}>Showing last readable rows.</Text>
-          <GarageTagButton label="Retry" variant="primary" onPress={onRetry} />
-        </GarageTagPanel>
+        <View style={styles.refreshError} testID="ranking-refresh-failed">
+          <StatusErrorBanner title="Refresh failed" detail={session.errorMessage} />
+          <Text style={styles.stateHint} allowFontScaling>
+            Showing last readable rows.
+          </Text>
+          <PrimaryButton label="Retry" onPress={onRetry} testID="ranking-refresh-retry" />
+        </View>
       ) : null}
       {session.refreshing ? (
-        <Text style={styles.refreshHint} accessibilityLabel="Refreshing ranking">
+        <Text style={styles.refreshHint} accessibilityLabel="Refreshing ranking" allowFontScaling>
           Refreshing…
         </Text>
       ) : null}
       <RankingList rows={session.rows} refreshing={session.refreshing} />
       {!session.errorMessage ? (
-        <GarageTagButton
+        <SecondaryButton
           label="Refresh"
-          variant="secondary"
           onPress={onRetry}
-          accessibilityHint="Reload ranking from the read adapter"
+          testID="ranking-refresh"
         />
       ) : null}
     </View>
@@ -184,61 +204,69 @@ type RankingListProps = {
 
 function RankingList({ rows, refreshing }: RankingListProps): React.ReactElement {
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
+    <View
+      style={styles.list}
       accessibilityLabel="Ranking list"
       accessibilityState={{ busy: refreshing }}
+      testID="ranking-list"
     >
       {rows.map((row, index) => (
         <RankingRowView key={`${row.botId}-${index}`} row={row} />
       ))}
-    </ScrollView>
+    </View>
   );
 }
 
 function RankingRowView({ row }: { row: RankingRow }): React.ReactElement {
   return (
-    <GarageTagPanel
-      highlighted={row.isCurrentBot}
-      accessibilityLabel={rankingRowAccessibilityLabel(row)}
-      style={styles.row}
+    <GaragePanel
+      rivets={false}
+      style={[styles.row, row.isCurrentBot ? styles.rowCurrent : null]}
+      testID={`ranking-row-${row.botId}`}
     >
-      <Text style={styles.rankNumber} accessibilityLabel={`Rank ${row.rank}`}>
-        {row.rank}
-      </Text>
-      <GarageTagRobotHead />
-      <View style={styles.rowIdentity}>
-        <View style={styles.nameRow}>
-          <GarageTagNameplate name={row.displayName} />
-          {row.isCurrentBot ? <GarageTagOwnershipBadge /> : null}
+      <View
+        style={styles.rowInner}
+        accessibilityLabel={rankingRowAccessibilityLabel(row)}
+      >
+        <Text style={styles.rankNumber} accessibilityLabel={`Rank ${row.rank}`} allowFontScaling>
+          {row.rank}
+        </Text>
+        <Image
+          source={uiKitAssets.robotHeadSmall}
+          style={styles.robotHead}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+          accessible={false}
+        />
+        <View style={styles.rowIdentity}>
+          <Nameplate
+            name={row.displayName}
+            {...(row.isCurrentBot ? { badge: 'YOU' } : {})}
+            style={styles.nameplate}
+            testID={`ranking-name-${row.botId}`}
+          />
+          <Text style={styles.sourceLabel} allowFontScaling>
+            DEV fixture
+          </Text>
         </View>
-        <Text style={styles.sourceLabel}>DEV fixture</Text>
       </View>
-    </GarageTagPanel>
+    </GaragePanel>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: GarageTagTokens.cream,
+  devBanner: {
+    backgroundColor: garageTag.graphite,
+    borderRadius: garageTag.cutCorner,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-    gap: 12,
-  },
-  headerPanel: {
-    alignItems: 'center',
-  },
-  headerTitle: {
-    color: GarageTagTokens.graphite,
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: 1.2,
+  devBannerText: {
+    color: garageTag.mustard,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textAlign: 'center',
   },
   centerState: {
     flex: 1,
@@ -248,76 +276,79 @@ const styles = StyleSheet.create({
   },
   statusPanel: {
     alignSelf: 'stretch',
-    gap: 8,
   },
   stateTitle: {
-    color: GarageTagTokens.graphite,
+    color: garageTag.graphite,
     fontSize: 18,
     fontWeight: '900',
     letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 8,
   },
   stateText: {
-    color: GarageTagTokens.mutedText,
+    color: garageTag.steel,
     fontSize: 15,
     lineHeight: 22,
+    fontWeight: '600',
   },
   stateHint: {
-    color: GarageTagTokens.mutedText,
+    color: garageTag.steel,
     fontSize: 13,
-    marginBottom: 8,
+    fontWeight: '600',
   },
   listWrap: {
     flex: 1,
     gap: 10,
   },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
+  list: {
     gap: 10,
-    paddingBottom: 8,
+    flexGrow: 1,
   },
   row: {
+    minHeight: garageTag.touchMin,
+  },
+  rowCurrent: {
+    borderColor: garageTag.mustard,
+    borderWidth: 4,
+  },
+  rowInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: GarageTagTokens.minTouch,
   },
   rankNumber: {
     width: 36,
-    color: GarageTagTokens.graphite,
+    color: garageTag.graphite,
     fontSize: 28,
     fontWeight: '900',
     textAlign: 'center',
     marginRight: 4,
   },
+  robotHead: {
+    width: 44,
+    height: 44,
+    marginRight: 10,
+  },
   rowIdentity: {
     flex: 1,
     minWidth: 0,
+    gap: 4,
   },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+  nameplate: {
+    alignSelf: 'stretch',
   },
   sourceLabel: {
-    marginTop: 2,
-    color: GarageTagTokens.mutedText,
+    color: garageTag.steel,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
-  errorBanner: {
+  refreshError: {
     gap: 8,
-    backgroundColor: GarageTagTokens.errorBg,
   },
   refreshHint: {
-    color: GarageTagTokens.mutedText,
+    color: garageTag.steel,
     fontSize: 13,
     fontWeight: '600',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingTop: 4,
   },
 });
