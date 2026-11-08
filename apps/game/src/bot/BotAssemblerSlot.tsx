@@ -1,10 +1,12 @@
 import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { KitArtPlaceholder } from '../garage-tag';
+import { View, StyleSheet } from 'react-native';
+import { BotAssembler, type BotFacing, type MotionPose } from '../assembler';
 
 /**
- * Shared props shape from shared-ui-rig-contract (F7 owns exact module).
- * Shell consumers use this slot — do not fork a second renderer here.
+ * Shared mount for F7 `BotAssembler` (`apps/game/src/assembler`, kit-v002 pin).
+ * Shell/F8/fight import this slot or the assembler barrel — never fork a
+ * second renderer. Do not mix Workshop Frame kit-v001 coordinates/assets.
  */
 export type BotAssemblerSlotProps = {
   loadout: {
@@ -12,11 +14,12 @@ export type BotAssemblerSlotProps = {
     weaponId: string;
     chassisId?: string;
   };
-  facing?: 'left' | 'right';
+  facing?: BotFacing;
   paintId?: string;
   weaponId?: string;
-  motionPose?: string;
+  motionPose?: MotionPose | string;
   reducedMotion?: boolean;
+  /** Prefer false/omit so kit-v002 renders; true = geometric PLACEHOLDER only. */
   placeholder?: boolean;
   style?: StyleProp<ViewStyle>;
   stagger?: 'near-low' | 'far-high' | 'none';
@@ -24,22 +27,40 @@ export type BotAssemblerSlotProps = {
   testID?: string;
 };
 
-/**
- * Mount point for F7 `BotAssembler`. Until that module lands, show a labelled
- * PLACEHOLDER — never invent production Workshop Frame robots in this ticket.
- */
 export function BotAssemblerSlot(props: BotAssemblerSlotProps): React.ReactElement {
   const paint = props.paintId ?? props.loadout.paintId;
   const weapon = props.weaponId ?? props.loadout.weaponId;
-  // F7 will export BotAssembler from src/bot/BotAssembler — import when present.
-  // Soft optional require avoided (Metro); placeholder is the overnight contract.
+  const motionPose: MotionPose =
+    props.motionPose === 'idle' ||
+    props.motionPose === 'attack' ||
+    props.motionPose === 'dodge' ||
+    props.motionPose === 'hit' ||
+    props.motionPose === 'defeat'
+      ? props.motionPose
+      : 'idle';
+
   return (
-    <KitArtPlaceholder
-      label={props.label ?? 'Workshop Frame bot'}
-      detail={`PLACEHOLDER · paint=${paint} · weapon=${weapon} · F7 BotAssembler`}
-      stagger={props.stagger ?? 'none'}
-      style={props.style}
-      testID={props.testID ?? 'bot-assembler-slot'}
-    />
+    <View style={[styles.wrap, props.style]} testID={props.testID ?? 'bot-assembler-slot'}>
+      <BotAssembler
+        loadout={{
+          chassis: props.loadout.chassisId ?? 'chassis-basic',
+          paint,
+          weapon,
+        }}
+        facing={props.facing ?? 'right'}
+        paintId={paint}
+        weaponId={weapon}
+        motionPose={motionPose}
+        {...(props.reducedMotion !== undefined ? { reducedMotion: props.reducedMotion } : {})}
+        placeholder={props.placeholder === true}
+        testID={props.testID ? `${props.testID}-assembler` : 'bot-assembler'}
+      />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrap: {
+    width: '100%',
+  },
+});

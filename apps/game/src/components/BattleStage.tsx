@@ -1,6 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import type { ReplayStage, StageNode } from '../BattleReplayController';
+import { BotAssembler } from '../assembler';
+import type { AssemblerLoadoutInput } from '../assembler';
+
+/** PLACEHOLDER fight loadouts — same BotAssembler as stable/preview. */
+const ATTACKER_LOADOUT: AssemblerLoadoutInput = {
+  chassis: 'chassis-basic',
+  paint: 'paint-crimson',
+  weapon: 'weapon-sword',
+};
+const DEFENDER_LOADOUT: AssemblerLoadoutInput = {
+  chassis: 'chassis-basic',
+  paint: 'paint-cobalt',
+  weapon: 'weapon-axe',
+};
 
 interface BattleStageProps {
   onStageReady: (stage: ReplayStage) => void;
@@ -156,6 +170,13 @@ export const BattleStage: React.FC<BattleStageProps> = ({ onStageReady }) => {
           <View style={styles.characterBox}>
             <Text style={styles.characterName}>Attacker</Text>
             <Text style={styles.characterId}>{attackerNode.name}</Text>
+            <BotAssembler
+              loadout={ATTACKER_LOADOUT}
+              facing="right"
+              size={160}
+              placeholder={false}
+              testID="battle-attacker-assembler"
+            />
           </View>
           <View style={styles.hpBarContainer}>
             <Animated.View style={[styles.hpBar, styles.hpBarAttacker, { width: attackerWidth }]} />
@@ -166,6 +187,13 @@ export const BattleStage: React.FC<BattleStageProps> = ({ onStageReady }) => {
           <View style={styles.characterBox}>
             <Text style={styles.characterName}>Defender</Text>
             <Text style={styles.characterId}>{defenderNode.name}</Text>
+            <BotAssembler
+              loadout={DEFENDER_LOADOUT}
+              facing="left"
+              size={150}
+              placeholder={false}
+              testID="battle-defender-assembler"
+            />
           </View>
           <View style={styles.hpBarContainer}>
             <Animated.View style={[styles.hpBar, styles.hpBarDefender, { width: defenderWidth }]} />
