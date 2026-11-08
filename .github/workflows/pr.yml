@@ -36,10 +36,19 @@ jobs:
       - name: Lint, typecheck, unit/property/golden tests (turbo)
         run: pnpm exec turbo run lint typecheck test
 
-      - name: Backend coverage gate (domain + contracts)
+      - name: Backend coverage gate (domain + contracts + combat stack)
         run: |
           pnpm --filter @botore/domain exec vitest run --coverage
           pnpm --filter @botore/contracts exec vitest run --coverage
+          pnpm --filter @botore/combat-engine exec vitest run --coverage
+          pnpm --filter @botore/replay exec vitest run --coverage
+          pnpm --filter @botore/rng exec vitest run --coverage
+
+      - name: Vendor Edge combat packages + runtime golden check
+        run: |
+          pnpm exec turbo run build --filter=@botore/rng --filter=@botore/replay --filter=@botore/combat-engine
+          node scripts/vendor-edge-combat.mjs
+          node scripts/edge-combat-runtime-check.mjs
 
       - name: Architecture boundary check
         run: node scripts/check-boundaries.mjs
@@ -90,9 +99,10 @@ jobs:
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
             -v ON_ERROR_STOP=1 -q -f supabase/tests/run.sql
 
-      - name: Backend smoke (health + catalogue + admin views)
+      - name: Backend smoke (health + catalogue + fight context + admin views)
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          SUPABASE_URL: http://127.0.0.1:54321
         run: node scripts/backend-smoke.mjs
 
       - name: API integration tests

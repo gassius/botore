@@ -25,6 +25,11 @@ Bots-as-data tables (F1): `parts_catalogue`, `inventory_ledger`,
 checks. Admin-oriented read views (`admin_*`) and `backend_health_snapshot()`
 are ready for a future dashboard (B2) — not built here.
 
+Edge combat (F2): `supabase/functions/combat-v1` runs deterministic
+`combat-v1` with a server CSPRNG seed after `prepare_fight_context()`
+validates auth, ownership, eligibility, and allowance availability. Output is
+a full semantic replay (`status: computed`); atomic persist is F3.
+
 This checkout still contains leftover Fastify `apps/api` and `apps/worker`.
 Do not extend them. Target path: client → Edge Function → Postgres function.
 

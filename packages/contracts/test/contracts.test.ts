@@ -3,6 +3,7 @@ import { Value } from '@sinclair/typebox/value';
 import {
   CreateBattleRequestSchema,
   BattleStartedResponseSchema,
+  FightComputeResponseSchema,
   OpponentSchema,
   opponentToFighterSnapshot,
   BotLoadoutSchema,
@@ -31,6 +32,39 @@ describe('API contracts', () => {
     expect(Value.Check(BattleStartedResponseSchema, ok)).toBe(true);
     expect(Value.Check(BattleStartedResponseSchema, { ...ok, xpAwarded: 3 })).toBe(false);
     expect(Value.Check(BattleStartedResponseSchema, { ...ok, battleId: 'nope' })).toBe(false);
+  });
+
+  it('validates F2 fight compute response (full replay, pending persistence)', () => {
+    const ok = {
+      battleId: '0b3f7c9e-1111-4222-8333-944455566677',
+      status: 'computed',
+      rulesVersion: 'combat-v1',
+      seed: 'ab'.repeat(16),
+      outcome: { winner: 'player-hero', reason: 'defeat' },
+      replay: {
+        replayVersion: 1,
+        rulesVersion: 'combat-v1',
+        battleId: '0b3f7c9e-1111-4222-8333-944455566677',
+        seed: 'ab'.repeat(16),
+        inputHash: 'a'.repeat(64),
+        fighters: [{}, {}],
+        events: [{ type: 'battle_started' }],
+        outcome: { winner: 'player-hero', loser: 'opp-sir-bot', reason: 'defeat' },
+        checksum: 'b'.repeat(64),
+      },
+      loadoutVersionIds: {
+        attacker: '0b3f7c9e-1111-4222-8333-944455566677',
+        defender: '0b3f7c9e-2222-4333-8444-955566677788',
+      },
+      atlasVersions: { attacker: 'v1', defender: 'v1' },
+      allowancesRemaining: 2,
+      utcDay: '2026-11-08',
+      persistence: 'pending_f3',
+      service: 'combat-v1',
+    };
+    expect(Value.Check(FightComputeResponseSchema, ok)).toBe(true);
+    expect(Value.Check(FightComputeResponseSchema, { ...ok, status: 'completed' })).toBe(false);
+    expect(Value.Check(FightComputeResponseSchema, { ...ok, persistence: 'done' })).toBe(false);
   });
 
   it('opponent schema rejects negative stats', () => {

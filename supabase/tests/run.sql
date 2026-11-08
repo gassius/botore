@@ -369,12 +369,57 @@ begin
       (v_health->'checks'->'storage'->>'atlas_bucket')::boolean,
       'health atlas bucket'
     );
+    perform tests.assert(
+      (v_health->'checks'->'fight'->>'edge_function') = 'combat-v1',
+      'health fight edge_function'
+    );
+    perform tests.assert(
+      (v_health->'checks'->'fight'->>'ready_as_opponent')::integer >= 3,
+      'health ready opponents'
+    );
 
     select count(*) into v_count from public.admin_catalogue_summary;
     perform tests.assert(v_count >= 3, 'admin_catalogue_summary missing slots');
 
     select count(*) into v_count from public.admin_loadout_overview;
     perform tests.assert(v_count >= 4, 'admin_loadout_overview missing characters');
+
+    select count(*) into v_count from public.admin_fight_readiness
+     where readiness = 'ready_as_opponent';
+    perform tests.assert(v_count = 3, 'admin_fight_readiness opponents');
     raise notice 'TEST-OK backend health snapshot and admin views';
+  end;
+
+  -- F2 prepare_fight_context ------------------------------------------------
+  -- Note: earlier save_bot_loadout happy-path left player on paint-cobalt + axe.
+  declare
+    v_ctx jsonb;
+    v_weapon text;
+  begin
+    select loadout->>'weapon' into v_weapon
+      from public.current_bot_loadouts where character_id = 'player-hero';
+
+    v_ctx := public.prepare_fight_context(v_account, 'opp-sir-bot');
+    perform tests.assert((v_ctx->>'ok')::boolean, 'fight context should be ok');
+    perform tests.assert(v_ctx->'attacker'->>'characterId' = 'player-hero', 'attacker id');
+    perform tests.assert(v_ctx->'defender'->>'characterId' = 'opp-sir-bot', 'defender id');
+    perform tests.assert(
+      v_ctx->'attacker'->>'weaponKind' = (
+        select weapon_kind from public.parts_catalogue where part_id = v_weapon
+      ),
+      'attacker weapon from loadout'
+    );
+    perform tests.assert(
+      (v_ctx->>'allowancesRemaining')::integer between 1 and 3,
+      'allowances remaining'
+    );
+
+    v_ctx := public.prepare_fight_context(v_account, 'no-such-opp');
+    perform tests.assert(not (v_ctx->>'ok')::boolean, 'unknown opponent should fail');
+    perform tests.assert(v_ctx->>'code' = 'unknown_opponent', 'unknown opponent code');
+
+    v_ctx := public.prepare_fight_context(v_account, 'player-hero');
+    perform tests.assert(not (v_ctx->>'ok')::boolean, 'self fight should fail');
+    raise notice 'TEST-OK prepare_fight_context eligibility';
   end;
 end $$;

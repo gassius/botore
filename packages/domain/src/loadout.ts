@@ -211,3 +211,45 @@ export function loadoutWeaponFromCatalogue(
   }
   return { kind: part.weaponKind, power: part.weaponPower };
 }
+
+/** Combat build stats used with a confirmed loadout weapon (F2 snapshots). */
+export interface CombatBuildStats {
+  readonly characterId: string;
+  readonly displayName: string;
+  readonly hp: number;
+  readonly strength: number;
+  readonly agility: number;
+  readonly speed: number;
+}
+
+/**
+ * Assemble an immutable combat-v1 fighter snapshot from build stats + loadout
+ * weapon. Pure helper mirrored by prepare_fight_context SQL for the Edge path.
+ */
+export function fighterSnapshotFromBuildAndLoadout(
+  build: CombatBuildStats,
+  loadout: BotLoadout,
+  catalogue: ReadonlyMap<string, CataloguePart>,
+): {
+  characterId: string;
+  displayName: string;
+  hp: number;
+  strength: number;
+  agility: number;
+  speed: number;
+  weaponKind: LoadoutWeaponKind;
+  weaponPower: number;
+} | null {
+  const weapon = loadoutWeaponFromCatalogue(loadout, catalogue);
+  if (!weapon) return null;
+  return {
+    characterId: build.characterId,
+    displayName: build.displayName,
+    hp: build.hp,
+    strength: build.strength,
+    agility: build.agility,
+    speed: build.speed,
+    weaponKind: weapon.kind,
+    weaponPower: weapon.power,
+  };
+}

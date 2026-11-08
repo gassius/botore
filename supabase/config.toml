@@ -42,3 +42,7 @@ enable_confirmations = false
 
 [functions.health]
 verify_jwt = false
+
+[functions.combat-v1]
+# JWT verified inside the function (Bearer required); gateway check also on.
+verify_jwt = true

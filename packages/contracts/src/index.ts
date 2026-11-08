@@ -74,6 +74,45 @@ export const ReplayResponseSchema = Type.Object({
 });
 export type ReplayResponse = Static<typeof ReplayResponseSchema>;
 
+/**
+ * F2 Edge Function response: full semantic replay computed server-side.
+ * Persistence / XP remain F3 (`persistence: pending_f3`).
+ */
+export const FightComputeResponseSchema = Type.Object({
+  battleId: UuidSchema,
+  status: Type.Literal('computed'),
+  rulesVersion: Type.Literal('combat-v1'),
+  seed: Type.String({ pattern: '^[0-9a-f]{16,128}$' }),
+  outcome: Type.Object({
+    winner: Type.Union([IdSchema, Type.Null()]),
+    reason: Type.Union([Type.Literal('defeat'), Type.Literal('action_limit_tiebreak')]),
+  }),
+  replay: Type.Object({
+    replayVersion: Type.Integer(),
+    rulesVersion: Type.String(),
+    battleId: Type.String(),
+    seed: Type.String(),
+    inputHash: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+    fighters: Type.Array(Type.Unknown(), { minItems: 2, maxItems: 2 }),
+    events: Type.Array(Type.Unknown(), { minItems: 1 }),
+    outcome: Type.Unknown(),
+    checksum: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+  }),
+  loadoutVersionIds: Type.Object({
+    attacker: UuidSchema,
+    defender: UuidSchema,
+  }),
+  atlasVersions: Type.Object({
+    attacker: Type.String({ pattern: '^v[0-9]+$' }),
+    defender: Type.String({ pattern: '^v[0-9]+$' }),
+  }),
+  allowancesRemaining: Type.Integer({ minimum: 0, maximum: 3 }),
+  utcDay: Type.String({ minLength: 8, maxLength: 32 }),
+  persistence: Type.Literal('pending_f3'),
+  service: Type.Literal('combat-v1'),
+});
+export type FightComputeResponse = Static<typeof FightComputeResponseSchema>;
+
 // --- Bots-as-data loadouts -------------------------------------------------
 
 export const PartSlotKindSchema = Type.Union([
