@@ -62,11 +62,14 @@ insert into storage.buckets (id, name, public)
 values ('atlas', 'atlas', false)
 on conflict (id) do nothing;
 
--- Confirmed loadouts via the server validation function (service path).
+-- Confirmed loadouts via the server validation function (service_role JWT).
 -- Player: crimson + sword. Opponents: contrasting paints / weapons matching
 -- existing combat-v1 seed builds.
 do $$
 begin
+  -- save_bot_loadout requires auth.role() = 'service_role' for system path.
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+
   if not exists (
     select 1 from public.current_bot_loadouts where character_id = 'player-hero'
   ) then

@@ -87,6 +87,8 @@ if (adminRows < 4) fail(`admin_loadout_overview expected >= 4 rows, got ${adminR
 console.log('SMOKE-OK admin reporting views');
 
 // Optional: hit Edge Function if the API gateway is up.
+// Network failures and HTTP 404 (function not served) may skip; any other
+// non-2xx (including 503 degraded/error) fails the smoke run.
 try {
   const headers = { apikey: ANON_KEY || 'smoke' };
   if (ANON_KEY) headers.Authorization = `Bearer ${ANON_KEY}`;
@@ -94,14 +96,17 @@ try {
     headers,
     signal: AbortSignal.timeout(5000),
   });
-  if (res.ok) {
+  if (res.status === 404) {
+    console.log('SMOKE-SKIP edge health HTTP 404 (serve functions locally to enable)');
+  } else if (!res.ok) {
+    fail(`edge health HTTP ${res.status}`);
+  } else {
     const body = await res.json();
     if (body.status !== 'ok') fail(`edge health status=${body.status}`);
     console.log('SMOKE-OK edge function /functions/v1/health');
-  } else {
-    console.log(`SMOKE-SKIP edge health HTTP ${res.status} (serve functions locally to enable)`);
   }
 } catch (err) {
+  // fetch network / timeout only — HTTP error statuses are handled above
   console.log(`SMOKE-SKIP edge health (${err instanceof Error ? err.message : err})`);
 }
 

@@ -240,6 +240,10 @@ begin
     v_prev uuid;
     v_loadout jsonb;
   begin
+    -- System path requires service_role JWT (no anonymous bypass).
+    perform set_config('request.jwt.claim.role', 'service_role', true);
+    perform set_config('request.jwt.claim.sub', '', true);
+
     select loadout_version_id into v_prev
       from public.current_bot_loadouts where character_id = 'player-hero';
 
@@ -277,6 +281,21 @@ begin
     end;
     raise notice 'TEST-OK save_bot_loadout rejects slot mismatch';
 
+    begin
+      perform public.save_bot_loadout(
+        'player-hero',
+        '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword","soundTags":["ok",1]}'::jsonb,
+        'v1'
+      );
+      raise exception 'SOUNDTAG FAIL: non-string soundTags element accepted';
+    exception
+      when others then
+        if sqlerrm like 'invalid_loadout: soundTags elements must be strings%' then null;
+        else raise;
+        end if;
+    end;
+    raise notice 'TEST-OK save_bot_loadout rejects non-string soundTags';
+
     -- Authenticated non-owner cannot save (simulate JWT sub for other user)
     perform set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
     perform set_config('request.jwt.claim.role', 'authenticated', true);
@@ -292,8 +311,43 @@ begin
       when others then
         if sqlerrm like 'forbidden%' then null; else raise; end if;
     end;
-    perform set_config('request.jwt.claim.sub', '', true);
     raise notice 'TEST-OK save_bot_loadout enforces ownership for JWT callers';
+
+    -- anon must not execute save_bot_loadout (privilege revoke)
+    set local role anon;
+    begin
+      perform public.save_bot_loadout(
+        'player-hero',
+        '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword"}'::jsonb,
+        'v1'
+      );
+      raise exception 'ANON FAIL: save_bot_loadout allowed for anon';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+    raise notice 'TEST-OK anon cannot execute save_bot_loadout';
+
+    -- authenticated must not execute internal _assert_part_slot
+    set local role authenticated;
+    begin
+      perform public._assert_part_slot(
+        'chassis-basic', 'chassis', v_account, false
+      );
+      raise exception 'INTERNAL FAIL: _assert_part_slot executable by authenticated';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+    raise notice 'TEST-OK authenticated cannot execute _assert_part_slot';
+
+    -- clear JWT leftovers for later asserts
+    perform set_config('request.jwt.claim.sub', '', true);
+    perform set_config('request.jwt.claim.role', '', true);
 
     -- Opponent loadout is readable via current view; immutable history kept
     select count(*) into v_count from public.bot_loadout_versions

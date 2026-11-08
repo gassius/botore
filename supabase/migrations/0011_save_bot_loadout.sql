@@ -1,10 +1,11 @@
 -- 0011: server-side ownership + slot compatibility validation
 --
 -- SECURITY DEFINER so authenticated clients can confirm a loadout without
--- direct INSERT grants on bot_loadout_versions / inventory tables. The
--- function enforces ownership for player characters; opponents are system-
--- owned and may only be updated by roles that bypass the auth.uid() check
--- (service role / postgres — used by seeds and Edge Functions).
+-- direct INSERT grants on bot_loadout_versions / inventory tables.
+-- Authz is explicit via auth.role():
+--   - service_role → system path (seeds / Edge Functions)
+--   - authenticated → must match auth.uid() to the character's account
+--   - anything else (including anon / bare postgres with no JWT) → 42501
 
 create or replace function public.owned_part_quantity(
     p_account_id uuid,
@@ -83,6 +84,7 @@ as $$
 declare
     v_character public.characters%rowtype;
     v_caller uuid := auth.uid();
+    v_jwt_role text := coalesce(auth.role(), '');
     v_chassis text;
     v_paint text;
     v_weapon text;
@@ -95,6 +97,7 @@ declare
     v_required text[] := array['chassis', 'paint', 'weapon'];
     v_key text;
     v_normalized jsonb;
+    v_tag_elem jsonb;
 begin
     if p_loadout is null or jsonb_typeof(p_loadout) <> 'object' then
         raise exception 'invalid_loadout: loadout must be a JSON object'
@@ -115,15 +118,19 @@ begin
             using errcode = 'P0002';
     end if;
 
-    -- Authenticated clients may only save their own player character.
-    -- Service role / migrations (auth.uid() null) may seed any character,
-    -- including system opponents.
-    if v_caller is not null then
-        if v_character.is_opponent
+    -- Explicit role gate: never treat "no JWT" as a privileged bypass.
+    if v_jwt_role = 'service_role' then
+        null; -- system path: seeds / Edge Functions may confirm any character
+    elsif v_jwt_role = 'authenticated' then
+        if v_caller is null
+           or v_character.is_opponent
            or v_character.account_id is distinct from v_caller then
             raise exception 'forbidden: loadout save requires character ownership'
                 using errcode = '42501';
         end if;
+    else
+        raise exception 'forbidden: save_bot_loadout requires authenticated or service_role'
+            using errcode = '42501';
     end if;
 
     for v_key in select unnest(v_required) loop
@@ -181,6 +188,13 @@ begin
             raise exception 'invalid_loadout: soundTags must be an array'
                 using errcode = '22023';
         end if;
+        for v_tag_elem in select value from jsonb_array_elements(p_loadout -> 'soundTags')
+        loop
+            if jsonb_typeof(v_tag_elem) <> 'string' then
+                raise exception 'invalid_loadout: soundTags elements must be strings'
+                    using errcode = '22023';
+            end if;
+        end loop;
         v_sound_tags := p_loadout -> 'soundTags';
     else
         select coalesce(jsonb_agg(tag order by tag), '[]'::jsonb)
@@ -223,9 +237,11 @@ end;
 $$;
 
 revoke all on function public._assert_part_slot(text, text, uuid, boolean) from public;
+revoke all on function public._assert_part_slot(text, text, uuid, boolean) from anon, authenticated;
 revoke all on function public.save_bot_loadout(text, jsonb, text) from public;
+revoke all on function public.save_bot_loadout(text, jsonb, text) from anon;
 grant execute on function public.save_bot_loadout(text, jsonb, text) to authenticated, service_role;
 grant execute on function public.owned_part_quantity(uuid, text) to authenticated, service_role, anon;
 
 comment on function public.save_bot_loadout(text, jsonb, text) is
-  'Validates ownership + slot compatibility and appends an immutable loadout version.';
+  'Validates ownership + slot compatibility and appends an immutable loadout version. service_role or owning authenticated only.';
