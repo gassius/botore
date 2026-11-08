@@ -27,6 +27,7 @@
       "output": "single",
       "bundler": "metro",
       "favicon": "./assets/ui-kit-v0.1/brand/robot-head-small.png"
-    }
+    },
+    "plugins": ["expo-asset"]
   }
 }

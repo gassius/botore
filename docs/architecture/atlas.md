@@ -53,3 +53,13 @@ Local/CI after bootstrap:
 Bytes: `supabase/seed/atlas/v1/` (valid silent AAC `.m4a`, 1×1 PNG). No real art generation; Game Art / Audio directors own finals. Export/cache budgets remain provisional (`budgets_final = false`).
 
 `backend_health_snapshot().checks.storage.proof_pack_ok` evaluates the seeded **`v1`** proof pack (`proof_version`), not chronological `latest_version`. Later publishes (race fixtures, ops drafts) must not flip the gate.
+
+## Client loader (F6)
+
+Expo on-demand download + device cache for catalogue / arena / FX packs, with
+the small base pack shipped in `apps/game/assets/atlas/base/`. See
+`docs/architecture/pack-loader.md`.
+
+Workshop Frame visible build pins **kit-v002 only** (do not mix v001
+coords/assets). Packing recipe maps kit-relative files onto F5
+`parts/<partId>/…` paths; F7 adapter ID aliases stay client-side.
