@@ -1,6 +1,6 @@
 import React from 'react';
-import { BattleReplayScreen } from './src/screens/BattleReplayScreen';
+import { FirstRunShell } from './src/first-run/FirstRunShell';
 
 export default function App(): React.ReactElement {
-  return <BattleReplayScreen />;
+  return <FirstRunShell />;
 }

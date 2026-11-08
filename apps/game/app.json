@@ -5,17 +5,28 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/ui-kit-v0.1/brand/app-icon.png",
+    "splash": {
+      "image": "./assets/ui-kit-v0.1/brand/launch-static.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#302D27"
+    },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.botore.game"
     },
     "android": {
-      "package": "com.botore.game"
+      "package": "com.botore.game",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/ui-kit-v0.1/brand/app-icon.png",
+        "backgroundColor": "#F4B820"
+      }
     },
     "web": {
       "output": "single",
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/ui-kit-v0.1/brand/robot-head-small.png"
     }
   }
 }
