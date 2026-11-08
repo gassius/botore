@@ -6,3 +6,5 @@ coverage
 pnpm-lock.yaml
 supabase/migrations
 apps/game/assets
+# Generated Edge combat vendor bundle (node scripts/vendor-edge-combat.mjs)
+supabase/functions/_shared/botore/**/*.js

@@ -3,6 +3,7 @@ import {
   MAX_DECALS,
   validateBotLoadout,
   loadoutWeaponFromCatalogue,
+  fighterSnapshotFromBuildAndLoadout,
   type CataloguePart,
   type BotLoadout,
 } from '../src/index.js';
@@ -277,6 +278,43 @@ describe('loadoutWeaponFromCatalogue', () => {
     expect(loadoutWeaponFromCatalogue(loadout, catalogue)).toEqual({
       kind: 'axe',
       power: 5,
+    });
+  });
+});
+
+describe('fighterSnapshotFromBuildAndLoadout', () => {
+  it('assembles combat-v1 snapshot from build stats + loadout weapon', () => {
+    const loadout: BotLoadout = {
+      chassis: 'chassis-basic',
+      paint: 'paint-crimson',
+      weapon: 'weapon-sword',
+      shield: null,
+      drone: null,
+      decals: [],
+      soundTags: ['chassis.light', 'weapon.sword'],
+    };
+    expect(
+      fighterSnapshotFromBuildAndLoadout(
+        {
+          characterId: 'player-hero',
+          displayName: 'Hero',
+          hp: 30,
+          strength: 5,
+          agility: 5,
+          speed: 6,
+        },
+        loadout,
+        catalogue,
+      ),
+    ).toEqual({
+      characterId: 'player-hero',
+      displayName: 'Hero',
+      hp: 30,
+      strength: 5,
+      agility: 5,
+      speed: 6,
+      weaponKind: 'sword',
+      weaponPower: 3,
     });
   });
 });

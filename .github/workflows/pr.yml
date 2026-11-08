@@ -36,10 +36,26 @@ jobs:
       - name: Lint, typecheck, unit/property/golden tests (turbo)
         run: pnpm exec turbo run lint typecheck test
 
-      - name: Backend coverage gate (domain + contracts)
+      - name: Backend coverage gate (domain + contracts + combat stack)
         run: |
           pnpm --filter @botore/domain exec vitest run --coverage
           pnpm --filter @botore/contracts exec vitest run --coverage
+          pnpm --filter @botore/combat-engine exec vitest run --coverage
+          pnpm --filter @botore/replay exec vitest run --coverage
+          pnpm --filter @botore/rng exec vitest run --coverage
+
+      - name: Setup Deno (Edge Function runtime gate)
+        uses: denoland/setup-deno@v2
+        with:
+          # Lockfile v5 requires Deno >= 2.3; keep in sync with local `deno --version`.
+          deno-version: v2.9.8
+
+      - name: Vendor Edge combat packages + Deno handler golden gate
+        run: |
+          pnpm exec turbo run build --filter=@botore/rng --filter=@botore/replay --filter=@botore/combat-engine
+          node scripts/vendor-edge-combat.mjs
+          node scripts/edge-combat-runtime-check.mjs
+          node --test scripts/smoke-combat-assert.test.mjs
 
       - name: Architecture boundary check
         run: node scripts/check-boundaries.mjs
@@ -90,10 +106,16 @@ jobs:
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
             -v ON_ERROR_STOP=1 -q -f supabase/tests/run.sql
 
-      - name: Backend smoke (health + catalogue + admin views)
+      - name: Backend smoke (health + catalogue + fight context + admin views)
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-        run: node scripts/backend-smoke.mjs
+          SUPABASE_URL: http://127.0.0.1:54321
+        run: |
+          # Export local API keys so combat smoke can Auth-login the seed fixture.
+          eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
+          export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
+          node scripts/backend-smoke.mjs
 
       - name: API integration tests
         env:
