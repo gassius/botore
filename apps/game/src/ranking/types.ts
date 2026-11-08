@@ -20,12 +20,7 @@ export type RankingRow = {
 };
 
 export type RankingPhase =
-  | 'idle'
-  | 'loading'
-  | 'populated'
-  | 'empty'
-  | 'error'
-  | 'unavailable_contract';
+  'idle' | 'loading' | 'populated' | 'empty' | 'error' | 'unavailable_contract';
 
 export type RankingSessionState = {
   phase: RankingPhase;

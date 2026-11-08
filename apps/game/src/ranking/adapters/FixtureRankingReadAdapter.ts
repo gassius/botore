@@ -1,8 +1,5 @@
 import type { RankingReadPort } from '../RankingReadPort';
-import {
-  DEV_EMPTY_RANKING_ROWS,
-  DEV_POPULATED_RANKING_ROWS,
-} from '../fixtures/devRankingFixtures';
+import { DEV_EMPTY_RANKING_ROWS, DEV_POPULATED_RANKING_ROWS } from '../fixtures/devRankingFixtures';
 import type { RankingRow } from '../types';
 
 export type FixtureRankingScenario = 'populated' | 'empty' | 'error';

@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { FixtureRankingReadAdapter } from '../ranking/adapters/FixtureRankingReadAdapter';
 import type { RankingReadPort } from '../ranking/RankingReadPort';
 import {
@@ -69,16 +63,8 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
   ) : undefined;
 
   return (
-    <ScreenChrome
-      testID="slot-ranking"
-      scroll={false}
-      {...(footer ? { footer } : {})}
-    >
-      <ScreenHeader
-        title="Ranking"
-        {...(onBack ? { onBack } : {})}
-        testID="ranking-header"
-      />
+    <ScreenChrome testID="slot-ranking" scroll={false} {...(footer ? { footer } : {})}>
+      <ScreenHeader title="Ranking" {...(onBack ? { onBack } : {})} testID="ranking-header" />
       <DevFixtureBanner />
       <RankingBody session={session} onRetry={runLoad} />
       <DomainNote text="Domain: RankingReadPort.list() + DEV fixtures. Live ranking blocked until verified backend contract." />
@@ -124,14 +110,11 @@ function RankingBody({ session, onRetry }: RankingBodyProps): React.ReactElement
         <StatusErrorBanner
           title="Ranking unavailable"
           detail={
-            session.errorMessage ??
-            'Authoritative ranking read contract is not available yet.'
+            session.errorMessage ?? 'Authoritative ranking read contract is not available yet.'
           }
           testID="ranking-unavailable"
         />
-        {session.rows.length > 0 ? (
-          <RankingList rows={session.rows} refreshing={false} />
-        ) : null}
+        {session.rows.length > 0 ? <RankingList rows={session.rows} refreshing={false} /> : null}
       </View>
     );
   }
@@ -144,11 +127,7 @@ function RankingBody({ session, onRetry }: RankingBodyProps): React.ReactElement
           detail={session.errorMessage ?? 'Unknown error'}
           testID="ranking-error"
         />
-        <PrimaryButton
-          label="Retry"
-          onPress={onRetry}
-          testID="ranking-retry"
-        />
+        <PrimaryButton label="Retry" onPress={onRetry} testID="ranking-retry" />
       </View>
     );
   }
@@ -187,11 +166,7 @@ function RankingBody({ session, onRetry }: RankingBodyProps): React.ReactElement
       ) : null}
       <RankingList rows={session.rows} refreshing={session.refreshing} />
       {!session.errorMessage ? (
-        <SecondaryButton
-          label="Refresh"
-          onPress={onRetry}
-          testID="ranking-refresh"
-        />
+        <SecondaryButton label="Refresh" onPress={onRetry} testID="ranking-refresh" />
       ) : null}
     </View>
   );
@@ -224,10 +199,7 @@ function RankingRowView({ row }: { row: RankingRow }): React.ReactElement {
       style={[styles.row, row.isCurrentBot ? styles.rowCurrent : null]}
       testID={`ranking-row-${row.botId}`}
     >
-      <View
-        style={styles.rowInner}
-        accessibilityLabel={rankingRowAccessibilityLabel(row)}
-      >
+      <View style={styles.rowInner} accessibilityLabel={rankingRowAccessibilityLabel(row)}>
         <Text style={styles.rankNumber} accessibilityLabel={`Rank ${row.rank}`} allowFontScaling>
           {row.rank}
         </Text>

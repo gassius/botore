@@ -1,7 +1,4 @@
-import {
-  RankingContractUnavailableError,
-  type RankingReadPort,
-} from './RankingReadPort';
+import { RankingContractUnavailableError, type RankingReadPort } from './RankingReadPort';
 import type { RankingLoadResult, RankingRow, RankingSessionState } from './types';
 
 export function createInitialRankingSession(): RankingSessionState {
@@ -63,9 +60,7 @@ export function applyRankingLoadResult(
   };
 }
 
-export async function loadRankingFromPort(
-  port: RankingReadPort,
-): Promise<RankingLoadResult> {
+export async function loadRankingFromPort(port: RankingReadPort): Promise<RankingLoadResult> {
   try {
     const rows = await port.list();
     // Defensive copy; never reorder — preserve backend/fixture order.

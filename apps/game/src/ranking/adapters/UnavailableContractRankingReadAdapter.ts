@@ -1,7 +1,4 @@
-import {
-  RankingContractUnavailableError,
-  type RankingReadPort,
-} from '../RankingReadPort';
+import { RankingContractUnavailableError, type RankingReadPort } from '../RankingReadPort';
 import type { RankingRow } from '../types';
 
 /**

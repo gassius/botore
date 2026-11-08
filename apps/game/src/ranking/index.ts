@@ -1,7 +1,5 @@
 export type { RankingReadPort } from './RankingReadPort';
-export {
-  RankingContractUnavailableError,
-} from './RankingReadPort';
+export { RankingContractUnavailableError } from './RankingReadPort';
 export { FixtureRankingReadAdapter } from './adapters/FixtureRankingReadAdapter';
 export type {
   FixtureRankingReadAdapterOptions,
