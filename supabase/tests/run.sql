@@ -786,5 +786,20 @@ begin
       );
       raise notice 'TEST-OK backend health persistence + admin_recent_battles';
     end;
+
+    -- Restore today's slots so smoke / Edge / Fastify integration still see
+    -- an eligible fighter after this suite intentionally exhausts allowance.
+    update public.fight_allowances
+       set used_at = null
+     where account_id = v_account
+       and utc_day = v_day;
+    perform tests.assert(
+      (
+        select count(*) from public.fight_allowances
+         where account_id = v_account and utc_day = v_day and used_at is null
+      ) = 3,
+      'seed allowances restored for post-test smoke'
+    );
+    raise notice 'TEST-OK fight allowances restored after F3 suite';
   end;
 end $$;
