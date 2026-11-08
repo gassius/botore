@@ -28,7 +28,7 @@ export function PaintSwatch({
   const a11y = [
     label,
     selected ? 'selected' : null,
-    disabled ? unavailableLabel ?? 'unavailable' : null,
+    disabled ? (unavailableLabel ?? 'unavailable') : null,
   ]
     .filter(Boolean)
     .join(', ');

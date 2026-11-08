@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  Pressable,
-  Text,
-  StyleSheet,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Pressable, Text, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { garageTag } from './tokens';
 
 export type PrimaryButtonProps = {
@@ -38,7 +32,11 @@ export function PrimaryButton({
       ]}
       testID={testID}
     >
-      <Text style={[styles.label, disabled ? styles.labelDisabled : null]} numberOfLines={2} allowFontScaling>
+      <Text
+        style={[styles.label, disabled ? styles.labelDisabled : null]}
+        numberOfLines={2}
+        allowFontScaling
+      >
         {label}
       </Text>
     </Pressable>

@@ -45,7 +45,12 @@ export function GlyphButton({
       ]}
       testID={testID}
     >
-      <Image source={source} style={styles.glyph} resizeMode="contain" accessibilityIgnoresInvertColors />
+      <Image
+        source={source}
+        style={styles.glyph}
+        resizeMode="contain"
+        accessibilityIgnoresInvertColors
+      />
     </Pressable>
   );
 }

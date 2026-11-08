@@ -44,7 +44,11 @@ export function ReplayAudioControls({
           onPress={onTogglePlay}
           {...(testID ? { testID: `${testID}-play` } : {})}
         />
-        <View style={styles.timeline} accessibilityRole="progressbar" accessibilityValue={{ now: Math.round(clamped * 100), min: 0, max: 100 }}>
+        <View
+          style={styles.timeline}
+          accessibilityRole="progressbar"
+          accessibilityValue={{ now: Math.round(clamped * 100), min: 0, max: 100 }}
+        >
           <View style={styles.track}>
             <View style={[styles.fill, { width: `${clamped * 100}%` }]} />
           </View>

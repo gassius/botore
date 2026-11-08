@@ -51,7 +51,11 @@ export function ReplaySlot(): React.ReactElement {
         <Nameplate name="Bolt" style={styles.plate} />
       </View>
       <View style={styles.arena}>
-        <KitArtPlaceholder label="Arena + bots" detail="PLACEHOLDER — F7/F10 + Game Art" stagger="none" />
+        <KitArtPlaceholder
+          label="Arena + bots"
+          detail="PLACEHOLDER — F7/F10 + Game Art"
+          stagger="none"
+        />
       </View>
       <ReplayAudioControls
         playing={playing}

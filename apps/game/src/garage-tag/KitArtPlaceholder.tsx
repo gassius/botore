@@ -25,7 +25,12 @@ export function KitArtPlaceholder({
 }: KitArtPlaceholderProps): React.ReactElement {
   return (
     <View
-      style={[styles.box, stagger === 'far-high' ? styles.far : null, stagger === 'near-low' ? styles.near : null, style]}
+      style={[
+        styles.box,
+        stagger === 'far-high' ? styles.far : null,
+        stagger === 'near-low' ? styles.near : null,
+        style,
+      ]}
       accessibilityLabel={`${label}. ${detail}`}
       testID={testID}
     >

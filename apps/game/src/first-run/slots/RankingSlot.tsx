@@ -1,11 +1,6 @@
 import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
-import {
-  PrimaryButton,
-  ScreenChrome,
-  ScreenHeader,
-  garageTag,
-} from '../../garage-tag';
+import { PrimaryButton, ScreenChrome, ScreenHeader, garageTag } from '../../garage-tag';
 import { useFirstRun } from '../FirstRunContext';
 import { DomainNote } from './DomainNote';
 
@@ -19,7 +14,13 @@ export function RankingSlot(): React.ReactElement {
   return (
     <ScreenChrome
       testID="slot-ranking"
-      footer={<PrimaryButton label="Back to stable" onPress={() => goTo('Stable')} testID="ranking-back" />}
+      footer={
+        <PrimaryButton
+          label="Back to stable"
+          onPress={() => goTo('Stable')}
+          testID="ranking-back"
+        />
+      }
     >
       <ScreenHeader title="Ranking" />
       <View style={styles.mount}>

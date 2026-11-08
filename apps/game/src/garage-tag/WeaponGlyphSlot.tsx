@@ -31,7 +31,11 @@ export function WeaponGlyphSlot({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected, disabled }}
-      accessibilityLabel={[label, selected ? 'selected' : null, disabled ? reason ?? 'unavailable' : null]
+      accessibilityLabel={[
+        label,
+        selected ? 'selected' : null,
+        disabled ? (reason ?? 'unavailable') : null,
+      ]
         .filter(Boolean)
         .join(', ')}
       disabled={disabled}

@@ -33,7 +33,11 @@ export function ScreenChrome({
   );
 
   return (
-    <SafeAreaView style={[styles.safe, style]} edges={['top', 'left', 'right', 'bottom']} testID={testID}>
+    <SafeAreaView
+      style={[styles.safe, style]}
+      edges={['top', 'left', 'right', 'bottom']}
+      testID={testID}
+    >
       <GaragePanel style={styles.frame} rivets>
         {body}
         {footer ? <View style={styles.footer}>{footer}</View> : null}

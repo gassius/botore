@@ -20,8 +20,16 @@ export function FightResultSlot(): React.ReactElement {
       testID="slot-result"
       footer={
         <>
-          <PrimaryButton label="Back to stable" onPress={() => goTo('Stable')} testID="result-stable" />
-          <SecondaryButton label="Watch again" onPress={() => goTo('Replay')} testID="result-watch" />
+          <PrimaryButton
+            label="Back to stable"
+            onPress={() => goTo('Stable')}
+            testID="result-stable"
+          />
+          <SecondaryButton
+            label="Watch again"
+            onPress={() => goTo('Replay')}
+            testID="result-watch"
+          />
           <SecondaryButton label="Ranking" onPress={goNext} testID="result-ranking" />
         </>
       }

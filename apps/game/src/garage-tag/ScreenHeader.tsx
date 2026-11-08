@@ -11,7 +11,12 @@ export type ScreenHeaderProps = {
   testID?: string;
 };
 
-export function ScreenHeader({ title, onBack, right, testID }: ScreenHeaderProps): React.ReactElement {
+export function ScreenHeader({
+  title,
+  onBack,
+  right,
+  testID,
+}: ScreenHeaderProps): React.ReactElement {
   return (
     <View style={styles.row} testID={testID}>
       {onBack ? (

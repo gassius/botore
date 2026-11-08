@@ -23,7 +23,8 @@ type TabId = 'paint' | 'weapon';
  * F8 owns pending vs confirmed, server save/error/discard domain.
  */
 export function CustomiseSlot(): React.ReactElement {
-  const { goBack, goTo, demoPaintId, demoWeaponId, setDemoPaintId, setDemoWeaponId } = useFirstRun();
+  const { goBack, goTo, demoPaintId, demoWeaponId, setDemoPaintId, setDemoWeaponId } =
+    useFirstRun();
   const [tab, setTab] = useState<TabId>('paint');
   const [showSaveStub, setShowSaveStub] = useState(false);
 
@@ -34,11 +35,7 @@ export function CustomiseSlot(): React.ReactElement {
       testID="slot-customise"
       footer={
         <>
-          <SecondaryButton
-            label="Discard (slot)"
-            onPress={goBack}
-            testID="customise-discard"
-          />
+          <SecondaryButton label="Discard (slot)" onPress={goBack} testID="customise-discard" />
           <PrimaryButton
             label="Save loadout (stub)"
             onPress={() => {

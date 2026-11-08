@@ -25,7 +25,11 @@ export function StableSlot(): React.ReactElement {
       testID="slot-stable"
       footer={
         <>
-          <SecondaryButton label="Customise" onPress={() => goTo('Customise')} testID="stable-customise" />
+          <SecondaryButton
+            label="Customise"
+            onPress={() => goTo('Customise')}
+            testID="stable-customise"
+          />
           <PrimaryButton
             label="Find opponent"
             onPress={() => goTo('Opponents')}
