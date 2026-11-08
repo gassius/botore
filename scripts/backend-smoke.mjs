@@ -89,35 +89,57 @@ async function passwordGrantAccessToken() {
   return null;
 }
 
-/** Repair incomplete seed auth.users / auth.identities so GoTrue password grant works. */
+/**
+ * Repair incomplete seed auth.users / auth.identities so GoTrue password grant works.
+ * Local/CI only — does not change shipped migrations. Avoids Auth Admin API, which
+ * 500s on the minimal seed row ("Database error loading user").
+ */
 function repairAuthFixtureInDb() {
-  // Keep this idempotent and local-only; does not change shipped migrations.
-  psql(`
-    update auth.users
-       set instance_id = coalesce(instance_id, '00000000-0000-0000-0000-000000000000'),
-           aud = coalesce(nullif(aud, ''), 'authenticated'),
-           role = coalesce(nullif(role, ''), 'authenticated'),
-           email = coalesce(email, '${DEV_EMAIL}'),
-           encrypted_password = coalesce(
-             encrypted_password,
-             crypt('${DEV_PASSWORD}', gen_salt('bf'))
-           ),
-           email_confirmed_at = coalesce(email_confirmed_at, now()),
-           raw_app_meta_data = coalesce(
-             raw_app_meta_data,
-             '{"provider":"email","providers":["email"]}'::jsonb
-           ),
-           raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb),
-           updated_at = now()
-     where id = '${DEV_ACCOUNT_ID}'`);
-
-  // Newer GoTrue requires provider_id; older builds ignore unknown columns via DO block.
   psql(`
     do $$
+    declare
+      uid uuid := '${DEV_ACCOUNT_ID}'::uuid;
     begin
+      -- Force GoTrue-compatible columns (NULLs in token fields break email lookup).
+      update auth.users
+         set instance_id = '00000000-0000-0000-0000-000000000000',
+             aud = 'authenticated',
+             role = 'authenticated',
+             email = '${DEV_EMAIL}',
+             encrypted_password = crypt('${DEV_PASSWORD}', gen_salt('bf')),
+             email_confirmed_at = coalesce(email_confirmed_at, now()),
+             raw_app_meta_data = '{"provider":"email","providers":["email"]}'::jsonb,
+             raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb),
+             confirmation_token = coalesce(confirmation_token, ''),
+             recovery_token = coalesce(recovery_token, ''),
+             email_change_token_new = coalesce(email_change_token_new, ''),
+             email_change = coalesce(email_change, ''),
+             updated_at = now()
+       where id = uid;
+
+      if not found then
+        raise exception 'auth.users seed row missing for %', uid;
+      end if;
+
+      -- Optional columns present on newer GoTrue schemas.
+      begin
+        execute $u$
+          update auth.users
+             set email_change_token_current = coalesce(email_change_token_current, ''),
+                 email_change_confirm_status = coalesce(email_change_confirm_status, 0),
+                 is_sso_user = coalesce(is_sso_user, false),
+                 is_anonymous = coalesce(is_anonymous, false)
+           where id = $u$ || quote_literal(uid);
+      exception when undefined_column then
+        null;
+      end;
+
       if to_regclass('auth.identities') is null then
         return;
       end if;
+
+      delete from auth.identities where user_id = uid and provider = 'email';
+
       if exists (
         select 1 from information_schema.columns
          where table_schema = 'auth' and table_name = 'identities' and column_name = 'provider_id'
@@ -125,26 +147,20 @@ function repairAuthFixtureInDb() {
         insert into auth.identities (
           id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
         )
-        select u.id, u.id,
-               jsonb_build_object('sub', u.id::text, 'email', u.email),
-               'email', u.id::text, now(), now(), now()
-          from auth.users u
-         where u.id = '${DEV_ACCOUNT_ID}'::uuid
-           and not exists (
-             select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email'
-           );
+        values (
+          uid, uid,
+          jsonb_build_object('sub', uid::text, 'email', '${DEV_EMAIL}'),
+          'email', uid::text, now(), now(), now()
+        );
       else
         insert into auth.identities (
           id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
         )
-        select u.id, u.id,
-               jsonb_build_object('sub', u.id::text, 'email', u.email),
-               'email', now(), now(), now()
-          from auth.users u
-         where u.id = '${DEV_ACCOUNT_ID}'::uuid
-           and not exists (
-             select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email'
-           );
+        values (
+          uid, uid,
+          jsonb_build_object('sub', uid::text, 'email', '${DEV_EMAIL}'),
+          'email', now(), now(), now()
+        );
       end if;
     end $$`);
 }
@@ -155,82 +171,22 @@ function repairAuthFixtureInDb() {
  */
 async function requireDevAccessToken() {
   if (!ANON_KEY) fail('SUPABASE_ANON_KEY missing — cannot Auth-login for combat smoke');
-  if (!SERVICE_ROLE_KEY) {
-    fail('SUPABASE_SERVICE_ROLE_KEY missing — cannot repair Auth fixture for combat smoke');
-  }
 
   let token = await passwordGrantAccessToken();
   if (token) return token;
 
-  const adminHeaders = {
-    apikey: SERVICE_ROLE_KEY,
-    Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-    'Content-Type': 'application/json',
-  };
-
-  // Seed may insert an incomplete auth.users row; repair via Admin API + DB identity row.
+  console.log('smoke auth: repairing GoTrue fixture for seed user via SQL');
   repairAuthFixtureInDb();
-
-  const existing = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${DEV_ACCOUNT_ID}`, {
-    headers: adminHeaders,
-    signal: AbortSignal.timeout(8000),
-  });
-
-  if (existing.ok) {
-    const upd = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${DEV_ACCOUNT_ID}`, {
-      method: 'PUT',
-      headers: adminHeaders,
-      body: JSON.stringify({
-        email: DEV_EMAIL,
-        password: DEV_PASSWORD,
-        email_confirm: true,
-      }),
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!upd.ok) {
-      const detail = await upd.text();
-      fail(`Auth admin update fixture failed HTTP ${upd.status}: ${detail.slice(0, 200)}`);
-    }
-  } else {
-    const created = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
-      method: 'POST',
-      headers: adminHeaders,
-      body: JSON.stringify({
-        id: DEV_ACCOUNT_ID,
-        email: DEV_EMAIL,
-        password: DEV_PASSWORD,
-        email_confirm: true,
-      }),
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!created.ok) {
-      // User may already exist in a form Admin GET missed; password update path next.
-      const detail = await created.text();
-      console.log(
-        `smoke auth: admin create skipped HTTP ${created.status}: ${detail.slice(0, 120)}`,
-      );
-      repairAuthFixtureInDb();
-      const upd = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${DEV_ACCOUNT_ID}`, {
-        method: 'PUT',
-        headers: adminHeaders,
-        body: JSON.stringify({
-          email: DEV_EMAIL,
-          password: DEV_PASSWORD,
-          email_confirm: true,
-        }),
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!upd.ok) {
-        const updDetail = await upd.text();
-        fail(`Auth admin update fixture failed HTTP ${upd.status}: ${updDetail.slice(0, 200)}`);
-      }
-    }
-  }
 
   token = await passwordGrantAccessToken();
   if (!token) {
+    // One more attempt after brief Auth cache settle (local GoTrue).
+    await new Promise((r) => setTimeout(r, 500));
+    token = await passwordGrantAccessToken();
+  }
+  if (!token) {
     fail(
-      'Auth password grant failed after fixture repair — combat smoke needs a real access token',
+      'Auth password grant failed after SQL fixture repair — combat smoke needs a real access token',
     );
   }
   return token;
