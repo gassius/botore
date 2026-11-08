@@ -1,6 +1,6 @@
 {
   "imports": {},
   "tasks": {
-    "test": "deno test -A handler_test.ts"
+    "test": "deno test -A ."
   }
 }

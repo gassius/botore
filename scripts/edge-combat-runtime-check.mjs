@@ -49,14 +49,17 @@ if (!deno) {
   );
 }
 
-console.log('==> deno test Edge combat-v1 handler (frozen golden + auth/eligibility)');
-const test = spawnSync(deno, ['test', '-A', '--quiet', join(denoTestDir, 'handler_test.ts')], {
+console.log('==> deno test Edge combat-v1 (handler golden/auth + entrypoint fail-closed deps)');
+const test = spawnSync(deno, ['test', '-A', '--quiet', denoTestDir], {
   cwd: root,
   encoding: 'utf8',
   env: {
     ...process.env,
     // Make frozen checksum available if tests want to cross-check env.
     BOTORE_FROZEN_GOLDEN_CHECKSUM: FROZEN_CHECKSUM,
+    // Entrypoint fail-closed tests require JWT secrets to be unset.
+    SUPABASE_JWT_SECRET: '',
+    JWT_SECRET: '',
   },
 });
 if (test.stdout) process.stdout.write(test.stdout);
@@ -68,11 +71,12 @@ console.log(
     {
       runtime: 'deno',
       handler: 'supabase/functions/combat-v1/handler.ts',
+      deps: 'supabase/functions/combat-v1/deps.ts',
       frozenChecksum: FROZEN_CHECKSUM,
-      gate: 'handler_test.ts',
+      gate: 'handler_test.ts + deps_test.ts',
     },
     null,
     2,
   ),
 );
-console.log('EDGE-RUNTIME-OK combat-v1 Deno handler + frozen golden');
+console.log('EDGE-RUNTIME-OK combat-v1 Deno handler + frozen golden + fail-closed auth');

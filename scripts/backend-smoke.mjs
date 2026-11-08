@@ -14,7 +14,6 @@
  *   node scripts/backend-smoke.mjs
  *   DATABASE_URL=... node scripts/backend-smoke.mjs
  */
-import { createHmac } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { dirname, join } from 'node:path';
@@ -30,12 +29,11 @@ const DEV_ACCOUNT_ID = '00000000-0000-4000-8000-000000000001';
 const DEV_EMAIL = 'dev-player@botore.local';
 const DEV_PASSWORD = 'local-only-password';
 
-/** Load ANON_KEY / JWT_SECRET from env or `supabase status -o env`. */
+/** Load ANON_KEY / SERVICE_ROLE_KEY from env or `supabase status -o env`. */
 function loadSupabaseKeys() {
   let anon = process.env.SUPABASE_ANON_KEY ?? '';
-  let jwtSecret =
-    process.env.SUPABASE_JWT_SECRET ?? 'super-secret-jwt-token-with-at-least-32-characters-long';
-  if (anon) return { anon, jwtSecret };
+  let service = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+  if (anon && service) return { anon, service };
 
   const res = spawnSync('pnpm', ['exec', 'supabase', 'status', '-o', 'env'], {
     encoding: 'utf8',
@@ -47,14 +45,15 @@ function loadSupabaseKeys() {
       if (!m) continue;
       const key = m[1];
       const val = m[2].replace(/^"|"$/g, '');
-      if (key === 'ANON_KEY' || key === 'SUPABASE_ANON_KEY') anon = val;
-      if (key === 'JWT_SECRET' || key === 'SUPABASE_JWT_SECRET') jwtSecret = val;
+      if (key === 'ANON_KEY' || key === 'SUPABASE_ANON_KEY') anon = anon || val;
+      if (key === 'SERVICE_ROLE_KEY' || key === 'SUPABASE_SERVICE_ROLE_KEY')
+        service = service || val;
     }
   }
-  return { anon, jwtSecret };
+  return { anon, service };
 }
 
-const { anon: ANON_KEY, jwtSecret: JWT_SECRET } = loadSupabaseKeys();
+const { anon: ANON_KEY, service: SERVICE_ROLE_KEY } = loadSupabaseKeys();
 
 function fail(msg) {
   console.error(`SMOKE FAIL: ${msg}`);
@@ -71,61 +70,175 @@ function psql(sql) {
   return (res.stdout || '').trim();
 }
 
-function b64url(input) {
-  return Buffer.from(input)
-    .toString('base64')
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
-}
-
-/** Fallback HS256 JWT when Auth password grant is unavailable. */
-function mintDevAccessToken() {
-  const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const now = Math.floor(Date.now() / 1000);
-  const payload = b64url(
-    JSON.stringify({
-      sub: DEV_ACCOUNT_ID,
-      role: 'authenticated',
-      aud: 'authenticated',
-      iss: 'supabase',
-      iat: now,
-      exp: now + 60 * 60,
-      email: DEV_EMAIL,
-    }),
-  );
-  const data = `${header}.${payload}`;
-  const sig = createHmac('sha256', JWT_SECRET).update(data).digest('base64url');
-  return `${data}.${sig}`;
-}
-
-/** Prefer a real Auth access token for the seed user (validates via getUser). */
-async function obtainDevAccessToken() {
-  if (!ANON_KEY) return mintDevAccessToken();
-  try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-      method: 'POST',
-      headers: {
-        apikey: ANON_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email: DEV_EMAIL, password: DEV_PASSWORD }),
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) return mintDevAccessToken();
-    const body = await res.json();
-    if (typeof body.access_token === 'string' && body.access_token.length > 20) {
-      return body.access_token;
-    }
-  } catch {
-    // fall through to minted token
+/** Password-grant a real Auth access token (Edge getUser must accept it). */
+async function passwordGrantAccessToken() {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: {
+      apikey: ANON_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email: DEV_EMAIL, password: DEV_PASSWORD }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) return null;
+  const body = await res.json();
+  if (typeof body.access_token === 'string' && body.access_token.length > 20) {
+    return body.access_token;
   }
-  return mintDevAccessToken();
+  return null;
+}
+
+/** Repair incomplete seed auth.users / auth.identities so GoTrue password grant works. */
+function repairAuthFixtureInDb() {
+  // Keep this idempotent and local-only; does not change shipped migrations.
+  psql(`
+    update auth.users
+       set instance_id = coalesce(instance_id, '00000000-0000-0000-0000-000000000000'),
+           aud = coalesce(nullif(aud, ''), 'authenticated'),
+           role = coalesce(nullif(role, ''), 'authenticated'),
+           email = coalesce(email, '${DEV_EMAIL}'),
+           encrypted_password = coalesce(
+             encrypted_password,
+             crypt('${DEV_PASSWORD}', gen_salt('bf'))
+           ),
+           email_confirmed_at = coalesce(email_confirmed_at, now()),
+           raw_app_meta_data = coalesce(
+             raw_app_meta_data,
+             '{"provider":"email","providers":["email"]}'::jsonb
+           ),
+           raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb),
+           updated_at = now()
+     where id = '${DEV_ACCOUNT_ID}'`);
+
+  // Newer GoTrue requires provider_id; older builds ignore unknown columns via DO block.
+  psql(`
+    do $$
+    begin
+      if to_regclass('auth.identities') is null then
+        return;
+      end if;
+      if exists (
+        select 1 from information_schema.columns
+         where table_schema = 'auth' and table_name = 'identities' and column_name = 'provider_id'
+      ) then
+        insert into auth.identities (
+          id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+        )
+        select u.id, u.id,
+               jsonb_build_object('sub', u.id::text, 'email', u.email),
+               'email', u.id::text, now(), now(), now()
+          from auth.users u
+         where u.id = '${DEV_ACCOUNT_ID}'::uuid
+           and not exists (
+             select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email'
+           );
+      else
+        insert into auth.identities (
+          id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+        )
+        select u.id, u.id,
+               jsonb_build_object('sub', u.id::text, 'email', u.email),
+               'email', now(), now(), now()
+          from auth.users u
+         where u.id = '${DEV_ACCOUNT_ID}'::uuid
+           and not exists (
+             select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email'
+           );
+      end if;
+    end $$`);
+}
+
+/**
+ * Ensure a valid local Auth fixture for the seed account, then password-grant.
+ * Does not mint JWTs against the public local default secret — Edge auth is fail-closed.
+ */
+async function requireDevAccessToken() {
+  if (!ANON_KEY) fail('SUPABASE_ANON_KEY missing — cannot Auth-login for combat smoke');
+  if (!SERVICE_ROLE_KEY) {
+    fail('SUPABASE_SERVICE_ROLE_KEY missing — cannot repair Auth fixture for combat smoke');
+  }
+
+  let token = await passwordGrantAccessToken();
+  if (token) return token;
+
+  const adminHeaders = {
+    apikey: SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    'Content-Type': 'application/json',
+  };
+
+  // Seed may insert an incomplete auth.users row; repair via Admin API + DB identity row.
+  repairAuthFixtureInDb();
+
+  const existing = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${DEV_ACCOUNT_ID}`, {
+    headers: adminHeaders,
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (existing.ok) {
+    const upd = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${DEV_ACCOUNT_ID}`, {
+      method: 'PUT',
+      headers: adminHeaders,
+      body: JSON.stringify({
+        email: DEV_EMAIL,
+        password: DEV_PASSWORD,
+        email_confirm: true,
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!upd.ok) {
+      const detail = await upd.text();
+      fail(`Auth admin update fixture failed HTTP ${upd.status}: ${detail.slice(0, 200)}`);
+    }
+  } else {
+    const created = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: adminHeaders,
+      body: JSON.stringify({
+        id: DEV_ACCOUNT_ID,
+        email: DEV_EMAIL,
+        password: DEV_PASSWORD,
+        email_confirm: true,
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!created.ok) {
+      // User may already exist in a form Admin GET missed; password update path next.
+      const detail = await created.text();
+      console.log(
+        `smoke auth: admin create skipped HTTP ${created.status}: ${detail.slice(0, 120)}`,
+      );
+      repairAuthFixtureInDb();
+      const upd = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${DEV_ACCOUNT_ID}`, {
+        method: 'PUT',
+        headers: adminHeaders,
+        body: JSON.stringify({
+          email: DEV_EMAIL,
+          password: DEV_PASSWORD,
+          email_confirm: true,
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!upd.ok) {
+        const updDetail = await upd.text();
+        fail(`Auth admin update fixture failed HTTP ${upd.status}: ${updDetail.slice(0, 200)}`);
+      }
+    }
+  }
+
+  token = await passwordGrantAccessToken();
+  if (!token) {
+    fail(
+      'Auth password grant failed after fixture repair — combat smoke needs a real access token',
+    );
+  }
+  return token;
 }
 
 console.log('==> backend smoke (local Supabase)');
 console.log(
-  `smoke auth: anonKey=${ANON_KEY ? `set(${ANON_KEY.length})` : 'missing'} jwtSecret=${JWT_SECRET ? 'set' : 'missing'}`,
+  `smoke auth: anonKey=${ANON_KEY ? `set(${ANON_KEY.length})` : 'missing'} serviceRole=${SERVICE_ROLE_KEY ? `set(${SERVICE_ROLE_KEY.length})` : 'missing'}`,
 );
 
 const healthJson = psql('select public.backend_health_snapshot()::text;');
@@ -241,38 +354,51 @@ try {
 }
 
 try {
-  const token = await obtainDevAccessToken();
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/combat-v1`, {
+  // Probe whether combat-v1 is served. 404 → optional skip; any other response
+  // means the endpoint is live and must pass with a real Auth access token.
+  const probe = await fetch(`${SUPABASE_URL}/functions/v1/combat-v1`, {
     method: 'POST',
     headers: {
       apikey: ANON_KEY || 'smoke',
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ opponentId: 'opp-sir-bot' }),
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(5000),
   });
-  let body = null;
-  if (res.status !== 404) {
+  if (probe.status === 404) {
+    console.log('SMOKE-SKIP edge combat-v1 HTTP 404 (serve functions locally to enable)');
+  } else {
+    const token = await requireDevAccessToken();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/combat-v1`, {
+      method: 'POST',
+      headers: {
+        apikey: ANON_KEY || 'smoke',
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ opponentId: 'opp-sir-bot' }),
+      signal: AbortSignal.timeout(15000),
+    });
+    let body = null;
     try {
       body = await res.json();
     } catch {
       if (res.ok) fail('edge combat-v1 returned non-JSON success body');
-      // non-OK with non-JSON still classified by status below
+    }
+    const verdict = classifyCombatSmokeResponse(res.status, body);
+    if (verdict.action === 'skip') {
+      // Classifier reserves skip for 404; treated as fail if reached while served.
+      fail(`edge combat-v1 unexpected skip while served: ${verdict.reason}`);
+    } else if (verdict.action === 'fail') {
+      const detail =
+        body && typeof body === 'object' ? ` body=${JSON.stringify(body).slice(0, 300)}` : '';
+      fail(`edge combat-v1 ${verdict.reason}${detail}`);
+    } else {
+      console.log('SMOKE-OK edge function /functions/v1/combat-v1');
     }
   }
-  const verdict = classifyCombatSmokeResponse(res.status, body);
-  if (verdict.action === 'skip') {
-    console.log('SMOKE-SKIP edge combat-v1 HTTP 404 (serve functions locally to enable)');
-  } else if (verdict.action === 'fail') {
-    const detail =
-      body && typeof body === 'object' ? ` body=${JSON.stringify(body).slice(0, 300)}` : '';
-    fail(`edge combat-v1 ${verdict.reason}${detail}`);
-  } else {
-    console.log('SMOKE-OK edge function /functions/v1/combat-v1');
-  }
 } catch (err) {
-  // fetch network / timeout only — HTTP error statuses are handled above
+  // fetch network / timeout only — Auth fixture / HTTP failures use fail()
   console.log(`SMOKE-SKIP edge combat-v1 (${err instanceof Error ? err.message : err})`);
 }
 
