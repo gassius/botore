@@ -631,12 +631,15 @@ try {
     console.log('SMOKE-SKIP edge combat-v1 HTTP 404 (serve functions locally to enable)');
   } else {
     const token = await requireDevAccessToken();
+    // F3 persist requires Idempotency-Key (probe already sends one; authenticated
+    // call must too or Edge returns 400 invalid_idempotency_key).
     const res = await fetch(`${SUPABASE_URL}/functions/v1/combat-v1`, {
       method: 'POST',
       headers: {
         apikey: ANON_KEY || 'smoke',
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
+        'Idempotency-Key': `smoke-edge-auth-${Date.now()}`,
       },
       body: JSON.stringify({ opponentId: 'opp-sir-bot' }),
       signal: AbortSignal.timeout(15000),
