@@ -1261,7 +1261,11 @@ begin
     raise exception 'IMMUTABILITY FAIL: deleted published storage object';
   exception
     when others then
-      if sqlstate = '55000' and sqlerrm like 'atlas_storage_immutable%' then null;
+      -- Prefer our published-prefix guard; Storage also installs
+      -- storage.protect_delete() which blocks ALL SQL deletes platform-wide.
+      if (sqlstate = '55000' and sqlerrm like 'atlas_storage_immutable%')
+         or sqlerrm like 'Direct deletion from storage tables is not allowed%'
+      then null;
       else raise;
       end if;
   end;
