@@ -17,10 +17,13 @@
     "env:up": "bash infra/env-up.sh",
     "env:down": "bash infra/env-down.sh",
     "db:reset": "bash infra/db-reset.sh",
+    "test:smoke": "node scripts/backend-smoke.mjs",
+    "test:coverage:backend": "pnpm --filter @botore/domain exec vitest run --coverage && pnpm --filter @botore/contracts exec vitest run --coverage",
     "verify": "bash infra/verify.sh"
   },
   "devDependencies": {
     "@types/node": "^24.10.9",
+    "@vitest/coverage-v8": "4.1.11",
     "eslint": "^9.39.0",
     "prettier": "^3.7.4",
     "supabase": "^2.115.0",

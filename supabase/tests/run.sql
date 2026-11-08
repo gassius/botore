@@ -132,4 +132,249 @@ begin
     -- cleanup as table owner (superuser can truncate via rule bypass)
     truncate public.progression_ledger;
   end;
+
+  -- =========================================================================
+  -- Bots-as-data (F1)
+  -- =========================================================================
+
+  -- Proof catalogue seed ----------------------------------------------------
+  select count(*) into v_count from public.parts_catalogue
+   where slot_kind = 'chassis' and is_active;
+  perform tests.assert(v_count = 1, 'expected 1 active chassis');
+
+  select count(*) into v_count from public.parts_catalogue
+   where slot_kind = 'paint' and is_active;
+  perform tests.assert(v_count = 2, 'expected 2 active paints');
+
+  select count(*) into v_count from public.parts_catalogue
+   where slot_kind = 'weapon' and is_active;
+  perform tests.assert(v_count = 3, 'expected 3 active weapons (sword/axe/dagger)');
+
+  select count(*) into v_count from public.current_bot_loadouts;
+  perform tests.assert(v_count = 4, 'expected 4 seeded current loadouts');
+
+  select count(*) into v_count from public.inventory_balances
+   where account_id = v_account;
+  perform tests.assert(v_count = 6, 'expected player to own 6 proof parts');
+  raise notice 'TEST-OK bots-as-data seed fixtures';
+
+  -- RLS: clients cannot write catalogue / inventory / loadouts --------------
+  set local role authenticated;
+
+  begin
+    insert into public.parts_catalogue (
+      part_id, slot_kind, display_name, media_key
+    ) values ('hack-part', 'chassis', 'Hack', 'parts/hack');
+    raise exception 'RLS FAIL: insert into parts_catalogue allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+
+  begin
+    insert into public.inventory_ledger (account_id, part_id, delta, reason)
+    values (v_account, 'chassis-basic', 1, 'grant');
+    raise exception 'RLS FAIL: insert into inventory_ledger allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+
+  begin
+    insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
+    values (
+      'player-hero',
+      '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword","shield":null,"drone":null,"decals":[],"soundTags":[]}'::jsonb,
+      'v1'
+    );
+    raise exception 'RLS FAIL: insert into bot_loadout_versions allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+
+  update public.inventory_ledger set delta = 99;
+  get diagnostics v_rows = row_count;
+  perform tests.assert(v_rows = 0, 'RLS FAIL: inventory_ledger update affected rows');
+
+  reset role;
+  raise notice 'TEST-OK rls denies client writes to bots-as-data tables';
+
+  -- Inventory ledger append-only --------------------------------------------
+  declare
+    v_inv uuid;
+    v_qty integer;
+  begin
+    insert into public.inventory_ledger (account_id, part_id, delta, reason)
+    values (v_account, 'chassis-basic', 1, 'grant')
+    returning entry_id into v_inv;
+
+    begin
+      update public.inventory_ledger set delta = 9 where entry_id = v_inv;
+    exception when others then
+      null;
+    end;
+
+    select delta into v_count from public.inventory_ledger where entry_id = v_inv;
+    perform tests.assert(v_count = 1, 'inventory ledger row was modified');
+
+    delete from public.inventory_ledger where entry_id = v_inv;
+    select count(*) into v_count from public.inventory_ledger where entry_id = v_inv;
+    perform tests.assert(v_count = 1, 'inventory ledger delete was applied');
+
+    -- neutralize the test grant so balances stay reconstructable for later asserts
+    insert into public.inventory_ledger (account_id, part_id, delta, reason)
+    values (v_account, 'chassis-basic', -1, 'revoke');
+
+    select public.owned_part_quantity(v_account, 'chassis-basic') into v_qty;
+    perform tests.assert(v_qty = 1, 'owned quantity should remain 1 after grant+revoke');
+    raise notice 'TEST-OK inventory ledger is append-only';
+  end;
+
+  -- save_bot_loadout: happy path + ownership + slot mismatch ----------------
+  declare
+    v_version uuid;
+    v_prev uuid;
+    v_loadout jsonb;
+  begin
+    -- System path requires service_role JWT (no anonymous bypass).
+    perform set_config('request.jwt.claim.role', 'service_role', true);
+    perform set_config('request.jwt.claim.sub', '', true);
+
+    select loadout_version_id into v_prev
+      from public.current_bot_loadouts where character_id = 'player-hero';
+
+    v_version := public.save_bot_loadout(
+      'player-hero',
+      '{"chassis":"chassis-basic","paint":"paint-cobalt","weapon":"weapon-axe"}'::jsonb,
+      'v1'
+    );
+    perform tests.assert(v_version is distinct from v_prev, 'save should append a new version');
+
+    select loadout into v_loadout
+      from public.bot_loadout_versions where loadout_version_id = v_version;
+    perform tests.assert(v_loadout->>'paint' = 'paint-cobalt', 'paint not persisted');
+    perform tests.assert(v_loadout->>'weapon' = 'weapon-axe', 'weapon not persisted');
+    perform tests.assert(v_loadout->>'shield' is null, 'shield should be JSON null');
+    perform tests.assert(
+      v_loadout->'soundTags' ? 'weapon.axe'
+      and v_loadout->'soundTags' ? 'chassis.light',
+      'sound tags should be derived'
+    );
+    raise notice 'TEST-OK save_bot_loadout happy path';
+
+    begin
+      perform public.save_bot_loadout(
+        'player-hero',
+        '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword","shield":"weapon-axe"}'::jsonb,
+        'v1'
+      );
+      raise exception 'COMPAT FAIL: weapon accepted in shield slot';
+    exception
+      when others then
+        if sqlerrm like 'slot_mismatch%' then null;
+        else raise;
+        end if;
+    end;
+    raise notice 'TEST-OK save_bot_loadout rejects slot mismatch';
+
+    begin
+      perform public.save_bot_loadout(
+        'player-hero',
+        '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword","soundTags":["ok",1]}'::jsonb,
+        'v1'
+      );
+      raise exception 'SOUNDTAG FAIL: non-string soundTags element accepted';
+    exception
+      when others then
+        if sqlerrm like 'invalid_loadout: soundTags elements must be strings%' then null;
+        else raise;
+        end if;
+    end;
+    raise notice 'TEST-OK save_bot_loadout rejects non-string soundTags';
+
+    -- Authenticated non-owner cannot save (simulate JWT sub for other user)
+    perform set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+    perform set_config('request.jwt.claim.role', 'authenticated', true);
+    begin
+      perform public.save_bot_loadout(
+        'player-hero',
+        '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword"}'::jsonb,
+        'v1'
+      );
+      raise exception 'AUTH FAIL: non-owner save allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlerrm like 'forbidden%' then null; else raise; end if;
+    end;
+    raise notice 'TEST-OK save_bot_loadout enforces ownership for JWT callers';
+
+    -- anon must not execute save_bot_loadout (privilege revoke)
+    set local role anon;
+    begin
+      perform public.save_bot_loadout(
+        'player-hero',
+        '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword"}'::jsonb,
+        'v1'
+      );
+      raise exception 'ANON FAIL: save_bot_loadout allowed for anon';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+    raise notice 'TEST-OK anon cannot execute save_bot_loadout';
+
+    -- authenticated must not execute internal _assert_part_slot
+    set local role authenticated;
+    begin
+      perform public._assert_part_slot(
+        'chassis-basic', 'chassis', v_account, false
+      );
+      raise exception 'INTERNAL FAIL: _assert_part_slot executable by authenticated';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+    raise notice 'TEST-OK authenticated cannot execute _assert_part_slot';
+
+    -- clear JWT leftovers for later asserts
+    perform set_config('request.jwt.claim.sub', '', true);
+    perform set_config('request.jwt.claim.role', '', true);
+
+    -- Opponent loadout is readable via current view; immutable history kept
+    select count(*) into v_count from public.bot_loadout_versions
+     where character_id = 'player-hero';
+    perform tests.assert(v_count >= 2, 'expected immutable history (>=2 versions)');
+  end;
+
+  -- Health snapshot + admin views -------------------------------------------
+  declare
+    v_health jsonb;
+  begin
+    v_health := public.backend_health_snapshot();
+    perform tests.assert(v_health->>'status' = 'ok', 'health status should be ok');
+    perform tests.assert(
+      (v_health->'checks'->'parts_catalogue'->>'proof_seed_ok')::boolean,
+      'health proof_seed_ok'
+    );
+    perform tests.assert(
+      (v_health->'checks'->'storage'->>'atlas_bucket')::boolean,
+      'health atlas bucket'
+    );
+
+    select count(*) into v_count from public.admin_catalogue_summary;
+    perform tests.assert(v_count >= 3, 'admin_catalogue_summary missing slots');
+
+    select count(*) into v_count from public.admin_loadout_overview;
+    perform tests.assert(v_count >= 4, 'admin_loadout_overview missing characters');
+    raise notice 'TEST-OK backend health snapshot and admin views';
+  end;
 end $$;

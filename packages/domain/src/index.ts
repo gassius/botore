@@ -41,3 +41,20 @@ export const DAILY_FIGHT_ALLOWANCE = 3;
 export function totalXp(levelXpEntries: readonly number[]): number {
   return levelXpEntries.reduce((sum, xp) => sum + xp, 0);
 }
+
+export {
+  REQUIRED_LOADOUT_SLOTS,
+  EXTENSION_LOADOUT_SLOTS,
+  MAX_DECALS,
+  validateBotLoadout,
+  loadoutWeaponFromCatalogue,
+  type PartSlotKind,
+  type RequiredLoadoutSlot,
+  type LoadoutWeaponKind,
+  type BotLoadout,
+  type CataloguePart,
+  type LoadoutValidationErrorCode,
+  type LoadoutValidationError,
+  type LoadoutValidationResult,
+  type ValidateLoadoutInput,
+} from './loadout.js';
