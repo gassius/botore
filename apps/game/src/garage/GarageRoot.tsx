@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { FightSessionProvider } from '../fight/FightSessionContext';
 import { FirstRunShell } from '../first-run/FirstRunShell';
 import { garageTag } from '../garage-tag';
 import { AuthEntryScreen } from './screens/AuthEntryScreen';
@@ -8,7 +9,7 @@ import { GarageSessionProvider, useGarageSession } from './LoadoutSessionContext
 
 /**
  * F8 auth gate around shell-owned FirstRunShell.
- * Does not implement shell routes — only blocks unauthenticated entry.
+ * F9 FightSession mounts inside the authenticated shell (Opponents / ConfirmFight).
  */
 function GarageRootInner(): React.ReactElement {
   const { booting, session } = useGarageSession();
@@ -30,7 +31,11 @@ function GarageRootInner(): React.ReactElement {
     );
   }
 
-  return <FirstRunShell />;
+  return (
+    <FightSessionProvider>
+      <FirstRunShell />
+    </FightSessionProvider>
+  );
 }
 
 export function GarageRoot(): React.ReactElement {
