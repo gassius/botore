@@ -514,7 +514,7 @@ console.log('SMOKE-OK prepare_fight_context');
   } catch {
     fail(`persist_fight_result did not return JSON: ${persistOut}`);
   }
-  if (!persistBody.ok) fail(`persist not ok: ${persistLine}`);
+  if (!persistBody.ok) fail(`persist not ok: ${persistOut}`);
   if (persistBody.repeated) fail('first persist should not be repeated');
   if (persistBody.xpAwarded !== 2) fail(`expected xpAwarded=2, got ${persistBody.xpAwarded}`);
 
