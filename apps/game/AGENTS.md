@@ -20,7 +20,7 @@ or React Native API:
 
 ## Agent tooling (Expo Skills + MCP)
 
-Project context for agents is committed at the monorepo root (`AGENTS.md`)
+Project context for agents is committed at the monorepo root (`AGENTS.md`) and here. Also:
 
 - **Expo MCP (Cursor):** `.cursor/mcp.json` registers
   `https://mcp.expo.dev/mcp`. If Expo is already connected in Cursor, nothing
