@@ -1,7 +1,7 @@
 # Combat v1 — deterministic rules
 
 Rules version: `combat-v1` (frozen). Any change to these formulas requires a
-new `rulesVersion` string, new golden fixtures, and an ADR. All arithmetic is
+new `rulesVersion` string, new golden fixtures, and an update in [Technical Architecture](https://app.clickup.com/90122060531/docs/2kxv30qk-1092/2kxv30qk-1892). All arithmetic is
 integer-only; all randomness flows through the injected `Rng`
 (`sha256-counter-v1`).
 
