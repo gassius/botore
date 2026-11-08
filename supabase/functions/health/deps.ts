@@ -1,13 +1,25 @@
 /**
  * Live Supabase / HTTP wiring for the health Edge Function (B1).
  * Kept separate from handler.ts so Deno coverage gates measure the
- * pure merge/request logic under unit tests.
+ * pure merge/request logic under unit tests; deps wiring is covered by
+ * deps_test.ts with an injectable fetch.
  */
-import type { HealthDeps } from './handler.ts';
+import { classifyEdgeProbe, type HealthDeps } from './handler.ts';
 
-export function createDefaultHealthDeps(env: { get(key: string): string | undefined }): HealthDeps {
+export type HealthFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+
+export type CreateHealthDepsOptions = {
+  /** Override fetch (tests inject status/timeout behavior). */
+  fetch?: HealthFetch;
+};
+
+export function createDefaultHealthDeps(
+  env: { get(key: string): string | undefined },
+  options: CreateHealthDepsOptions = {},
+): HealthDeps {
   const url = env.get('SUPABASE_URL') ?? 'http://127.0.0.1:54321';
   const key = env.get('SUPABASE_SERVICE_ROLE_KEY') ?? env.get('SUPABASE_ANON_KEY') ?? '';
+  const fetchImpl: HealthFetch = options.fetch ?? globalThis.fetch.bind(globalThis);
 
   return {
     async fetchSnapshot() {
@@ -23,7 +35,7 @@ export function createDefaultHealthDeps(env: { get(key: string): string | undefi
     },
     async probeFunction(name: string) {
       try {
-        const res = await fetch(`${url}/functions/v1/${name}`, {
+        const res = await fetchImpl(`${url}/functions/v1/${name}`, {
           method: 'OPTIONS',
           headers: {
             apikey: key || 'health-probe',
@@ -31,20 +43,9 @@ export function createDefaultHealthDeps(env: { get(key: string): string | undefi
           },
           signal: AbortSignal.timeout(4000),
         });
-        // Gateway 404 ⇒ function not mounted. Any other status means the
-        // Edge runtime routed the request (reachable for ops reporting).
-        return {
-          name,
-          reachable: res.status !== 404,
-          httpStatus: res.status,
-        };
+        return classifyEdgeProbe(name, res.status);
       } catch (err) {
-        return {
-          name,
-          reachable: false,
-          httpStatus: null,
-          detail: err instanceof Error ? err.message : String(err),
-        };
+        return classifyEdgeProbe(name, null, err instanceof Error ? err.message : String(err));
       }
     },
   };

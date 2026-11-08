@@ -30,6 +30,43 @@ export type HealthDeps = {
   probeFunction: (name: string) => Promise<EdgeProbe>;
 };
 
+/**
+ * Classify an Edge peer OPTIONS probe status for B1 health.
+ *
+ * Only a successful preflight (HTTP 2xx) counts as reachable. Gateway /
+ * runtime failures (5xx), missing mounts (404), auth/rate-limit (4xx), and
+ * transport failures (null) are unhealthy so the aggregate does not go green
+ * while combat-v1 is down.
+ */
+export function isEdgePeerReachable(httpStatus: number | null): boolean {
+  return typeof httpStatus === 'number' && httpStatus >= 200 && httpStatus < 300;
+}
+
+/** Human-readable probe detail for non-success statuses (ops / B2). */
+export function edgePeerUnreachableDetail(httpStatus: number | null): string {
+  if (httpStatus === null) return 'transport_error';
+  if (httpStatus >= 500) return 'gateway_or_runtime_error';
+  if (httpStatus === 404) return 'not_mounted';
+  if (httpStatus === 429) return 'rate_limited';
+  if (httpStatus === 401 || httpStatus === 403) return 'unauthorized';
+  return `unexpected_status_${httpStatus}`;
+}
+
+export function classifyEdgeProbe(
+  name: string,
+  httpStatus: number | null,
+  detail?: string,
+): EdgeProbe {
+  const reachable = isEdgePeerReachable(httpStatus);
+  const autoDetail = reachable ? undefined : edgePeerUnreachableDetail(httpStatus);
+  return {
+    name,
+    reachable,
+    httpStatus,
+    ...(detail || autoDetail ? { detail: detail ?? autoDetail } : {}),
+  };
+}
+
 export function json(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
