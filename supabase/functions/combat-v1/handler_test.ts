@@ -208,70 +208,73 @@ Deno.test('handler persists durable replay on eligible context', async () => {
   assertEquals(body.replayChecksum, body.replay.checksum);
 });
 
-Deno.test('handler returns prior idempotent fight before prepare (last slot consumed)', async () => {
-  const originalId = '0b3f7c9e-aaaa-4bbb-8ccc-ddddeeeeffff';
-  let prepared = false;
-  let persisted = false;
-  const originalLoadouts = {
-    attacker: '0b3f7c9e-1111-4222-8333-944455566677',
-    defender: '0b3f7c9e-2222-4333-8444-955566677788',
-  };
-  const res = await handleCombatRequest(
-    post({ opponentId: 'opp-sir-bot' }, { 'Idempotency-Key': 'retry-key-0001' }),
-    baseDeps({
-      lookupFightByIdempotency: async () => ({
-        ok: true,
-        found: true,
-        battleId: originalId,
-        xpAwarded: 2,
-        replayChecksum: 'c'.repeat(64),
-        winnerId: 'player-hero',
-        reason: 'defeat',
-        seed: 'cd'.repeat(32),
-        utcDay: '2026-11-08',
-        allowancesRemaining: 0,
-        replay: {
-          replayVersion: 1,
-          rulesVersion: 'combat-v1',
+Deno.test(
+  'handler returns prior idempotent fight before prepare (last slot consumed)',
+  async () => {
+    const originalId = '0b3f7c9e-aaaa-4bbb-8ccc-ddddeeeeffff';
+    let prepared = false;
+    let persisted = false;
+    const originalLoadouts = {
+      attacker: '0b3f7c9e-1111-4222-8333-944455566677',
+      defender: '0b3f7c9e-2222-4333-8444-955566677788',
+    };
+    const res = await handleCombatRequest(
+      post({ opponentId: 'opp-sir-bot' }, { 'Idempotency-Key': 'retry-key-0001' }),
+      baseDeps({
+        lookupFightByIdempotency: async () => ({
+          ok: true,
+          found: true,
           battleId: originalId,
+          xpAwarded: 2,
+          replayChecksum: 'c'.repeat(64),
+          winnerId: 'player-hero',
+          reason: 'defeat',
           seed: 'cd'.repeat(32),
-          inputHash: 'a'.repeat(64),
-          fighters: [{}, {}],
-          events: [{ type: 'battle_started' }, { type: 'battle_ended' }],
-          outcome: { winner: 'player-hero', loser: 'opp-sir-bot', reason: 'defeat' },
-          checksum: 'c'.repeat(64),
-        },
-        loadoutVersionIds: originalLoadouts,
-        atlasVersions: { attacker: 'v1', defender: 'v1' },
-      }),
-      prepareFightContext: async () => {
-        prepared = true;
-        return {
-          ok: false,
-          code: 'allowance_exhausted',
-          message: 'daily fight allowance exhausted',
+          utcDay: '2026-11-08',
           allowancesRemaining: 0,
-        };
-      },
-      persistFightResult: async () => {
-        persisted = true;
-        return okPersist();
-      },
-    }),
-  );
-  assertEquals(res.status, 200);
-  assertEquals(prepared, false);
-  assertEquals(persisted, false);
-  const body = await res.json();
-  assertEquals(body.persistence, 'repeated');
-  assertEquals(body.repeated, true);
-  assertEquals(body.battleId, originalId);
-  assertEquals(body.xpAwarded, 2);
-  assertEquals(body.seed, 'cd'.repeat(32));
-  assertEquals(body.allowancesRemaining, 0);
-  assertEquals(body.loadoutVersionIds, originalLoadouts);
-  assertEquals(body.utcDay, '2026-11-08');
-});
+          replay: {
+            replayVersion: 1,
+            rulesVersion: 'combat-v1',
+            battleId: originalId,
+            seed: 'cd'.repeat(32),
+            inputHash: 'a'.repeat(64),
+            fighters: [{}, {}],
+            events: [{ type: 'battle_started' }, { type: 'battle_ended' }],
+            outcome: { winner: 'player-hero', loser: 'opp-sir-bot', reason: 'defeat' },
+            checksum: 'c'.repeat(64),
+          },
+          loadoutVersionIds: originalLoadouts,
+          atlasVersions: { attacker: 'v1', defender: 'v1' },
+        }),
+        prepareFightContext: async () => {
+          prepared = true;
+          return {
+            ok: false,
+            code: 'allowance_exhausted',
+            message: 'daily fight allowance exhausted',
+            allowancesRemaining: 0,
+          };
+        },
+        persistFightResult: async () => {
+          persisted = true;
+          return okPersist();
+        },
+      }),
+    );
+    assertEquals(res.status, 200);
+    assertEquals(prepared, false);
+    assertEquals(persisted, false);
+    const body = await res.json();
+    assertEquals(body.persistence, 'repeated');
+    assertEquals(body.repeated, true);
+    assertEquals(body.battleId, originalId);
+    assertEquals(body.xpAwarded, 2);
+    assertEquals(body.seed, 'cd'.repeat(32));
+    assertEquals(body.allowancesRemaining, 0);
+    assertEquals(body.loadoutVersionIds, originalLoadouts);
+    assertEquals(body.utcDay, '2026-11-08');
+  },
+);
 
 Deno.test('handler maps persist allowance exhausted after compute', async () => {
   const res = await handleCombatRequest(

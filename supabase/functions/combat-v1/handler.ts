@@ -289,8 +289,7 @@ export async function handleCombatRequest(req: Request, deps: CombatDeps): Promi
       return json({ error: 'malformed idempotency lookup', code: 'lookup_invalid' }, 500);
     }
     if (!prior.ok) {
-      const status =
-        prior.code === 'forbidden' || prior.code === 'unauthenticated' ? 401 : 400;
+      const status = prior.code === 'forbidden' || prior.code === 'unauthenticated' ? 401 : 400;
       return json({ error: prior.message, code: prior.code }, status);
     }
     if (prior.found) {
