@@ -128,6 +128,8 @@ export function OpponentsScreen(props: {
                         weaponId: c.loadout.weapon,
                       }}
                       facing="left"
+                      size={64}
+                      reducedMotion
                       testID={`opponent-preview-${c.characterId}`}
                     />
                   </View>
@@ -195,8 +197,10 @@ const styles = StyleSheet.create({
     borderColor: garageTag.mustard,
   },
   preview: {
-    width: 72,
+    width: 64,
     height: 72,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     overflow: 'hidden',
   },
   metaCol: {

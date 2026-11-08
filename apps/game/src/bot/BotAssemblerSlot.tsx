@@ -21,6 +21,8 @@ export type BotAssemblerSlotProps = {
   reducedMotion?: boolean;
   /** Prefer false/omit so kit-v002 renders; true = geometric PLACEHOLDER only. */
   placeholder?: boolean;
+  /** Forwarded to BotAssembler — PROVISIONAL display width (dp). */
+  size?: number;
   style?: StyleProp<ViewStyle>;
   stagger?: 'near-low' | 'far-high' | 'none';
   label?: string;
@@ -52,6 +54,7 @@ export function BotAssemblerSlot(props: BotAssemblerSlotProps): React.ReactEleme
         weaponId={weapon}
         motionPose={motionPose}
         {...(props.reducedMotion !== undefined ? { reducedMotion: props.reducedMotion } : {})}
+        {...(props.size !== undefined ? { size: props.size } : {})}
         placeholder={props.placeholder === true}
         testID={props.testID ? `${props.testID}-assembler` : 'bot-assembler'}
       />

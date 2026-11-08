@@ -123,38 +123,43 @@ export function ConfirmFightScreen(props: {
       <KitArtPlaceholder
         label="Repair Yard (static)"
         detail="PLACEHOLDER — F10 owns layered arena + FX. Static preview only."
+        style={styles.arena}
         testID="confirm-arena"
       />
 
       <View style={styles.fighters}>
         <View style={styles.fighter}>
-          <BotAssemblerSlot
-            loadout={{
-              chassisId: confirmed.chassis,
-              paintId: confirmed.paint,
-              weaponId: confirmed.weapon,
-            }}
-            facing="right"
-            stagger="near-low"
-            label="You"
-            style={styles.bot}
-            testID="confirm-you"
-          />
+          <View style={styles.botFrame}>
+            <BotAssemblerSlot
+              loadout={{
+                chassisId: confirmed.chassis,
+                paintId: confirmed.paint,
+                weaponId: confirmed.weapon,
+              }}
+              facing="right"
+              size={132}
+              reducedMotion
+              label="You"
+              testID="confirm-you"
+            />
+          </View>
           <Nameplate name="Player Hero" badge="You" />
         </View>
         <View style={styles.fighter}>
-          <BotAssemblerSlot
-            loadout={{
-              chassisId: selected.loadout.chassis,
-              paintId: selected.loadout.paint,
-              weaponId: selected.loadout.weapon,
-            }}
-            facing="left"
-            stagger="far-high"
-            label={selected.displayName}
-            style={styles.bot}
-            testID="confirm-opponent"
-          />
+          <View style={[styles.botFrame, styles.botFar]}>
+            <BotAssemblerSlot
+              loadout={{
+                chassisId: selected.loadout.chassis,
+                paintId: selected.loadout.paint,
+                weaponId: selected.loadout.weapon,
+              }}
+              facing="left"
+              size={118}
+              reducedMotion
+              label={selected.displayName}
+              testID="confirm-opponent"
+            />
+          </View>
           <Nameplate name={selected.displayName} />
         </View>
       </View>
@@ -213,16 +218,30 @@ export function ConfirmFightScreen(props: {
 }
 
 const styles = StyleSheet.create({
+  arena: {
+    minHeight: 96,
+  },
   fighters: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: 8,
   },
   fighter: {
     flex: 1,
     gap: 8,
+    alignItems: 'center',
   },
-  bot: {
-    minHeight: 140,
+  botFrame: {
+    width: 132,
+    height: 150,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  botFar: {
+    width: 118,
+    height: 136,
+    opacity: 0.96,
   },
   cost: {
     textAlign: 'center',
