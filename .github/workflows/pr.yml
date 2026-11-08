@@ -82,6 +82,17 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Workspace packages export dist/ only — build deps before Vitest coverage
+      # so contracts/combat-engine can resolve @botore/replay (and peers).
+      - name: Build packages for coverage (workspace deps → dist)
+        run: |
+          pnpm exec turbo run build \
+            --filter=@botore/domain \
+            --filter=@botore/rng \
+            --filter=@botore/replay \
+            --filter=@botore/contracts \
+            --filter=@botore/combat-engine
+
       - name: Package coverage (domain + contracts + combat stack)
         run: |
           pnpm --filter @botore/domain exec vitest run --coverage
@@ -97,7 +108,6 @@ jobs:
 
       - name: Edge Function coverage (Deno --threshold on handlers)
         run: |
-          pnpm exec turbo run build --filter=@botore/rng --filter=@botore/replay --filter=@botore/combat-engine
           node scripts/vendor-edge-combat.mjs
           node scripts/edge-coverage-gate.mjs
 
