@@ -917,8 +917,12 @@ declare
     v_atlas_entries integer := 0;
     v_atlas_part_entries integer := 0;
     v_atlas_objects integer := 0;
+    v_atlas_proof_objects integer := 0;
     v_atlas_proof boolean := false;
     v_latest_atlas text;
+    -- Proof pack is the seeded `v1` publish (not chronological latest). Later
+    -- publishes (e.g. CI race fixtures) must not flip proof_pack_ok off.
+    v_proof_atlas text := 'v1';
 begin
     select count(*) into v_catalogue_parts from public.parts_catalogue where is_active;
     select count(*) into v_chassis from public.parts_catalogue where slot_kind = 'chassis' and is_active;
@@ -1017,41 +1021,55 @@ begin
      where status = 'published'
      order by published_at desc nulls last, version desc
      limit 1;
+    -- Scope entry/object counts to the proof pack version, not every publish.
     select count(*) into v_atlas_entries
       from public.atlas_manifest_entries e
       join public.atlas_versions av using (version)
-     where av.status = 'published';
+     where av.version = v_proof_atlas and av.status = 'published';
     select count(*) into v_atlas_part_entries
       from public.atlas_manifest_entries e
       join public.atlas_versions av using (version)
-     where av.status = 'published' and e.part_id is not null;
+     where av.version = v_proof_atlas
+       and av.status = 'published'
+       and e.part_id is not null;
     begin
         select count(*) into v_atlas_objects
           from storage.objects
          where bucket_id = 'atlas'
-           and name like coalesce(v_latest_atlas, 'v1') || '/%';
+           and name like coalesce(v_latest_atlas, v_proof_atlas) || '/%';
     exception when others then
         v_atlas_objects := 0;
     end;
+    begin
+        select count(*) into v_atlas_proof_objects
+          from storage.objects
+         where bucket_id = 'atlas'
+           and name like v_proof_atlas || '/%';
+    exception when others then
+        v_atlas_proof_objects := 0;
+    end;
 
-    -- Proof pack: published + complete Storage objects for every manifest path
+    -- Proof pack: v1 published + complete Storage objects for every manifest path
     -- (1 chassis + 2 paints + 3 weapons + base + quiet arena + 3 FX).
     v_atlas_proof := (
         v_storage_atlas
-        and v_atlas_published >= 1
-        and v_atlas_objects >= v_atlas_entries
+        and exists (
+            select 1 from public.atlas_versions
+             where version = v_proof_atlas and status = 'published'
+        )
+        and v_atlas_proof_objects >= v_atlas_entries
         and v_atlas_entries >= 20
         and coalesce(array_length(
-              public.atlas_missing_storage_paths(coalesce(v_latest_atlas, 'v1')), 1
+              public.atlas_missing_storage_paths(v_proof_atlas), 1
             ), 0) = 0
         and exists (
             select 1 from public.atlas_manifest_entries e
-             where e.version = coalesce(v_latest_atlas, 'v1')
+             where e.version = v_proof_atlas
                and e.part_id = 'chassis-basic'
         )
         and (
             select count(distinct e.part_id) from public.atlas_manifest_entries e
-             where e.version = coalesce(v_latest_atlas, 'v1')
+             where e.version = v_proof_atlas
                and e.part_id in (
                  'chassis-basic','paint-crimson','paint-cobalt',
                  'weapon-sword','weapon-axe','weapon-dagger'
@@ -1059,27 +1077,27 @@ begin
         ) = 6
         and exists (
             select 1 from public.atlas_manifest_entries e
-             where e.version = coalesce(v_latest_atlas, 'v1')
+             where e.version = v_proof_atlas
                and e.role = 'arena' and e.path like 'arenas/quiet/%'
         )
         and exists (
             select 1 from public.atlas_manifest_entries e
-             where e.version = coalesce(v_latest_atlas, 'v1')
+             where e.version = v_proof_atlas
                and e.kind = 'audio' and e.role = 'hit' and e.path like 'base/%'
         )
         and exists (
             select 1 from public.atlas_manifest_entries e
-             where e.version = coalesce(v_latest_atlas, 'v1')
+             where e.version = v_proof_atlas
                and e.kind = 'audio' and e.role = 'dodge' and e.path like 'base/%'
         )
         and exists (
             select 1 from public.atlas_manifest_entries e
-             where e.version = coalesce(v_latest_atlas, 'v1')
+             where e.version = v_proof_atlas
                and e.kind = 'audio' and e.role = 'defeat' and e.path like 'base/%'
         )
         and (
             select count(*) from public.atlas_manifest_entries e
-             where e.version = coalesce(v_latest_atlas, 'v1')
+             where e.version = v_proof_atlas
                and e.role = 'fx'
                and e.path in ('fx/hit.png', 'fx/dodge.png', 'fx/defeat.png')
         ) = 3
@@ -1137,9 +1155,11 @@ begin
                 'atlas_bucket', v_storage_atlas,
                 'published_versions', v_atlas_published,
                 'latest_version', to_jsonb(v_latest_atlas),
+                'proof_version', to_jsonb(v_proof_atlas),
                 'manifest_entries', v_atlas_entries,
                 'part_entries', v_atlas_part_entries,
                 'objects_for_latest', v_atlas_objects,
+                'objects_for_proof', v_atlas_proof_objects,
                 'proof_pack_ok', v_atlas_proof,
                 'budgets_final', false
             )

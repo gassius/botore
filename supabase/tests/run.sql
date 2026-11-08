@@ -1325,6 +1325,19 @@ begin
   delete from public.battle_participants where battle_id = v_battle;
   delete from public.battles where battle_id = v_battle;
 
+  -- A later non-proof publish must not clear proof_pack_ok / status=ok.
+  -- (CI race fixture also leaves a later publish; this covers local runs.)
+  insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
+  values (
+    'v-health-fixture', 'draft', null,
+    jsonb_build_object('version', 'v-health-fixture'), false, 'health isolation fixture'
+  );
+  insert into public.atlas_manifest_entries (version, asset_key, kind, part_id, role, path)
+  values ('v-health-fixture', 'fixture.root', 'manifest', null, 'manifest', 'manifest.json');
+  insert into storage.objects (bucket_id, name, metadata)
+  values ('atlas', 'v-health-fixture/manifest.json', '{"fixture":true}'::jsonb);
+  perform public.publish_atlas_version('v-health-fixture');
+
   select public.backend_health_snapshot() into v_health;
   perform tests.assert(
     (v_health->'checks'->'storage'->>'atlas_bucket')::boolean,
@@ -1332,7 +1345,19 @@ begin
   );
   perform tests.assert(
     (v_health->'checks'->'storage'->>'proof_pack_ok')::boolean,
-    'health proof_pack_ok'
+    'health proof_pack_ok after later publish'
+  );
+  perform tests.assert(
+    v_health->>'status' = 'ok',
+    'health status ok after later non-proof publish'
+  );
+  perform tests.assert(
+    v_health->'checks'->'storage'->>'proof_version' = 'v1',
+    'health proof_version pinned to v1'
+  );
+  perform tests.assert(
+    v_health->'checks'->'storage'->>'latest_version' = 'v-health-fixture',
+    'health latest_version reflects newest publish'
   );
   perform tests.assert(
     (v_health->'checks'->'storage'->>'budgets_final')::boolean = false,

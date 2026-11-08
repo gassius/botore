@@ -51,3 +51,5 @@ Local/CI after bootstrap:
 - Hit / dodge / defeat FX (image + base-pack AAC fallbacks)
 
 Bytes: `supabase/seed/atlas/v1/` (valid silent AAC `.m4a`, 1×1 PNG). No real art generation; Game Art / Audio directors own finals. Export/cache budgets remain provisional (`budgets_final = false`).
+
+`backend_health_snapshot().checks.storage.proof_pack_ok` evaluates the seeded **`v1`** proof pack (`proof_version`), not chronological `latest_version`. Later publishes (race fixtures, ops drafts) must not flip the gate.
