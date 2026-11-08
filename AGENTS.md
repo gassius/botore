@@ -226,8 +226,6 @@ leftover "web first" wording in Expo tooling notes.
 Committed agent config:
 
 - `apps/game/AGENTS.md` — Expo SDK docs pointers and game-client rules
-- `CLAUDE.md` — imports this file for Claude Code (`@AGENTS.md`)
-- `.claude/settings.json` — enables `expo@claude-plugins-official`
 - `.cursor/mcp.json` — Expo MCP at `https://mcp.expo.dev/mcp`
 
 If Expo is already configured in Cursor (MCP/Skills), no per-machine redo is
