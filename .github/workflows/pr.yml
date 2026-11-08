@@ -151,7 +151,9 @@ jobs:
           eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
           export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
           export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
-          sudo apt-get update && sudo apt-get install -y postgresql-client ffmpeg
+          # postgresql-client for publish-gate psql checks; AAC placeholders are
+          # already valid in-repo (ffprobe optional inside seed-atlas-storage).
+          sudo apt-get update && sudo apt-get install -y postgresql-client
           node scripts/seed-atlas-storage.mjs
           node scripts/atlas-publish-race.mjs
 

@@ -82,9 +82,13 @@ comment on table public.atlas_manifest_entries is
 -- the draft-mutation / publish race: an in-flight mutation either commits
 -- before publish sees the draft, or is rejected after publish commits.
 
+-- SECURITY DEFINER: Storage API inserts run as storage roles that cannot
+-- SELECT public.atlas_versions; the guard trigger must still lock/check.
 create or replace function public.atlas_lock_versions(p_versions text[])
 returns void
 language plpgsql
+security definer
+set search_path = public
 as $$
 declare
     v text;
@@ -116,6 +120,8 @@ create or replace function public.atlas_version_status(p_version text)
 returns text
 language plpgsql
 stable
+security definer
+set search_path = public
 as $$
 declare
     v_status text;
@@ -127,6 +133,9 @@ begin
     return v_status;
 end;
 $$;
+
+revoke all on function public.atlas_version_status(text) from public;
+grant execute on function public.atlas_version_status(text) to service_role;
 
 create or replace function public.atlas_versions_immutability()
 returns trigger
@@ -170,6 +179,8 @@ create trigger atlas_versions_immutability
 create or replace function public.atlas_manifest_entries_immutability()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
 declare
     v_old_status text;
@@ -363,6 +374,8 @@ $$;
 create or replace function public.atlas_storage_objects_guard()
 returns trigger
 language plpgsql
+security definer
+set search_path = public, storage
 as $$
 declare
     v_old_prefix text;
