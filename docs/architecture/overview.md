@@ -32,8 +32,14 @@ calls `persist_fight_result()` in one Postgres transaction (allowance
 consume, battle/replay, attacker XP, outbox, idempotency). Output is a full
 semantic replay with `status: completed` and `persistence: persisted|repeated`.
 
+Outbox drain and allowance refresh run on **pg_cron** (`botore-outbox-drain`,
+`botore-allowance-refresh`) via `process_analytics_outbox()` and
+`ensure_fight_allowances()`. Failed outbox rows stay visible
+(`last_error` / `dead_lettered_at`); no Fastify worker.
+
 This checkout still contains leftover Fastify `apps/api` and `apps/worker`.
-Do not extend them. Target path: client → Edge Function → Postgres function.
+Do not extend them. Target path: client → Edge Function → Postgres function
+→ pg_cron.
 
 ## Boundaries
 
