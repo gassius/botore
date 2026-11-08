@@ -124,6 +124,9 @@ async function obtainDevAccessToken() {
 }
 
 console.log('==> backend smoke (local Supabase)');
+console.log(
+  `smoke auth: anonKey=${ANON_KEY ? `set(${ANON_KEY.length})` : 'missing'} jwtSecret=${JWT_SECRET ? 'set' : 'missing'}`,
+);
 
 const healthJson = psql('select public.backend_health_snapshot()::text;');
 let health;
@@ -262,7 +265,9 @@ try {
   if (verdict.action === 'skip') {
     console.log('SMOKE-SKIP edge combat-v1 HTTP 404 (serve functions locally to enable)');
   } else if (verdict.action === 'fail') {
-    fail(`edge combat-v1 ${verdict.reason}`);
+    const detail =
+      body && typeof body === 'object' ? ` body=${JSON.stringify(body).slice(0, 300)}` : '';
+    fail(`edge combat-v1 ${verdict.reason}${detail}`);
   } else {
     console.log('SMOKE-OK edge function /functions/v1/combat-v1');
   }

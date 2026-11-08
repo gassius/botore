@@ -110,7 +110,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
           SUPABASE_URL: http://127.0.0.1:54321
-        run: node scripts/backend-smoke.mjs
+        run: |
+          # Export local API keys so combat smoke can Auth-login / mint JWTs.
+          eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
+          export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
+          export SUPABASE_JWT_SECRET="${SUPABASE_JWT_SECRET:-$JWT_SECRET}"
+          node scripts/backend-smoke.mjs
 
       - name: API integration tests
         env:
