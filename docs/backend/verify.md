@@ -87,14 +87,18 @@ Function checks are best-effort when the gateway serves functions.
 
 ## Edge runtime evidence
 
+Requires [Deno](https://deno.land) on `PATH` (CI installs via `denoland/setup-deno`).
+
 ```bash
 pnpm exec turbo run build --filter=@botore/rng --filter=@botore/replay --filter=@botore/combat-engine
 pnpm vendor:edge-combat
-pnpm test:edge-runtime
+pnpm test:edge-runtime          # deno test handler_test.ts — frozen golden + auth/eligibility
+pnpm test:smoke-combat-assert   # failure-path smoke classifiers
 ```
 
-Re-vendors pure packages into `supabase/functions/_shared/botore` and runs
-frozen golden fixtures against that Deno-bound bundle.
+Re-vendors pure packages into `supabase/functions/_shared/botore` and runs the
+shipped Edge handler under Deno, asserting the frozen combat-v1 checksum
+(`d2a7c18d…e2f`) and handler auth/eligibility failure paths.
 
 ## Coverage (backend packages)
 

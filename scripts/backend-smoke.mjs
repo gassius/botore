@@ -17,6 +17,7 @@
 import { createHmac } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
+import { classifyCombatSmokeResponse } from './smoke-combat-assert.mjs';
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
@@ -129,8 +130,10 @@ const fightReady = Number(
 if (fightReady !== 3) fail(`admin_fight_readiness opponents expected 3, got ${fightReady}`);
 console.log('SMOKE-OK admin reporting views');
 
+// prepare_fight_context requires service_role or matching auth.uid(); smoke uses service_role.
 const fightCtxJson = psql(
-  `select public.prepare_fight_context('00000000-0000-4000-8000-000000000001','opp-sir-bot')::text;`,
+  `select public.prepare_fight_context('00000000-0000-4000-8000-000000000001','opp-sir-bot')::text
+     from (select set_config('request.jwt.claim.role', 'service_role', true)) as _jwt;`,
 );
 let fightCtx;
 try {
@@ -193,21 +196,25 @@ try {
     body: JSON.stringify({ opponentId: 'opp-sir-bot' }),
     signal: AbortSignal.timeout(15000),
   });
-  if (res.status === 404) {
+  let body = null;
+  if (res.status !== 404) {
+    try {
+      body = await res.json();
+    } catch {
+      if (res.ok) fail('edge combat-v1 returned non-JSON success body');
+      // non-OK with non-JSON still classified by status below
+    }
+  }
+  const verdict = classifyCombatSmokeResponse(res.status, body);
+  if (verdict.action === 'skip') {
     console.log('SMOKE-SKIP edge combat-v1 HTTP 404 (serve functions locally to enable)');
-  } else if (!res.ok) {
-    // Optional until functions are served in CI; non-404 without a body is skip.
-    console.log(`SMOKE-SKIP edge combat-v1 HTTP ${res.status} (serve functions locally to enable)`);
+  } else if (verdict.action === 'fail') {
+    fail(`edge combat-v1 ${verdict.reason}`);
   } else {
-    const body = await res.json();
-    if (body.status !== 'computed') fail(`combat status=${body.status}`);
-    if (body.persistence !== 'pending_f3') fail('combat persistence flag');
-    if (!body.replay?.events?.length) fail('combat missing semantic events');
-    if (body.replay?.rulesVersion !== 'combat-v1') fail('combat rulesVersion');
-    if (!body.seed || !/^[0-9a-f]{64}$/.test(body.seed)) fail('combat seed shape');
     console.log('SMOKE-OK edge function /functions/v1/combat-v1');
   }
 } catch (err) {
+  // fetch network / timeout only — HTTP error statuses are handled above
   console.log(`SMOKE-SKIP edge combat-v1 (${err instanceof Error ? err.message : err})`);
 }
 

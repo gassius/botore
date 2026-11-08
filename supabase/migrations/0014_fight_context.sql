@@ -33,7 +33,24 @@ declare
     v_owned integer;
     v_allowances_remaining integer;
     v_utc_day date := (now() at time zone 'utc')::date;
+    -- Caller identity from JWT claims only (never current_user inside SECURITY DEFINER).
+    v_caller uuid := auth.uid();
+    v_jwt_role text := coalesce(auth.role(), '');
 begin
+    -- Explicit role gate: Edge uses service_role after verifying the user JWT.
+    -- Authenticated callers may only request their own account_id.
+    if v_jwt_role = 'service_role' then
+        null;
+    elsif v_jwt_role = 'authenticated' then
+        if v_caller is null or v_caller is distinct from p_account_id then
+            raise exception 'forbidden: prepare_fight_context requires matching auth.uid()'
+                using errcode = '42501';
+        end if;
+    else
+        raise exception 'forbidden: prepare_fight_context requires authenticated or service_role'
+            using errcode = '42501';
+    end if;
+
     if p_account_id is null then
         return jsonb_build_object(
             'ok', false,
@@ -235,11 +252,12 @@ end;
 $$;
 
 revoke all on function public.prepare_fight_context(uuid, text) from public;
+revoke all on function public.prepare_fight_context(uuid, text) from anon;
 grant execute on function public.prepare_fight_context(uuid, text)
     to service_role, authenticated;
 
 comment on function public.prepare_fight_context(uuid, text) is
-  'F2 eligibility + immutable fighter snapshots for combat-v1 Edge Function. Does not consume allowance (F3).';
+  'F2 eligibility + immutable fighter snapshots for combat-v1 Edge Function. service_role or auth.uid()=p_account_id only. Does not consume allowance (F3).';
 
 -- B2-oriented readability: who can fight, with allowance depth.
 create or replace view public.admin_fight_readiness

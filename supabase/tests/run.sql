@@ -390,14 +390,19 @@ begin
     raise notice 'TEST-OK backend health snapshot and admin views';
   end;
 
-  -- F2 prepare_fight_context ------------------------------------------------
+  -- F2 prepare_fight_context (authz + eligibility) --------------------------
   -- Note: earlier save_bot_loadout happy-path left player on paint-cobalt + axe.
   declare
     v_ctx jsonb;
     v_weapon text;
+    v_other uuid := '11111111-1111-4111-8111-111111111111';
   begin
     select loadout->>'weapon' into v_weapon
       from public.current_bot_loadouts where character_id = 'player-hero';
+
+    -- service_role success path (Edge Function shape)
+    perform set_config('request.jwt.claim.role', 'service_role', true);
+    perform set_config('request.jwt.claim.sub', '', true);
 
     v_ctx := public.prepare_fight_context(v_account, 'opp-sir-bot');
     perform tests.assert((v_ctx->>'ok')::boolean, 'fight context should be ok');
@@ -420,6 +425,36 @@ begin
 
     v_ctx := public.prepare_fight_context(v_account, 'player-hero');
     perform tests.assert(not (v_ctx->>'ok')::boolean, 'self fight should fail');
-    raise notice 'TEST-OK prepare_fight_context eligibility';
+    raise notice 'TEST-OK prepare_fight_context eligibility (service_role)';
+
+    -- Two-account direct-RPC denial: authenticated A cannot query account B
+    perform set_config('request.jwt.claim.role', 'authenticated', true);
+    perform set_config('request.jwt.claim.sub', v_account::text, true);
+    begin
+      perform public.prepare_fight_context(v_other, 'opp-sir-bot');
+      raise exception 'AUTHZ FAIL: cross-account prepare_fight_context allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlerrm like 'forbidden:%' then null; else raise; end if;
+    end;
+    raise notice 'TEST-OK prepare_fight_context denies cross-account authenticated RPC';
+
+    -- Matching authenticated uid may call for self
+    v_ctx := public.prepare_fight_context(v_account, 'opp-sir-bot');
+    perform tests.assert((v_ctx->>'ok')::boolean, 'own-account authenticated fight context');
+
+    -- No JWT / bare role must not call
+    perform set_config('request.jwt.claim.role', '', true);
+    perform set_config('request.jwt.claim.sub', '', true);
+    begin
+      perform public.prepare_fight_context(v_account, 'opp-sir-bot');
+      raise exception 'AUTHZ FAIL: unauthenticated prepare_fight_context allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlerrm like 'forbidden:%' then null; else raise; end if;
+    end;
+    raise notice 'TEST-OK prepare_fight_context authz gates';
   end;
 end $$;

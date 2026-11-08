@@ -1,23 +1,24 @@
 #!/usr/bin/env node
 /**
- * Edge combat runtime compatibility evidence (F2 open item).
+ * F2 Edge combat runtime gate wrapper.
  *
- * Loads the SAME vendored ESM modules the Deno Edge Function imports and
- * asserts frozen combat-v1 golden checksums. Proves the Edge bundle remains
- * byte-stable with packages/combat-engine fixtures.
- *
- * Prerequisites: `node scripts/vendor-edge-combat.mjs` (and package builds).
+ * 1) Ensures vendored pure packages exist
+ * 2) Runs Deno tests against the shipped Edge handler path
+ *    (frozen golden checksum + auth/eligibility failures)
  *
  * Usage: node scripts/edge-combat-runtime-check.mjs
  */
-import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { pathToFileURL, fileURLToPath } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const vendor = join(root, 'supabase/functions/_shared/botore');
+const denoTestDir = join(root, 'supabase/functions/combat-v1');
+
+/** Frozen vector from packages/combat-engine golden snapshot — must not drift. */
+const FROZEN_CHECKSUM = 'd2a7c18d60ac6f5b27fcd9cfb4f183905e9c95c2b0cb8b1983549b57e8d49e2f';
 
 function fail(msg) {
   console.error(`EDGE-RUNTIME FAIL: ${msg}`);
@@ -34,86 +35,44 @@ if (!existsSync(join(vendor, 'combat-engine/index.js'))) {
   if (res.status !== 0) fail('vendor-edge-combat failed');
 }
 
-const { createSha256Rng, seedToKeyMaterial, deriveSeed } = await import(
-  pathToFileURL(join(vendor, 'rng/index.js')).href
-);
-const { simulateBattle } = await import(pathToFileURL(join(vendor, 'combat-engine/index.js')).href);
-const { validateReplay, verifyReplay } = await import(
-  pathToFileURL(join(vendor, 'replay/index.js')).href
-);
+// Resolve deno binary (CI installs via denoland/setup-deno; local may have it).
+function findDeno() {
+  const which = spawnSync('deno', ['--version'], { encoding: 'utf8' });
+  if (which.status === 0) return 'deno';
+  return null;
+}
 
-const knight = {
-  characterId: 'knight',
-  displayName: 'Sir Bot',
-  hp: 34,
-  strength: 6,
-  agility: 4,
-  speed: 5,
-  weaponKind: 'sword',
-  weaponPower: 3,
-};
-const rogue = {
-  characterId: 'rogue',
-  displayName: 'Dex Bot',
-  hp: 26,
-  strength: 4,
-  agility: 7,
-  speed: 8,
-  weaponKind: 'dagger',
-  weaponPower: 2,
-};
+const deno = findDeno();
+if (!deno) {
+  fail(
+    'deno not found on PATH — install Deno (CI: denoland/setup-deno) to run the Edge runtime gate',
+  );
+}
 
-const seed = deriveSeed('botore/golden/1');
-const replay = simulateBattle({
-  battleId: 'b-golden-1',
-  seed,
-  attacker: knight,
-  defender: rogue,
-  rng: createSha256Rng(seedToKeyMaterial(seed)),
-});
-
-validateReplay(replay);
-verifyReplay(replay);
-
-if (!/^[0-9a-f]{64}$/.test(replay.checksum)) fail('checksum malformed');
-if (replay.events[0]?.type !== 'battle_started') fail('first event');
-if (replay.events.at(-1)?.type !== 'battle_ended') fail('last event');
-if (replay.rulesVersion !== 'combat-v1') fail('rulesVersion');
-
-const replay2 = simulateBattle({
-  battleId: 'b-golden-1',
-  seed,
-  attacker: knight,
-  defender: rogue,
-  rng: createSha256Rng(seedToKeyMaterial(seed)),
-});
-if (replay2.checksum !== replay.checksum) fail('determinism broken across isolated runs');
-
-const bytes = new Uint8Array(32);
-crypto.getRandomValues(bytes);
-const liveSeed = Buffer.from(bytes).toString('hex');
-if (!/^[0-9a-f]{64}$/.test(liveSeed)) fail('csprng seed shape');
-
-const evidence = {
-  runtime: 'node-vendored-esm',
-  note: 'Same modules imported by supabase/functions/combat-v1 via relative _shared path',
-  golden: {
-    battleId: 'b-golden-1',
-    seedContext: 'botore/golden/1',
-    checksum: replay.checksum,
-    eventCount: replay.events.length,
-    outcome: replay.outcome,
+console.log('==> deno test Edge combat-v1 handler (frozen golden + auth/eligibility)');
+const test = spawnSync(deno, ['test', '-A', '--quiet', join(denoTestDir, 'handler_test.ts')], {
+  cwd: root,
+  encoding: 'utf8',
+  env: {
+    ...process.env,
+    // Make frozen checksum available if tests want to cross-check env.
+    BOTORE_FROZEN_GOLDEN_CHECKSUM: FROZEN_CHECKSUM,
   },
-  bundleHash: createHash('sha256')
-    .update(
-      [
-        readFileSync(join(vendor, 'combat-engine/index.js'), 'utf8'),
-        readFileSync(join(vendor, 'rng/index.js'), 'utf8'),
-        readFileSync(join(vendor, 'replay/index.js'), 'utf8'),
-      ].join('\n'),
-    )
-    .digest('hex'),
-};
+});
+if (test.stdout) process.stdout.write(test.stdout);
+if (test.stderr) process.stderr.write(test.stderr);
+if (test.status !== 0) fail(`deno test failed with status ${test.status}`);
 
-console.log(JSON.stringify(evidence, null, 2));
-console.log('EDGE-RUNTIME-OK combat-v1 vendored golden fixtures');
+console.log(
+  JSON.stringify(
+    {
+      runtime: 'deno',
+      handler: 'supabase/functions/combat-v1/handler.ts',
+      frozenChecksum: FROZEN_CHECKSUM,
+      gate: 'handler_test.ts',
+    },
+    null,
+    2,
+  ),
+);
+console.log('EDGE-RUNTIME-OK combat-v1 Deno handler + frozen golden');

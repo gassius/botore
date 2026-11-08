@@ -44,11 +44,17 @@ jobs:
           pnpm --filter @botore/replay exec vitest run --coverage
           pnpm --filter @botore/rng exec vitest run --coverage
 
-      - name: Vendor Edge combat packages + runtime golden check
+      - name: Setup Deno (Edge Function runtime gate)
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.1.4
+
+      - name: Vendor Edge combat packages + Deno handler golden gate
         run: |
           pnpm exec turbo run build --filter=@botore/rng --filter=@botore/replay --filter=@botore/combat-engine
           node scripts/vendor-edge-combat.mjs
           node scripts/edge-combat-runtime-check.mjs
+          node --test scripts/smoke-combat-assert.test.mjs
 
       - name: Architecture boundary check
         run: node scripts/check-boundaries.mjs
