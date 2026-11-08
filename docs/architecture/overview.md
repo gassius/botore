@@ -18,6 +18,12 @@ Implementation layout for this repo. Canonical decisions:
 Bots are data. Image and audio packs are versioned and modular.
 `docs/architecture/combat-v1.md` is the fight spec.
 `docs/audio/README.md` is the audio file index.
+Backend health / smoke / coverage: `docs/backend/verify.md`.
+
+Bots-as-data tables (F1): `parts_catalogue`, `inventory_ledger`,
+`bot_loadout_versions`, plus `save_bot_loadout()` for ownership and slot
+checks. Admin-oriented read views (`admin_*`) and `backend_health_snapshot()`
+are ready for a future dashboard (B2) — not built here.
 
 This checkout still contains leftover Fastify `apps/api` and `apps/worker`.
 Do not extend them. Target path: client → Edge Function → Postgres function.

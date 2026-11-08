@@ -36,6 +36,11 @@ jobs:
       - name: Lint, typecheck, unit/property/golden tests (turbo)
         run: pnpm exec turbo run lint typecheck test
 
+      - name: Backend coverage gate (domain + contracts)
+        run: |
+          pnpm --filter @botore/domain exec vitest run --coverage
+          pnpm --filter @botore/contracts exec vitest run --coverage
+
       - name: Architecture boundary check
         run: node scripts/check-boundaries.mjs
 
@@ -79,11 +84,16 @@ jobs:
           export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
           pnpm exec supabase db reset --local
 
-      - name: Database tests (RLS, idempotency, append-only)
+      - name: Database tests (RLS, idempotency, append-only, bots-as-data)
         run: |
           sudo apt-get update && sudo apt-get install -y postgresql-client
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
             -v ON_ERROR_STOP=1 -q -f supabase/tests/run.sql
+
+      - name: Backend smoke (health + catalogue + admin views)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: node scripts/backend-smoke.mjs
 
       - name: API integration tests
         env:

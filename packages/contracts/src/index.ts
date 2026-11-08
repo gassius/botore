@@ -74,6 +74,70 @@ export const ReplayResponseSchema = Type.Object({
 });
 export type ReplayResponse = Static<typeof ReplayResponseSchema>;
 
+// --- Bots-as-data loadouts -------------------------------------------------
+
+export const PartSlotKindSchema = Type.Union([
+  Type.Literal('chassis'),
+  Type.Literal('paint'),
+  Type.Literal('weapon'),
+  Type.Literal('shield'),
+  Type.Literal('drone'),
+  Type.Literal('decal'),
+]);
+export type PartSlotKindDto = Static<typeof PartSlotKindSchema>;
+
+export const CataloguePartSchema = Type.Object({
+  partId: IdSchema,
+  slotKind: PartSlotKindSchema,
+  displayName: Type.String({ minLength: 1, maxLength: 48 }),
+  weaponKind: Type.Union([
+    Type.Literal('sword'),
+    Type.Literal('axe'),
+    Type.Literal('dagger'),
+    Type.Null(),
+  ]),
+  weaponPower: Type.Union([Type.Integer({ minimum: 0, maximum: 99 }), Type.Null()]),
+  soundTags: Type.Array(Type.String({ minLength: 1, maxLength: 64 }), { maxItems: 16 }),
+  mediaKey: Type.String({ minLength: 1, maxLength: 256 }),
+  isActive: Type.Boolean(),
+});
+export type CataloguePartDto = Static<typeof CataloguePartSchema>;
+
+export const BotLoadoutSchema = Type.Object({
+  chassis: IdSchema,
+  paint: IdSchema,
+  weapon: IdSchema,
+  shield: Type.Union([IdSchema, Type.Null()]),
+  drone: Type.Union([IdSchema, Type.Null()]),
+  decals: Type.Array(IdSchema, { maxItems: 8 }),
+  soundTags: Type.Array(Type.String({ minLength: 1, maxLength: 64 }), { maxItems: 32 }),
+});
+export type BotLoadoutDto = Static<typeof BotLoadoutSchema>;
+
+export const SaveBotLoadoutRequestSchema = Type.Object({
+  characterId: IdSchema,
+  loadout: Type.Object({
+    chassis: IdSchema,
+    paint: IdSchema,
+    weapon: IdSchema,
+    shield: Type.Optional(Type.Union([IdSchema, Type.Null()])),
+    drone: Type.Optional(Type.Union([IdSchema, Type.Null()])),
+    decals: Type.Optional(Type.Array(IdSchema, { maxItems: 8 })),
+    soundTags: Type.Optional(
+      Type.Array(Type.String({ minLength: 1, maxLength: 64 }), { maxItems: 32 }),
+    ),
+  }),
+  atlasVersion: Type.Optional(Type.String({ pattern: '^v[0-9]+$' })),
+});
+export type SaveBotLoadoutRequest = Static<typeof SaveBotLoadoutRequestSchema>;
+
+export const SaveBotLoadoutResponseSchema = Type.Object({
+  loadoutVersionId: UuidSchema,
+  loadout: BotLoadoutSchema,
+  atlasVersion: Type.String({ pattern: '^v[0-9]+$' }),
+});
+export type SaveBotLoadoutResponse = Static<typeof SaveBotLoadoutResponseSchema>;
+
 // --- Health ----------------------------------------------------------------
 
 export const HealthSchema = Type.Object({
@@ -88,6 +152,15 @@ export const ReadySchema = Type.Object({
   checks: Type.Record(Type.String(), Type.Boolean()),
 });
 export type Ready = Static<typeof ReadySchema>;
+
+/** Edge Function / SQL backend_health_snapshot response. */
+export const BackendHealthSchema = Type.Object({
+  status: Type.Union([Type.Literal('ok'), Type.Literal('degraded'), Type.Literal('error')]),
+  service: Type.Optional(Type.String()),
+  checks: Type.Record(Type.String(), Type.Unknown()),
+  checked_at: Type.Optional(Type.String()),
+});
+export type BackendHealth = Static<typeof BackendHealthSchema>;
 
 /** Converts a validated opponent into the engine's fighter snapshot shape. */
 export function opponentToFighterSnapshot(o: Opponent): FighterSnapshot {

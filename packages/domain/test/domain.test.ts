@@ -4,6 +4,7 @@ import {
   DAILY_FIGHT_ALLOWANCE,
   XP_FOR_LOSS,
   XP_FOR_WIN,
+  totalXp,
 } from '../src/index.js';
 
 const build: CharacterBuild = {
@@ -29,5 +30,10 @@ describe('vertical-slice domain constants', () => {
       const copy: CharacterBuild = { ...build, characterId: 'c2' };
       return copy;
     }).not.toThrow();
+  });
+
+  it('sums progression XP entries', () => {
+    expect(totalXp([])).toBe(0);
+    expect(totalXp([XP_FOR_WIN, XP_FOR_LOSS])).toBe(3);
   });
 });
