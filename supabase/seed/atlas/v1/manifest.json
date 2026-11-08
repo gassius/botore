@@ -1,0 +1,87 @@
+{
+  "version": "v1",
+  "status": "published",
+  "note": "Placeholder proof pack. Export sizes and cache budgets are provisional \u2014 not final.",
+  "basePack": {
+    "uiTap": "base/audio/ui-tap.m4a",
+    "musicLoop": "base/audio/music-loop.m4a",
+    "hit": "base/audio/hit.m4a",
+    "dodge": "base/audio/dodge.m4a",
+    "defeat": "base/audio/defeat.m4a",
+    "hush": "base/audio/hush.m4a",
+    "win": "base/audio/win.m4a",
+    "swing": "base/audio/swing.m4a"
+  },
+  "arena": {
+    "quiet": {
+      "image": "arenas/quiet/bg.png",
+      "ambient": "arenas/quiet/ambient.m4a"
+    }
+  },
+  "fx": {
+    "hit": "fx/hit.png",
+    "dodge": "fx/dodge.png",
+    "defeat": "fx/defeat.png"
+  },
+  "parts": {
+    "chassis-basic": {
+      "images": [
+        "parts/chassis-basic/body.png",
+        "parts/chassis-basic/mask.png"
+      ],
+      "audio": [
+        "parts/chassis-basic/hit.m4a"
+      ],
+      "soundTags": [
+        "chassis.light"
+      ]
+    },
+    "paint-crimson": {
+      "images": [
+        "parts/paint-crimson/swatch.png"
+      ],
+      "audio": [],
+      "soundTags": []
+    },
+    "paint-cobalt": {
+      "images": [
+        "parts/paint-cobalt/swatch.png"
+      ],
+      "audio": [],
+      "soundTags": []
+    },
+    "weapon-sword": {
+      "images": [
+        "parts/weapon-sword/sprite.png"
+      ],
+      "audio": [
+        "parts/weapon-sword/swing.m4a"
+      ],
+      "soundTags": [
+        "weapon.sword"
+      ]
+    },
+    "weapon-axe": {
+      "images": [
+        "parts/weapon-axe/sprite.png"
+      ],
+      "audio": [
+        "parts/weapon-axe/swing.m4a"
+      ],
+      "soundTags": [
+        "weapon.axe"
+      ]
+    },
+    "weapon-dagger": {
+      "images": [
+        "parts/weapon-dagger/sprite.png"
+      ],
+      "audio": [
+        "parts/weapon-dagger/swing.m4a"
+      ],
+      "soundTags": [
+        "weapon.dagger"
+      ]
+    }
+  }
+}

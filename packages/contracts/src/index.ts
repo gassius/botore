@@ -180,6 +180,32 @@ export const SaveBotLoadoutResponseSchema = Type.Object({
 });
 export type SaveBotLoadoutResponse = Static<typeof SaveBotLoadoutResponseSchema>;
 
+// --- Atlas media packs -----------------------------------------------------
+
+export const AtlasManifestEntrySchema = Type.Object({
+  assetKey: Type.String({ minLength: 1, maxLength: 128 }),
+  kind: Type.Union([Type.Literal('image'), Type.Literal('audio'), Type.Literal('manifest')]),
+  partId: Type.Union([IdSchema, Type.Null()]),
+  role: Type.String({ minLength: 1, maxLength: 64 }),
+  path: Type.String({ minLength: 1, maxLength: 256 }),
+  storagePath: Type.Optional(Type.String({ minLength: 1, maxLength: 320 })),
+  soundTags: Type.Array(Type.String({ minLength: 1, maxLength: 64 }), { maxItems: 16 }),
+});
+export type AtlasManifestEntryDto = Static<typeof AtlasManifestEntrySchema>;
+
+export const AtlasManifestResponseSchema = Type.Object({
+  ok: Type.Literal(true),
+  version: Type.String({ pattern: '^v[0-9]+$' }),
+  status: Type.Literal('published'),
+  publishedAt: Type.Union([Type.String(), Type.Null()]),
+  budgetsFinal: Type.Literal(false),
+  manifest: Type.Record(Type.String(), Type.Unknown()),
+  entries: Type.Array(AtlasManifestEntrySchema),
+  bucket: Type.Literal('atlas'),
+  prefix: Type.String({ minLength: 1, maxLength: 32 }),
+});
+export type AtlasManifestResponse = Static<typeof AtlasManifestResponseSchema>;
+
 // --- Health ----------------------------------------------------------------
 
 export const HealthSchema = Type.Object({

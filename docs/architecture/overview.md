@@ -38,6 +38,10 @@ Outbox drain and allowance refresh run on **pg_cron** (`botore-outbox-drain`,
 `ensure_fight_allowances()`. Failed outbox rows stay visible
 (`last_error` / `dead_lettered_at`); no Fastify worker.
 
+Media packs (F5): versioned `atlas/vN/` in Supabase Storage with an immutable
+published manifest (`atlas_versions` / `atlas_manifest_entries`). Fights pin
+`battle_participants.atlas_version`. See `docs/architecture/atlas.md`.
+
 This checkout still contains leftover Fastify `apps/api` and `apps/worker`.
 Do not extend them. Target path: client → Edge Function → Postgres function
 → pg_cron.

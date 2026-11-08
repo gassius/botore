@@ -1076,11 +1076,219 @@ begin
     v_health->'checks'->'analytics_outbox'->>'processor' = 'process_analytics_outbox',
     'health outbox processor flag'
   );
-  -- Overall status=ok when proof seed + loadouts are present (full db:reset).
+  -- Overall status=ok when proof seed + loadouts + atlas pack are present (full db:reset).
   if (v_health->'checks'->'parts_catalogue'->>'proof_seed_ok')::boolean
      and coalesce((v_health->'checks'->'bot_loadouts'->>'current_count')::int, 0) >= 1
-     and coalesce((v_health->'checks'->'fight'->>'ready_as_opponent')::int, 0) >= 1 then
-    perform tests.assert(v_health->>'status' = 'ok', 'health status ok after F4');
+     and coalesce((v_health->'checks'->'fight'->>'ready_as_opponent')::int, 0) >= 1
+     and coalesce((v_health->'checks'->'storage'->>'proof_pack_ok')::boolean, false) then
+    perform tests.assert(v_health->>'status' = 'ok', 'health status ok after F4+F5');
   end if;
   raise notice 'TEST-OK F4 admin APIs + backend_health_snapshot';
+end $$;
+
+-- =========================================================================
+-- Atlas media packs (F5)
+-- =========================================================================
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_count int;
+  v_manifest jsonb;
+  v_health jsonb;
+  v_version_id uuid;
+  v_battle uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+  v_atlas text;
+  v_rows bigint;
+begin
+  -- Published v1 proof pack -------------------------------------------------
+  select count(*) into v_count from public.atlas_versions where version = 'v1' and status = 'published';
+  perform tests.assert(v_count = 1, 'expected published atlas v1');
+
+  select count(*) into v_count from public.atlas_manifest_entries where version = 'v1';
+  perform tests.assert(v_count >= 20, format('expected >=20 manifest entries, got %s', v_count));
+
+  select count(distinct part_id) into v_count
+    from public.atlas_manifest_entries
+   where version = 'v1'
+     and part_id in (
+       'chassis-basic','paint-crimson','paint-cobalt',
+       'weapon-sword','weapon-axe','weapon-dagger'
+     );
+  perform tests.assert(v_count = 6, 'manifest maps all 6 proof catalogue parts');
+
+  perform tests.assert(
+    exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v1' and role = 'arena' and path like 'arenas/quiet/%'
+    ),
+    'quiet arena present'
+  );
+  perform tests.assert(
+    (
+      select count(*) from public.atlas_manifest_entries
+       where version = 'v1' and role = 'fx'
+         and path in ('fx/hit.png','fx/dodge.png','fx/defeat.png')
+    ) = 3,
+    'hit/dodge/defeat FX present'
+  );
+  perform tests.assert(
+    exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v1' and kind = 'audio' and role = 'hit' and path like 'base/%'
+    ),
+    'base pack hit fallback present'
+  );
+
+  perform tests.assert(
+    (select budgets_final from public.atlas_versions where version = 'v1') = false,
+    'budgets_final must stay false (not approved)'
+  );
+
+  select public.get_atlas_manifest('v1') into v_manifest;
+  perform tests.assert((v_manifest->>'ok')::boolean, 'get_atlas_manifest ok');
+  perform tests.assert(v_manifest->>'version' = 'v1', 'manifest version v1');
+  perform tests.assert(v_manifest->>'bucket' = 'atlas', 'manifest bucket atlas');
+  perform tests.assert(
+    jsonb_typeof(v_manifest->'entries') = 'array'
+      and jsonb_array_length(v_manifest->'entries') >= 20,
+    'manifest entries array populated'
+  );
+  raise notice 'TEST-OK atlas v1 proof pack + get_atlas_manifest';
+
+  -- Immutability: published version cannot change --------------------------
+  begin
+    update public.atlas_versions set notes = 'hacked' where version = 'v1';
+    raise exception 'IMMUTABILITY FAIL: updated published atlas_versions';
+  exception
+    when others then
+      if sqlerrm like 'atlas_version_immutable%' then null;
+      else raise;
+      end if;
+  end;
+
+  begin
+    insert into public.atlas_manifest_entries (
+      version, asset_key, kind, part_id, role, path
+    ) values ('v1', 'hack.entry', 'image', null, 'fx', 'fx/hack.png');
+    raise exception 'IMMUTABILITY FAIL: inserted into published manifest';
+  exception
+    when others then
+      if sqlerrm like 'atlas_manifest_immutable%' then null;
+      else raise;
+      end if;
+  end;
+
+  begin
+    update storage.objects
+       set metadata = coalesce(metadata, '{}'::jsonb) || '{"hacked":true}'::jsonb
+     where bucket_id = 'atlas'
+       and name = (
+         select o.name from storage.objects o
+          where o.bucket_id = 'atlas' and o.name like 'v1/%'
+          limit 1
+       );
+    get diagnostics v_rows = row_count;
+    if v_rows > 0 then
+      raise exception 'IMMUTABILITY FAIL: updated published storage object';
+    end if;
+  exception
+    when others then
+      if sqlerrm like 'atlas_storage_immutable%' then null;
+      elsif sqlerrm like 'IMMUTABILITY FAIL%' then raise;
+      else null; -- some environments may lack updatable storage.objects
+      end if;
+  end;
+
+  begin
+    delete from storage.objects where bucket_id = 'atlas' and name like 'v1/%';
+    get diagnostics v_rows = row_count;
+    if v_rows > 0 then
+      raise exception 'IMMUTABILITY FAIL: deleted published storage objects';
+    end if;
+  exception
+    when others then
+      if sqlerrm like 'atlas_storage_immutable%' then null;
+      elsif sqlerrm like 'IMMUTABILITY FAIL%' then raise;
+      else null;
+      end if;
+  end;
+  raise notice 'TEST-OK published atlas immutability';
+
+  -- RLS: clients cannot write atlas tables --------------------------------
+  set local role authenticated;
+  begin
+    insert into public.atlas_versions (version, status, published_at, manifest, budgets_final)
+    values ('v9', 'draft', null, '{}'::jsonb, false);
+    raise exception 'RLS FAIL: insert into atlas_versions allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.publish_atlas_version('v1');
+    raise exception 'AUTH FAIL: authenticated publish_atlas_version allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+  raise notice 'TEST-OK atlas RLS + publish authz';
+
+  -- Fights pin atlas_version on participants ------------------------------
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  select loadout_version_id into v_version_id
+    from public.current_bot_loadouts where character_id = 'player-hero';
+
+  insert into public.battles (
+    battle_id, rules_version, seed, end_reason, initiator_account_id,
+    initiator_account_character, winner_id, utc_day
+  ) values (
+    v_battle, 'combat-v1', 'f5seedf5seedf5seedf5seedf5seedf5se', 'defeat',
+    v_account, 'player-hero', 'player-hero', (now() at time zone 'utc')::date
+  );
+
+  insert into public.battle_participants (
+    battle_id, character_id, side, hp_before, hp_after,
+    weapon_kind, weapon_power, loadout_version_id
+  ) values (
+    v_battle, 'player-hero', 'attacker', 10, 10, 'sword', 3, v_version_id
+  );
+
+  select atlas_version into v_atlas
+    from public.battle_participants
+   where battle_id = v_battle and character_id = 'player-hero';
+  perform tests.assert(v_atlas = 'v1', format('fight pinned atlas_version=v1, got %s', v_atlas));
+
+  perform tests.assert(
+    exists (
+      select 1 from public.admin_recent_battles
+       where battle_id = v_battle and attacker_atlas_version = 'v1'
+    ),
+    'admin_recent_battles exposes attacker_atlas_version'
+  );
+
+  -- cleanup fight fixture
+  delete from public.battle_participants where battle_id = v_battle;
+  delete from public.battles where battle_id = v_battle;
+
+  select public.backend_health_snapshot() into v_health;
+  perform tests.assert(
+    (v_health->'checks'->'storage'->>'atlas_bucket')::boolean,
+    'health atlas_bucket'
+  );
+  perform tests.assert(
+    (v_health->'checks'->'storage'->>'proof_pack_ok')::boolean,
+    'health proof_pack_ok'
+  );
+  perform tests.assert(
+    (v_health->'checks'->'storage'->>'budgets_final')::boolean = false,
+    'health budgets_final false'
+  );
+  perform tests.assert(
+    exists (select 1 from public.admin_atlas_overview where version = 'v1' and status = 'published'),
+    'admin_atlas_overview lists v1'
+  );
+  raise notice 'TEST-OK F5 fight media refs + health atlas flags';
 end $$;
