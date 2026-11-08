@@ -6,10 +6,8 @@
 -- (account_id, idempotency_key) return the original result without side effects.
 -- Defender pays nothing; defender core progression is never written.
 --
--- Authz mirrors save_bot_loadout / prepare_fight_context:
---   service_role → Edge Function path
---   authenticated → only for auth.uid() = p_account_id
---   anon / bare → forbidden
+-- Authz: service_role ONLY (trusted Edge after JWT verify).
+-- Never grant authenticated/anon — clients must not submit authoritative results.
 --
 -- Carlos authorization: ClickUp F3 (1amjtrexztz) implementer assignment.
 
@@ -54,7 +52,6 @@ security definer
 set search_path = public, extensions
 as $$
 declare
-    v_caller uuid := auth.uid();
     v_jwt_role text := coalesce(auth.role(), '');
     v_existing record;
     v_xp_awarded integer;
@@ -78,23 +75,14 @@ declare
     v_atk_weapon_power integer;
     v_def_weapon_kind text;
     v_def_weapon_power integer;
+    v_utc_day date := (now() at time zone 'utc')::date;
 begin
-    -- Explicit role gate (no anonymous / bare-postgres bypass).
-    if v_jwt_role = 'service_role' then
-        null;
-    elsif v_jwt_role = 'authenticated' then
-        if v_caller is null or v_caller is distinct from p_account_id then
-            return jsonb_build_object(
-                'ok', false,
-                'code', 'forbidden',
-                'message', 'persist_fight_result requires account ownership'
-            );
-        end if;
-    else
+    -- Edge-only: clients must not submit authoritative fight results.
+    if v_jwt_role is distinct from 'service_role' then
         return jsonb_build_object(
             'ok', false,
             'code', 'forbidden',
-            'message', 'persist_fight_result requires authenticated or service_role'
+            'message', 'persist_fight_result requires service_role'
         );
     end if;
 
@@ -176,7 +164,7 @@ begin
         select count(*)::integer into v_allowances_remaining
           from public.fight_allowances
          where account_id = p_account_id
-           and utc_day = p_utc_day
+           and utc_day = v_utc_day
            and used_at is null;
 
         return jsonb_build_object(
@@ -300,7 +288,7 @@ begin
         select fa.fight_allowance_id
           from public.fight_allowances fa
          where fa.account_id = p_account_id
-           and fa.utc_day = p_utc_day
+           and fa.utc_day = v_utc_day
            and fa.used_at is null
          order by fa.slot_index
          for update skip locked
@@ -314,7 +302,7 @@ begin
             'code', 'allowance_exhausted',
             'message', 'daily fight allowance exhausted',
             'allowancesRemaining', 0,
-            'utcDay', p_utc_day
+            'utcDay', v_utc_day
         );
     end if;
 
@@ -340,7 +328,7 @@ begin
         v_attacker_id,
         v_winner_id,
         v_reason,
-        p_utc_day
+        v_utc_day
     );
 
     insert into public.battle_participants (
@@ -414,7 +402,7 @@ begin
             select count(*)::integer into v_allowances_remaining
               from public.fight_allowances
              where account_id = p_account_id
-               and utc_day = p_utc_day
+               and utc_day = v_utc_day
                and used_at is null;
 
             -- Abort THIS transaction's partial writes; caller sees repeated.
@@ -425,7 +413,7 @@ begin
     select count(*)::integer into v_allowances_remaining
       from public.fight_allowances
      where account_id = p_account_id
-       and utc_day = p_utc_day
+       and utc_day = v_utc_day
        and used_at is null;
 
     return jsonb_build_object(
@@ -450,7 +438,7 @@ exception
         select count(*)::integer into v_allowances_remaining
           from public.fight_allowances
          where account_id = p_account_id
-           and utc_day = p_utc_day
+           and utc_day = v_utc_day
            and used_at is null;
 
         return jsonb_build_object(
@@ -472,14 +460,142 @@ revoke all on function public.persist_fight_result(
 revoke all on function public.persist_fight_result(
     uuid, text, text, uuid, text, text, jsonb, jsonb, jsonb, date
 ) from anon;
+revoke all on function public.persist_fight_result(
+    uuid, text, text, uuid, text, text, jsonb, jsonb, jsonb, date
+) from authenticated;
 grant execute on function public.persist_fight_result(
     uuid, text, text, uuid, text, text, jsonb, jsonb, jsonb, date
-) to service_role, authenticated;
+) to service_role;
 
 comment on function public.persist_fight_result(
     uuid, text, text, uuid, text, text, jsonb, jsonb, jsonb, date
 ) is
-  'F3 atomic fight persist: allowance consume + battle/replay/ledger/outbox + idempotency. Attacker XP only.';
+  'F3 Edge-only atomic fight persist (service_role). Allowance + battle/replay/attacker XP/outbox/idempotency.';
+
+-- Early idempotent replay for Edge: resolve key AFTER auth, BEFORE eligibility.
+create or replace function public.lookup_fight_by_idempotency(
+    p_account_id uuid,
+    p_idempotency_key text
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, extensions
+as $$
+declare
+    v_jwt_role text := coalesce(auth.role(), '');
+    v_battle record;
+    v_xp_awarded integer;
+    v_allowances_remaining integer;
+    v_utc_day date := (now() at time zone 'utc')::date;
+    v_atk_loadout uuid;
+    v_def_loadout uuid;
+    v_atk_atlas text;
+    v_def_atlas text;
+begin
+    if v_jwt_role is distinct from 'service_role' then
+        return jsonb_build_object(
+            'ok', false,
+            'code', 'forbidden',
+            'message', 'lookup_fight_by_idempotency requires service_role'
+        );
+    end if;
+
+    if p_account_id is null then
+        return jsonb_build_object(
+            'ok', false,
+            'code', 'unauthenticated',
+            'message', 'account required'
+        );
+    end if;
+
+    if p_idempotency_key is null
+       or char_length(p_idempotency_key) < 8
+       or char_length(p_idempotency_key) > 128 then
+        return jsonb_build_object(
+            'ok', false,
+            'code', 'invalid_idempotency_key',
+            'message', 'Idempotency-Key required (8..128 chars)'
+        );
+    end if;
+
+    select
+        b.battle_id,
+        b.winner_id,
+        b.end_reason,
+        b.utc_day,
+        b.seed,
+        r.checksum,
+        r.payload as replay
+      into v_battle
+      from public.battle_commands c
+      join public.battles b using (battle_id)
+      left join public.battle_replays r using (battle_id)
+     where c.account_id = p_account_id
+       and c.idempotency_key = p_idempotency_key;
+
+    if not found then
+        return jsonb_build_object(
+            'ok', true,
+            'found', false
+        );
+    end if;
+
+    select coalesce(sum(delta_xp), 0)::integer into v_xp_awarded
+      from public.progression_ledger
+     where account_id = p_account_id
+       and battle_id = v_battle.battle_id;
+
+    select count(*)::integer into v_allowances_remaining
+      from public.fight_allowances
+     where account_id = p_account_id
+       and utc_day = v_utc_day
+       and used_at is null;
+
+    select bp.loadout_version_id, lv.atlas_version
+      into v_atk_loadout, v_atk_atlas
+      from public.battle_participants bp
+      left join public.bot_loadout_versions lv using (loadout_version_id)
+     where bp.battle_id = v_battle.battle_id and bp.side = 'attacker';
+
+    select bp.loadout_version_id, lv.atlas_version
+      into v_def_loadout, v_def_atlas
+      from public.battle_participants bp
+      left join public.bot_loadout_versions lv using (loadout_version_id)
+     where bp.battle_id = v_battle.battle_id and bp.side = 'defender';
+
+    return jsonb_build_object(
+        'ok', true,
+        'found', true,
+        'battleId', v_battle.battle_id,
+        'xpAwarded', v_xp_awarded,
+        'replayChecksum', coalesce(v_battle.checksum, ''),
+        'winnerId', to_jsonb(v_battle.winner_id),
+        'reason', v_battle.end_reason,
+        'seed', v_battle.seed,
+        'utcDay', v_battle.utc_day,
+        'allowancesRemaining', v_allowances_remaining,
+        'replay', coalesce(v_battle.replay, '{}'::jsonb),
+        'loadoutVersionIds', jsonb_build_object(
+            'attacker', to_jsonb(v_atk_loadout),
+            'defender', to_jsonb(v_def_loadout)
+        ),
+        'atlasVersions', jsonb_build_object(
+            'attacker', coalesce(v_atk_atlas, 'v1'),
+            'defender', coalesce(v_def_atlas, 'v1')
+        )
+    );
+end;
+$$;
+
+revoke all on function public.lookup_fight_by_idempotency(uuid, text) from public;
+revoke all on function public.lookup_fight_by_idempotency(uuid, text) from anon;
+revoke all on function public.lookup_fight_by_idempotency(uuid, text) from authenticated;
+grant execute on function public.lookup_fight_by_idempotency(uuid, text) to service_role;
+
+comment on function public.lookup_fight_by_idempotency(uuid, text) is
+  'F3 Edge-only idempotent fight lookup (service_role). Used before prepare_fight_context.';
 
 -- B2-oriented readability: recent persisted fights (not a UI).
 create or replace view public.admin_recent_battles

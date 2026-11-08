@@ -742,7 +742,7 @@ begin
       raise notice 'TEST-OK persist_fight_result allowance exhaustion';
     end;
 
-    -- Authz: anon cannot execute; authenticated non-owner forbidden.
+    -- Authz: anon / authenticated cannot EXECUTE; body gate rejects non-service JWT.
     set local role anon;
     begin
       perform public.persist_fight_result(
@@ -758,18 +758,71 @@ begin
     reset role;
     raise notice 'TEST-OK anon cannot execute persist_fight_result';
 
+    -- Owning authenticated: execute privilege revoked (direct client RPC denied).
     perform set_config('request.jwt.claim.role', 'authenticated', true);
-    perform set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+    perform set_config('request.jwt.claim.sub', v_account::text, true);
+    set local role authenticated;
+    begin
+      perform public.persist_fight_result(
+        v_account, 'f3-owner-denied-01', 'opp-sir-bot', gen_random_uuid(),
+        v_seed, 'combat-v1', v_replay, v_attacker, v_defender, v_day
+      );
+      raise exception 'AUTH FAIL: owning authenticated persist_fight_result allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+    raise notice 'TEST-OK owning authenticated cannot execute persist_fight_result';
+
+    -- Defense in depth: JWT authenticated but callable path still forbidden.
+    perform set_config('request.jwt.claim.role', 'authenticated', true);
+    perform set_config('request.jwt.claim.sub', v_account::text, true);
     v_res := public.persist_fight_result(
-      v_account, 'f3-owner-denied-01', 'opp-sir-bot', gen_random_uuid(),
+      v_account, 'f3-jwt-body-denied-01', 'opp-sir-bot', gen_random_uuid(),
       v_seed, 'combat-v1', v_replay, v_attacker, v_defender, v_day
     );
-    perform tests.assert(not (v_res->>'ok')::boolean, 'non-owner persist denied');
-    perform tests.assert(v_res->>'code' = 'forbidden', 'non-owner forbidden code');
-    raise notice 'TEST-OK persist_fight_result enforces ownership';
+    perform tests.assert(not (v_res->>'ok')::boolean, 'non-service JWT persist denied');
+    perform tests.assert(v_res->>'code' = 'forbidden', 'non-service forbidden code');
+    raise notice 'TEST-OK persist_fight_result body rejects non-service_role';
 
+    -- service_role lookup of earlier happy-path key (no extra consume).
     perform set_config('request.jwt.claim.role', 'service_role', true);
     perform set_config('request.jwt.claim.sub', '', true);
+    declare
+      v_lookup jsonb;
+    begin
+      v_lookup := public.lookup_fight_by_idempotency(v_account, v_key);
+      perform tests.assert((v_lookup->>'ok')::boolean, 'lookup ok');
+      perform tests.assert((v_lookup->>'found')::boolean, 'lookup found');
+      perform tests.assert(v_lookup->>'battleId' = v_battle::text, 'lookup battleId');
+      perform tests.assert(
+        v_lookup->'loadoutVersionIds'->>'attacker' = v_atk_loadout::text,
+        'lookup attacker loadout pin'
+      );
+      perform tests.assert(
+        not (public.lookup_fight_by_idempotency(v_account, 'f3-missing-key-xx')->>'found')::boolean,
+        'lookup miss'
+      );
+
+      -- Owning authenticated cannot execute lookup either.
+      perform set_config('request.jwt.claim.sub', v_account::text, true);
+      perform set_config('request.jwt.claim.role', 'authenticated', true);
+      set local role authenticated;
+      begin
+        perform public.lookup_fight_by_idempotency(v_account, v_key);
+        raise exception 'AUTH FAIL: owning authenticated lookup allowed';
+      exception
+        when insufficient_privilege then null;
+        when others then
+          if sqlstate = '42501' then null; else raise; end if;
+      end;
+      reset role;
+      perform set_config('request.jwt.claim.role', 'service_role', true);
+      perform set_config('request.jwt.claim.sub', '', true);
+      raise notice 'TEST-OK service_role lookup; authenticated denied lookup';
+    end;
 
     -- Health now reports persist_fight_result
     declare

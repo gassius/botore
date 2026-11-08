@@ -9,6 +9,7 @@ import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supa
 import type {
   CombatDeps,
   FightContext,
+  IdempotentFightLookup,
   PersistFightArgs,
   PersistFightResult,
 } from './handler.ts';
@@ -130,6 +131,17 @@ export function createCombatDeps(
       const { data: userData, error: userError } = await userClient.auth.getUser(jwt);
       if (userError || !userData.user?.id) return null;
       return userData.user.id;
+    },
+    async lookupFightByIdempotency(accountId: string, idempotencyKey: string) {
+      const admin = requireAdmin();
+      const { data, error } = await admin.rpc('lookup_fight_by_idempotency', {
+        p_account_id: accountId,
+        p_idempotency_key: idempotencyKey,
+      });
+      if (error) {
+        throw new Error(error.message);
+      }
+      return data as IdempotentFightLookup;
     },
     async prepareFightContext(accountId: string, opponentId: string) {
       const admin = requireAdmin();

@@ -136,9 +136,33 @@ export type PersistFightResult =
       allowancesRemaining?: number;
     };
 
+/** Result of lookup_fight_by_idempotency (before eligibility). */
+export type IdempotentFightLookup =
+  | { ok: true; found: false }
+  | {
+      ok: true;
+      found: true;
+      battleId: string;
+      xpAwarded: number;
+      replayChecksum: string;
+      winnerId: string | null;
+      reason: 'defeat' | 'action_limit_tiebreak';
+      seed: string;
+      utcDay: string;
+      allowancesRemaining: number;
+      replay: unknown;
+      loadoutVersionIds: { attacker: string | null; defender: string | null };
+      atlasVersions: { attacker: string; defender: string };
+    }
+  | { ok: false; code: string; message: string };
+
 /** Injectable deps so Deno tests can exercise auth / eligibility / persist without a live DB. */
 export type CombatDeps = {
   getUserId: (authHeader: string) => Promise<string | null>;
+  lookupFightByIdempotency: (
+    accountId: string,
+    idempotencyKey: string,
+  ) => Promise<IdempotentFightLookup>;
   prepareFightContext: (accountId: string, opponentId: string) => Promise<FightContext>;
   persistFightResult: (args: PersistFightArgs) => Promise<PersistFightResult>;
   loadPersistedReplay?: (battleId: string) => Promise<unknown | null>;
@@ -259,6 +283,48 @@ export async function handleCombatRequest(req: Request, deps: CombatDeps): Promi
       return json({ error: 'invalid or expired token', code: 'unauthenticated' }, 401);
     }
 
+    // P1: resolve existing idempotency key BEFORE eligibility/compute.
+    const prior = await deps.lookupFightByIdempotency(accountId, idempotencyKey);
+    if (!prior || typeof prior !== 'object' || !('ok' in prior)) {
+      return json({ error: 'malformed idempotency lookup', code: 'lookup_invalid' }, 500);
+    }
+    if (!prior.ok) {
+      const status =
+        prior.code === 'forbidden' || prior.code === 'unauthenticated' ? 401 : 400;
+      return json({ error: prior.message, code: prior.code }, status);
+    }
+    if (prior.found) {
+      const outcome = (
+        prior.replay as {
+          outcome?: { reason?: string; winner?: string; winnerByTiebreak?: string | null };
+        }
+      )?.outcome;
+      const winner =
+        outcome?.reason === 'defeat'
+          ? (outcome.winner ?? prior.winnerId)
+          : (outcome?.winnerByTiebreak ?? prior.winnerId);
+      return json(
+        {
+          battleId: prior.battleId,
+          status: 'completed',
+          rulesVersion: 'combat-v1',
+          seed: prior.seed,
+          outcome: { winner, reason: prior.reason },
+          replay: prior.replay,
+          replayChecksum: prior.replayChecksum,
+          xpAwarded: prior.xpAwarded,
+          loadoutVersionIds: prior.loadoutVersionIds,
+          atlasVersions: prior.atlasVersions,
+          allowancesRemaining: prior.allowancesRemaining,
+          utcDay: prior.utcDay,
+          persistence: 'repeated',
+          repeated: true,
+          service: 'combat-v1',
+        },
+        200,
+      );
+    }
+
     const ctx = await deps.prepareFightContext(accountId, opponentId);
     if (!ctx || typeof ctx !== 'object' || !('ok' in ctx)) {
       return json({ error: 'malformed fight context', code: 'fight_context_invalid' }, 500);
@@ -324,25 +390,44 @@ export async function handleCombatRequest(req: Request, deps: CombatDeps): Promi
       return json({ error: persisted.message, code: persisted.code }, status);
     }
 
-    let responseReplay: typeof replay | Record<string, unknown> = replay;
-    let responseSeed = seed;
+    // Same-key race: persistence short-circuited to an earlier battle.
     if (persisted.repeated && persisted.battleId !== battleId) {
-      const stored = deps.loadPersistedReplay
-        ? await deps.loadPersistedReplay(persisted.battleId)
-        : null;
-      if (!stored || typeof stored !== 'object') {
+      const raced = await deps.lookupFightByIdempotency(accountId, idempotencyKey);
+      if (raced.ok && raced.found) {
+        const outcome = (
+          raced.replay as {
+            outcome?: { reason?: string; winner?: string; winnerByTiebreak?: string | null };
+          }
+        )?.outcome;
+        const winner =
+          outcome?.reason === 'defeat'
+            ? (outcome.winner ?? raced.winnerId)
+            : (outcome?.winnerByTiebreak ?? raced.winnerId);
         return json(
-          { error: 'idempotent replay lookup failed', code: 'persist_replay_missing' },
-          500,
+          {
+            battleId: raced.battleId,
+            status: 'completed',
+            rulesVersion: 'combat-v1',
+            seed: raced.seed,
+            outcome: { winner, reason: raced.reason },
+            replay: raced.replay,
+            replayChecksum: raced.replayChecksum,
+            xpAwarded: raced.xpAwarded,
+            loadoutVersionIds: raced.loadoutVersionIds,
+            atlasVersions: raced.atlasVersions,
+            allowancesRemaining: raced.allowancesRemaining,
+            utcDay: raced.utcDay,
+            persistence: 'repeated',
+            repeated: true,
+            service: 'combat-v1',
+          },
+          200,
         );
       }
-      responseReplay = stored as typeof replay;
-      const storedSeed = (stored as { seed?: unknown }).seed;
-      responseSeed = typeof storedSeed === 'string' ? storedSeed : seed;
     }
 
     const outcome = (
-      responseReplay as {
+      replay as {
         outcome?: { reason?: string; winner?: string; winnerByTiebreak?: string | null };
       }
     ).outcome;
@@ -356,12 +441,12 @@ export async function handleCombatRequest(req: Request, deps: CombatDeps): Promi
         battleId: persisted.battleId,
         status: 'completed',
         rulesVersion: 'combat-v1',
-        seed: responseSeed,
+        seed,
         outcome: {
           winner,
           reason: persisted.reason,
         },
-        replay: responseReplay,
+        replay,
         replayChecksum: persisted.replayChecksum,
         xpAwarded: persisted.xpAwarded,
         loadoutVersionIds: {
