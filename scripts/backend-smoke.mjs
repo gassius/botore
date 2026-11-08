@@ -10,11 +10,12 @@
  *   - prepare_fight_context eligibility (F2)
  *   - persist_fight_result idempotent consume + XP (F3)
  *   - process_analytics_outbox + pg_cron jobs (F4)
- *   - Optional Edge Functions /health and /combat-v1 when reachable
+ *   - Edge Functions /health and /combat-v1 (required when REQUIRE_EDGE_FUNCTIONS=1)
  *
  * Usage:
  *   node scripts/backend-smoke.mjs
  *   DATABASE_URL=... node scripts/backend-smoke.mjs
+ *   REQUIRE_EDGE_FUNCTIONS=1 node scripts/backend-smoke.mjs   # CI / full gate
  */
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
@@ -58,10 +59,17 @@ function loadSupabaseKeys() {
 }
 
 const { anon: ANON_KEY, service: SERVICE_ROLE_KEY } = loadSupabaseKeys();
+const REQUIRE_EDGE =
+  process.env.REQUIRE_EDGE_FUNCTIONS === '1' || process.env.REQUIRE_EDGE_FUNCTIONS === 'true';
 
 function fail(msg) {
   console.error(`SMOKE FAIL: ${msg}`);
   process.exit(1);
+}
+
+function edgeSkipOrFail(msg) {
+  if (REQUIRE_EDGE) fail(msg);
+  console.log(`SMOKE-SKIP ${msg}`);
 }
 
 function psql(sql) {
@@ -657,9 +665,9 @@ console.log('SMOKE-OK prepare_fight_context');
   console.log('SMOKE-OK F4 outbox drain + pg_cron jobs + allowance ensure');
 }
 
-// Optional: hit Edge Functions if the API gateway is up.
-// Network failures and HTTP 404 (function not served) may skip; any other
-// non-2xx (including 503 degraded/error) fails the smoke run.
+// Edge Functions: best-effort locally; required in CI when REQUIRE_EDGE_FUNCTIONS=1.
+// Network failures and HTTP 404 (function not served) may skip unless required;
+// any other non-2xx (including 503 degraded/error) fails the smoke run.
 try {
   const headers = { apikey: ANON_KEY || 'smoke' };
   if (ANON_KEY) headers.Authorization = `Bearer ${ANON_KEY}`;
@@ -668,22 +676,38 @@ try {
     signal: AbortSignal.timeout(5000),
   });
   if (res.status === 404) {
-    console.log('SMOKE-SKIP edge health HTTP 404 (serve functions locally to enable)');
+    edgeSkipOrFail('edge health HTTP 404 (serve functions locally to enable)');
   } else if (!res.ok) {
-    fail(`edge health HTTP ${res.status}`);
+    let detail = '';
+    try {
+      detail = ` body=${(await res.text()).slice(0, 400)}`;
+    } catch {
+      /* ignore */
+    }
+    fail(`edge health HTTP ${res.status}${detail}`);
   } else {
     const body = await res.json();
     if (body.status !== 'ok') fail(`edge health status=${body.status}`);
-    console.log('SMOKE-OK edge function /functions/v1/health');
+    if (!body.checks?.database) fail('edge health missing checks.database');
+    if (!body.checks?.storage?.atlas_bucket) fail('edge health missing storage.atlas_bucket');
+    if (!body.checks?.pg_cron?.present) fail('edge health missing pg_cron.present');
+    if (!body.checks?.analytics_outbox) fail('edge health missing analytics_outbox');
+    if (!body.checks?.edge_functions?.health?.reachable) {
+      fail('edge health missing edge_functions.health.reachable');
+    }
+    if (!body.checks?.edge_functions?.['combat-v1']?.reachable) {
+      fail(`edge health combat-v1 not reachable: ${JSON.stringify(body.checks?.edge_functions)}`);
+    }
+    console.log('SMOKE-OK edge function /functions/v1/health (DB+cron+outbox+storage+edge)');
   }
 } catch (err) {
   // fetch network / timeout only — HTTP error statuses are handled above
-  console.log(`SMOKE-SKIP edge health (${err instanceof Error ? err.message : err})`);
+  edgeSkipOrFail(`edge health (${err instanceof Error ? err.message : err})`);
 }
 
 try {
-  // Probe whether combat-v1 is served. 404 → optional skip; any other response
-  // means the endpoint is live and must pass with a real Auth access token.
+  // Probe whether combat-v1 is served. 404 → optional skip unless required;
+  // any other response means the endpoint is live and must pass with Auth.
   const probe = await fetch(`${SUPABASE_URL}/functions/v1/combat-v1`, {
     method: 'POST',
     headers: {
@@ -695,7 +719,7 @@ try {
     signal: AbortSignal.timeout(5000),
   });
   if (probe.status === 404) {
-    console.log('SMOKE-SKIP edge combat-v1 HTTP 404 (serve functions locally to enable)');
+    edgeSkipOrFail('edge combat-v1 HTTP 404 (serve functions locally to enable)');
   } else {
     const token = await requireDevAccessToken();
     // F3 persist requires Idempotency-Key (probe already sends one; authenticated
@@ -731,7 +755,7 @@ try {
   }
 } catch (err) {
   // fetch network / timeout only — Auth fixture / HTTP failures use fail()
-  console.log(`SMOKE-SKIP edge combat-v1 (${err instanceof Error ? err.message : err})`);
+  edgeSkipOrFail(`edge combat-v1 (${err instanceof Error ? err.message : err})`);
 }
 
 console.log('backend smoke OK');

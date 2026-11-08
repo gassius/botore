@@ -2,7 +2,7 @@
 
 How to confirm the local Supabase backend is healthy for bots-as-data (F1),
 Edge combat-v1 compute (F2), atomic fight persist (F3), pg_cron outbox /
-allowance refresh (F4), and the B1 health/smoke/coverage gates. Prefer
+allowance refresh (F4), and the B1 health / smoke / coverage gates. Prefer
 **local** Supabase for day-to-day work. Hosted project
 (`yrrytppmkykzhwelqmcs`) is optional for integration when healthy; it can
 auto-pause after idle time.
@@ -11,6 +11,7 @@ auto-pause after idle time.
 
 - Docker-compatible runtime
 - Node 24 + pnpm 11 (`corepack enable`)
+- Deno 2.9+ on `PATH` (Edge runtime + coverage gates; CI uses `denoland/setup-deno`)
 - `psql` on `PATH` (for DB tests and smoke)
 
 ## Bring-up
@@ -19,6 +20,7 @@ auto-pause after idle time.
 pnpm install --frozen-lockfile
 pnpm env:up          # supabase start
 pnpm db:reset        # migrations + seed + supabase/tests/run.sql
+pnpm exec supabase functions serve   # live /health + /combat-v1
 ```
 
 Postgres: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`  
@@ -34,18 +36,21 @@ psql "$DATABASE_URL" -c "select public.backend_health_snapshot();"
 
 Expect `status: ok`, proof catalogue counts (1 chassis / 2 paints / 3 weapons),
 at least four current loadouts, fight readiness (`ready_as_opponent` ≥ 3),
-and `storage.atlas_bucket: true`.
+`storage.atlas_bucket: true`, `pg_cron.present` with both botore jobs
+scheduled, and outbox processor `process_analytics_outbox`.
 
-Edge Function (optional local serve):
+Edge Function (after `functions serve`):
 
 ```bash
-pnpm exec supabase functions serve
-curl -s http://127.0.0.1:54321/functions/v1/health
+curl -s http://127.0.0.1:54321/functions/v1/health \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $SUPABASE_ANON_KEY"
 ```
 
-The health function returns the same `backend_health_snapshot()` payload plus
-`service: "health"`. Expect `pg_cron.present: true` with
-`outbox_drain_scheduled` and `allowance_refresh_scheduled` after F4.
+Returns the SQL snapshot plus `service: "health"` and
+`checks.edge_functions` (`health` self + live `combat-v1` probe). Expect
+HTTP 200 and `status: ok` when DB/cron/storage are healthy **and** combat-v1
+is mounted. Missing Edge peers yield `status: degraded` (HTTP 503).
 
 ## Fight context (F2)
 
@@ -109,23 +114,23 @@ Failed rows stay in `analytics_outbox` with `last_error` / `dead_lettered_at`
 ## Smoke
 
 ```bash
-node scripts/backend-smoke.mjs
-# or: pnpm test:smoke
+# Full gate (matches CI): Edge Functions must be served
+REQUIRE_EDGE_FUNCTIONS=1 node scripts/backend-smoke.mjs
+# or: REQUIRE_EDGE_FUNCTIONS=1 pnpm test:smoke
 ```
 
-Asserts health snapshot, catalogue shape, inventory balances, admin reporting
-views (including `admin_fight_readiness`), `prepare_fight_context`, persist
-idempotency, and F4 outbox drain / cron job registration. Edge Function
-checks are best-effort when the gateway serves functions.
+Asserts health snapshot (DB, Storage, pg_cron, outbox), catalogue shape,
+inventory balances, admin reporting views, `prepare_fight_context`, persist
+idempotency, F4 outbox drain, and live `/functions/v1/health` +
+`/functions/v1/combat-v1`. Without `REQUIRE_EDGE_FUNCTIONS=1`, missing Edge
+endpoints may skip; CI always requires them.
 
 ## Edge runtime evidence
-
-Requires [Deno](https://deno.land) on `PATH` (CI installs via `denoland/setup-deno`).
 
 ```bash
 pnpm exec turbo run build --filter=@botore/rng --filter=@botore/replay --filter=@botore/combat-engine
 pnpm vendor:edge-combat
-pnpm test:edge-runtime          # deno test handler_test.ts — frozen golden + auth/eligibility
+pnpm test:edge-runtime          # deno test combat-v1 — frozen golden + auth/eligibility
 pnpm test:smoke-combat-assert   # failure-path smoke classifiers
 ```
 
@@ -133,18 +138,32 @@ Re-vendors pure packages into `supabase/functions/_shared/botore` and runs the
 shipped Edge handler under Deno, asserting the frozen combat-v1 checksum
 (`d2a7c18d…e2f`) and handler auth/eligibility failure paths.
 
-## Coverage (backend packages)
+## Coverage gates (B1)
+
+Real measured coverage only — no invented percentages.
+
+| Gate          | Command                                            | Metric                                                                              |
+| ------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Pure packages | `pnpm test:coverage:backend` (Vitest portion)      | Vitest v8 thresholds in each package `vitest.config.ts`                             |
+| Edge handlers | `pnpm test:coverage:edge`                          | Deno `coverage --threshold=75` on `combat-v1/handler.ts` + `health/handler.ts`      |
+| DB suite      | `pnpm test:coverage:db -- --log /tmp/db-tests.log` | 100% of `TEST-OK` markers from `supabase/tests/run.sql` must appear in the psql log |
+
+CI job **`backend coverage gate`** enforces package + Edge thresholds. The
+database job enforces the SQL `TEST-OK` execution gate and runs smoke with
+`REQUIRE_EDGE_FUNCTIONS=1`. Mark **`backend coverage gate`** as a required
+check on `main` (branch protection).
 
 ```bash
-pnpm test:coverage:backend
+# After db:reset / CI db step:
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/run.sql 2>&1 | tee /tmp/db-tests.log
+pnpm test:coverage:db -- --log /tmp/db-tests.log
+pnpm test:coverage:edge
 ```
-
-CI enforces thresholds on domain, contracts, combat-engine, replay, and rng
-(see `.github/workflows/pr.yml`).
 
 ## Admin dashboard readiness (B2 later)
 
-Read-only views prepared for a future dashboard — do not build B2 here:
+Read-only views / envelopes prepared for a future dashboard — do not build B2 UI
+here:
 
 | View / function              | Purpose                                        |
 | ---------------------------- | ---------------------------------------------- |
@@ -152,7 +171,8 @@ Read-only views prepared for a future dashboard — do not build B2 here:
 | `admin_inventory_overview`   | Owned parts with account display names         |
 | `admin_loadout_overview`     | Current confirmed loadouts per character       |
 | `admin_fight_readiness`      | Fight eligibility + allowance depth            |
-| `backend_health_snapshot()`  | Aggregated health for ops / smoke / UI         |
+| `backend_health_snapshot()`  | Aggregated SQL health for ops / smoke / UI     |
+| `GET /functions/v1/health`   | SQL snapshot + `checks.edge_functions` probes  |
 | `prepare_fight_context()`    | Eligibility + immutable fighter snapshots (F2) |
 | `persist_fight_result()`     | Atomic fight persist + idempotency (F3)        |
 | `admin_recent_battles`       | Recent persisted fights + outbox pending       |
@@ -171,6 +191,8 @@ Read-only views prepared for a future dashboard — do not build B2 here:
 ```bash
 pnpm verify          # format/lint/typecheck/unit (no DB)
 pnpm db:reset        # migrations + DB tests
-node scripts/backend-smoke.mjs
+pnpm exec supabase functions serve &
+REQUIRE_EDGE_FUNCTIONS=1 node scripts/backend-smoke.mjs
 pnpm test:edge-runtime
+pnpm test:coverage:edge
 ```
