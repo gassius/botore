@@ -44,5 +44,7 @@ enable_confirmations = false
 verify_jwt = false
 
 [functions.combat-v1]
-# JWT verified inside the function (Bearer required); gateway check also on.
-verify_jwt = true
+# Auth is enforced inside the handler (Bearer + auth.getUser). Gateway JWT
+# verify stays off so local smoke can mint a seed-user token without Kong
+# rejecting before the Edge Function runs (same pattern as /health).
+verify_jwt = false

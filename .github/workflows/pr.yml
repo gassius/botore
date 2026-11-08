@@ -47,7 +47,8 @@ jobs:
       - name: Setup Deno (Edge Function runtime gate)
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.1.4
+          # Lockfile v5 requires Deno >= 2.3; keep in sync with local `deno --version`.
+          deno-version: v2.9.8
 
       - name: Vendor Edge combat packages + Deno handler golden gate
         run: |

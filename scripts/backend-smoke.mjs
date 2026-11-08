@@ -17,15 +17,44 @@
 import { createHmac } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { classifyCombatSmokeResponse } from './smoke-combat-assert.mjs';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 const SUPABASE_URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const ANON_KEY = process.env.SUPABASE_ANON_KEY ?? '';
-const JWT_SECRET =
-  process.env.SUPABASE_JWT_SECRET ?? 'super-secret-jwt-token-with-at-least-32-characters-long';
 const DEV_ACCOUNT_ID = '00000000-0000-4000-8000-000000000001';
+const DEV_EMAIL = 'dev-player@botore.local';
+const DEV_PASSWORD = 'local-only-password';
+
+/** Load ANON_KEY / JWT_SECRET from env or `supabase status -o env`. */
+function loadSupabaseKeys() {
+  let anon = process.env.SUPABASE_ANON_KEY ?? '';
+  let jwtSecret =
+    process.env.SUPABASE_JWT_SECRET ?? 'super-secret-jwt-token-with-at-least-32-characters-long';
+  if (anon) return { anon, jwtSecret };
+
+  const res = spawnSync('pnpm', ['exec', 'supabase', 'status', '-o', 'env'], {
+    encoding: 'utf8',
+    cwd: ROOT,
+  });
+  if (res.status === 0 && res.stdout) {
+    for (const line of res.stdout.split('\n')) {
+      const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+      if (!m) continue;
+      const key = m[1];
+      const val = m[2].replace(/^"|"$/g, '');
+      if (key === 'ANON_KEY' || key === 'SUPABASE_ANON_KEY') anon = val;
+      if (key === 'JWT_SECRET' || key === 'SUPABASE_JWT_SECRET') jwtSecret = val;
+    }
+  }
+  return { anon, jwtSecret };
+}
+
+const { anon: ANON_KEY, jwtSecret: JWT_SECRET } = loadSupabaseKeys();
 
 function fail(msg) {
   console.error(`SMOKE FAIL: ${msg}`);
@@ -50,7 +79,7 @@ function b64url(input) {
     .replace(/\//g, '_');
 }
 
-/** Minimal HS256 JWT for local seed user (smoke / Edge auth). */
+/** Fallback HS256 JWT when Auth password grant is unavailable. */
 function mintDevAccessToken() {
   const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const now = Math.floor(Date.now() / 1000);
@@ -62,12 +91,36 @@ function mintDevAccessToken() {
       iss: 'supabase',
       iat: now,
       exp: now + 60 * 60,
-      email: 'dev-player@botore.local',
+      email: DEV_EMAIL,
     }),
   );
   const data = `${header}.${payload}`;
   const sig = createHmac('sha256', JWT_SECRET).update(data).digest('base64url');
   return `${data}.${sig}`;
+}
+
+/** Prefer a real Auth access token for the seed user (validates via getUser). */
+async function obtainDevAccessToken() {
+  if (!ANON_KEY) return mintDevAccessToken();
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        apikey: ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: DEV_EMAIL, password: DEV_PASSWORD }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return mintDevAccessToken();
+    const body = await res.json();
+    if (typeof body.access_token === 'string' && body.access_token.length > 20) {
+      return body.access_token;
+    }
+  } catch {
+    // fall through to minted token
+  }
+  return mintDevAccessToken();
 }
 
 console.log('==> backend smoke (local Supabase)');
@@ -185,7 +238,7 @@ try {
 }
 
 try {
-  const token = mintDevAccessToken();
+  const token = await obtainDevAccessToken();
   const res = await fetch(`${SUPABASE_URL}/functions/v1/combat-v1`, {
     method: 'POST',
     headers: {
