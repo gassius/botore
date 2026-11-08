@@ -1331,16 +1331,17 @@ begin
 
   -- A later non-proof publish must not clear proof_pack_ok / status=ok.
   -- (CI race fixture also leaves a later publish; this covers local runs.)
+  -- Version must match ^v[0-9]+$ (atlas_versions_version_check).
   insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
   values (
-    'v-health-fixture', 'draft', null,
-    jsonb_build_object('version', 'v-health-fixture'), false, 'health isolation fixture'
+    'v900001', 'draft', null,
+    jsonb_build_object('version', 'v900001'), false, 'health isolation fixture'
   );
   insert into public.atlas_manifest_entries (version, asset_key, kind, part_id, role, path)
-  values ('v-health-fixture', 'fixture.root', 'manifest', null, 'manifest', 'manifest.json');
+  values ('v900001', 'fixture.root', 'manifest', null, 'manifest', 'manifest.json');
   insert into storage.objects (bucket_id, name, metadata)
-  values ('atlas', 'v-health-fixture/manifest.json', '{"fixture":true}'::jsonb);
-  perform public.publish_atlas_version('v-health-fixture');
+  values ('atlas', 'v900001/manifest.json', '{"fixture":true}'::jsonb);
+  perform public.publish_atlas_version('v900001');
 
   select public.backend_health_snapshot() into v_health;
   perform tests.assert(
@@ -1360,7 +1361,7 @@ begin
     'health proof_version pinned to v1'
   );
   perform tests.assert(
-    v_health->'checks'->'storage'->>'latest_version' = 'v-health-fixture',
+    v_health->'checks'->'storage'->>'latest_version' = 'v900001',
     'health latest_version reflects newest publish'
   );
   perform tests.assert(
