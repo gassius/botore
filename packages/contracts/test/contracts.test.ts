@@ -34,10 +34,10 @@ describe('API contracts', () => {
     expect(Value.Check(BattleStartedResponseSchema, { ...ok, battleId: 'nope' })).toBe(false);
   });
 
-  it('validates F2 fight compute response (full replay, pending persistence)', () => {
+  it('validates F3 fight response (full replay, persisted XP)', () => {
     const ok = {
       battleId: '0b3f7c9e-1111-4222-8333-944455566677',
-      status: 'computed',
+      status: 'completed',
       rulesVersion: 'combat-v1',
       seed: 'ab'.repeat(16),
       outcome: { winner: 'player-hero', reason: 'defeat' },
@@ -52,6 +52,8 @@ describe('API contracts', () => {
         outcome: { winner: 'player-hero', loser: 'opp-sir-bot', reason: 'defeat' },
         checksum: 'b'.repeat(64),
       },
+      replayChecksum: 'b'.repeat(64),
+      xpAwarded: 2,
       loadoutVersionIds: {
         attacker: '0b3f7c9e-1111-4222-8333-944455566677',
         defender: '0b3f7c9e-2222-4333-8444-955566677788',
@@ -59,12 +61,19 @@ describe('API contracts', () => {
       atlasVersions: { attacker: 'v1', defender: 'v1' },
       allowancesRemaining: 2,
       utcDay: '2026-11-08',
-      persistence: 'pending_f3',
+      persistence: 'persisted',
+      repeated: false,
       service: 'combat-v1',
     };
     expect(Value.Check(FightComputeResponseSchema, ok)).toBe(true);
-    expect(Value.Check(FightComputeResponseSchema, { ...ok, status: 'completed' })).toBe(false);
-    expect(Value.Check(FightComputeResponseSchema, { ...ok, persistence: 'done' })).toBe(false);
+    expect(
+      Value.Check(FightComputeResponseSchema, { ...ok, persistence: 'repeated', repeated: true }),
+    ).toBe(true);
+    expect(Value.Check(FightComputeResponseSchema, { ...ok, status: 'computed' })).toBe(false);
+    expect(Value.Check(FightComputeResponseSchema, { ...ok, persistence: 'pending_f3' })).toBe(
+      false,
+    );
+    expect(Value.Check(FightComputeResponseSchema, { ...ok, xpAwarded: 0 })).toBe(false);
   });
 
   it('opponent schema rejects negative stats', () => {

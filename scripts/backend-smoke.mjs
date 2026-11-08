@@ -8,6 +8,7 @@
  *   - Postgres backend_health_snapshot() reports proof seed OK
  *   - Catalogue / loadout / inventory counts
  *   - prepare_fight_context eligibility (F2)
+ *   - persist_fight_result idempotent consume + XP (F3)
  *   - Optional Edge Functions /health and /combat-v1 when reachable
  *
  * Usage:
@@ -382,6 +383,11 @@ if (!health.checks?.storage?.atlas_bucket) {
 if (health.checks?.fight?.edge_function !== 'combat-v1') {
   fail(`expected fight.edge_function=combat-v1, got ${JSON.stringify(health.checks?.fight)}`);
 }
+if (health.checks?.fight?.persistence !== 'persist_fight_result') {
+  fail(
+    `expected fight.persistence=persist_fight_result, got ${JSON.stringify(health.checks?.fight)}`,
+  );
+}
 if ((health.checks?.fight?.ready_as_opponent ?? 0) < 3) {
   fail(`expected >= 3 ready opponents, got ${health.checks?.fight?.ready_as_opponent}`);
 }
@@ -447,6 +453,143 @@ if (!['sword', 'axe', 'dagger'].includes(fightCtx.defender?.weaponKind)) {
 }
 console.log('SMOKE-OK prepare_fight_context');
 
+// F3: persist one fight, retry same key, assert no double consume / XP.
+{
+  const day = psql(`select (now() at time zone 'utc')::date`);
+  const atkLoadout = psql(
+    `select loadout_version_id from current_bot_loadouts where character_id='player-hero'`,
+  );
+  const defLoadout = psql(
+    `select loadout_version_id from current_bot_loadouts where character_id='opp-sir-bot'`,
+  );
+  const battleId = psql(`select gen_random_uuid()`);
+  const seed = 'ab'.repeat(16);
+  const checksum = 'cd'.repeat(32);
+  const inputHash = 'ef'.repeat(32);
+  const key = `smoke-persist-${Date.now()}`;
+  const usedBefore = Number(
+    psql(
+      `select count(*) from fight_allowances where account_id='${DEV_ACCOUNT_ID}' and utc_day='${day}' and used_at is not null`,
+    ),
+  );
+  const ledgerBefore = Number(
+    psql(`select count(*) from progression_ledger where account_id='${DEV_ACCOUNT_ID}'`),
+  );
+
+  const persistSql = `
+    select public.persist_fight_result(
+      '${DEV_ACCOUNT_ID}',
+      '${key}',
+      'opp-sir-bot',
+      '${battleId}',
+      '${seed}',
+      'combat-v1',
+      jsonb_build_object(
+        'replayVersion', 1,
+        'rulesVersion', 'combat-v1',
+        'battleId', '${battleId}',
+        'seed', '${seed}',
+        'inputHash', '${inputHash}',
+        'checksum', '${checksum}',
+        'fighters', '[]'::jsonb,
+        'events', '[]'::jsonb,
+        'outcome', jsonb_build_object('winner','player-hero','loser','opp-sir-bot','reason','defeat')
+      ),
+      jsonb_build_object(
+        'characterId','player-hero','hp',30,'weaponKind','sword','weaponPower',3,
+        'loadoutVersionId','${atkLoadout}'
+      ),
+      jsonb_build_object(
+        'characterId','opp-sir-bot','hp',34,'weaponKind','sword','weaponPower',3,
+        'loadoutVersionId','${defLoadout}'
+      ),
+      '${day}'::date
+    )::text
+    from (select set_config('request.jwt.claim.role','service_role',true)) as _auth;
+  `;
+  const persistOut = psql(persistSql);
+  let persistBody;
+  try {
+    persistBody = JSON.parse(persistOut);
+  } catch {
+    fail(`persist_fight_result did not return JSON: ${persistOut}`);
+  }
+  if (!persistBody.ok) fail(`persist not ok: ${persistLine}`);
+  if (persistBody.repeated) fail('first persist should not be repeated');
+  if (persistBody.xpAwarded !== 2) fail(`expected xpAwarded=2, got ${persistBody.xpAwarded}`);
+
+  const usedAfter = Number(
+    psql(
+      `select count(*) from fight_allowances where account_id='${DEV_ACCOUNT_ID}' and utc_day='${day}' and used_at is not null`,
+    ),
+  );
+  if (usedAfter !== usedBefore + 1) fail(`expected +1 used allowance, ${usedBefore}→${usedAfter}`);
+
+  const retryBattle = psql(`select gen_random_uuid()`);
+  const retrySql = `
+    select public.persist_fight_result(
+      '${DEV_ACCOUNT_ID}',
+      '${key}',
+      'opp-sir-bot',
+      '${retryBattle}',
+      '${seed}',
+      'combat-v1',
+      jsonb_build_object(
+        'replayVersion', 1,
+        'rulesVersion', 'combat-v1',
+        'battleId', '${retryBattle}',
+        'seed', '${seed}',
+        'inputHash', '${inputHash}',
+        'checksum', '${checksum}',
+        'fighters', '[]'::jsonb,
+        'events', '[]'::jsonb,
+        'outcome', jsonb_build_object('winner','player-hero','loser','opp-sir-bot','reason','defeat')
+      ),
+      jsonb_build_object(
+        'characterId','player-hero','hp',30,'weaponKind','sword','weaponPower',3,
+        'loadoutVersionId','${atkLoadout}'
+      ),
+      jsonb_build_object(
+        'characterId','opp-sir-bot','hp',34,'weaponKind','sword','weaponPower',3,
+        'loadoutVersionId','${defLoadout}'
+      ),
+      '${day}'::date
+    )::text
+    from (select set_config('request.jwt.claim.role','service_role',true)) as _auth;
+  `;
+  const retryOut = psql(retrySql);
+  let retryBody;
+  try {
+    retryBody = JSON.parse(retryOut);
+  } catch {
+    fail(`persist retry did not return JSON: ${retryOut}`);
+  }
+  if (!retryBody.ok || !retryBody.repeated) fail(`retry should be repeated: ${retryOut}`);
+  if (retryBody.battleId !== battleId) fail('retry must return original battleId');
+
+  const usedRetry = Number(
+    psql(
+      `select count(*) from fight_allowances where account_id='${DEV_ACCOUNT_ID}' and utc_day='${day}' and used_at is not null`,
+    ),
+  );
+  if (usedRetry !== usedAfter) fail('retry consumed an extra allowance');
+  const ledgerAfter = Number(
+    psql(`select count(*) from progression_ledger where account_id='${DEV_ACCOUNT_ID}'`),
+  );
+  if (ledgerAfter !== ledgerBefore + 1) fail('retry awarded duplicate XP');
+
+  const oppXp = Number(
+    psql(
+      `select count(*) from progression_ledger pl join characters c using (character_id) where c.is_opponent and pl.battle_id='${battleId}'`,
+    ),
+  );
+  if (oppXp !== 0) fail('defender received XP');
+
+  const adminBattles = Number(psql('select count(*) from admin_recent_battles'));
+  if (adminBattles < 1) fail('admin_recent_battles empty after persist');
+  console.log('SMOKE-OK persist_fight_result idempotent + defender XP guard');
+}
+
 // Optional: hit Edge Functions if the API gateway is up.
 // Network failures and HTTP 404 (function not served) may skip; any other
 // non-2xx (including 503 degraded/error) fails the smoke run.
@@ -479,6 +622,7 @@ try {
     headers: {
       apikey: ANON_KEY || 'smoke',
       'Content-Type': 'application/json',
+      'Idempotency-Key': `smoke-edge-${Date.now()}`,
     },
     body: JSON.stringify({ opponentId: 'opp-sir-bot' }),
     signal: AbortSignal.timeout(5000),

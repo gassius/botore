@@ -1,10 +1,10 @@
 # Backend verification runbook
 
 How to confirm the local Supabase backend is healthy for bots-as-data (F1),
-Edge combat-v1 (F2), and the B1 health/smoke/coverage gates. Prefer **local**
-Supabase for day-to-day work. Hosted project
-(`yrrytppmkykzhwelqmcs`) is optional for integration when healthy; it can
-auto-pause after idle time.
+Edge combat-v1 compute (F2), atomic fight persist (F3), and the B1
+health/smoke/coverage gates. Prefer **local** Supabase for day-to-day work.
+Hosted project (`yrrytppmkykzhwelqmcs`) is optional for integration when
+healthy; it can auto-pause after idle time.
 
 ## Prerequisites
 
@@ -58,7 +58,18 @@ psql "$DATABASE_URL" -c \
 
 Expect `ok: true`, attacker `player-hero`, defender `opp-sir-bot`, weapons
 from confirmed loadouts, and `allowancesRemaining` in 1..3. This RPC does
-**not** consume an allowance — F3 owns atomic consume + persist.
+**not** consume an allowance — `persist_fight_result` owns atomic consume.
+
+## Fight persist (F3)
+
+```bash
+psql "$DATABASE_URL" -c "select public.backend_health_snapshot()->'checks'->'fight';"
+# expect persistence = persist_fight_result
+```
+
+`persist_fight_result(...)` is the single atomic write path. Smoke covers
+happy persist + idempotent retry (no double allowance / XP). Defender never
+receives progression ledger rows.
 
 Combat Edge Function (after `supabase functions serve`):
 
@@ -67,12 +78,14 @@ Combat Edge Function (after `supabase functions serve`):
 curl -s -X POST http://127.0.0.1:54321/functions/v1/combat-v1 \
   -H "Authorization: Bearer <access_token>" \
   -H "apikey: <anon_key>" \
+  -H "Idempotency-Key: smoke-key-0001" \
   -H "Content-Type: application/json" \
   -d '{"opponentId":"opp-sir-bot"}'
 ```
 
-Expect `status: "computed"`, full semantic `replay.events`, server CSPRNG
-`seed`, and `persistence: "pending_f3"`.
+Expect `status: "completed"`, `xpAwarded` 1|2, full semantic `replay.events`,
+server CSPRNG `seed`, and `persistence: "persisted"` (or `"repeated"` on
+retry with the same Idempotency-Key).
 
 ## Smoke
 
@@ -121,6 +134,8 @@ Read-only views prepared for a future dashboard — do not build B2 here:
 | `admin_fight_readiness`     | Fight eligibility + allowance depth            |
 | `backend_health_snapshot()` | Aggregated health for ops / smoke / UI         |
 | `prepare_fight_context()`   | Eligibility + immutable fighter snapshots (F2) |
+| `persist_fight_result()`    | Atomic fight persist + idempotency (F3)        |
+| `admin_recent_battles`      | Recent persisted fights + outbox pending       |
 | `current_bot_loadouts`      | Latest immutable loadout per character         |
 | `inventory_balances`        | Reconstructable ownership quantities           |
 

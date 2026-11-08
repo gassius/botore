@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import { classifyCombatSmokeResponse } from './smoke-combat-assert.mjs';
 
 const okBody = {
-  status: 'computed',
-  persistence: 'pending_f3',
+  status: 'completed',
+  persistence: 'persisted',
+  xpAwarded: 2,
+  replayChecksum: 'cd'.repeat(32),
   seed: 'ab'.repeat(32),
   replay: {
     rulesVersion: 'combat-v1',
@@ -31,9 +33,9 @@ describe('classifyCombatSmokeResponse', () => {
 
   it('fails invalid success payloads', () => {
     assert.equal(classifyCombatSmokeResponse(200, null).action, 'fail');
-    assert.equal(classifyCombatSmokeResponse(200, { status: 'completed' }).action, 'fail');
+    assert.equal(classifyCombatSmokeResponse(200, { status: 'computed' }).action, 'fail');
     assert.equal(
-      classifyCombatSmokeResponse(200, { ...okBody, persistence: 'done' }).action,
+      classifyCombatSmokeResponse(200, { ...okBody, persistence: 'pending_f3' }).action,
       'fail',
     );
     assert.equal(
@@ -44,9 +46,14 @@ describe('classifyCombatSmokeResponse', () => {
       'fail',
     );
     assert.equal(classifyCombatSmokeResponse(200, { ...okBody, seed: 'nope' }).action, 'fail');
+    assert.equal(classifyCombatSmokeResponse(200, { ...okBody, xpAwarded: 0 }).action, 'fail');
   });
 
-  it('accepts a valid computed response', () => {
+  it('accepts a valid persisted response', () => {
     assert.deepEqual(classifyCombatSmokeResponse(200, okBody), { action: 'ok' });
+    assert.deepEqual(
+      classifyCombatSmokeResponse(200, { ...okBody, persistence: 'repeated', xpAwarded: 1 }),
+      { action: 'ok' },
+    );
   });
 });

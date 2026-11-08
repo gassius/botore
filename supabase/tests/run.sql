@@ -457,4 +457,334 @@ begin
     end;
     raise notice 'TEST-OK prepare_fight_context authz gates';
   end;
+
+  -- F3 persist_fight_result: happy / retry / atomic / defender / exhaust / authz
+  declare
+    v_battle uuid;
+    v_battle2 uuid;
+    v_seed text := repeat('ab', 16);
+    v_checksum text := repeat('cd', 32);
+    v_input_hash text := repeat('ef', 32);
+    v_replay jsonb;
+    v_attacker jsonb;
+    v_defender jsonb;
+    v_atk_loadout uuid;
+    v_def_loadout uuid;
+    v_res jsonb;
+    v_used int;
+    v_ledger int;
+    v_outbox int;
+    v_opp_ledger int;
+    v_allow_before int;
+    v_allow_after int;
+    v_day date := (now() at time zone 'utc')::date;
+    v_key text := 'f3-persist-key-001';
+  begin
+    perform set_config('request.jwt.claim.role', 'service_role', true);
+    perform set_config('request.jwt.claim.sub', '', true);
+
+    select loadout_version_id into v_atk_loadout
+      from public.current_bot_loadouts where character_id = 'player-hero';
+    select loadout_version_id into v_def_loadout
+      from public.current_bot_loadouts where character_id = 'opp-sir-bot';
+
+    v_attacker := jsonb_build_object(
+      'characterId', 'player-hero',
+      'hp', 30,
+      'weaponKind', 'sword',
+      'weaponPower', 3,
+      'loadoutVersionId', v_atk_loadout
+    );
+    v_defender := jsonb_build_object(
+      'characterId', 'opp-sir-bot',
+      'hp', 34,
+      'weaponKind', 'sword',
+      'weaponPower', 3,
+      'loadoutVersionId', v_def_loadout
+    );
+
+    v_battle := gen_random_uuid();
+    v_replay := jsonb_build_object(
+      'replayVersion', 1,
+      'rulesVersion', 'combat-v1',
+      'battleId', v_battle,
+      'seed', v_seed,
+      'inputHash', v_input_hash,
+      'fighters', jsonb_build_array(
+        jsonb_build_object('characterId', 'player-hero', 'hp', 30),
+        jsonb_build_object('characterId', 'opp-sir-bot', 'hp', 34)
+      ),
+      'events', jsonb_build_array(
+        jsonb_build_object('type', 'battle_started', 'tick', 0),
+        jsonb_build_object(
+          'type', 'damage_applied', 'tick', 1,
+          'target', 'opp-sir-bot', 'targetHpAfter', 0
+        )
+      ),
+      'outcome', jsonb_build_object(
+        'winner', 'player-hero',
+        'loser', 'opp-sir-bot',
+        'reason', 'defeat'
+      ),
+      'checksum', v_checksum
+    );
+
+    select count(*) into v_allow_before
+      from public.fight_allowances
+     where account_id = v_account and utc_day = v_day and used_at is null;
+
+    v_res := public.persist_fight_result(
+      v_account, v_key, 'opp-sir-bot', v_battle, v_seed, 'combat-v1',
+      v_replay, v_attacker, v_defender, v_day
+    );
+    perform tests.assert((v_res->>'ok')::boolean, 'persist happy path ok');
+    perform tests.assert(not (v_res->>'repeated')::boolean, 'persist not repeated');
+    perform tests.assert((v_res->>'xpAwarded')::integer = 2, 'win awards 2 XP');
+    perform tests.assert(v_res->>'battleId' = v_battle::text, 'battle id echoed');
+    perform tests.assert(
+      (v_res->>'allowancesRemaining')::integer = v_allow_before - 1,
+      'allowance consumed once'
+    );
+
+    select count(*) into v_used
+      from public.fight_allowances
+     where account_id = v_account and utc_day = v_day and used_at is not null;
+    perform tests.assert(v_used >= 1, 'at least one allowance marked used');
+
+    select count(*) into v_ledger
+      from public.progression_ledger
+     where account_id = v_account and battle_id = v_battle and character_id = 'player-hero';
+    perform tests.assert(v_ledger = 1, 'one attacker ledger row');
+
+    select count(*) into v_opp_ledger
+      from public.progression_ledger pl
+      join public.characters c using (character_id)
+     where c.is_opponent and pl.battle_id = v_battle;
+    perform tests.assert(v_opp_ledger = 0, 'defender must not receive XP');
+
+    select count(*) into v_outbox
+      from public.analytics_outbox
+     where event_name = 'battle_completed'
+       and payload->>'battleId' = v_battle::text;
+    perform tests.assert(v_outbox = 1, 'one outbox battle_completed row');
+
+    perform tests.assert(
+      exists (
+        select 1 from public.battles
+         where battle_id = v_battle
+           and initiator_account_id = v_account
+           and initiator_account_character = 'player-hero'
+      ),
+      'initiator columns set'
+    );
+    perform tests.assert(
+      exists (
+        select 1 from public.battle_participants
+         where battle_id = v_battle and side = 'attacker'
+           and loadout_version_id = v_atk_loadout
+      ),
+      'attacker loadout pin stored'
+    );
+    raise notice 'TEST-OK persist_fight_result happy path (attacker-only XP)';
+
+    -- Idempotent retry: same key must not consume or award again.
+    select count(*) into v_allow_before
+      from public.fight_allowances
+     where account_id = v_account and utc_day = v_day and used_at is null;
+    select count(*) into v_ledger
+      from public.progression_ledger where account_id = v_account;
+
+    v_battle2 := gen_random_uuid();
+    v_res := public.persist_fight_result(
+      v_account, v_key, 'opp-sir-bot', v_battle2, v_seed, 'combat-v1',
+      jsonb_set(v_replay, '{battleId}', to_jsonb(v_battle2::text)),
+      v_attacker, v_defender, v_day
+    );
+    perform tests.assert((v_res->>'ok')::boolean, 'retry ok');
+    perform tests.assert((v_res->>'repeated')::boolean, 'retry repeated');
+    perform tests.assert(v_res->>'battleId' = v_battle::text, 'retry returns original battle');
+    perform tests.assert((v_res->>'xpAwarded')::integer = 2, 'retry same XP');
+
+    select count(*) into v_allow_after
+      from public.fight_allowances
+     where account_id = v_account and utc_day = v_day and used_at is null;
+    perform tests.assert(v_allow_after = v_allow_before, 'retry did not consume allowance');
+
+    select count(*) into v_used
+      from public.progression_ledger where account_id = v_account;
+    perform tests.assert(v_used = v_ledger, 'retry did not append ledger');
+    raise notice 'TEST-OK persist_fight_result idempotent retry';
+
+    -- Atomic failure: pre-existing battle_id forces insert conflict → no side effects.
+    declare
+      v_conflict uuid := gen_random_uuid();
+      v_key_fail text := 'f3-persist-key-fail';
+      v_used_before int;
+      v_cmd_before int;
+      v_ledger_before int;
+    begin
+      insert into public.battles (battle_id, rules_version, seed, end_reason)
+      values (v_conflict, 'combat-v1', repeat('aa', 16), 'defeat');
+
+      select count(*) into v_used_before
+        from public.fight_allowances
+       where account_id = v_account and utc_day = v_day and used_at is not null;
+      select count(*) into v_cmd_before from public.battle_commands where account_id = v_account;
+      select count(*) into v_ledger_before from public.progression_ledger where account_id = v_account;
+
+      begin
+        perform public.persist_fight_result(
+          v_account, v_key_fail, 'opp-sir-bot', v_conflict, v_seed, 'combat-v1',
+          jsonb_set(v_replay, '{battleId}', to_jsonb(v_conflict::text)),
+          v_attacker, v_defender, v_day
+        );
+        raise exception 'ATOMIC FAIL: persist succeeded with conflicting battle_id';
+      exception
+        when unique_violation then null; -- expected from battles PK
+        when others then
+          if sqlstate = '23505' then null; else raise; end if;
+      end;
+
+      select count(*) into v_used
+        from public.fight_allowances
+       where account_id = v_account and utc_day = v_day and used_at is not null;
+      perform tests.assert(v_used = v_used_before, 'failed persist must not consume allowance');
+      select count(*) into v_outbox from public.battle_commands where account_id = v_account;
+      perform tests.assert(v_outbox = v_cmd_before, 'failed persist must not insert command');
+      select count(*) into v_ledger from public.progression_ledger where account_id = v_account;
+      perform tests.assert(v_ledger = v_ledger_before, 'failed persist must not award XP');
+
+      delete from public.battles where battle_id = v_conflict;
+      raise notice 'TEST-OK persist_fight_result atomic rollback on failure';
+    end;
+
+    -- Concurrency-ish: two different keys consume distinct slots; third ok; fourth exhausts.
+    declare
+      v_k2 text := 'f3-persist-key-002';
+      v_k3 text := 'f3-persist-key-003';
+      v_k4 text := 'f3-persist-key-004';
+      v_b uuid;
+      v_remaining int;
+    begin
+      -- First fight already consumed one slot. Consume remaining (up to 2 more for today).
+      select count(*) into v_remaining
+        from public.fight_allowances
+       where account_id = v_account and utc_day = v_day and used_at is null;
+
+      if v_remaining >= 1 then
+        v_b := gen_random_uuid();
+        v_res := public.persist_fight_result(
+          v_account, v_k2, 'opp-sir-bot', v_b, v_seed, 'combat-v1',
+          jsonb_build_object(
+            'replayVersion', 1, 'rulesVersion', 'combat-v1',
+            'battleId', v_b, 'seed', v_seed,
+            'inputHash', v_input_hash, 'checksum', v_checksum,
+            'fighters', '[]'::jsonb, 'events', '[]'::jsonb,
+            'outcome', jsonb_build_object(
+              'winner', 'opp-sir-bot', 'loser', 'player-hero', 'reason', 'defeat'
+            )
+          ),
+          v_attacker, v_defender, v_day
+        );
+        perform tests.assert((v_res->>'ok')::boolean, 'second fight ok');
+        perform tests.assert((v_res->>'xpAwarded')::integer = 1, 'loss awards 1 XP');
+      end if;
+
+      select count(*) into v_remaining
+        from public.fight_allowances
+       where account_id = v_account and utc_day = v_day and used_at is null;
+
+      if v_remaining >= 1 then
+        v_b := gen_random_uuid();
+        v_res := public.persist_fight_result(
+          v_account, v_k3, 'opp-dex-bot', v_b, v_seed, 'combat-v1',
+          jsonb_build_object(
+            'replayVersion', 1, 'rulesVersion', 'combat-v1',
+            'battleId', v_b, 'seed', v_seed,
+            'inputHash', v_input_hash, 'checksum', v_checksum,
+            'fighters', '[]'::jsonb, 'events', '[]'::jsonb,
+            'outcome', jsonb_build_object(
+              'winner', 'player-hero', 'loser', 'opp-dex-bot', 'reason', 'defeat'
+            )
+          ),
+          v_attacker,
+          jsonb_build_object(
+            'characterId', 'opp-dex-bot',
+            'hp', 26,
+            'weaponKind', 'dagger',
+            'weaponPower', 2,
+            'loadoutVersionId', (
+              select loadout_version_id from public.current_bot_loadouts
+               where character_id = 'opp-dex-bot'
+            )
+          ),
+          v_day
+        );
+        perform tests.assert((v_res->>'ok')::boolean, 'third fight ok');
+      end if;
+
+      v_b := gen_random_uuid();
+      v_res := public.persist_fight_result(
+        v_account, v_k4, 'opp-sir-bot', v_b, v_seed, 'combat-v1',
+        jsonb_build_object(
+          'replayVersion', 1, 'rulesVersion', 'combat-v1',
+          'battleId', v_b, 'seed', v_seed,
+          'inputHash', v_input_hash, 'checksum', v_checksum,
+          'fighters', '[]'::jsonb, 'events', '[]'::jsonb,
+          'outcome', jsonb_build_object(
+            'winner', 'player-hero', 'loser', 'opp-sir-bot', 'reason', 'defeat'
+          )
+        ),
+        v_attacker, v_defender, v_day
+      );
+      perform tests.assert(not (v_res->>'ok')::boolean, 'fourth fight must fail');
+      perform tests.assert(v_res->>'code' = 'allowance_exhausted', 'exhausted code');
+      raise notice 'TEST-OK persist_fight_result allowance exhaustion';
+    end;
+
+    -- Authz: anon cannot execute; authenticated non-owner forbidden.
+    set local role anon;
+    begin
+      perform public.persist_fight_result(
+        v_account, 'f3-anon-denied-01', 'opp-sir-bot', gen_random_uuid(),
+        v_seed, 'combat-v1', v_replay, v_attacker, v_defender, v_day
+      );
+      raise exception 'ANON FAIL: persist_fight_result allowed for anon';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+    raise notice 'TEST-OK anon cannot execute persist_fight_result';
+
+    perform set_config('request.jwt.claim.role', 'authenticated', true);
+    perform set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
+    v_res := public.persist_fight_result(
+      v_account, 'f3-owner-denied-01', 'opp-sir-bot', gen_random_uuid(),
+      v_seed, 'combat-v1', v_replay, v_attacker, v_defender, v_day
+    );
+    perform tests.assert(not (v_res->>'ok')::boolean, 'non-owner persist denied');
+    perform tests.assert(v_res->>'code' = 'forbidden', 'non-owner forbidden code');
+    raise notice 'TEST-OK persist_fight_result enforces ownership';
+
+    perform set_config('request.jwt.claim.role', 'service_role', true);
+    perform set_config('request.jwt.claim.sub', '', true);
+
+    -- Health now reports persist_fight_result
+    declare
+      v_health jsonb;
+    begin
+      v_health := public.backend_health_snapshot();
+      perform tests.assert(
+        v_health->'checks'->'fight'->>'persistence' = 'persist_fight_result',
+        'health persistence flag'
+      );
+      perform tests.assert(
+        exists (select 1 from public.admin_recent_battles limit 1),
+        'admin_recent_battles readable'
+      );
+      raise notice 'TEST-OK backend health persistence + admin_recent_battles';
+    end;
+  end;
 end $$;

@@ -1,9 +1,12 @@
 /**
- * combat-v1 Edge Function request handler (F2).
+ * combat-v1 Edge Function request handler (F2 compute + F3 persist).
  *
  * Exported for Deno tests so the shipped Edge path is exercised without
  * spinning Deno.serve. Pure combat packages stay framework-neutral; this
  * file is the only Edge/Deno boundary (CSPRNG + HTTP + Supabase clients).
+ *
+ * Persistence: after compute, calls persist_fight_result (one Postgres
+ * transaction: allowance + battle + replay + attacker XP + outbox + idempotency).
  */
 import { createSha256Rng, seedToKeyMaterial, deriveSeed } from '../_shared/botore/rng/index.js';
 import { simulateBattle } from '../_shared/botore/combat-engine/index.js';
@@ -90,10 +93,55 @@ export type FighterSnapshot = {
   weaponPower: number;
 };
 
-/** Injectable deps so Deno tests can exercise auth / eligibility without a live DB. */
+export type PersistFightArgs = {
+  accountId: string;
+  idempotencyKey: string;
+  opponentId: string;
+  battleId: string;
+  seed: string;
+  rulesVersion: string;
+  replay: unknown;
+  attacker: {
+    characterId: string;
+    hp: number;
+    weaponKind: string;
+    weaponPower: number;
+    loadoutVersionId: string;
+  };
+  defender: {
+    characterId: string;
+    hp: number;
+    weaponKind: string;
+    weaponPower: number;
+    loadoutVersionId: string;
+  };
+  utcDay: string;
+};
+
+export type PersistFightResult =
+  | {
+      ok: true;
+      repeated: boolean;
+      battleId: string;
+      xpAwarded: number;
+      replayChecksum: string;
+      winnerId: string | null;
+      reason: 'defeat' | 'action_limit_tiebreak';
+      allowancesRemaining: number;
+    }
+  | {
+      ok: false;
+      code: string;
+      message: string;
+      allowancesRemaining?: number;
+    };
+
+/** Injectable deps so Deno tests can exercise auth / eligibility / persist without a live DB. */
 export type CombatDeps = {
   getUserId: (authHeader: string) => Promise<string | null>;
   prepareFightContext: (accountId: string, opponentId: string) => Promise<FightContext>;
+  persistFightResult: (args: PersistFightArgs) => Promise<PersistFightResult>;
+  loadPersistedReplay?: (battleId: string) => Promise<unknown | null>;
   createBattleSeed?: () => string;
   createBattleId?: () => string;
 };
@@ -175,6 +223,17 @@ export async function handleCombatRequest(req: Request, deps: CombatDeps): Promi
     return json({ error: 'missing bearer token', code: 'unauthenticated' }, 401);
   }
 
+  const idempotencyKey = (req.headers.get('Idempotency-Key') ?? '').trim();
+  if (idempotencyKey.length < 8 || idempotencyKey.length > 128) {
+    return json(
+      {
+        error: 'Idempotency-Key header required (8..128 chars)',
+        code: 'invalid_idempotency_key',
+      },
+      400,
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -224,20 +283,87 @@ export async function handleCombatRequest(req: Request, deps: CombatDeps): Promi
 
     const replay = computeCombatReplay({ battleId, seed, attacker, defender });
 
+    const persisted = await deps.persistFightResult({
+      accountId,
+      idempotencyKey,
+      opponentId,
+      battleId,
+      seed,
+      rulesVersion: 'combat-v1',
+      replay,
+      attacker: {
+        characterId: ctx.attacker.characterId,
+        hp: ctx.attacker.hp,
+        weaponKind: ctx.attacker.weaponKind,
+        weaponPower: ctx.attacker.weaponPower,
+        loadoutVersionId: ctx.attacker.loadoutVersionId,
+      },
+      defender: {
+        characterId: ctx.defender.characterId,
+        hp: ctx.defender.hp,
+        weaponKind: ctx.defender.weaponKind,
+        weaponPower: ctx.defender.weaponPower,
+        loadoutVersionId: ctx.defender.loadoutVersionId,
+      },
+      utcDay: ctx.utcDay,
+    });
+
+    if (!persisted || typeof persisted !== 'object' || !('ok' in persisted)) {
+      return json({ error: 'malformed persist result', code: 'persist_invalid' }, 500);
+    }
+
+    if (!persisted.ok) {
+      const status =
+        persisted.code === 'allowance_exhausted'
+          ? 409
+          : persisted.code === 'unknown_opponent'
+            ? 404
+            : persisted.code === 'forbidden' || persisted.code === 'unauthenticated'
+              ? 401
+              : 400;
+      return json({ error: persisted.message, code: persisted.code }, status);
+    }
+
+    let responseReplay: typeof replay | Record<string, unknown> = replay;
+    let responseSeed = seed;
+    if (persisted.repeated && persisted.battleId !== battleId) {
+      const stored = deps.loadPersistedReplay
+        ? await deps.loadPersistedReplay(persisted.battleId)
+        : null;
+      if (!stored || typeof stored !== 'object') {
+        return json(
+          { error: 'idempotent replay lookup failed', code: 'persist_replay_missing' },
+          500,
+        );
+      }
+      responseReplay = stored as typeof replay;
+      const storedSeed = (stored as { seed?: unknown }).seed;
+      responseSeed = typeof storedSeed === 'string' ? storedSeed : seed;
+    }
+
+    const outcome = (
+      responseReplay as {
+        outcome?: { reason?: string; winner?: string; winnerByTiebreak?: string | null };
+      }
+    ).outcome;
     const winner =
-      replay.outcome.reason === 'defeat' ? replay.outcome.winner : replay.outcome.winnerByTiebreak;
+      outcome?.reason === 'defeat'
+        ? (outcome.winner ?? persisted.winnerId)
+        : (outcome?.winnerByTiebreak ?? persisted.winnerId);
 
     return json(
       {
-        battleId,
-        status: 'computed',
+        battleId: persisted.battleId,
+        status: 'completed',
         rulesVersion: 'combat-v1',
-        seed,
+        seed: responseSeed,
         outcome: {
           winner,
-          reason: replay.outcome.reason,
+          reason: persisted.reason,
         },
-        replay,
+        replay: responseReplay,
+        replayChecksum: persisted.replayChecksum,
+        xpAwarded: persisted.xpAwarded,
         loadoutVersionIds: {
           attacker: ctx.attacker.loadoutVersionId,
           defender: ctx.defender.loadoutVersionId,
@@ -246,9 +372,10 @@ export async function handleCombatRequest(req: Request, deps: CombatDeps): Promi
           attacker: ctx.attacker.atlasVersion,
           defender: ctx.defender.atlasVersion,
         },
-        allowancesRemaining: ctx.allowancesRemaining,
+        allowancesRemaining: persisted.allowancesRemaining,
         utcDay: ctx.utcDay,
-        persistence: 'pending_f3',
+        persistence: persisted.repeated ? 'repeated' : 'persisted',
+        repeated: persisted.repeated,
         service: 'combat-v1',
       },
       200,
