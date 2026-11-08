@@ -201,6 +201,21 @@ whether public APIs or migrations change. Report changed files and the exact
 verification command output. If the task spends money or supervision time,
 report those figures or mark them unknown.
 
+## Agent attribution
+
+Every agent commit ends with git trailers:
+
+```
+Agent: <agent name, e.g. GasNet Implementer / Nightly Audit Engineer>
+Agent-Ticket: <ClickUp task id>
+Agent-Run: https://cursor.com/agents/<bc id>   (when known)
+```
+
+Every PR description ends with the same lines as a footer.
+
+Every PR comment or review by an agent starts with `### Agent: <name>`
+followed by a `**Verdict:**` line.
+
 ## Prohibited
 
 - Introducing Redis/Kubernetes/microservices/GraphQL/message brokers/IAP/ads.
