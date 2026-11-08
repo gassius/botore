@@ -9,6 +9,7 @@
  *   - Catalogue / loadout / inventory counts
  *   - prepare_fight_context eligibility (F2)
  *   - persist_fight_result idempotent consume + XP (F3)
+ *   - process_analytics_outbox + pg_cron jobs (F4)
  *   - Optional Edge Functions /health and /combat-v1 when reachable
  *
  * Usage:
@@ -391,6 +392,20 @@ if (health.checks?.fight?.persistence !== 'persist_fight_result') {
 if ((health.checks?.fight?.ready_as_opponent ?? 0) < 3) {
   fail(`expected >= 3 ready opponents, got ${health.checks?.fight?.ready_as_opponent}`);
 }
+if (!health.checks?.pg_cron?.present) {
+  fail(`expected pg_cron.present=true, got ${JSON.stringify(health.checks?.pg_cron)}`);
+}
+if (!health.checks?.pg_cron?.outbox_drain_scheduled) {
+  fail(`expected outbox_drain_scheduled, got ${JSON.stringify(health.checks?.pg_cron)}`);
+}
+if (!health.checks?.pg_cron?.allowance_refresh_scheduled) {
+  fail(`expected allowance_refresh_scheduled, got ${JSON.stringify(health.checks?.pg_cron)}`);
+}
+if (health.checks?.analytics_outbox?.processor !== 'process_analytics_outbox') {
+  fail(
+    `expected analytics_outbox.processor=process_analytics_outbox, got ${JSON.stringify(health.checks?.analytics_outbox)}`,
+  );
+}
 console.log('SMOKE-OK database health snapshot');
 
 const chassis = Number(
@@ -588,6 +603,58 @@ console.log('SMOKE-OK prepare_fight_context');
   const adminBattles = Number(psql('select count(*) from admin_recent_battles'));
   if (adminBattles < 1) fail('admin_recent_battles empty after persist');
   console.log('SMOKE-OK persist_fight_result idempotent + defender XP guard');
+
+  // F4: drain the battle_completed outbox row written by persist.
+  const pendingBefore = Number(
+    psql(
+      `select count(*) from analytics_outbox where processed_at is null and dead_lettered_at is null`,
+    ),
+  );
+  if (pendingBefore < 1) fail('expected pending outbox row after persist');
+  const drainOut = psql(`
+    select public.process_analytics_outbox(50, 5)::text
+      from (select set_config('request.jwt.claim.role','service_role',true)) as _auth;
+  `);
+  let drainBody;
+  try {
+    drainBody = JSON.parse(drainOut);
+  } catch {
+    fail(`process_analytics_outbox did not return JSON: ${drainOut}`);
+  }
+  if (!drainBody.ok) fail(`drain not ok: ${drainOut}`);
+  if ((drainBody.delivered ?? 0) < 1) fail(`expected delivered>=1, got ${drainOut}`);
+  const pendingAfter = Number(
+    psql(
+      `select count(*) from analytics_outbox where event_id in (
+         select event_id from analytics_outbox
+          where (payload->>'battleId') = '${battleId}' and event_name = 'battle_completed'
+       ) and processed_at is null`,
+    ),
+  );
+  if (pendingAfter !== 0) fail('battle_completed outbox row still pending after drain');
+
+  const cronJobs = Number(psql(`select count(*) from public.admin_list_cron_jobs()`));
+  if (cronJobs !== 2) fail(`expected 2 botore cron jobs, got ${cronJobs}`);
+  const ensureOut = psql(`
+    select public.ensure_fight_allowances(1)::text
+      from (select set_config('request.jwt.claim.role','service_role',true)) as _auth;
+  `);
+  let ensureBody;
+  try {
+    ensureBody = JSON.parse(ensureOut);
+  } catch {
+    fail(`ensure_fight_allowances did not return JSON: ${ensureOut}`);
+  }
+  if (!ensureBody.ok) fail(`ensure_fight_allowances not ok: ${ensureOut}`);
+  const statusOut = psql(`select public.outbox_status_snapshot()::text`);
+  let statusBody;
+  try {
+    statusBody = JSON.parse(statusOut);
+  } catch {
+    fail(`outbox_status_snapshot did not return JSON: ${statusOut}`);
+  }
+  if (!statusBody.ok) fail(`outbox_status_snapshot not ok: ${statusOut}`);
+  console.log('SMOKE-OK F4 outbox drain + pg_cron jobs + allowance ensure');
 }
 
 // Optional: hit Edge Functions if the API gateway is up.

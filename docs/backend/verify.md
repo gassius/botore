@@ -1,10 +1,11 @@
 # Backend verification runbook
 
 How to confirm the local Supabase backend is healthy for bots-as-data (F1),
-Edge combat-v1 compute (F2), atomic fight persist (F3), and the B1
-health/smoke/coverage gates. Prefer **local** Supabase for day-to-day work.
-Hosted project (`yrrytppmkykzhwelqmcs`) is optional for integration when
-healthy; it can auto-pause after idle time.
+Edge combat-v1 compute (F2), atomic fight persist (F3), pg_cron outbox /
+allowance refresh (F4), and the B1 health/smoke/coverage gates. Prefer
+**local** Supabase for day-to-day work. Hosted project
+(`yrrytppmkykzhwelqmcs`) is optional for integration when healthy; it can
+auto-pause after idle time.
 
 ## Prerequisites
 
@@ -43,8 +44,8 @@ curl -s http://127.0.0.1:54321/functions/v1/health
 ```
 
 The health function returns the same `backend_health_snapshot()` payload plus
-`service: "health"`. `pg_cron.present` is `false` until F4 — that is expected,
-not a failure by itself when the overall status is `ok`.
+`service: "health"`. Expect `pg_cron.present: true` with
+`outbox_drain_scheduled` and `allowance_refresh_scheduled` after F4.
 
 ## Fight context (F2)
 
@@ -87,6 +88,24 @@ Expect `status: "completed"`, `xpAwarded` 1|2, full semantic `replay.events`,
 server CSPRNG `seed`, and `persistence: "persisted"` (or `"repeated"` on
 retry with the same Idempotency-Key).
 
+## Outbox + scheduled jobs (F4)
+
+```bash
+psql "$DATABASE_URL" -c "select * from cron.job where jobname like 'botore-%';"
+psql "$DATABASE_URL" -c "select public.outbox_status_snapshot();"
+# Manual drain (also runs every minute via pg_cron):
+psql "$DATABASE_URL" -c \
+  "select public.process_analytics_outbox(50, 5)
+     from (select set_config('request.jwt.claim.role','service_role',true)) s;"
+# Idempotent allowance horizon (also daily 00:05 UTC via pg_cron):
+psql "$DATABASE_URL" -c \
+  "select public.ensure_fight_allowances(1)
+     from (select set_config('request.jwt.claim.role','service_role',true)) s;"
+```
+
+Failed rows stay in `analytics_outbox` with `last_error` / `dead_lettered_at`
+(never deleted). Requeue with `retry_outbox_event(event_id)`.
+
 ## Smoke
 
 ```bash
@@ -95,8 +114,9 @@ node scripts/backend-smoke.mjs
 ```
 
 Asserts health snapshot, catalogue shape, inventory balances, admin reporting
-views (including `admin_fight_readiness`), and `prepare_fight_context`. Edge
-Function checks are best-effort when the gateway serves functions.
+views (including `admin_fight_readiness`), `prepare_fight_context`, persist
+idempotency, and F4 outbox drain / cron job registration. Edge Function
+checks are best-effort when the gateway serves functions.
 
 ## Edge runtime evidence
 
@@ -126,18 +146,25 @@ CI enforces thresholds on domain, contracts, combat-engine, replay, and rng
 
 Read-only views prepared for a future dashboard — do not build B2 here:
 
-| View / function             | Purpose                                        |
-| --------------------------- | ---------------------------------------------- |
-| `admin_catalogue_summary`   | Part counts by slot                            |
-| `admin_inventory_overview`  | Owned parts with account display names         |
-| `admin_loadout_overview`    | Current confirmed loadouts per character       |
-| `admin_fight_readiness`     | Fight eligibility + allowance depth            |
-| `backend_health_snapshot()` | Aggregated health for ops / smoke / UI         |
-| `prepare_fight_context()`   | Eligibility + immutable fighter snapshots (F2) |
-| `persist_fight_result()`    | Atomic fight persist + idempotency (F3)        |
-| `admin_recent_battles`      | Recent persisted fights + outbox pending       |
-| `current_bot_loadouts`      | Latest immutable loadout per character         |
-| `inventory_balances`        | Reconstructable ownership quantities           |
+| View / function              | Purpose                                        |
+| ---------------------------- | ---------------------------------------------- |
+| `admin_catalogue_summary`    | Part counts by slot                            |
+| `admin_inventory_overview`   | Owned parts with account display names         |
+| `admin_loadout_overview`     | Current confirmed loadouts per character       |
+| `admin_fight_readiness`      | Fight eligibility + allowance depth            |
+| `backend_health_snapshot()`  | Aggregated health for ops / smoke / UI         |
+| `prepare_fight_context()`    | Eligibility + immutable fighter snapshots (F2) |
+| `persist_fight_result()`     | Atomic fight persist + idempotency (F3)        |
+| `admin_recent_battles`       | Recent persisted fights + outbox pending       |
+| `admin_outbox_overview`      | Outbox pending / failing / dead-lettered depth |
+| `admin_outbox_failures`      | Visible failed outbox rows                     |
+| `admin_list_cron_jobs()`     | Scheduled botore pg_cron jobs                  |
+| `outbox_status_snapshot()`   | Aggregated outbox + cron status                |
+| `process_analytics_outbox()` | Idempotent outbox drain (service_role / cron)  |
+| `ensure_fight_allowances()`  | Idempotent allowance horizon refresh           |
+| `retry_outbox_event()`       | Requeue a dead-lettered / failed row           |
+| `current_bot_loadouts`       | Latest immutable loadout per character         |
+| `inventory_balances`         | Reconstructable ownership quantities           |
 
 ## Full quality gate
 

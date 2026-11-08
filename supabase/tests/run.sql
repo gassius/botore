@@ -856,3 +856,231 @@ begin
     raise notice 'TEST-OK fight allowances restored after F3 suite';
   end;
 end $$;
+-- F4: pg_cron outbox drain + allowance refresh
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_good uuid := gen_random_uuid();
+  v_bad uuid := gen_random_uuid();
+  v_dead uuid := gen_random_uuid();
+  v_result jsonb;
+  v_status jsonb;
+  v_health jsonb;
+  v_count int;
+  v_day date := (now() at time zone 'utc')::date;
+  v_job_names text[];
+begin
+  -- Extension + scheduled jobs present ------------------------------------
+  perform tests.assert(
+    exists (select 1 from pg_extension where extname = 'pg_cron'),
+    'pg_cron extension installed'
+  );
+  select array_agg(jobname order by jobname) into v_job_names
+    from cron.job
+   where jobname like 'botore-%' and active;
+  perform tests.assert(
+    v_job_names = array['botore-allowance-refresh', 'botore-outbox-drain'],
+    format('expected botore cron jobs, got %s', coalesce(v_job_names::text, 'null'))
+  );
+  raise notice 'TEST-OK pg_cron extension + botore jobs scheduled';
+
+  -- Happy path: valid battle_completed drains to processed ----------------
+  insert into public.analytics_outbox (
+    event_id, event_name, schema_version, context, payload
+  ) values (
+    v_good,
+    'battle_completed',
+    1,
+    jsonb_build_object('accountId', v_account),
+    jsonb_build_object('battleId', gen_random_uuid(), 'won', true, 'xpAwarded', 2)
+  );
+
+  select public.process_analytics_outbox(50, 5) into v_result;
+  perform tests.assert((v_result->>'ok')::boolean, 'drain ok');
+  perform tests.assert((v_result->>'delivered')::int >= 1, 'delivered at least one');
+  perform tests.assert(
+    (select processed_at is not null from public.analytics_outbox where event_id = v_good),
+    'good row processed'
+  );
+  perform tests.assert(
+    (select last_error is null from public.analytics_outbox where event_id = v_good),
+    'good row clears last_error'
+  );
+
+  -- Idempotent re-drain: already processed not claimed again --------------
+  select public.process_analytics_outbox(50, 5) into v_result;
+  perform tests.assert((v_result->>'claimed')::int = 0
+    or not exists (
+      select 1 from public.analytics_outbox
+       where event_id = v_good and processed_at is null
+    ),
+    'processed row not re-claimed'
+  );
+  select count(*) into v_count
+    from public.admin_audit_log
+   where action = 'outbox_delivered'
+     and details->>'eventId' = v_good::text;
+  perform tests.assert(v_count = 1, 'exactly one delivery audit for good event');
+  raise notice 'TEST-OK outbox happy path + idempotent re-drain';
+
+  -- Validation failure stays visible; retries then dead-letter ------------
+  insert into public.analytics_outbox (
+    event_id, event_name, schema_version, context, payload
+  ) values (
+    v_bad,
+    'battle_completed',
+    1,
+    jsonb_build_object('accountId', v_account),
+    jsonb_build_object('won', true) -- missing battleId + xpAwarded
+  );
+
+  select public.process_analytics_outbox(50, 5) into v_result;
+  perform tests.assert((v_result->>'failed')::int >= 1, 'invalid row failed');
+  perform tests.assert(
+    (select processed_at is null and last_error is not null
+       from public.analytics_outbox where event_id = v_bad),
+    'failed row visible with last_error'
+  );
+  perform tests.assert(
+    exists (select 1 from public.admin_outbox_failures where event_id = v_bad),
+    'admin_outbox_failures lists failing row'
+  );
+
+  -- Drive to dead letter with max_attempts=1 on a fresh bad row
+  insert into public.analytics_outbox (
+    event_id, event_name, schema_version, context, payload
+  ) values (
+    v_dead,
+    'not_a_real_event',
+    1,
+    '{}'::jsonb,
+    '{}'::jsonb
+  );
+  select public.process_analytics_outbox(50, 1) into v_result;
+  perform tests.assert((v_result->>'deadLettered')::int >= 1, 'dead lettered');
+  perform tests.assert(
+    (select dead_lettered_at is not null and processed_at is null
+       from public.analytics_outbox where event_id = v_dead),
+    'dead-lettered row not lost (still unprocessed)'
+  );
+
+  -- Dead-lettered rows are not reclaimed on subsequent drains
+  select public.process_analytics_outbox(50, 5) into v_result;
+  perform tests.assert(
+    (select dead_lettered_at is not null from public.analytics_outbox where event_id = v_dead),
+    'dead letter remains after drain'
+  );
+
+  -- retry_outbox_event requeues dead letter -------------------------------
+  select public.retry_outbox_event(v_dead) into v_result;
+  perform tests.assert((v_result->>'ok')::boolean, 'retry ok');
+  perform tests.assert(
+    (select dead_lettered_at is null and last_error is null
+       from public.analytics_outbox where event_id = v_dead),
+    'retry clears dead_lettered_at'
+  );
+  -- still invalid → fails again (not lost)
+  select public.process_analytics_outbox(50, 5) into v_result;
+  perform tests.assert(
+    (select last_error is not null from public.analytics_outbox where event_id = v_dead),
+    'retried invalid row fails visibly again'
+  );
+  raise notice 'TEST-OK outbox failure visibility + dead letter + retry';
+
+  -- Authz: authenticated cannot drain / retry / ensure --------------------
+  begin
+    perform set_config('request.jwt.claim.sub', v_account::text, true);
+    perform set_config('request.jwt.claim.role', 'authenticated', true);
+    set local role authenticated;
+    begin
+      perform public.process_analytics_outbox(10, 5);
+      raise exception 'AUTH FAIL: authenticated process_analytics_outbox allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    begin
+      perform public.retry_outbox_event(v_dead);
+      raise exception 'AUTH FAIL: authenticated retry_outbox_event allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    begin
+      perform public.ensure_fight_allowances(1);
+      raise exception 'AUTH FAIL: authenticated ensure_fight_allowances allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+    perform set_config('request.jwt.claim.role', 'service_role', true);
+    perform set_config('request.jwt.claim.sub', '', true);
+  end;
+  raise notice 'TEST-OK authenticated denied outbox/allowance RPCs';
+
+  -- ensure_fight_allowances idempotent + creates horizon day --------------
+  delete from public.fight_allowances
+   where account_id = v_account
+     and utc_day = v_day + 2;
+  select public.ensure_fight_allowances(2) into v_result;
+  perform tests.assert((v_result->>'ok')::boolean, 'ensure allowances ok');
+  perform tests.assert(
+    (select count(*) from public.fight_allowances
+      where account_id = v_account and utc_day = v_day + 2) = 3,
+    'horizon day +2 has 3 slots'
+  );
+  select public.ensure_fight_allowances(2) into v_result;
+  perform tests.assert((v_result->>'inserted')::int = 0, 'second ensure inserts 0');
+  raise notice 'TEST-OK ensure_fight_allowances idempotent';
+
+  -- Admin / health APIs ---------------------------------------------------
+  select public.outbox_status_snapshot() into v_status;
+  perform tests.assert((v_status->>'ok')::boolean, 'outbox_status_snapshot ok');
+  perform tests.assert(
+    jsonb_typeof(v_status->'cronJobs') = 'array'
+      and jsonb_array_length(v_status->'cronJobs') = 2,
+    'outbox_status_snapshot lists 2 cron jobs'
+  );
+  perform tests.assert(
+    exists (select 1 from public.admin_list_cron_jobs() where jobname = 'botore-outbox-drain'),
+    'admin_list_cron_jobs returns outbox drain'
+  );
+  perform tests.assert(
+    exists (select 1 from public.admin_outbox_overview),
+    'admin_outbox_overview readable'
+  );
+
+  select public.backend_health_snapshot() into v_health;
+  perform tests.assert(
+    (v_health->'checks'->'pg_cron'->>'present')::boolean,
+    'health pg_cron.present'
+  );
+  perform tests.assert(
+    (v_health->'checks'->'pg_cron'->>'outbox_drain_scheduled')::boolean,
+    'health outbox_drain_scheduled'
+  );
+  perform tests.assert(
+    (v_health->'checks'->'pg_cron'->>'allowance_refresh_scheduled')::boolean,
+    'health allowance_refresh_scheduled'
+  );
+  perform tests.assert(
+    (v_health->'checks'->'pg_cron'->>'active_botore_jobs')::int = 2,
+    'health active_botore_jobs=2'
+  );
+  perform tests.assert(
+    v_health->'checks'->'analytics_outbox'->>'processor' = 'process_analytics_outbox',
+    'health outbox processor flag'
+  );
+  -- Overall status=ok when proof seed + loadouts are present (full db:reset).
+  if (v_health->'checks'->'parts_catalogue'->>'proof_seed_ok')::boolean
+     and coalesce((v_health->'checks'->'bot_loadouts'->>'current_count')::int, 0) >= 1
+     and coalesce((v_health->'checks'->'fight'->>'ready_as_opponent')::int, 0) >= 1 then
+    perform tests.assert(v_health->>'status' = 'ok', 'health status ok after F4');
+  end if;
+  raise notice 'TEST-OK F4 admin APIs + backend_health_snapshot';
+end $$;
