@@ -12,12 +12,12 @@ Layout: `docs/architecture/overview.md`. Audio index: `docs/audio/README.md`.
 
 ## Prerequisites
 
-| Tool | Version | Notes |
-| ---- | ------- | ----- |
-| Node.js | 24.x (`engines`) | required |
-| pnpm | 11.x (`packageManager`) | `corepack enable` |
-| Docker-compatible runtime | recent | Supabase CLI only |
-| Supabase CLI | pinned devDependency | `pnpm exec supabase` |
+| Tool                      | Version                 | Notes                |
+| ------------------------- | ----------------------- | -------------------- |
+| Node.js                   | 24.x (`engines`)        | required             |
+| pnpm                      | 11.x (`packageManager`) | `corepack enable`    |
+| Docker-compatible runtime | recent                  | Supabase CLI only    |
+| Supabase CLI              | pinned devDependency    | `pnpm exec supabase` |
 
 No cloud accounts for local development.
 
