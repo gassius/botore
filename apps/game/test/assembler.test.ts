@@ -192,10 +192,7 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
       // Broken sandwich translate(w/2)·scaleX(-1)·translate(-w/2) on top of centre origin:
       // effective x' = 2w - x (shifts centre by +w). Must not be what we use.
       const brokenDoublePivot = (x: number) => 2 * width - x;
-      expect(applyCenterOriginScaleX(mid, width, -1)).not.toBeCloseTo(
-        brokenDoublePivot(mid),
-        5,
-      );
+      expect(applyCenterOriginScaleX(mid, width, -1)).not.toBeCloseTo(brokenDoublePivot(mid), 5);
     }
     expect(WORKSHOP_FRAME_MANIFEST.mirror).toMatch(/x_new=640-x|x=320/);
   });
