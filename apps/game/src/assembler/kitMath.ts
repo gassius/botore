@@ -4,6 +4,20 @@
  * Matches kit README: Translate × Rotate × Translate(-pivot).
  */
 
+/**
+ * Expo-web-safe left-facing mirror: place the layer pivot inside the canvas
+ * instead of relying on a parent canvas scaleX(-1) (clips under overflow:hidden).
+ */
+export function kitLayerAnchorLeft(
+  worldPivotX: number,
+  scale: number,
+  canvasSize: number,
+  mirrored: boolean,
+): number {
+  const worldX = worldPivotX * scale;
+  return mirrored ? canvasSize - worldX : worldX;
+}
+
 export type Mat3 = readonly [
   number,
   number,

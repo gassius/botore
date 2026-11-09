@@ -320,6 +320,10 @@ export const CanonicalReplayPlayer = forwardRef<
             sceneScale={sceneScale}
             testID={`${testID}-arena`}
           >
+            {/*
+              overflow visible: whole-hierarchy scaleX:-1 clipped far kit Images on Expo web.
+              Facing:'left' uses BotAssembler per-layer mirror (absorbed from F9 1f25ea0).
+            */}
             <View
               pointerEvents="none"
               style={{
@@ -328,7 +332,7 @@ export const CanonicalReplayPlayer = forwardRef<
                 top: placement.far.origin.y,
                 width: placement.far.size,
                 height: placement.far.size,
-                overflow: 'hidden',
+                overflow: 'visible',
                 zIndex: ENVIRONMENT_LAYER_Z.farActor,
               }}
             >
@@ -350,7 +354,7 @@ export const CanonicalReplayPlayer = forwardRef<
                 top: placement.near.origin.y,
                 width: placement.near.size,
                 height: placement.near.size,
-                overflow: 'hidden',
+                overflow: 'visible',
                 zIndex: ENVIRONMENT_LAYER_Z.nearActor,
               }}
             >

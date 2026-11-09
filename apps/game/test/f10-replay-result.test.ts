@@ -6,6 +6,9 @@ import {
   fxCueSiblingZ,
   fxRendersAboveFloor,
 } from '../src/arena';
+import { startPlacement } from '../src/arena/scenePlacement';
+import { assembleBot } from '../src/assembler/assemble';
+import { kitLayerAnchorLeft } from '../src/assembler/kitMath';
 import { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from '../src/assembler/workshopFramePin';
 import {
   applyAnimationCommand,
@@ -390,5 +393,56 @@ describe('confirmed result integrity + server mapping', () => {
     };
     const resolved = resolveSessionConfirmedResult(fight);
     expect(resolved.label).toBe('DEV');
+  });
+});
+
+describe('F10 dual sealed bots + play advance (clip-safe left mirror)', () => {
+  it('far sealed defender kit pivots stay inside actor box under per-layer left mirror', () => {
+    const result = loadDevGoldenConfirmedResult(0);
+    const placement = startPlacement();
+    expect(placement.far.facing).toBe('left');
+    const farLoadout = assemblerLoadoutFromBuild(result.builds.defender);
+    expect(farLoadout.paint).toBe('paint-crimson');
+    const nearLoadout = assemblerLoadoutFromBuild(result.builds.attacker);
+    expect(nearLoadout.paint).toBe('paint-cobalt');
+    expect(nearLoadout.paint).not.toBe(farLoadout.paint);
+
+    const size = placement.far.size;
+    const far = assembleBot({
+      loadout: farLoadout,
+      facing: 'left',
+      placeholder: false,
+    });
+    expect(far.mirrored).toBe(true);
+    const scale = size / far.canvas.width;
+    for (const layer of far.layers) {
+      if (layer.worldPivotX === undefined) continue;
+      const left = kitLayerAnchorLeft(layer.worldPivotX, scale, size, true);
+      expect(left).toBeGreaterThanOrEqual(0);
+      expect(left).toBeLessThanOrEqual(size);
+      // Parent scaleX:-1 would place this pivot outside the clip on Expo web.
+      const parentMirrorLeft = layer.worldPivotX * scale;
+      expect(left).not.toBe(parentMirrorLeft);
+    }
+  });
+
+  it('Play advances through recorded hit/dodge commands without recomputing the fight', () => {
+    const result = loadDevGoldenConfirmedResult(0);
+    const queue = compileAnimationQueue(result.replay);
+    const checksum = result.replay.checksum;
+    expect(queue.some((c) => c.kind === 'damage_pop')).toBe(true);
+    expect(queue.some((c) => c.kind === 'defeat_anim' || c.kind === 'damage_pop')).toBe(true);
+
+    let ui = restartState(queue.length);
+    expect(ui.playing).toBe(true);
+    expect(ui.progress).toBe(0);
+
+    const hitIndex = queue.findIndex((c) => c.kind === 'damage_pop');
+    expect(hitIndex).toBeGreaterThan(0);
+    ui = playbackUiAfterAdvance(ui, hitIndex + 1);
+    expect(ui.playing).toBe(true);
+    expect(ui.progress).toBeGreaterThan(0);
+    expect(ui.commandIndex).toBe(hitIndex + 1);
+    expect(loadDevGoldenConfirmedResult(0).replay.checksum).toBe(checksum);
   });
 });

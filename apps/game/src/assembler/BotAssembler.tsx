@@ -11,6 +11,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { assembleBot, provisionalMotionOffset } from './assemble';
+import { kitLayerAnchorLeft } from './kitMath';
 import type { AssembledLayer, BotAssemblerProps } from './types';
 import { workshopFramePartSource } from './workshopFrameAssets';
 
@@ -83,10 +84,9 @@ function KitLayer({
   const pivotY = (layer.pivotY ?? 0) * scale;
   // RN rotate is counter-clockwise positive; kit angles are clockwise.
   const rotateCcw = -((layer.rotateCwDeg ?? 0) % 360);
-  // When the parent canvas is mirrored on web, also flip layer local X so Image
-  // bitmaps stay on-screen (parent-only scaleX leaves a blank cream box).
-  const worldX = layer.worldPivotX * scale;
-  const left = mirrored ? canvasSize - worldX : worldX;
+  // Per-layer mirror (not parent canvas scaleX:-1) so Expo web keeps Images
+  // inside overflow clips — same fix as F9 Confirm tip 1f25ea0.
+  const left = kitLayerAnchorLeft(layer.worldPivotX, scale, canvasSize, mirrored);
 
   return (
     <View
