@@ -15,14 +15,6 @@
     "verbatimModuleSyntax": false,
     "types": ["vitest/globals", "node"]
   },
-  "include": [
-    "src",
-    "test",
-    "App.tsx",
-    "*.ts",
-    "*.tsx",
-    "src/types/**/*.d.ts",
-    "assets/**/*.json"
-  ],
+  "include": ["src", "test", "App.tsx", "*.ts", "*.tsx", "src/types/**/*.d.ts", "assets/**/*.json"],
   "exclude": ["node_modules", "babel.config.js", "metro.config.js"]
 }
