@@ -39,6 +39,8 @@ concurrency:
 
 permissions:
   contents: read
+  # Sibling jobs poll/upload artifacts within the same run (Ubuntu tunnel ↔ macOS).
+  actions: read
 
 env:
   # Prefer workflow_dispatch inputs; PR events fall back to design-review defaults.
@@ -143,10 +145,56 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # C7c: Colima/qemu on macos-15 hosted runners starves the agent (lost communication).
+  # Run Supabase on Ubuntu and expose Kong via Cloudflare quick tunnel for the Simulator.
+  # No `needs:` between backend and ios — they start in parallel; iOS polls for the tunnel artifact.
+  ios-live-fight-backend:
+    name: iOS live-fight backend (tunnel)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Install postgresql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client unzip
+
+      - name: Start Supabase + Cloudflare tunnel
+        env:
+          # Upload artifact in the next step before keepalive.
+          CAPTURE_BACKEND_KEEPALIVE: '0'
+        run: bash scripts/native-capture/ci-ios-live-fight-backend.sh
+
+      - name: Upload tunnel env for iOS Simulator job
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-live-fight-tunnel-${{ github.sha }}
+          path: artifacts/ios-live-fight-tunnel/
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Keepalive until iOS captures finish
+        env:
+          CAPTURE_BACKEND_KEEPALIVE_MIN: '100'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/native-capture/ci-ios-live-fight-backend-keepalive.sh
+
   ios-simulator-captures:
     name: iOS Simulator captures
     # C7b/C7c: run on pull_request (path-gated) and workflow_dispatch.
     # macos-14 retired; public repo has free macOS minutes on macos-15.
+    # Starts in parallel with ios-live-fight-backend (polls for tunnel artifact).
     runs-on: macos-15
     timeout-minutes: 120
     steps:
@@ -166,7 +214,6 @@ jobs:
           set -euo pipefail
           echo "Available Xcode apps:"
           ls -1d /Applications/Xcode*.app 2>/dev/null || true
-          # Prefer newest Xcode_* then fall back to Xcode.app (macos-15 image).
           SELECTED=""
           for candidate in \
             /Applications/Xcode_16.4.app \
@@ -199,13 +246,11 @@ jobs:
       - name: Capture tooling check (scripts + eas.json)
         run: node scripts/native-capture/check-capture-env.mjs --platform ios --tools-only
 
-      - name: Install postgresql client + Colima/QEMU (local Supabase)
-        run: |
-          set -euo pipefail
-          brew install libpq colima docker docker-compose qemu lima || true
-          echo "$(brew --prefix libpq)/bin" >> "${GITHUB_PATH}"
-          echo "$(brew --prefix docker)/bin" >> "${GITHUB_PATH}"
-          echo "$(brew --prefix colima)/bin" >> "${GITHUB_PATH}"
+      - name: Wait for Ubuntu Supabase tunnel env
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CAPTURE_TUNNEL_WAIT_MIN: '45'
+        run: bash scripts/native-capture/wait-ios-tunnel-env.sh artifacts/ios-live-fight-tunnel
 
       - name: Expo prebuild (ios)
         run: |
@@ -248,11 +293,17 @@ jobs:
           CAPTURE_SETTLE_SEC: '5'
           CAPTURE_BOOT_SEC: '12'
           CAPTURE_IOS_SKIP_PREBUILD: '1'
-          # C7c AC: splash→title + live fight (workflow PR default stays 0 for design path).
           CAPTURE_COLD_START: '1'
           CAPTURE_COLD_START_SEC: '8'
           CAPTURE_COLD_START_BUDGET_SEC: '120'
-        run: bash scripts/native-capture/ci-live-fight-ios-capture.sh
+          CAPTURE_REMOTE_SUPABASE: '1'
+        run: |
+          set -euo pipefail
+          set -a
+          # shellcheck disable=SC1091
+          source artifacts/ios-live-fight-tunnel/tunnel.env
+          set +a
+          bash scripts/native-capture/ci-live-fight-ios-capture.sh
 
       - name: Upload capture artifacts
         if: always()
@@ -262,3 +313,20 @@ jobs:
           path: artifacts/native-captures/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Signal backend keepalive to stop
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/ios-live-fight-done
+          date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/ios-live-fight-done/done.txt
+          echo "sha=${GITHUB_SHA}" >> artifacts/ios-live-fight-done/done.txt
+
+      - name: Upload done marker for backend
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-live-fight-done-${{ github.sha }}
+          path: artifacts/ios-live-fight-done/
+          if-no-files-found: error
+          retention-days: 1

@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# C7c — iOS Simulator live first-run fight captures against local Supabase.
+# C7c — iOS Simulator live first-run fight captures against Supabase.
 #
 # Mirrors ci-live-fight-android-capture.sh: real combat-v1 fight, replay impact
 # + result stills, fight proof in Documents (no faked markers, no table grants).
-# Starts Colima when Docker is unavailable (macos-15 GHA).
+#
+# On GHA macos-15, Colima/qemu starves the hosted runner. Prefer a remote
+# Ubuntu Supabase exposed via Cloudflare tunnel (CAPTURE_REMOTE_SUPABASE=1 +
+# CAPTURE_EMULATOR_SUPABASE_URL). Local Docker/Colima remains a fallback for
+# developers with Docker Desktop.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,6 +22,24 @@ BUNDLE_ID="${CAPTURE_IOS_BUNDLE:-${BUNDLE_IOS}}"
 DEVICE_CANDIDATES="${CAPTURE_IOS_DEVICE:-iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14}"
 
 echo "ci-live-fight-ios-capture: tip=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" >&2
+
+write_game_env_from_remote() {
+  local url="${CAPTURE_EMULATOR_SUPABASE_URL:-${EXPO_PUBLIC_SUPABASE_URL:-}}"
+  local anon="${EXPO_PUBLIC_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY:-${ANON_KEY:-}}}"
+  if [[ -z "${url}" || -z "${anon}" ]]; then
+    echo "error: CAPTURE_REMOTE_SUPABASE requires CAPTURE_EMULATOR_SUPABASE_URL + anon key" >&2
+    return 1
+  fi
+  {
+    echo "EXPO_PUBLIC_SUPABASE_URL=${url}"
+    echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${anon}"
+    echo "EXPO_PUBLIC_DESIGN_CAPTURE=1"
+    echo "EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT=1"
+    echo "EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE=Stable"
+  } >"${REPO_ROOT}/apps/game/.env"
+  export SUPABASE_URL="${url}"
+  echo "using remote Supabase tunnel: ${url}" >&2
+}
 
 dump_colima_logs() {
   echo "---- colima status ----" >&2
@@ -37,8 +59,7 @@ ensure_docker() {
   if ! command -v colima >/dev/null 2>&1 || ! command -v docker >/dev/null 2>&1; then
     brew install docker colima docker-compose qemu lima || true
   fi
-  # GHA macos hosted runners: VZ nested virt is unreliable (disk convert fatals).
-  # Prefer qemu (software) with modest resources; fall back carefully.
+  # Local-dev fallback only — GHA uses CAPTURE_REMOTE_SUPABASE=1 (Ubuntu tunnel).
   colima delete -f >/dev/null 2>&1 || true
   rm -rf "${HOME}/.colima/_lima/colima" 2>/dev/null || true
   local started=0
@@ -64,7 +85,6 @@ ensure_docker() {
     dump_colima_logs
     return 1
   fi
-  # Point docker CLI at Colima's socket when needed.
   if [[ -S "${HOME}/.colima/default/docker.sock" ]]; then
     export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
   elif [[ -S "${HOME}/.colima/docker.sock" ]]; then
@@ -82,44 +102,48 @@ ensure_docker() {
   return 1
 }
 
-ensure_docker
+if [[ "${CAPTURE_REMOTE_SUPABASE:-0}" == "1" || "${CAPTURE_REMOTE_SUPABASE:-0}" == "true" ]]; then
+  write_game_env_from_remote
+else
+  ensure_docker
 
-echo "starting local Supabase…" >&2
-pnpm exec supabase start --ignore-health-check || pnpm exec supabase start
+  echo "starting local Supabase…" >&2
+  pnpm exec supabase start --ignore-health-check || pnpm exec supabase start
 
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
-export SUPABASE_URL="${SUPABASE_URL:-http://127.0.0.1:54321}"
+  export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
+  export SUPABASE_URL="${SUPABASE_URL:-http://127.0.0.1:54321}"
 
-echo "db reset (migrations + seed)…" >&2
-pnpm exec supabase db reset --local
+  echo "db reset (migrations + seed)…" >&2
+  pnpm exec supabase db reset --local
 
-eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
-export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
-export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
+  eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
+  export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
+  export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
 
-echo "atlas storage bootstrap…" >&2
-node scripts/seed-atlas-storage.mjs
+  echo "atlas storage bootstrap…" >&2
+  node scripts/seed-atlas-storage.mjs
 
-{
-  echo "SUPABASE_URL=${SUPABASE_URL}"
-  echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
-  echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
-} >/tmp/botore-functions.env
+  {
+    echo "SUPABASE_URL=${SUPABASE_URL}"
+    echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+    echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+  } >/tmp/botore-functions.env
 
-if [[ -f /tmp/botore-functions-serve.pid ]]; then
-  kill "$(cat /tmp/botore-functions-serve.pid)" >/dev/null 2>&1 || true
+  if [[ -f /tmp/botore-functions-serve.pid ]]; then
+    kill "$(cat /tmp/botore-functions-serve.pid)" >/dev/null 2>&1 || true
+  fi
+  pnpm exec supabase functions serve --env-file /tmp/botore-functions.env >/tmp/botore-functions-serve.log 2>&1 &
+  echo $! >/tmp/botore-functions-serve.pid
+  if ! WAIT_EDGE_TIMEOUT_SEC=90 node scripts/wait-edge-health.mjs; then
+    echo "functions serve log:" >&2
+    cat /tmp/botore-functions-serve.log >&2 || true
+    exit 1
+  fi
+
+  # iOS Simulator reaches host loopback directly when backend is local.
+  export CAPTURE_EMULATOR_SUPABASE_URL="${CAPTURE_EMULATOR_SUPABASE_URL:-http://127.0.0.1:54321}"
+  node "${SCRIPT_DIR}/prepare-live-fight-backend.mjs" --write "${REPO_ROOT}/apps/game/.env"
 fi
-pnpm exec supabase functions serve --env-file /tmp/botore-functions.env >/tmp/botore-functions-serve.log 2>&1 &
-echo $! >/tmp/botore-functions-serve.pid
-if ! WAIT_EDGE_TIMEOUT_SEC=90 node scripts/wait-edge-health.mjs; then
-  echo "functions serve log:" >&2
-  cat /tmp/botore-functions-serve.log >&2 || true
-  exit 1
-fi
-
-# iOS Simulator reaches host loopback directly.
-export CAPTURE_EMULATOR_SUPABASE_URL="${CAPTURE_EMULATOR_SUPABASE_URL:-http://127.0.0.1:54321}"
-node "${SCRIPT_DIR}/prepare-live-fight-backend.mjs" --write "${REPO_ROOT}/apps/game/.env"
 
 while IFS= read -r line || [[ -n "${line}" ]]; do
   case "${line}" in
