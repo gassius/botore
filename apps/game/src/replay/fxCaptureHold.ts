@@ -82,7 +82,11 @@ export function eventsFromFightReplay(replay: unknown): readonly { readonly type
   if (!Array.isArray(events)) return [];
   const out: { type: string }[] = [];
   for (const ev of events) {
-    if (ev != null && typeof ev === 'object' && typeof (ev as { type?: unknown }).type === 'string') {
+    if (
+      ev != null &&
+      typeof ev === 'object' &&
+      typeof (ev as { type?: unknown }).type === 'string'
+    ) {
       out.push({ type: (ev as { type: string }).type });
     }
   }
