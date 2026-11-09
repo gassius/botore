@@ -419,8 +419,9 @@ describe('server-derived allowance day (P2)', () => {
       b.url.includes('/rpc/get_fight_allowance_summary'),
     );
     expect(allowanceBodies).toHaveLength(1);
-    expect(allowanceBodies[0]?.body).toEqual({});
-    expect(JSON.stringify(allowanceBodies[0]?.body)).not.toContain('p_account_id');
+    expect(allowanceBodies[0]?.body).toEqual({
+      p_account_id: '00000000-0000-4000-8000-000000000001',
+    });
     vi.useRealTimers();
   });
 });
