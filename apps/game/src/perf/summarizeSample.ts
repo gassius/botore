@@ -1,7 +1,4 @@
-import {
-  PHONE_PERF_THRESHOLDS,
-  type PhonePerfThresholds,
-} from './thresholds';
+import { PHONE_PERF_THRESHOLDS, type PhonePerfThresholds } from './thresholds';
 import type { FrameTimeSample } from './frameTimeSampler';
 
 export type FrameSampleSummary = {
@@ -81,10 +78,7 @@ export function summarizeFrameSample(
   if (hardSpikeCount > thresholds.maxHardSpikes) {
     failures.push(`hard_spikes_${hardSpikeCount}_gt_${thresholds.maxHardSpikes}`);
   }
-  if (
-    droppedFrameRatio !== null &&
-    droppedFrameRatio > thresholds.maxDroppedFrameRatio
-  ) {
+  if (droppedFrameRatio !== null && droppedFrameRatio > thresholds.maxDroppedFrameRatio) {
     failures.push(
       `dropped_ratio_${droppedFrameRatio.toFixed(4)}_gt_${thresholds.maxDroppedFrameRatio}`,
     );

@@ -1,8 +1,4 @@
-export {
-  PHONE_PERF_THRESHOLDS,
-  isPerfSampleEnabled,
-  type PhonePerfThresholds,
-} from './thresholds';
+export { PHONE_PERF_THRESHOLDS, isPerfSampleEnabled, type PhonePerfThresholds } from './thresholds';
 export {
   createFrameTimeSampler,
   type FrameTimeSample,

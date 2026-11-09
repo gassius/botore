@@ -245,17 +245,14 @@ export const CanonicalReplayPlayer = forwardRef<
     [contact.x, contact.y, placement.far, placement.near],
   );
 
-  const finishPerfSample = useCallback(
-    (now: number) => {
-      const sampler = perfSamplerRef.current;
-      if (!sampler) return;
-      sampler.markPlaybackEnd(now);
-      const summary = summarizeFrameSample(sampler.snapshot(), undefined, { loadKind: 'warm' });
-      perfSummaryRef.current = summary;
-      console.log(formatPerfSummaryLog(summary));
-    },
-    [],
-  );
+  const finishPerfSample = useCallback((now: number) => {
+    const sampler = perfSamplerRef.current;
+    if (!sampler) return;
+    sampler.markPlaybackEnd(now);
+    const summary = summarizeFrameSample(sampler.snapshot(), undefined, { loadKind: 'warm' });
+    perfSummaryRef.current = summary;
+    console.log(formatPerfSummaryLog(summary));
+  }, []);
 
   useEffect(() => {
     if (!playbackUi.playing || !media.assetsAvailable) return;
