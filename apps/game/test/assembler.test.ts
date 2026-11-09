@@ -194,7 +194,9 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
       const brokenDoublePivot = (x: number) => 2 * width - x;
       expect(applyCenterOriginScaleX(mid, width, -1)).not.toBeCloseTo(brokenDoublePivot(mid), 5);
     }
-    expect(WORKSHOP_FRAME_MANIFEST.mirror).toMatch(/x_new=640-x|x=320/);
+    // Kit canvas mid-X contract: x'=640-x; RN centre scaleX(-1) matches.
+    expect(WORKSHOP_FRAME_MANIFEST.canvas[0]).toBe(640);
+    expect(applyCenterOriginScaleX(0, 640, -1)).toBeCloseTo(640, 10);
   });
 
   it('uses +Y-down clockwise rotation: +90° sends +X to +Y; idle upper_arm_r elbow matches v002', () => {
