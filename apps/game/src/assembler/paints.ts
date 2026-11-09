@@ -2,7 +2,7 @@
  * Oxide + Petrol paint mapping (F7).
  *
  * Catalogue ids remain `paint-crimson` / `paint-cobalt` (no catalogue expansion).
- * Visual tokens follow kit-v001 proposed colours when the kit is present.
+ * Visual tokens follow kit-v002 proposed colours when the kit is present.
  */
 
 import type { SamplePaintVisual } from './types';
@@ -17,7 +17,7 @@ export interface PaintVisualSpec {
   readonly label: string;
 }
 
-/** Kit-v001 proposed Oxide — not an approved brand/UI token. */
+/** Kit-v002 proposed Oxide — not an approved brand/UI token. */
 export const OXIDE_PAINT: PaintVisualSpec = {
   visual: 'oxide',
   cataloguePaintId: 'paint-crimson',
@@ -25,7 +25,7 @@ export const OXIDE_PAINT: PaintVisualSpec = {
   label: 'Oxide',
 };
 
-/** Kit-v001 proposed Petrol — not an approved brand/UI token. */
+/** Kit-v002 proposed Petrol — not an approved brand/UI token. */
 export const PETROL_PAINT: PaintVisualSpec = {
   visual: 'petrol',
   cataloguePaintId: 'paint-cobalt',

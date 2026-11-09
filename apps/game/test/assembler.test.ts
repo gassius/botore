@@ -25,7 +25,7 @@ import {
   rotateCwDeg,
   transformPoint,
 } from '../src/assembler/kitMath';
-import v001ManifestJson from '../assets/workshop-frame-kit-v001/manifest.json';
+import integrationDeltaJson from '../assets/workshop-frame-kit-v002/integration-delta-v001-to-v002.json';
 
 const baseLoadout = {
   chassis: 'chassis-basic',
@@ -33,15 +33,16 @@ const baseLoadout = {
   weapon: 'weapon-sword',
 };
 
-const v001Manifest = v001ManifestJson as {
-  version: string;
-  assets: Array<{
-    id: string;
-    width: number;
-    pivot: number[];
-    sockets: Record<string, number[]>;
-    compatible_family: string;
-  }>;
+const integrationDelta = integrationDeltaJson as {
+  from: string;
+  to: string;
+};
+
+/** Historical v001 torso metrics from sealed INTEGRATION-DELTA.md (v001 assets removed). */
+const V001_TORSO_FROM_DELTA = {
+  compatible_family: 'workshop-frame-v001',
+  width: 220,
+  pivot: [110, 130] as const,
 };
 
 describe('BotAssembler PLACEHOLDER path', () => {
@@ -86,15 +87,14 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
     expect(WORKSHOP_FRAME_MANIFEST.poses.heavy_windup?.root_y).toBe(45);
   });
 
-  it('keeps v001 immutable on disk and proves coordinates differ (must_not_mix)', () => {
-    expect(v001Manifest.version).toBe('v001');
-    const v001Torso = v001Manifest.assets.find((a) => a.id === 'torso')!;
-    expect(v001Torso.compatible_family).toBe('workshop-frame-v001');
-    expect(v001Torso.pivot).toEqual([110, 130]);
-    expect(v001Torso.width).toBe(220);
+  it('pins v002 only and proves coordinates differ from sealed v001 delta (must_not_mix)', () => {
+    expect(integrationDelta.from).toBe('workshop-frame/v001');
+    expect(integrationDelta.to).toBe('workshop-frame/v002');
+    expect(V001_TORSO_FROM_DELTA.compatible_family).toBe('workshop-frame-v001');
     const v002Torso = WORKSHOP_FRAME_MANIFEST.assets.find((a) => a.id === 'torso')!;
-    expect(v002Torso.pivot).not.toEqual(v001Torso.pivot);
-    expect(v002Torso.width).not.toBe(v001Torso.width);
+    expect(v002Torso.pivot).not.toEqual([...V001_TORSO_FROM_DELTA.pivot]);
+    expect(v002Torso.width).not.toBe(V001_TORSO_FROM_DELTA.width);
+    expect(v002Torso.compatible_family).toBe('workshop-frame-v002');
     // Active assembly layers must report v002 kit id only.
     const bot = assembleWorkshopFrame({ loadout: baseLoadout, facing: 'right' });
     expect(bot.kitId).toBe('workshop-frame-v002');

@@ -1,4 +1,4 @@
-/** Subset of kit-v001 manifest used by the F7 adapter (not a competing public API). */
+/** Subset of kit-v002 manifest used by the F7 adapter (not a competing public API). */
 
 export type KitPaintId = 'oxide' | 'petrol';
 export type KitWeaponKind = 'sword' | 'axe' | 'dagger';

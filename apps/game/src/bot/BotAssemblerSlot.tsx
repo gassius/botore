@@ -6,7 +6,7 @@ import { BotAssembler, type BotFacing, type MotionPose } from '../assembler';
 /**
  * Shared mount for F7 `BotAssembler` (`apps/game/src/assembler`, kit-v002 pin).
  * Shell/F8/fight import this slot or the assembler barrel — never fork a
- * second renderer. Do not mix Workshop Frame kit-v001 coordinates/assets.
+ * second renderer. Do not mix stale Workshop Frame kit-v001 coordinates/assets.
  */
 export type BotAssemblerSlotProps = {
   loadout: {
