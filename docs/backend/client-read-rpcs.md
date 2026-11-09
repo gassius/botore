@@ -9,17 +9,19 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 
 ## Contract
 
-| RPC                                              | Args                                      | Success body                                              |
-| ------------------------------------------------ | ----------------------------------------- | --------------------------------------------------------- |
-| `get_owned_character()`                          | none (`auth.uid()`)                       | `{ ok: true, characterId, displayName }`                  |
-| `list_opponent_roster()`                         | none                                      | `{ ok: true, opponents: [{ characterId, displayName }] }` |
-| `get_fight_allowance_summary(p_account_id uuid)` | must match `auth.uid()` for authenticated | `{ ok: true, utcDay, allowancesRemaining }`               |
+| RPC                                              | Args                                                  | Success body                                              |
+| ------------------------------------------------ | ----------------------------------------------------- | --------------------------------------------------------- |
+| `get_owned_character()`                          | none (`auth.uid()`)                                   | `{ ok: true, characterId, displayName }`                  |
+| `list_opponent_roster()`                         | none                                                  | `{ ok: true, opponents: [{ characterId, displayName }] }` |
+| `get_fight_allowance_summary(p_account_id uuid)` | must equal `auth.uid()`; query uses `auth.uid()` only | `{ ok: true, utcDay, allowancesRemaining }`               |
 
 Failures: `{ ok: false, code?, message? }` or PostgREST HTTP error (`42501`).
 
 All three are `SECURITY DEFINER` with `set search_path = public, extensions`.
-`EXECUTE` is granted to `authenticated` and `service_role`. **Not** granted to
-`anon`. No new table grants to `authenticated`.
+`EXECUTE` is granted to **`authenticated` only** (revoked from `public`,
+`anon`, and `service_role`). Account identity always comes from `auth.uid()` —
+`p_account_id` is accepted for the C3 PostgREST body but must match and is
+not trusted for the read. No new table grants to `authenticated`.
 
 ## Already-sanctioned companions
 
@@ -36,6 +38,12 @@ All three are `SECURITY DEFINER` with `set search_path = public, extensions`.
 - Opponent roster + allowance summary → Confirm dual-bot chrome; loadouts still
   from `current_bot_loadouts`
 - Do **not** `SELECT` from `characters` or `fight_allowances` in the game client
+
+## Negative tests (db)
+
+- Cross-account: `get_fight_allowance_summary(other_uid)` → forbidden
+- Anon / service_role: no `EXECUTE` on any of the three RPCs
+- Missing JWT / empty role: body gate raises `42501`
 
 ## Verify
 
