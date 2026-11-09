@@ -1465,5 +1465,54 @@ begin
     'snapshot includes atlas v1'
   );
 
+  -- Authz: client JWT roles must not execute SECURITY DEFINER admin RPCs.
+  -- (Grant-only gate; these functions bypass RLS when callable.)
+  begin
+    perform set_config('request.jwt.claim.role', 'anon', true);
+    set local role anon;
+    begin
+      perform public.admin_dashboard_snapshot();
+      raise exception 'AUTH FAIL: anon admin_dashboard_snapshot allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    begin
+      perform public.admin_list_cron_job_runs(5);
+      raise exception 'AUTH FAIL: anon admin_list_cron_job_runs allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+  end;
+
+  begin
+    perform set_config('request.jwt.claim.sub', v_account::text, true);
+    perform set_config('request.jwt.claim.role', 'authenticated', true);
+    set local role authenticated;
+    begin
+      perform public.admin_dashboard_snapshot();
+      raise exception 'AUTH FAIL: authenticated admin_dashboard_snapshot allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    begin
+      perform public.admin_list_cron_job_runs(5);
+      raise exception 'AUTH FAIL: authenticated admin_list_cron_job_runs allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+    perform set_config('request.jwt.claim.role', 'service_role', true);
+    perform set_config('request.jwt.claim.sub', '', true);
+  end;
+
   raise notice 'TEST-OK B2 admin dashboard APIs';
 end $$;

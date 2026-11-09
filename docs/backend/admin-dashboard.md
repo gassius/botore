@@ -3,13 +3,18 @@
 Read-only SQL views and RPCs for a future `apps/dashboard` UI. **This ticket
 ships APIs/views only** — no Next.js pages, no Vercel UI work.
 
-Connect with the server-side reporting credential (`DASHBOARD_DATABASE_URL`).
-Do not expose service-role keys to the browser. Prefer these contracts over
-ad-hoc table SQL in dashboard code.
+Connect with the server-side reporting credential (`DASHBOARD_DATABASE_URL`)
+or `service_role`. Do not expose service-role keys to the browser. Prefer
+these contracts over ad-hoc table SQL in dashboard code.
+
+`admin_dashboard_snapshot()` and `admin_list_cron_job_runs()` are
+`SECURITY DEFINER` and **execute is granted only to `service_role`** (not
+`anon` / `authenticated`). Client JWT callers must be denied.
 
 ## One-shot poll
 
 ```sql
+-- service_role / reporting credential only
 select public.admin_dashboard_snapshot();
 ```
 
@@ -56,13 +61,13 @@ plus `service: "health"`).
 
 ### pg_cron + outbox
 
-| Object                        | Purpose                                      |
-| ----------------------------- | -------------------------------------------- |
-| `admin_outbox_overview`       | Pending / failing / dead-lettered depth      |
-| `admin_outbox_failures`       | Visible failed outbox rows                   |
-| `outbox_status_snapshot()`    | Outbox + cron job list                       |
-| `admin_list_cron_jobs()`      | Scheduled `botore-%` jobs                    |
-| `admin_list_cron_job_runs(n)` | Recent `cron.job_run_details` for those jobs |
+| Object                        | Purpose                                  |
+| ----------------------------- | ---------------------------------------- |
+| `admin_outbox_overview`       | Pending / failing / dead-lettered depth  |
+| `admin_outbox_failures`       | Visible failed outbox rows               |
+| `outbox_status_snapshot()`    | Outbox + cron job list                   |
+| `admin_list_cron_jobs()`      | Scheduled `botore-%` jobs                |
+| `admin_list_cron_job_runs(n)` | Recent cron runs (**service_role only**) |
 
 ### Pack / atlas versions (F5)
 
@@ -73,11 +78,12 @@ plus `service: "health"`).
 ## Smoke checks
 
 ```bash
+# Snapshot / cron runs: reporting DB role or service_role (not anon JWT)
 psql "$DATABASE_URL" -c "select public.admin_dashboard_snapshot()->'ok';"
+psql "$DATABASE_URL" -c "select * from public.admin_list_cron_job_runs(10);"
 psql "$DATABASE_URL" -c "select * from public.admin_fight_stats;"
 psql "$DATABASE_URL" -c "select * from public.admin_players_overview;"
 psql "$DATABASE_URL" -c "select version, status from public.admin_atlas_overview;"
-psql "$DATABASE_URL" -c "select * from public.admin_list_cron_job_runs(10);"
 ```
 
 Covered by `supabase/tests/run.sql` (`TEST-OK B2 admin dashboard APIs`) and

@@ -224,11 +224,14 @@ exception
 end;
 $$;
 
+-- SECURITY DEFINER bypasses RLS; never expose to client JWT roles.
 revoke all on function public.admin_list_cron_job_runs(integer) from public;
-grant execute on function public.admin_list_cron_job_runs(integer) to authenticated, anon, service_role;
+revoke all on function public.admin_list_cron_job_runs(integer) from anon;
+revoke all on function public.admin_list_cron_job_runs(integer) from authenticated;
+grant execute on function public.admin_list_cron_job_runs(integer) to service_role;
 
 comment on function public.admin_list_cron_job_runs(integer) is
-  'Recent botore pg_cron run rows for ops / future B2 dashboard.';
+  'Recent botore pg_cron run rows for ops / future B2 dashboard (service_role / reporting only).';
 
 -- ---------------------------------------------------------------------------
 -- Unified dashboard snapshot (one poll for health + ops panes)
@@ -309,8 +312,12 @@ begin
 end;
 $$;
 
+-- SECURITY DEFINER aggregates cross-tenant admin data; never expose to
+-- anon/authenticated (they would bypass RLS via the definer owner).
 revoke all on function public.admin_dashboard_snapshot() from public;
-grant execute on function public.admin_dashboard_snapshot() to authenticated, anon, service_role;
+revoke all on function public.admin_dashboard_snapshot() from anon;
+revoke all on function public.admin_dashboard_snapshot() from authenticated;
+grant execute on function public.admin_dashboard_snapshot() to service_role;
 
 comment on function public.admin_dashboard_snapshot() is
-  'Aggregated read API for future B2 admin dashboard (health, fights, players, bots, cron, atlas).';
+  'Aggregated read API for future B2 admin dashboard (service_role / reporting credential only).';
