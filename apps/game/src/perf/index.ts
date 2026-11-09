@@ -1,4 +1,10 @@
-export { PHONE_PERF_THRESHOLDS, isPerfSampleEnabled, type PhonePerfThresholds } from './thresholds';
+export {
+  PHONE_PERF_THRESHOLDS,
+  isPerfSampleEnabled,
+  readPerfLoadKind,
+  type PerfLoadKind,
+  type PhonePerfThresholds,
+} from './thresholds';
 export {
   createFrameTimeSampler,
   type FrameTimeSample,
@@ -17,6 +23,7 @@ export function formatPerfSummaryLog(summary: {
   readonly droppedFrameCount: number;
   readonly droppedFrameRatio: number | null;
   readonly loadToPlayReadyMs: number | null;
+  readonly loadKind?: string | null;
   readonly passesProposedThresholds: boolean | null;
   readonly failures: readonly string[];
 }): string {

@@ -15,6 +15,8 @@ export type FrameTimeSampler = {
   markLoadStart: (nowMs: number) => void;
   markPlayReady: (nowMs: number) => void;
   markPlaybackStart: (nowMs: number) => void;
+  /** Drop the frame baseline so a pause gap is not recorded as a spike. */
+  pauseSampling: () => void;
   recordFrame: (nowMs: number) => void;
   markPlaybackEnd: (nowMs: number) => void;
   reset: () => void;
@@ -42,6 +44,10 @@ export function createFrameTimeSampler(): FrameTimeSampler {
       endedAtMs = null;
       lastFrameMs = nowMs;
       deltasMs.length = 0;
+    },
+    pauseSampling() {
+      // Next recordFrame only re-baselines; pause duration is not a frame delta.
+      lastFrameMs = null;
     },
     recordFrame(nowMs) {
       if (startedAtMs === null || endedAtMs !== null) return;

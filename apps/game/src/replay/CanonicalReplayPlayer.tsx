@@ -57,9 +57,14 @@ import {
   createFrameTimeSampler,
   formatPerfSummaryLog,
   isPerfSampleEnabled,
+  readPerfLoadKind,
   summarizeFrameSample,
   type FrameSampleSummary,
 } from '../perf';
+
+function perfNowMs(): number {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
 
 export interface CanonicalReplayPlayerProps {
   readonly result: ConfirmedFightResult;
@@ -102,9 +107,10 @@ export const CanonicalReplayPlayer = forwardRef<
   ref,
 ) {
   const placement = useMemo(() => startPlacement(), []);
-  const [stageBox, setStageBox] = useState({ width: 360, height: 320 });
+  // Start at 0×0 so Play-ready waits for a real onLayout, not a placeholder box.
+  const [stageBox, setStageBox] = useState({ width: 0, height: 0 });
   const fit = useMemo(
-    () => fitSceneToViewport(stageBox.width, Math.max(stageBox.height, 1)),
+    () => fitSceneToViewport(Math.max(stageBox.width, 1), Math.max(stageBox.height, 1)),
     [stageBox.height, stageBox.width],
   );
 
@@ -143,6 +149,7 @@ export const CanonicalReplayPlayer = forwardRef<
   const playbackUiRef = useRef(playbackUi);
   playbackUiRef.current = playbackUi;
   const perfEnabled = isPerfSampleEnabled();
+  const perfLoadKind = readPerfLoadKind();
   const perfSamplerRef = useRef(perfEnabled ? createFrameTimeSampler() : null);
   const perfSummaryRef = useRef<FrameSampleSummary | null>(null);
   const perfPlayReadyMarkedRef = useRef(false);
@@ -151,20 +158,17 @@ export const CanonicalReplayPlayer = forwardRef<
 
   useEffect(() => {
     if (!perfEnabled || !perfSamplerRef.current) return;
-    perfSamplerRef.current.markLoadStart(
-      typeof performance !== 'undefined' ? performance.now() : Date.now(),
-    );
+    perfSamplerRef.current.markLoadStart(perfNowMs());
     perfPlayReadyMarkedRef.current = false;
   }, [perfEnabled, result.replay.checksum]);
 
   useEffect(() => {
     if (!perfEnabled || !perfSamplerRef.current || perfPlayReadyMarkedRef.current) return;
+    // Require a measured layout (positive box from onLayout) + assets, re-armed per checksum.
     if (!media.assetsAvailable || stageBox.width <= 0 || stageBox.height <= 0) return;
-    perfSamplerRef.current.markPlayReady(
-      typeof performance !== 'undefined' ? performance.now() : Date.now(),
-    );
+    perfSamplerRef.current.markPlayReady(perfNowMs());
     perfPlayReadyMarkedRef.current = true;
-  }, [perfEnabled, media.assetsAvailable, stageBox.height, stageBox.width]);
+  }, [perfEnabled, media.assetsAvailable, result.replay.checksum, stageBox.height, stageBox.width]);
 
   const trialAudio = useTrialReplayAudio({
     muted,
@@ -210,6 +214,15 @@ export const CanonicalReplayPlayer = forwardRef<
       } catch {
         // Audio must never block replay reset.
       }
+      // Mid-play Replay must start a fresh sample — do not merge partial runs.
+      if (perfSamplerRef.current) {
+        perfSummaryRef.current = null;
+        if (startPlaying) {
+          perfSamplerRef.current.markPlaybackStart(perfNowMs());
+        } else {
+          perfSamplerRef.current.pauseSampling();
+        }
+      }
       const next = startPlaying ? restartState(queue.length) : initialPlaybackUi(queue.length);
       emitPlayback(next);
     },
@@ -245,14 +258,19 @@ export const CanonicalReplayPlayer = forwardRef<
     [contact.x, contact.y, placement.far, placement.near],
   );
 
-  const finishPerfSample = useCallback((now: number) => {
-    const sampler = perfSamplerRef.current;
-    if (!sampler) return;
-    sampler.markPlaybackEnd(now);
-    const summary = summarizeFrameSample(sampler.snapshot(), undefined, { loadKind: 'warm' });
-    perfSummaryRef.current = summary;
-    console.log(formatPerfSummaryLog(summary));
-  }, []);
+  const finishPerfSample = useCallback(
+    (now: number) => {
+      const sampler = perfSamplerRef.current;
+      if (!sampler) return;
+      sampler.markPlaybackEnd(now);
+      const summary = summarizeFrameSample(sampler.snapshot(), undefined, {
+        loadKind: perfLoadKind,
+      });
+      perfSummaryRef.current = summary;
+      console.log(formatPerfSummaryLog(summary));
+    },
+    [perfLoadKind],
+  );
 
   useEffect(() => {
     if (!playbackUi.playing || !media.assetsAvailable) return;
@@ -260,11 +278,10 @@ export const CanonicalReplayPlayer = forwardRef<
     const sampler = perfSamplerRef.current;
     if (sampler) {
       const snap = sampler.snapshot();
-      // Resume mid-effect remounts without wiping an in-flight sample.
+      // Fresh Play→END or post-END Replay: start a new sample.
+      // Pause→resume keeps the in-flight sample; pauseSampling cleared the baseline.
       if (snap.startedAtMs === null || snap.endedAtMs !== null) {
-        sampler.markPlaybackStart(
-          typeof performance !== 'undefined' ? performance.now() : Date.now(),
-        );
+        sampler.markPlaybackStart(perfNowMs());
       }
     }
 
@@ -322,6 +339,8 @@ export const CanonicalReplayPlayer = forwardRef<
     rafRef.current = requestAnimationFrame(tick);
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      // Pausing cancels rAF — drop baseline so resume does not count the pause as a spike.
+      sampler?.pauseSampling();
     };
   }, [
     emitPlayback,
@@ -361,12 +380,12 @@ export const CanonicalReplayPlayer = forwardRef<
         return (
           perfSummaryRef.current ??
           summarizeFrameSample(perfSamplerRef.current.snapshot(), undefined, {
-            loadKind: 'warm',
+            loadKind: perfLoadKind,
           })
         );
       },
     }),
-    [emitPlayback, resetPlayback, trialAudio.playUiTap],
+    [emitPlayback, perfLoadKind, resetPlayback, trialAudio.playUiTap],
   );
 
   const onStageLayout = (e: LayoutChangeEvent) => {

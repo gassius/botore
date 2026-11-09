@@ -1,4 +1,4 @@
-import { PHONE_PERF_THRESHOLDS, type PhonePerfThresholds } from './thresholds';
+import { PHONE_PERF_THRESHOLDS, type PerfLoadKind, type PhonePerfThresholds } from './thresholds';
 import type { FrameTimeSample } from './frameTimeSampler';
 
 export type FrameSampleSummary = {
@@ -11,6 +11,7 @@ export type FrameSampleSummary = {
   readonly droppedFrameCount: number;
   readonly droppedFrameRatio: number | null;
   readonly loadToPlayReadyMs: number | null;
+  readonly loadKind: PerfLoadKind | null;
   readonly playbackDurationMs: number | null;
   readonly passesProposedThresholds: boolean | null;
   readonly failures: readonly string[];
@@ -30,7 +31,7 @@ function percentile(sortedAsc: readonly number[], p: number): number | null {
 export function summarizeFrameSample(
   sample: FrameTimeSample,
   thresholds: PhonePerfThresholds = PHONE_PERF_THRESHOLDS,
-  opts: { readonly loadKind?: 'warm' | 'cold' } = {},
+  opts: { readonly loadKind?: PerfLoadKind | null } = {},
 ): FrameSampleSummary {
   const sorted = [...sample.deltasMs].sort((a, b) => a - b);
   const frameCount = sorted.length;
@@ -41,6 +42,7 @@ export function summarizeFrameSample(
   const hardSpikeCount = sorted.filter((dt) => dt > thresholds.hardSpikeMs).length;
   const droppedFrameCount = sorted.filter((dt) => dt > thresholds.droppedFrameMs).length;
   const droppedFrameRatio = frameCount > 0 ? droppedFrameCount / frameCount : null;
+  const loadKind = opts.loadKind ?? null;
 
   const loadToPlayReadyMs =
     sample.loadStartedAtMs !== null && sample.playReadyAtMs !== null
@@ -63,6 +65,7 @@ export function summarizeFrameSample(
       droppedFrameCount,
       droppedFrameRatio,
       loadToPlayReadyMs,
+      loadKind,
       playbackDurationMs,
       passesProposedThresholds: null,
       failures: ['no_frames_sampled'],
@@ -83,13 +86,12 @@ export function summarizeFrameSample(
       `dropped_ratio_${droppedFrameRatio.toFixed(4)}_gt_${thresholds.maxDroppedFrameRatio}`,
     );
   }
-  if (loadToPlayReadyMs !== null) {
+  // Load is only verdicted when the harness declares warm/cold; otherwise report only.
+  if (loadToPlayReadyMs !== null && loadKind !== null) {
     const loadLimit =
-      opts.loadKind === 'cold'
-        ? thresholds.coldLoadToPlayReadyMs
-        : thresholds.warmLoadToPlayReadyMs;
+      loadKind === 'cold' ? thresholds.coldLoadToPlayReadyMs : thresholds.warmLoadToPlayReadyMs;
     if (loadToPlayReadyMs > loadLimit) {
-      failures.push(`load_${loadToPlayReadyMs}_gt_${loadLimit}_${opts.loadKind ?? 'warm'}`);
+      failures.push(`load_${loadToPlayReadyMs}_gt_${loadLimit}_${loadKind}`);
     }
   }
 
@@ -103,6 +105,7 @@ export function summarizeFrameSample(
     droppedFrameCount,
     droppedFrameRatio,
     loadToPlayReadyMs,
+    loadKind,
     playbackDurationMs,
     passesProposedThresholds: failures.length === 0,
     failures,

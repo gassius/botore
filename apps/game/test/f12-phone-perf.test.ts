@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   BOTORE_PERF_LOG_TAG,
@@ -5,6 +7,7 @@ import {
   createFrameTimeSampler,
   formatPerfSummaryLog,
   isPerfSampleEnabled,
+  readPerfLoadKind,
   summarizeFrameSample,
 } from '../src/perf';
 
@@ -21,9 +24,24 @@ describe('F12 phone perf thresholds (proposed)', () => {
   });
 
   it('enables sampling only via explicit EXPO_PUBLIC_PERF_SAMPLE=1', () => {
-    expect(isPerfSampleEnabled({})).toBe(false);
-    expect(isPerfSampleEnabled({ EXPO_PUBLIC_PERF_SAMPLE: '0' })).toBe(false);
-    expect(isPerfSampleEnabled({ EXPO_PUBLIC_PERF_SAMPLE: '1' })).toBe(true);
+    expect(isPerfSampleEnabled(undefined)).toBe(false);
+    expect(isPerfSampleEnabled('0')).toBe(false);
+    expect(isPerfSampleEnabled('1')).toBe(true);
+  });
+
+  it('reads load kind only for warm|cold; unset omits load verdict', () => {
+    expect(readPerfLoadKind(undefined)).toBeNull();
+    expect(readPerfLoadKind('hot')).toBeNull();
+    expect(readPerfLoadKind('warm')).toBe('warm');
+    expect(readPerfLoadKind('cold')).toBe('cold');
+  });
+
+  it('keeps Expo public perf env reads as static process.env member expressions', () => {
+    const source = readFileSync(join(process.cwd(), 'src/perf/thresholds.ts'), 'utf8');
+    expect(source).toContain('process.env.EXPO_PUBLIC_PERF_SAMPLE');
+    expect(source).toContain('process.env.EXPO_PUBLIC_PERF_LOAD_KIND');
+    expect(source).not.toMatch(/process\.env\s*as\s*Record/);
+    expect(source).not.toMatch(/process\.env\s*\[/);
   });
 });
 
@@ -45,12 +63,46 @@ describe('F12 frame-time sampler + summary', () => {
 
     const summary = summarizeFrameSample(snap, undefined, { loadKind: 'warm' });
     expect(summary.loadToPlayReadyMs).toBe(400);
+    expect(summary.loadKind).toBe('warm');
     expect(summary.frameCount).toBe(3);
     expect(summary.p95Ms).toBeGreaterThan(0);
     expect(summary.hardSpikeCount).toBe(0);
     expect(summary.droppedFrameCount).toBe(0);
     expect(summary.passesProposedThresholds).toBe(true);
     expect(summary.failures).toEqual([]);
+  });
+
+  it('omits load verdict when loadKind is unset even if load ms is large', () => {
+    const s = createFrameTimeSampler();
+    s.markLoadStart(0);
+    s.markPlayReady(5000);
+    s.markPlaybackStart(5000);
+    s.recordFrame(5016);
+    s.recordFrame(5032);
+    s.markPlaybackEnd(5100);
+
+    const summary = summarizeFrameSample(s.snapshot(), undefined, { loadKind: null });
+    expect(summary.loadToPlayReadyMs).toBe(5000);
+    expect(summary.loadKind).toBeNull();
+    expect(summary.failures.some((f) => f.startsWith('load_'))).toBe(false);
+    expect(summary.passesProposedThresholds).toBe(true);
+  });
+
+  it('scores cold load against the cold budget', () => {
+    const s = createFrameTimeSampler();
+    s.markLoadStart(0);
+    s.markPlayReady(2500);
+    s.markPlaybackStart(2500);
+    s.recordFrame(2516);
+    s.recordFrame(2532);
+    s.markPlaybackEnd(2600);
+
+    const warm = summarizeFrameSample(s.snapshot(), undefined, { loadKind: 'warm' });
+    expect(warm.failures.some((f) => f.includes('_warm'))).toBe(true);
+
+    const cold = summarizeFrameSample(s.snapshot(), undefined, { loadKind: 'cold' });
+    expect(cold.failures.some((f) => f.startsWith('load_'))).toBe(false);
+    expect(cold.passesProposedThresholds).toBe(true);
   });
 
   it('flags hard spikes, drops, and load over budget against proposed limits', () => {
@@ -76,6 +128,38 @@ describe('F12 frame-time sampler + summary', () => {
     expect(summary.failures.some((f) => f.startsWith('hard_spikes_'))).toBe(true);
   });
 
+  it('does not count a pause gap as a frame delta after pauseSampling', () => {
+    const s = createFrameTimeSampler();
+    s.markPlaybackStart(1000);
+    s.recordFrame(1016);
+    s.recordFrame(1032);
+    s.pauseSampling();
+    // 2s pause elapses; resume must re-baseline without a 2000ms spike.
+    s.recordFrame(3032);
+    s.recordFrame(3048);
+    s.markPlaybackEnd(3100);
+
+    expect(s.snapshot().deltasMs).toEqual([16, 16, 16]);
+    const summary = summarizeFrameSample(s.snapshot());
+    expect(summary.hardSpikeCount).toBe(0);
+    expect(summary.droppedFrameCount).toBe(0);
+  });
+
+  it('starts a fresh sample on markPlaybackStart so mid-run Replay does not merge', () => {
+    const s = createFrameTimeSampler();
+    s.markPlaybackStart(0);
+    s.recordFrame(16);
+    s.recordFrame(32);
+    // Operator hits Replay mid-run — new sample replaces the partial.
+    s.markPlaybackStart(1000);
+    s.recordFrame(1016);
+    s.recordFrame(1032);
+    s.markPlaybackEnd(1100);
+
+    expect(s.snapshot().deltasMs).toEqual([16, 16]);
+    expect(s.snapshot().startedAtMs).toBe(1000);
+  });
+
   it('returns null pass when no frames were sampled', () => {
     const summary = summarizeFrameSample(createFrameTimeSampler().snapshot());
     expect(summary.passesProposedThresholds).toBeNull();
@@ -91,6 +175,7 @@ describe('F12 frame-time sampler + summary', () => {
       droppedFrameCount: 0,
       droppedFrameRatio: 0,
       loadToPlayReadyMs: 200,
+      loadKind: 'warm',
       passesProposedThresholds: true,
       failures: [],
     });

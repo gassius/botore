@@ -2,6 +2,11 @@
  * Proposed Android phone performance limits for F12.
  * Mirror of docs/architecture/android-release-perf.md — agree on ClickUp
  * before treating measurements as acceptance. Not product-owner-approved yet.
+ *
+ * Expo inlines only static `process.env.EXPO_PUBLIC_*` member expressions.
+ * Do not alias `process.env` or index it dynamically — those reads stay empty
+ * in release bundles and the sampler would never enable.
+ * @see https://docs.expo.dev/guides/environment-variables/#how-to-read-from-environment-variables
  */
 export const PHONE_PERF_THRESHOLDS = {
   /** Warm load (packs cached) → Play-ready, milliseconds. */
@@ -26,9 +31,25 @@ export const PHONE_PERF_THRESHOLDS = {
 
 export type PhonePerfThresholds = typeof PHONE_PERF_THRESHOLDS;
 
-/** True when release/native sampling should run (explicit opt-in only). */
+export type PerfLoadKind = 'warm' | 'cold';
+
+/**
+ * True when release/native sampling should run (explicit opt-in only).
+ * Default arg uses a static Expo public env member so Metro can inline it.
+ */
 export function isPerfSampleEnabled(
-  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
+  flag: string | undefined = process.env.EXPO_PUBLIC_PERF_SAMPLE,
 ): boolean {
-  return env.EXPO_PUBLIC_PERF_SAMPLE === '1';
+  return flag === '1';
+}
+
+/**
+ * Cold/warm load scoring kind from the measurement harness.
+ * Returns null when unset — load is reported but not verdicted.
+ */
+export function readPerfLoadKind(
+  kind: string | undefined = process.env.EXPO_PUBLIC_PERF_LOAD_KIND,
+): PerfLoadKind | null {
+  if (kind === 'warm' || kind === 'cold') return kind;
+  return null;
 }

@@ -45,8 +45,10 @@ does not justify a renderer rewrite.
    `npx expo run:android --variant release` after CNG prebuild). Debug Metro
    and Expo web are preparation only.
 4. Enable the opt-in sampler with `EXPO_PUBLIC_PERF_SAMPLE=1` on that release
-   binary (rebuild required). Capture `adb logcat` lines tagged
-   `BotorePerf`.
+   binary (rebuild required — Expo inlines only static
+   `process.env.EXPO_PUBLIC_*` reads). Set `EXPO_PUBLIC_PERF_LOAD_KIND=warm`
+   or `cold` so load is verdicted; if unset, load ms is logged but not scored.
+   Capture `adb logcat` lines tagged `BotorePerf`.
 5. Run the representative replay once with sound on, once muted. Prefer the
    same sealed fight used for visual/audio acceptance when a live F9 envelope
    is available; until then, label DEV golden fixture runs honestly.
@@ -58,8 +60,12 @@ does not justify a renderer rewrite.
 
 - Module: `apps/game/src/perf/`
 - Constants mirror this document: `PHONE_PERF_THRESHOLDS`
-- `FrameTimeSampler` records rAF deltas; `summarizeFrameSample` computes
-  percentiles, spikes, drops, and pass/fail against the proposed limits
+- `FrameTimeSampler` records rAF deltas; `pauseSampling()` drops the frame
+  baseline across pause/resume; `markPlaybackStart` clears deltas on Replay
+- Play-ready waits for a real stage `onLayout` (no placeholder box) and
+  re-arms per replay checksum
+- `summarizeFrameSample` computes percentiles, spikes, drops, and pass/fail;
+  load is scored only when `EXPO_PUBLIC_PERF_LOAD_KIND` is `warm` or `cold`
 - Wired into `CanonicalReplayPlayer` only when `EXPO_PUBLIC_PERF_SAMPLE=1`
 - Handle exposes `getPerfSummary()` for native inspection; also logs JSON on
   Play→END
