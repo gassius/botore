@@ -34,6 +34,14 @@ export const BUNDLED_BASE_AUDIO_PATHS: Readonly<Record<BaseAudioRole, string>> =
   swing: 'base/audio/swing.m4a',
 };
 
+/**
+ * Soft settle deadline for optional PackTransport ops (ms).
+ * Not a product SLA / cache budget — override in wiring or tests.
+ * Never-settling transport must lose to this race so bundled/silent
+ * fallbacks remain obtainable.
+ */
+export const DEFAULT_TRANSPORT_TIMEOUT_MS = 30_000;
+
 export type PackTransport = {
   fetchManifest(version: string): Promise<AtlasManifestResponse>;
   /** Download object bytes for a storage path like `v1/parts/chassis-basic/body.png`. */
@@ -50,6 +58,14 @@ export type PackFileStore = {
   ensureDir(relativePath: string): Promise<void>;
   /** Absolute/local URI the playback layer can open. */
   uriFor(relativePath: string): string;
+  /** Best-effort delete (used for atomic index tmp cleanup). */
+  remove?(relativePath: string): Promise<void>;
+  /**
+   * Serialize work for a lock key across callers that share this store.
+   * Cache-index merge commits use this so concurrent same-version loads
+   * cannot clobber each other's discoverability entries.
+   */
+  runExclusive?<T>(lockKey: string, task: () => Promise<T>): Promise<T>;
 };
 
 export type BundledBasePack = {
@@ -67,6 +83,7 @@ export type EnsurePacksRequest = {
   /**
    * When true (default), missing network falls back to a same-version cache
    * and never rejects the fight for audio gaps.
+   * When false, a rejected fetch **or** a wrong-version manifest pin fails hard.
    */
   allowOffline?: boolean;
 };
@@ -100,6 +117,10 @@ export type CacheIndexEntry = {
   path: string;
   kind: 'image' | 'audio' | 'manifest';
   relativeFile: string;
+  /** Original F5 manifest partId — persisted so cache hits do not reinvent it. */
+  partId: string | null;
+  /** Original F5 manifest role — persisted so cache hits do not reinvent it. */
+  role: string;
 };
 
 export type CacheIndex = {

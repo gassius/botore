@@ -8,12 +8,14 @@
 export {
   BASE_AUDIO_ROLES,
   BUNDLED_BASE_AUDIO_PATHS,
+  DEFAULT_TRANSPORT_TIMEOUT_MS,
   type AtlasManifestEntryDto,
   type AtlasManifestResponse,
   type AudioResolveSource,
   type BaseAudioRole,
   type BundledBasePack,
   type CacheIndex,
+  type CacheIndexEntry,
   type EnsurePacksRequest,
   type EnsurePacksResult,
   type PackFileStore,
@@ -36,10 +38,13 @@ export {
   cacheDirForVersion,
   cacheFilePath,
   cacheIndexPath,
+  mergeCommitCacheIndex,
+  normalizeCacheIndex,
   readCacheIndex,
+  runStoreExclusive,
   writeCacheIndex,
 } from './pack-cache';
-export { AtlasPackLoader, type PackLoaderDeps } from './pack-loader';
+export { AtlasPackLoader, settleWithTimeout, type PackLoaderDeps } from './pack-loader';
 export {
   findPartAudioUri,
   resolveAudioCue,

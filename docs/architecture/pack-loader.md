@@ -38,6 +38,21 @@ loader fetches them on demand for the player's stable and current fight.
 - Same version + complete files → reuse offline (no re-download).
 - Version change → new directory → fetch.
 - Failed downloads mark the asset `missing` and continue.
+- Index commits **merge under an exclusive lock** for the version so concurrent
+  same-version loads do not clobber each other's discoverability entries.
+  Writes go tmp → final; a failed commit leaves the last valid index readable.
+- Cache index entries persist original F5 `partId` / `role` (no filename reinfer
+  on warm/offline hits).
+- Cache I/O failures are best-effort: `ensurePacks` still returns bundled base /
+  already-resolved assets rather than throwing.
+
+## Transport settle contract
+
+`PackTransport` ops are raced against a **soft settle deadline**
+(`DEFAULT_TRANSPORT_TIMEOUT_MS`, overridable via `PackLoaderDeps.transportTimeoutMs`).
+This is not a product SLA or cache budget. A never-settling peer unblocks the
+loader so bundled / silent fallbacks remain obtainable. Wrong-version manifests
+are treated like a failed fetch when `allowOffline: false`.
 
 ## Audio never blocks a fight
 

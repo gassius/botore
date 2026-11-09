@@ -6,12 +6,15 @@ import {
   BUNDLED_BASE_AUDIO_PATHS,
   WORKSHOP_FRAME_KIT,
   atlasPathForWorkshopKitFile,
+  cacheIndexPath,
   createMemoryPackFileStore,
   createUriMapBundledBasePack,
   findPartAudioUri,
   isBundledBaseAudioPath,
   isWorkshopFrameAtlasPath,
+  mergeCommitCacheIndex,
   partIdsForWorkshopFrameLoadout,
+  readCacheIndex,
   resolveAudioCue,
   resolvePaintCatalogueId,
   resolvePaintToken,
@@ -20,6 +23,7 @@ import {
   resolveWorkshopWeaponAssetId,
   selectEntriesToFetch,
   workshopFrameAtlasPathsForAsset,
+  type PackFileStore,
 } from '../src/atlas';
 
 function encodeUtf8(text: string): Uint8Array {
@@ -336,5 +340,382 @@ describe('atlas pack loader (F6)', () => {
     });
     expect(selected.some((e) => e.path === kitPath)).toBe(true);
     expect(selected.some((e) => e.path === staleV001)).toBe(false);
+  });
+
+  it('returns bundled fallback when manifest/audio transport never settles', async () => {
+    const bundled = createUriMapBundledBasePack({
+      hit: 'bundle://hit',
+      swing: 'bundle://swing',
+    });
+    const loader = new AtlasPackLoader({
+      transport: {
+        fetchManifest: () => new Promise(() => {}),
+        downloadObject: () => new Promise(() => {}),
+      },
+      store: createMemoryPackFileStore(),
+      bundledBase: bundled,
+      transportTimeoutMs: 40,
+    });
+
+    const started = Date.now();
+    const result = await loader.ensurePacks({
+      atlasVersion: 'v1',
+      partIds: ['weapon-sword'],
+      includeArena: false,
+      includeFx: false,
+    });
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(result.offline).toBe(true);
+    expect(result.assets.some((a) => a.source === 'bundle' && a.role === 'hit')).toBe(true);
+    expect(result.assets.some((a) => a.source === 'bundle' && a.role === 'swing')).toBe(true);
+
+    const cue = resolveTriggerAudio({
+      trigger: 'attack_selected',
+      partAudioUri: findPartAudioUri(result.assets, 'weapon-sword'),
+      bundled,
+    });
+    expect(cue.source).toBe('base');
+    expect(cue.uri).toBe('bundle://swing');
+  });
+
+  it('keeps bundled fallback when index write rejects after a failed audio download', async () => {
+    const base = createMemoryPackFileStore();
+    const store: PackFileStore = {
+      rootUri: base.rootUri,
+      exists: (p) => base.exists(p),
+      readText: (p) => base.readText(p),
+      writeBytes: (p, d) => base.writeBytes(p, d),
+      ensureDir: (p) => base.ensureDir(p),
+      uriFor: (p) => base.uriFor(p),
+      remove: (p) => base.remove!(p),
+      runExclusive: (key, task) => base.runExclusive!(key, task),
+      async writeText(relativePath, contents) {
+        if (relativePath.includes('index.json')) {
+          throw new Error('ENOSPC');
+        }
+        return base.writeText(relativePath, contents);
+      },
+    };
+    const bundled = createUriMapBundledBasePack({
+      swing: 'bundle://swing',
+      hit: 'bundle://hit',
+    });
+    const loader = new AtlasPackLoader({
+      transport: {
+        fetchManifest: async () => sampleManifest('v1'),
+        downloadObject: async (storagePath) => {
+          if (storagePath.endsWith('.m4a')) {
+            throw new Error('404 audio');
+          }
+          return encodeUtf8(`bytes:${storagePath}`);
+        },
+      },
+      store,
+      bundledBase: bundled,
+    });
+
+    const result = await loader.ensurePacks({
+      atlasVersion: 'v1',
+      partIds: ['weapon-sword'],
+      includeArena: false,
+      includeFx: false,
+    });
+    expect(result.assets.some((a) => a.source === 'bundle' && a.role === 'hit')).toBe(true);
+    expect(result.assets.some((a) => a.kind === 'audio' && a.source === 'missing')).toBe(true);
+    expect(await readCacheIndex(store, 'v1')).toBeNull();
+
+    const cue = resolveTriggerAudio({
+      trigger: 'attack_selected',
+      partAudioUri: findPartAudioUri(result.assets, 'weapon-sword'),
+      bundled,
+    });
+    expect(cue.uri).toBe('bundle://swing');
+  });
+
+  it('merges concurrent same-version loads so offline discovers both parts', async () => {
+    const store = createMemoryPackFileStore();
+    const bundled = createUriMapBundledBasePack({ hit: 'bundle://hit' });
+    const waiting: Array<() => void> = [];
+    let downloadsOpen = false;
+    const downloadObject = vi.fn(async (storagePath: string) => {
+      if (!downloadsOpen) {
+        await new Promise<void>((resolve) => {
+          waiting.push(resolve);
+        });
+      }
+      return encodeUtf8(`bytes:${storagePath}`);
+    });
+    const transport = {
+      fetchManifest: async () => sampleManifest('v1'),
+      downloadObject,
+    };
+    const loaderA = new AtlasPackLoader({ transport, store, bundledBase: bundled });
+    const loaderB = new AtlasPackLoader({ transport, store, bundledBase: bundled });
+
+    const pA = loaderA.ensurePacks({
+      atlasVersion: 'v1',
+      partIds: ['weapon-sword'],
+      includeArena: false,
+      includeFx: false,
+    });
+    const pB = loaderB.ensurePacks({
+      atlasVersion: 'v1',
+      partIds: ['chassis-basic'],
+      includeArena: false,
+      includeFx: false,
+    });
+
+    // Both loaders read an empty index, then block on their first download.
+    await vi.waitFor(() => {
+      expect(waiting.length).toBeGreaterThanOrEqual(2);
+    });
+    downloadsOpen = true;
+    for (const release of waiting.splice(0)) release();
+    const [a, b] = await Promise.all([pA, pB]);
+    expect(a.fetched).toBe(true);
+    expect(b.fetched).toBe(true);
+
+    const index = await readCacheIndex(store, 'v1');
+    expect(index?.entries['parts.weapon-sword.sprite']).toBeTruthy();
+    expect(index?.entries['parts.chassis-basic.body']).toBeTruthy();
+
+    const offlineLoader = new AtlasPackLoader({
+      transport: {
+        fetchManifest: async () => {
+          throw new Error('offline');
+        },
+        downloadObject: async () => {
+          throw new Error('offline');
+        },
+      },
+      store,
+      bundledBase: bundled,
+    });
+    const offline = await offlineLoader.ensurePacks({
+      atlasVersion: 'v1',
+      partIds: ['weapon-sword', 'chassis-basic'],
+      includeArena: false,
+      includeFx: false,
+    });
+    expect(offline.offline).toBe(true);
+    expect(offline.fromCache).toBe(true);
+    expect(
+      offline.assets.some(
+        (asset) => asset.assetKey === 'parts.weapon-sword.sprite' && asset.source === 'cache',
+      ),
+    ).toBe(true);
+    expect(
+      offline.assets.some(
+        (asset) => asset.assetKey === 'parts.chassis-basic.body' && asset.source === 'cache',
+      ),
+    ).toBe(true);
+  });
+
+  it('retains the previous cache index when a merge commit write fails', async () => {
+    const base = createMemoryPackFileStore();
+    await mergeCommitCacheIndex(base, 'v1', {
+      'parts.weapon-sword.sprite': {
+        assetKey: 'parts.weapon-sword.sprite',
+        path: 'parts/weapon-sword/sprite.png',
+        kind: 'image',
+        relativeFile: 'packs/v1/files/parts/weapon-sword/sprite.png',
+        partId: 'weapon-sword',
+        role: 'sprite',
+      },
+    });
+    await base.writeBytes(
+      'packs/v1/files/parts/weapon-sword/sprite.png',
+      encodeUtf8('sprite-bytes'),
+    );
+
+    let failFinal = false;
+    const store: PackFileStore = {
+      rootUri: base.rootUri,
+      exists: (p) => base.exists(p),
+      readText: (p) => base.readText(p),
+      writeBytes: (p, d) => base.writeBytes(p, d),
+      ensureDir: (p) => base.ensureDir(p),
+      uriFor: (p) => base.uriFor(p),
+      remove: (p) => base.remove!(p),
+      runExclusive: (key, task) => base.runExclusive!(key, task),
+      async writeText(relativePath, contents) {
+        if (failFinal && relativePath === cacheIndexPath('v1')) {
+          throw new Error('interrupted commit');
+        }
+        return base.writeText(relativePath, contents);
+      },
+    };
+
+    failFinal = true;
+    await expect(
+      mergeCommitCacheIndex(store, 'v1', {
+        'parts.chassis-basic.body': {
+          assetKey: 'parts.chassis-basic.body',
+          path: 'parts/chassis-basic/body.png',
+          kind: 'image',
+          relativeFile: 'packs/v1/files/parts/chassis-basic/body.png',
+          partId: 'chassis-basic',
+          role: 'body',
+        },
+      }),
+    ).rejects.toThrow(/interrupted commit/);
+
+    const retained = await readCacheIndex(store, 'v1');
+    expect(retained?.entries['parts.weapon-sword.sprite']).toBeTruthy();
+    expect(retained?.entries['parts.chassis-basic.body']).toBeUndefined();
+  });
+
+  it('preserves workshop partId/role across cold, warm, and offline resolve', async () => {
+    const version = 'v1';
+    const kitPath = 'parts/torso/oxide.png';
+    const kitEntry = {
+      assetKey: 'kits.workshop-frame.torso.oxide',
+      kind: 'image' as const,
+      partId: 'torso',
+      role: 'composited',
+      path: kitPath,
+      storagePath: `${version}/${kitPath}`,
+      soundTags: [] as string[],
+    };
+    const kitsPath = 'kits/workshop-frame/v002/parts/torso-oxide.png';
+    const kitsEntry = {
+      assetKey: 'kits.workshop-frame.v002.torso',
+      kind: 'image' as const,
+      partId: 'torso',
+      role: 'composited',
+      path: kitsPath,
+      storagePath: `${version}/${kitsPath}`,
+      soundTags: [] as string[],
+    };
+    const manifest: AtlasManifestResponse = {
+      ...sampleManifest(version),
+      entries: [...sampleManifest(version).entries, kitEntry, kitsEntry],
+    };
+    const store = createMemoryPackFileStore();
+    const bundled = createUriMapBundledBasePack({ hit: 'bundle://hit' });
+    const loader = new AtlasPackLoader({
+      transport: {
+        fetchManifest: async () => manifest,
+        downloadObject: async (storagePath) => encodeUtf8(storagePath),
+      },
+      store,
+      bundledBase: bundled,
+    });
+
+    const cold = await loader.ensurePacks({
+      atlasVersion: version,
+      partIds: ['torso'],
+      includeArena: false,
+      includeFx: false,
+    });
+    const coldKit = cold.assets.find((a) => a.assetKey === kitEntry.assetKey);
+    const coldKits = cold.assets.find((a) => a.assetKey === kitsEntry.assetKey);
+    expect(coldKit).toMatchObject({ partId: 'torso', role: 'composited', source: 'download' });
+    expect(coldKits).toMatchObject({ partId: 'torso', role: 'composited', source: 'download' });
+
+    const warm = await loader.ensurePacks({
+      atlasVersion: version,
+      partIds: ['torso'],
+      includeArena: false,
+      includeFx: false,
+    });
+    expect(warm.fromCache).toBe(true);
+    expect(warm.assets.find((a) => a.assetKey === kitEntry.assetKey)).toMatchObject({
+      partId: 'torso',
+      role: 'composited',
+      source: 'cache',
+    });
+    expect(warm.assets.find((a) => a.assetKey === kitsEntry.assetKey)).toMatchObject({
+      partId: 'torso',
+      role: 'composited',
+      source: 'cache',
+    });
+
+    const offline = await new AtlasPackLoader({
+      transport: {
+        fetchManifest: async () => {
+          throw new Error('offline');
+        },
+        downloadObject: async () => {
+          throw new Error('offline');
+        },
+      },
+      store,
+      bundledBase: bundled,
+    }).ensurePacks({
+      atlasVersion: version,
+      partIds: ['torso'],
+      includeArena: false,
+      includeFx: false,
+    });
+    expect(offline.assets.find((a) => a.assetKey === kitEntry.assetKey)).toMatchObject({
+      partId: 'torso',
+      role: 'composited',
+      source: 'cache',
+    });
+    expect(offline.assets.find((a) => a.assetKey === kitsEntry.assetKey)).toMatchObject({
+      partId: 'torso',
+      role: 'composited',
+      source: 'cache',
+    });
+  });
+
+  it('rejects a wrong-version manifest when allowOffline is false', async () => {
+    const store = createMemoryPackFileStore();
+    const bundled = createUriMapBundledBasePack({ hit: 'bundle://hit' });
+    const loader = new AtlasPackLoader({
+      transport: {
+        fetchManifest: async () => sampleManifest('v2'),
+        downloadObject: async (storagePath) => encodeUtf8(storagePath),
+      },
+      store,
+      bundledBase: bundled,
+    });
+
+    await expect(
+      loader.ensurePacks({
+        atlasVersion: 'v1',
+        partIds: ['weapon-sword'],
+        includeArena: false,
+        includeFx: false,
+        allowOffline: false,
+      }),
+    ).rejects.toThrow(/atlas_manifest_version_mismatch/);
+
+    // Seed a v1 cache, then pin v1 while transport returns v2 — still reject.
+    const seeder = new AtlasPackLoader({
+      transport: {
+        fetchManifest: async () => sampleManifest('v1'),
+        downloadObject: async (storagePath) => encodeUtf8(storagePath),
+      },
+      store,
+      bundledBase: bundled,
+    });
+    await seeder.ensurePacks({
+      atlasVersion: 'v1',
+      partIds: ['weapon-sword'],
+      includeArena: false,
+      includeFx: false,
+    });
+    await expect(
+      loader.ensurePacks({
+        atlasVersion: 'v1',
+        partIds: ['weapon-sword'],
+        includeArena: false,
+        includeFx: false,
+        allowOffline: false,
+      }),
+    ).rejects.toThrow(/atlas_manifest_version_mismatch/);
+
+    // allowOffline true still falls back to the pinned-version cache.
+    const offlineOk = await loader.ensurePacks({
+      atlasVersion: 'v1',
+      partIds: ['weapon-sword'],
+      includeArena: false,
+      includeFx: false,
+      allowOffline: true,
+    });
+    expect(offlineOk.offline).toBe(true);
+    expect(offlineOk.fromCache).toBe(true);
   });
 });

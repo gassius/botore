@@ -1,21 +1,26 @@
 import type { AtlasManifestEntryDto, AtlasManifestResponse } from '@botore/contracts';
 import { selectEntriesToFetch, storagePathForEntry } from './manifest-select';
-import { areKeysCached, cacheFilePath, readCacheIndex, writeCacheIndex } from './pack-cache';
+import { areKeysCached, cacheFilePath, mergeCommitCacheIndex, readCacheIndex } from './pack-cache';
 import type {
   BundledBasePack,
-  CacheIndex,
+  CacheIndexEntry,
   EnsurePacksRequest,
   EnsurePacksResult,
   PackFileStore,
   PackTransport,
   ResolvedAsset,
 } from './types';
-import { BASE_AUDIO_ROLES, BUNDLED_BASE_AUDIO_PATHS } from './types';
+import { BASE_AUDIO_ROLES, BUNDLED_BASE_AUDIO_PATHS, DEFAULT_TRANSPORT_TIMEOUT_MS } from './types';
 
 export type PackLoaderDeps = {
   transport: PackTransport;
   store: PackFileStore;
   bundledBase: BundledBasePack;
+  /**
+   * Soft settle deadline for optional transport ops (ms).
+   * Defaults to DEFAULT_TRANSPORT_TIMEOUT_MS — not a product budget.
+   */
+  transportTimeoutMs?: number;
 };
 
 /**
@@ -24,16 +29,20 @@ export type PackLoaderDeps = {
  * - Catalogue / arena / FX packs download by manifest; only base audio ships in-app.
  * - Same-version cache is reused offline; a new atlas version uses a new cache dir → fetch.
  * - Missing or failed audio never rejects — callers use resolveAudioCue fallbacks.
+ * - Transport and cache I/O are best-effort: stalled network loses to the soft deadline;
+ *   index write failures must not prevent returning bundled / already-resolved assets.
  */
 export class AtlasPackLoader {
   private readonly transport: PackTransport;
   private readonly store: PackFileStore;
   private readonly bundledBase: BundledBasePack;
+  private readonly transportTimeoutMs: number;
 
   constructor(deps: PackLoaderDeps) {
     this.transport = deps.transport;
     this.store = deps.store;
     this.bundledBase = deps.bundledBase;
+    this.transportTimeoutMs = deps.transportTimeoutMs ?? DEFAULT_TRANSPORT_TIMEOUT_MS;
   }
 
   async ensurePacks(request: EnsurePacksRequest): Promise<EnsurePacksResult> {
@@ -44,16 +53,24 @@ export class AtlasPackLoader {
     let manifest: AtlasManifestResponse | null = null;
 
     try {
-      manifest = await this.transport.fetchManifest(version);
-    } catch {
+      manifest = await this.settleTransport(
+        () => this.transport.fetchManifest(version),
+        'fetchManifest',
+      );
+    } catch (err) {
       offline = true;
       if (!allowOffline) {
-        throw new Error(`atlas_manifest_unavailable:${version}`);
+        throw err instanceof Error ? err : new Error(`atlas_manifest_unavailable:${version}`);
       }
     }
 
     if (manifest && manifest.version !== version) {
-      // Defensive: treat as failure and fall back to cache for the requested pin.
+      // Wrong pin: same class of failure as a rejected fetch when offline is disallowed.
+      if (!allowOffline) {
+        throw new Error(
+          `atlas_manifest_version_mismatch:wanted=${version}:got=${manifest.version}`,
+        );
+      }
       offline = true;
       manifest = null;
     }
@@ -61,65 +78,71 @@ export class AtlasPackLoader {
     const needed = manifest ? selectEntriesToFetch(manifest, request) : [];
     const neededKeys = needed.map((e) => e.assetKey);
 
-    if (manifest && (await areKeysCached(this.store, version, neededKeys))) {
-      const assets = await this.resolveFromCache(version, needed, true);
-      return {
-        version,
-        fromCache: true,
-        fetched: false,
-        offline,
-        assets: [...this.bundledBaseAssets(), ...assets],
-      };
+    try {
+      if (manifest && (await areKeysCached(this.store, version, neededKeys))) {
+        const assets = await this.resolveFromCache(version, needed, true);
+        return this.finish(version, true, false, offline, assets);
+      }
+    } catch {
+      // Cache probe failed — continue toward download / offline paths.
+      offline = true;
     }
 
     if (!manifest) {
-      // Offline: reuse same-version cache if present; still expose bundled base.
-      const cached = await readCacheIndex(this.store, version);
-      const assets = cached
-        ? await this.resolveIndexEntries(version, Object.values(cached.entries), true)
-        : [];
-      return {
-        version,
-        fromCache: assets.length > 0,
-        fetched: false,
-        offline: true,
-        assets: [...this.bundledBaseAssets(), ...assets],
-      };
+      const assets = await this.safeResolveOfflineCache(version);
+      return this.finish(version, assets.length > 0, false, true, assets);
     }
 
-    const index: CacheIndex = (await readCacheIndex(this.store, version)) ?? {
-      version,
-      entries: {},
-    };
     const assets: ResolvedAsset[] = [];
+    const newIndexEntries: Record<string, CacheIndexEntry> = {};
+
+    // Snapshot for per-entry cache hits; merge-commit re-reads under lock later.
+    let indexSnapshot: Record<string, CacheIndexEntry> = {};
+    try {
+      const existing = await readCacheIndex(this.store, version);
+      if (existing) indexSnapshot = existing.entries;
+    } catch {
+      offline = true;
+    }
 
     for (const entry of needed) {
-      const existing = index.entries[entry.assetKey];
-      if (existing && (await this.store.exists(existing.relativeFile))) {
-        assets.push({
-          assetKey: entry.assetKey,
-          kind: entry.kind,
-          partId: entry.partId,
-          role: entry.role,
-          path: entry.path,
-          storagePath: storagePathForEntry(manifest, entry),
-          localUri: this.store.uriFor(existing.relativeFile),
-          source: 'cache',
-        });
-        continue;
+      const existing = indexSnapshot[entry.assetKey];
+      if (existing) {
+        try {
+          if (await this.store.exists(existing.relativeFile)) {
+            assets.push({
+              assetKey: entry.assetKey,
+              kind: entry.kind,
+              partId: entry.partId,
+              role: entry.role,
+              path: entry.path,
+              storagePath: storagePathForEntry(manifest, entry),
+              localUri: this.store.uriFor(existing.relativeFile),
+              source: 'cache',
+            });
+            continue;
+          }
+        } catch {
+          // Fall through to download / missing.
+        }
       }
 
       const storagePath = storagePathForEntry(manifest, entry);
       const relativeFile = cacheFilePath(version, entry.path);
       try {
-        const bytes = await this.transport.downloadObject(storagePath);
+        const bytes = await this.settleTransport(
+          () => this.transport.downloadObject(storagePath),
+          'downloadObject',
+        );
         await this.store.ensureDir(relativeFile.includes('/') ? dirname(relativeFile) : '');
         await this.store.writeBytes(relativeFile, bytes);
-        index.entries[entry.assetKey] = {
+        newIndexEntries[entry.assetKey] = {
           assetKey: entry.assetKey,
           path: entry.path,
           kind: entry.kind,
           relativeFile,
+          partId: entry.partId,
+          role: entry.role,
         };
         fetched = true;
         assets.push({
@@ -148,15 +171,41 @@ export class AtlasPackLoader {
       }
     }
 
-    await writeCacheIndex(this.store, index);
+    // Index commit is best-effort: files may already be on disk; prior index must remain
+    // readable if this write fails (mergeCommit uses tmp→final under exclusive lock).
+    try {
+      await mergeCommitCacheIndex(this.store, version, newIndexEntries);
+    } catch {
+      offline = true;
+    }
 
+    return this.finish(
+      version,
+      !fetched && assets.every((a) => a.source === 'cache' || a.source === 'missing'),
+      fetched,
+      offline,
+      assets,
+    );
+  }
+
+  private finish(
+    version: string,
+    fromCache: boolean,
+    fetched: boolean,
+    offline: boolean,
+    assets: ResolvedAsset[],
+  ): EnsurePacksResult {
     return {
       version,
-      fromCache: !fetched && assets.every((a) => a.source === 'cache' || a.source === 'missing'),
+      fromCache,
       fetched,
       offline,
       assets: [...this.bundledBaseAssets(), ...assets],
     };
+  }
+
+  private settleTransport<T>(op: () => Promise<T>, label: string): Promise<T> {
+    return settleWithTimeout(op(), this.transportTimeoutMs, label);
   }
 
   private bundledBaseAssets(): ResolvedAsset[] {
@@ -176,6 +225,16 @@ export class AtlasPackLoader {
     });
   }
 
+  private async safeResolveOfflineCache(version: string): Promise<ResolvedAsset[]> {
+    try {
+      const cached = await readCacheIndex(this.store, version);
+      if (!cached) return [];
+      return await this.resolveIndexEntries(version, Object.values(cached.entries), true);
+    } catch {
+      return [];
+    }
+  }
+
   private async resolveFromCache(
     version: string,
     entries: AtlasManifestEntryDto[],
@@ -191,22 +250,22 @@ export class AtlasPackLoader {
 
   private async resolveIndexEntries(
     version: string,
-    entries: Array<{
-      assetKey: string;
-      path: string;
-      kind: 'image' | 'audio' | 'manifest';
-      relativeFile: string;
-    }>,
+    entries: CacheIndexEntry[],
     fromCache: boolean,
   ): Promise<ResolvedAsset[]> {
     const out: ResolvedAsset[] = [];
     for (const entry of entries) {
-      const exists = await this.store.exists(entry.relativeFile);
+      let exists = false;
+      try {
+        exists = await this.store.exists(entry.relativeFile);
+      } catch {
+        exists = false;
+      }
       out.push({
         assetKey: entry.assetKey,
         kind: entry.kind,
-        partId: inferPartId(entry.path),
-        role: inferRole(entry.path),
+        partId: entry.partId,
+        role: entry.role,
         path: entry.path,
         storagePath: `${version}/${entry.path}`,
         localUri: exists ? this.store.uriFor(entry.relativeFile) : null,
@@ -222,12 +281,32 @@ function dirname(relativePath: string): string {
   return idx === -1 ? '' : relativePath.slice(0, idx);
 }
 
-function inferPartId(path: string): string | null {
-  const m = /^parts\/([^/]+)\//.exec(path);
-  return m ? m[1]! : null;
-}
-
-function inferRole(path: string): string {
-  const base = path.split('/').pop() ?? path;
-  return base.replace(/\.[^.]+$/, '');
+/**
+ * Soft deadline race for optional transport. Cancels nothing on the wire
+ * (PackTransport has no AbortSignal yet) — it only unblocks the loader so
+ * bundled / silent fallbacks remain obtainable when the peer never settles.
+ */
+export function settleWithTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string,
+): Promise<T> {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    return promise;
+  }
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`atlas_transport_timeout:${label}:${timeoutMs}ms`));
+    }, timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err: unknown) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
 }

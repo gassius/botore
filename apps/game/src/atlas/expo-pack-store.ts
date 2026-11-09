@@ -15,6 +15,7 @@ type ExpoFileSystemModule = {
     contents: string,
     options?: { encoding?: string },
   ) => Promise<void>;
+  deleteAsync?: (fileUri: string, options?: { idempotent?: boolean }) => Promise<void>;
   EncodingType?: { Base64: string; UTF8: string };
 };
 
@@ -42,6 +43,7 @@ export async function createExpoPackFileStore(subdir = 'atlas-cache'): Promise<P
 
   const rootUri = root.endsWith('/') ? `${root}${subdir}/` : `${root}/${subdir}/`;
   await FileSystem.makeDirectoryAsync(rootUri, { intermediates: true });
+  const exclusive = new Map<string, Promise<unknown>>();
 
   const toUri = (relativePath: string): string => {
     const cleaned = relativePath.replace(/^\/+/, '');
@@ -81,6 +83,22 @@ export async function createExpoPackFileStore(subdir = 'atlas-cache'): Promise<P
     },
     uriFor(relativePath) {
       return toUri(relativePath);
+    },
+    async remove(relativePath) {
+      if (!FileSystem.deleteAsync) return;
+      await FileSystem.deleteAsync(toUri(relativePath), { idempotent: true });
+    },
+    async runExclusive<T>(lockKey: string, task: () => Promise<T>): Promise<T> {
+      const previous = exclusive.get(lockKey) ?? Promise.resolve();
+      const run = previous.catch(() => undefined).then(() => task());
+      exclusive.set(
+        lockKey,
+        run.then(
+          () => undefined,
+          () => undefined,
+        ),
+      );
+      return run;
     },
   };
 }

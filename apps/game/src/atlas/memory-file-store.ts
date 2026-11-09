@@ -7,11 +7,12 @@ import type { PackFileStore } from './types';
 export function createMemoryPackFileStore(rootUri = 'memory://atlas-cache/'): PackFileStore {
   const files = new Map<string, Uint8Array | string>();
   const dirs = new Set<string>(['']);
+  const exclusive = new Map<string, Promise<unknown>>();
 
   const normalize = (relativePath: string): string =>
     relativePath.replace(/^\/+/, '').replace(/\/+$/, '');
 
-  return {
+  const store: PackFileStore = {
     rootUri,
     async exists(relativePath) {
       const key = normalize(relativePath);
@@ -32,12 +33,12 @@ export function createMemoryPackFileStore(rootUri = 'memory://atlas-cache/'): Pa
     },
     async writeText(relativePath, contents) {
       const key = normalize(relativePath);
-      await this.ensureDir(key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : '');
+      await store.ensureDir(key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : '');
       files.set(key, contents);
     },
     async writeBytes(relativePath, data) {
       const key = normalize(relativePath);
-      await this.ensureDir(key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : '');
+      await store.ensureDir(key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : '');
       files.set(key, data);
     },
     async ensureDir(relativePath) {
@@ -56,5 +57,23 @@ export function createMemoryPackFileStore(rootUri = 'memory://atlas-cache/'): Pa
     uriFor(relativePath) {
       return `${rootUri}${normalize(relativePath)}`;
     },
+    async remove(relativePath) {
+      const key = normalize(relativePath);
+      files.delete(key);
+    },
+    async runExclusive<T>(lockKey: string, task: () => Promise<T>): Promise<T> {
+      const previous = exclusive.get(lockKey) ?? Promise.resolve();
+      const run = previous.catch(() => undefined).then(() => task());
+      exclusive.set(
+        lockKey,
+        run.then(
+          () => undefined,
+          () => undefined,
+        ),
+      );
+      return run;
+    },
   };
+
+  return store;
 }
