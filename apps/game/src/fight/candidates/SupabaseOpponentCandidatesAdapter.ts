@@ -41,13 +41,14 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
           },
           body: JSON.stringify({}),
         }),
+        // auth.uid()-only — do not send p_account_id (B SECURITY DEFINER scopes to JWT).
         fetch(`${this.config.url}/rest/v1/rpc/${FIGHT_ALLOWANCE_SUMMARY_RPC}`, {
           method: 'POST',
           headers: {
             ...this.headers(input.accessToken),
             Prefer: 'return=representation',
           },
-          body: JSON.stringify({ p_account_id: input.accountId }),
+          body: JSON.stringify({}),
         }),
       ]);
 

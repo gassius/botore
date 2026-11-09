@@ -350,13 +350,13 @@ describe('server-derived allowance day (P2)', () => {
     vi.setSystemTime(new Date('2026-11-10T12:00:00.000Z'));
 
     const fetches: string[] = [];
-    const bodies: unknown[] = [];
+    const bodies: Array<{ url: string; body: unknown }> = [];
     vi.stubGlobal(
       'fetch',
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         fetches.push(url);
-        if (init?.body) bodies.push(JSON.parse(String(init.body)));
+        if (init?.body) bodies.push({ url, body: JSON.parse(String(init.body)) });
         if (url.includes('/rpc/list_opponent_roster')) {
           return new Response(
             JSON.stringify({
@@ -415,9 +415,12 @@ describe('server-derived allowance day (P2)', () => {
     expect(fetches.some((u) => u.includes('/rest/v1/fight_allowances'))).toBe(false);
     expect(fetches.some((u) => u.includes('/rpc/list_opponent_roster'))).toBe(true);
     expect(fetches.some((u) => u.includes('/rpc/get_fight_allowance_summary'))).toBe(true);
-    expect(bodies).toContainEqual({
-      p_account_id: '00000000-0000-4000-8000-000000000001',
-    });
+    const allowanceBodies = bodies.filter((b) =>
+      b.url.includes('/rpc/get_fight_allowance_summary'),
+    );
+    expect(allowanceBodies).toHaveLength(1);
+    expect(allowanceBodies[0]?.body).toEqual({});
+    expect(JSON.stringify(allowanceBodies[0]?.body)).not.toContain('p_account_id');
     vi.useRealTimers();
   });
 });
