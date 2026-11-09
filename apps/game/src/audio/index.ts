@@ -24,5 +24,13 @@ export {
   createNoopAudioBackend,
   type AudioSource,
   type LoopHandle,
+  type OneShotHandle,
   type TrialAudioBackend,
 } from './audioBackend';
+export {
+  createExpoAvBackend,
+  TRIAL_AUDIO_PLATFORM_MODE,
+  TRIAL_AUDIO_INTERRUPTION_DO_NOT_MIX,
+  type ExpoAvBackendOptions,
+  type ExpoAvModule,
+} from './expoAvBackend';

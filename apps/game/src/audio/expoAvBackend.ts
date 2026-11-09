@@ -1,9 +1,26 @@
 /**
  * expo-av backend for trial audio. UI/runtime only — keep out of headless unit
  * paths that do not import this module.
+ *
+ * Platform policy (Sound FX & Music Guidelines): obey iOS silent switch; pause
+ * on interruptions (do not duck through them).
  */
 /* eslint-disable @typescript-eslint/no-require-imports */
-import type { AudioSource, LoopHandle, TrialAudioBackend } from './audioBackend';
+import type { AudioSource, LoopHandle, OneShotHandle, TrialAudioBackend } from './audioBackend';
+
+/** expo-av InterruptionModeIOS / Android DoNotMix = 1 */
+export const TRIAL_AUDIO_INTERRUPTION_DO_NOT_MIX = 1 as const;
+
+/** Assertable mode payload for guidelines-aligned silent switch + pause-on-interrupt. */
+export const TRIAL_AUDIO_PLATFORM_MODE = {
+  allowsRecordingIOS: false,
+  playsInSilentModeIOS: false,
+  staysActiveInBackground: false,
+  shouldDuckAndroid: false,
+  playThroughEarpieceAndroid: false,
+  interruptionModeIOS: TRIAL_AUDIO_INTERRUPTION_DO_NOT_MIX,
+  interruptionModeAndroid: TRIAL_AUDIO_INTERRUPTION_DO_NOT_MIX,
+} as const;
 
 type SoundLike = {
   playAsync: () => Promise<unknown>;
@@ -14,7 +31,7 @@ type SoundLike = {
   setOnPlaybackStatusUpdate: (cb: ((status: { didJustFinish?: boolean }) => void) | null) => void;
 };
 
-type ExpoAvModule = {
+export type ExpoAvModule = {
   Audio: {
     setAudioModeAsync: (mode: Record<string, unknown>) => Promise<void>;
     Sound: {
@@ -35,12 +52,106 @@ function loadExpoAv(): ExpoAvModule | null {
   }
 }
 
-export function createExpoAvBackend(): TrialAudioBackend {
-  const mod = loadExpoAv();
+function wrapOneShot(sound: SoundLike): OneShotHandle {
+  let alive = true;
+  const handle: OneShotHandle = {
+    setMuted: async (muted) => {
+      if (!alive) return;
+      try {
+        await sound.setIsMutedAsync(muted);
+      } catch {
+        // ignore
+      }
+    },
+    play: async () => {
+      if (!alive) return;
+      try {
+        await sound.playAsync();
+      } catch {
+        // ignore
+      }
+    },
+    stop: async () => {
+      if (!alive) return;
+      alive = false;
+      try {
+        sound.setOnPlaybackStatusUpdate(null);
+      } catch {
+        // ignore
+      }
+      try {
+        await sound.stopAsync();
+      } catch {
+        // ignore
+      }
+      try {
+        await sound.unloadAsync();
+      } catch {
+        // ignore
+      }
+    },
+  };
+  sound.setOnPlaybackStatusUpdate((status) => {
+    if (status?.didJustFinish) {
+      void handle.stop();
+    }
+  });
+  return handle;
+}
+
+function wrapLoop(sound: SoundLike): LoopHandle {
+  let alive: SoundLike | null = sound;
+  return {
+    setMuted: async (muted) => {
+      if (!alive) return;
+      try {
+        // Mute only — do not resume a paused loop (pause stays independent).
+        await alive.setIsMutedAsync(muted);
+      } catch {
+        // ignore
+      }
+    },
+    setPaused: async (paused) => {
+      if (!alive) return;
+      try {
+        if (paused) {
+          await alive.setStatusAsync({ shouldPlay: false });
+        } else {
+          await alive.playAsync();
+        }
+      } catch {
+        // ignore
+      }
+    },
+    stop: async () => {
+      if (!alive) return;
+      const s = alive;
+      alive = null;
+      try {
+        await s.stopAsync();
+      } catch {
+        // ignore
+      }
+      try {
+        await s.unloadAsync();
+      } catch {
+        // ignore
+      }
+    },
+  };
+}
+
+export type ExpoAvBackendOptions = {
+  /** Injected module for unit tests; defaults to require('expo-av'). */
+  readonly audioModule?: ExpoAvModule | null;
+};
+
+export function createExpoAvBackend(options: ExpoAvBackendOptions = {}): TrialAudioBackend {
+  const mod = options.audioModule !== undefined ? options.audioModule : loadExpoAv();
   if (!mod?.Audio?.Sound?.createAsync) {
     return {
       ensureMode: async () => undefined,
-      playOneShot: async () => undefined,
+      playOneShot: async () => null,
       startLoop: async () => null,
     };
   }
@@ -51,12 +162,7 @@ export function createExpoAvBackend(): TrialAudioBackend {
     ensureMode: async () => {
       if (modeReady) return;
       try {
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: false,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-        });
+        await Audio.setAudioModeAsync({ ...TRIAL_AUDIO_PLATFORM_MODE });
         modeReady = true;
       } catch {
         // Ignore — fight must continue.
@@ -64,77 +170,31 @@ export function createExpoAvBackend(): TrialAudioBackend {
     },
 
     playOneShot: async (source, opts) => {
-      if (opts.muted) return;
       try {
         const { sound } = await Audio.Sound.createAsync(source, {
-          shouldPlay: true,
+          shouldPlay: false,
           volume: opts.volume,
-          isMuted: false,
+          isMuted: opts.muted,
           isLooping: false,
         });
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status?.didJustFinish) {
-            void sound.unloadAsync().catch(() => undefined);
-          }
-        });
+        return wrapOneShot(sound);
       } catch {
-        // Missing / decode failure — continue fight silently.
+        return null;
       }
     },
 
     startLoop: async (source, opts) => {
-      let sound: SoundLike | null = null;
       try {
-        const created = await Audio.Sound.createAsync(source, {
-          shouldPlay: !opts.muted,
+        const { sound } = await Audio.Sound.createAsync(source, {
+          shouldPlay: false,
           volume: opts.volume,
-          isMuted: opts.muted,
+          isMuted: false,
           isLooping: true,
         });
-        sound = created.sound;
+        return wrapLoop(sound);
       } catch {
         return null;
       }
-
-      const handle: LoopHandle = {
-        setMuted: async (muted) => {
-          if (!sound) return;
-          try {
-            await sound.setIsMutedAsync(muted);
-            if (!muted) await sound.playAsync();
-          } catch {
-            // ignore
-          }
-        },
-        setPaused: async (paused) => {
-          if (!sound) return;
-          try {
-            if (paused) {
-              await sound.setStatusAsync({ shouldPlay: false });
-            } else {
-              await sound.playAsync();
-            }
-          } catch {
-            // ignore
-          }
-        },
-        stop: async () => {
-          if (!sound) return;
-          const s = sound;
-          sound = null;
-          try {
-            await s.stopAsync();
-          } catch {
-            // ignore
-          }
-          try {
-            await s.unloadAsync();
-          } catch {
-            // ignore
-          }
-        },
-      };
-      return handle;
     },
   };
 }
