@@ -1,4 +1,9 @@
 import type { SupabasePublicConfig } from '../auth/supabasePublicConfig';
+import {
+  OWNED_CHARACTER_RPC,
+  type ClientReadRpcFail,
+  type OwnedCharacterRpcOk,
+} from '../../supabase/clientReadRpcs';
 import type { LoadoutSavePort } from './LoadoutSavePort';
 import { normalizeGarageLoadout } from './normalizeLoadout';
 import type {
@@ -16,8 +21,9 @@ type RpcErrorBody = {
 };
 
 /**
- * Calls public.save_bot_loadout via PostgREST RPC with the user JWT.
+ * Calls public.save_bot_loadout + B client-read RPCs via PostgREST with the user JWT.
  * No service-role key; RLS + SECURITY DEFINER authz remain authoritative.
+ * Does not SELECT characters / fight_allowances / profiles tables.
  */
 export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
   readonly kind = 'supabase' as const;
@@ -26,12 +32,13 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
 
   async resolveOwnedCharacter(accessToken: string): Promise<OwnedCharacterResult> {
     try {
-      const url = new URL(`${this.config.url}/rest/v1/characters`);
-      url.searchParams.set('select', 'character_id,display_name');
-      url.searchParams.set('is_opponent', 'eq.false');
-      url.searchParams.set('limit', '1');
-      const res = await fetch(url.toString(), {
-        headers: this.headers(accessToken),
+      const res = await fetch(`${this.config.url}/rest/v1/rpc/${OWNED_CHARACTER_RPC}`, {
+        method: 'POST',
+        headers: {
+          ...this.headers(accessToken),
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({}),
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
@@ -41,21 +48,36 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
           message: err.message ?? `Failed to resolve owned character (${res.status})`,
         };
       }
-      const rows = (await res.json()) as Array<{ character_id?: string; display_name?: string }>;
-      const row = rows[0];
-      if (!row?.character_id) {
+      const body = (await res.json()) as OwnedCharacterRpcOk | ClientReadRpcFail | null;
+      if (!body || typeof body !== 'object') {
+        return {
+          ok: false,
+          code: 'invalid_response',
+          message: 'Owned-character RPC returned a malformed body.',
+        };
+      }
+      if (body.ok !== true) {
+        return {
+          ok: false,
+          code: body.code ?? 'no_owned_character',
+          message: body.message ?? 'No player character is linked to this account.',
+        };
+      }
+      const characterId = typeof body.characterId === 'string' ? body.characterId.trim() : '';
+      if (!characterId) {
         return {
           ok: false,
           code: 'no_owned_character',
           message: 'No player character is linked to this account.',
         };
       }
+      const displayName =
+        typeof body.displayName === 'string' && body.displayName.trim().length > 0
+          ? body.displayName.trim()
+          : characterId;
       return {
         ok: true,
-        character: {
-          characterId: row.character_id,
-          displayName: row.display_name?.trim() || row.character_id,
-        },
+        character: { characterId, displayName },
       };
     } catch (err) {
       return {

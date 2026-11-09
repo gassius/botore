@@ -3,10 +3,11 @@ import type { ListCandidatesResult, PrepareEligibilityResult } from './types';
 /**
  * Opponent roster + allowance reads against the live Postgres contract.
  *
- * There is no dedicated candidate-ranking RPC yet (level / freshness /
- * anti-farming). Clients list system opponents (`characters.is_opponent`) that
- * have a confirmed loadout, then rely on `prepare_fight_context` + combat-v1
- * for eligibility. See internal/f9-backend-gaps.md.
+ * Live path uses ticket-B SECURITY DEFINER RPCs (`list_opponent_roster`,
+ * `get_fight_allowance_summary`) plus `current_bot_loadouts` — never direct
+ * table SELECTs on characters / fight_allowances. There is no ranking RPC yet
+ * (level / freshness / anti-farming); clients join fight-ready opponents that
+ * have a confirmed loadout, then rely on `prepare_fight_context` + combat-v1.
  */
 export interface OpponentCandidatesPort {
   readonly kind: 'dev' | 'supabase';

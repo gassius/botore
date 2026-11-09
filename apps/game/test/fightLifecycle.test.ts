@@ -345,30 +345,34 @@ describe('server-derived allowance day (P2)', () => {
     expect(summary.allowancesRemaining).toBe(1);
   });
 
-  it('does not filter fight_allowances by device Date in Supabase adapter', async () => {
+  it('uses B RPCs for roster + allowance summary (no table SELECTs / device day filter)', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-11-10T12:00:00.000Z'));
 
     const fetches: string[] = [];
+    const bodies: unknown[] = [];
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         fetches.push(url);
-        if (url.includes('/characters')) {
+        if (init?.body) bodies.push(JSON.parse(String(init.body)));
+        if (url.includes('/rpc/list_opponent_roster')) {
           return new Response(
-            JSON.stringify([{ character_id: 'opp-sir-bot', display_name: 'Sir Bot' }]),
+            JSON.stringify({
+              ok: true,
+              opponents: [{ characterId: 'opp-sir-bot', displayName: 'Sir Bot' }],
+            }),
             { status: 200 },
           );
         }
-        if (url.includes('/fight_allowances')) {
-          expect(url).not.toContain('utc_day=eq.');
+        if (url.includes('/rpc/get_fight_allowance_summary')) {
           return new Response(
-            JSON.stringify([
-              { utc_day: '2026-11-09', used_at: null, slot_index: 1 },
-              { utc_day: '2026-11-09', used_at: null, slot_index: 2 },
-              { utc_day: '2026-11-09', used_at: null, slot_index: 3 },
-            ]),
+            JSON.stringify({
+              ok: true,
+              utcDay: '2026-11-09',
+              allowancesRemaining: 3,
+            }),
             { status: 200 },
           );
         }
@@ -405,9 +409,15 @@ describe('server-derived allowance day (P2)', () => {
     if (!result.ok) return;
     expect(result.utcDay).toBe('2026-11-09');
     expect(result.allowancesRemaining).toBe(3);
-    expect(fetches.some((u) => u.includes('fight_allowances') && u.includes('utc_day=eq.'))).toBe(
-      false,
-    );
+    expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0]?.characterId).toBe('opp-sir-bot');
+    expect(fetches.some((u) => u.includes('/rest/v1/characters'))).toBe(false);
+    expect(fetches.some((u) => u.includes('/rest/v1/fight_allowances'))).toBe(false);
+    expect(fetches.some((u) => u.includes('/rpc/list_opponent_roster'))).toBe(true);
+    expect(fetches.some((u) => u.includes('/rpc/get_fight_allowance_summary'))).toBe(true);
+    expect(bodies).toContainEqual({
+      p_account_id: '00000000-0000-4000-8000-000000000001',
+    });
     vi.useRealTimers();
   });
 });

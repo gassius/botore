@@ -12,7 +12,7 @@ import type {
  */
 export interface LoadoutSavePort {
   readonly kind: 'dev' | 'supabase';
-  /** Resolve the caller's owned player character (RLS / DEV fixture). */
+  /** Resolve the caller's owned player character (B RPC / DEV fixture). */
   resolveOwnedCharacter(accessToken: string): Promise<OwnedCharacterResult>;
   fetchCurrent(input: {
     characterId: string;
