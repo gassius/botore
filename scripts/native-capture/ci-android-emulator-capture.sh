@@ -54,6 +54,7 @@ echo "assembleRelease (bundle-embedded, debug-signed)…" >&2
     EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE="${EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE}" \
     ./gradlew assembleRelease \
     -PreactNativeArchitectures="${ARCHS}" \
+    -Pandroid.kotlinVersion=1.9.25 \
     --no-daemon \
     --build-cache
 )
