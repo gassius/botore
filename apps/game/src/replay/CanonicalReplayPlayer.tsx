@@ -32,11 +32,13 @@ import {
 import type { ActiveFxCue } from '../arena/EventFxLayer';
 import { EventFxLayer } from '../arena/EventFxLayer';
 import { RepairYardArena } from '../arena/RepairYardArena';
+import type { ArenaFxFamily } from '../arena/environmentPin';
 import { garageTag } from '../garage-tag';
 import { compileAnimationQueue, commandDuration, PlaybackController } from '../replay-playback';
 import type { ConfirmedFightResult } from './confirmedResult';
 import { formatOutcomeLine, resolvePlaybackMedia } from './confirmedResult';
 import { assemblerLoadoutFromBuild } from './fighterLoadout';
+import { formatArenaReadyLog, fxFamilyFromAnimationCommand } from './fxCaptureHold';
 import {
   applyAnimationCommand,
   initialPresentationState,
@@ -76,6 +78,11 @@ export interface CanonicalReplayPlayerProps {
   readonly showLocalControls?: boolean;
   readonly onFinished?: () => void;
   readonly onPlaybackChange?: (state: PlaybackUiState) => void;
+  /**
+   * Fired when an FX family cue is spawned from a recorded animation command.
+   * Design-capture uses this for per-family still holds — never invents FX.
+   */
+  readonly onFxCue?: (family: ArenaFxFamily) => void;
   readonly testID?: string;
 }
 
@@ -102,6 +109,7 @@ export const CanonicalReplayPlayer = forwardRef<
     showLocalControls = true,
     onFinished,
     onPlaybackChange,
+    onFxCue,
     testID = 'canonical-replay-player',
   },
   ref,
@@ -169,6 +177,16 @@ export const CanonicalReplayPlayer = forwardRef<
     perfSamplerRef.current.markPlayReady(perfNowMs());
     perfPlayReadyMarkedRef.current = true;
   }, [perfEnabled, media.assetsAvailable, result.replay.checksum, stageBox.height, stageBox.width]);
+
+  // C4 capture: layered Repair Yard is ready once assets + measured stage exist.
+  const arenaReadyLoggedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!media.assetsAvailable || stageBox.width <= 0 || stageBox.height <= 0) return;
+    const key = result.replay.checksum;
+    if (arenaReadyLoggedRef.current === key) return;
+    arenaReadyLoggedRef.current = key;
+    console.log(formatArenaReadyLog());
+  }, [media.assetsAvailable, result.replay.checksum, stageBox.height, stageBox.width]);
 
   const trialAudio = useTrialReplayAudio({
     muted,
@@ -318,11 +336,19 @@ export const CanonicalReplayPlayer = forwardRef<
       } catch {
         // Missing/failed audio never desyncs the fight clock.
       }
+      const fxFamily = fxFamilyFromAnimationCommand(cmd);
       setPresentation((prev) => {
         const next = applyAnimationCommand(prev, cmd, cueSeqRef.current, maxHp);
         pushFxFromState(next);
         return next;
       });
+      if (fxFamily) {
+        try {
+          onFxCue?.(fxFamily);
+        } catch {
+          // Capture hooks must never break playback.
+        }
+      }
       emitPlayback(playbackUiAfterAdvance(playbackUiRef.current, pb.position));
       waitUntilRef.current = now + commandDuration(cmd);
       if (!pb.finished) {
@@ -348,6 +374,7 @@ export const CanonicalReplayPlayer = forwardRef<
     maxHp,
     media.assetsAvailable,
     onFinished,
+    onFxCue,
     playbackUi.playing,
     pushFxFromState,
     trialAudio.onCommand,

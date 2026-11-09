@@ -46,4 +46,18 @@ export {
   reservedReplayChromeHeight,
   stageViewportFromPlayer,
 } from './replayLayout';
+export {
+  FX_CAPTURE_FAMILIES,
+  FX_CAPTURE_HOLD_MS,
+  completeFxCaptureHold,
+  countFxEvents,
+  countFxEventsFromReplay,
+  eventsFromFightReplay,
+  formatArenaReadyLog,
+  formatFxCaptureLog,
+  fxFamilyFromAnimationCommand,
+  initialFxCaptureHoldState,
+  noteFxCaptureCue,
+} from './fxCaptureHold';
+export type { FxCaptureFamily, FxCaptureHoldState } from './fxCaptureHold';
 // UI: import FightResultContent / CanonicalReplayPlayer from their files (RN).

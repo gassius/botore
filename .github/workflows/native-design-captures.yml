@@ -39,7 +39,8 @@ permissions:
 env:
   # Prefer workflow_dispatch inputs; PR events fall back to design-review defaults.
   CAPTURE_ROUTES: ${{ github.event.inputs.routes || 'Stable,Customise,Replay' }}
-  CAPTURE_CLIPS: ${{ github.event.inputs.clips || 'false' }}
+  # C4: short replay FX clip on Android live-fight captures (stills still required).
+  CAPTURE_CLIPS: ${{ github.event.inputs.clips || 'true' }}
   CAPTURE_API_LEVEL: ${{ github.event.inputs.api_level || '34' }}
   EXPO_PUBLIC_DESIGN_CAPTURE: '1'
   EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
