@@ -16,7 +16,14 @@ export interface KitAsset {
   readonly z: number;
   readonly motion_bounds: readonly [number, number];
   readonly compatible_family: string;
+  /** Precomposited Oxide/Petrol fallback renders (reference / offline). */
   readonly files: Readonly<Record<KitPaintId, string>>;
+  /** Steel/frame under layer — paint composite step 1. */
+  readonly material_under: string;
+  /** Outlines / cel shading / metal details — paint composite step 3. */
+  readonly material_over: string;
+  /** Paint mask path — alpha only; tint to paint token (step 2). */
+  readonly paint_mask: string;
   readonly has_paint: boolean;
 }
 

@@ -110,8 +110,22 @@ export interface AssembledLayer {
   /** Offset from parent pivot (PROVISIONAL). */
   readonly attachOffset?: ProvisionalPoint;
   readonly label?: string;
-  /** Relative path under workshop-frame-kit-v002 (e.g. parts/torso-oxide.png). */
+  /**
+   * Precomposited part path (kit `parts/{id}-{paint}.png`) — fallback /
+   * reference only when mask composite media is unavailable.
+   */
   readonly imagePath?: string;
+  /** Kit `materials/{id}-under.png` — steel/frame under paint. */
+  readonly materialUnderPath?: string;
+  /** Kit `masks/{id}-paint.png` — alpha mask; tint with `color`. */
+  readonly paintMaskPath?: string;
+  /** Kit `materials/{id}-over.png` — outlines / shading over paint. */
+  readonly materialOverPath?: string;
+  /**
+   * When true, renderer draws under → tinted mask → over (no full-sprite tint).
+   * Empty / non-paintable parts omit `paintMaskPath` but still composite under/over.
+   */
+  readonly paintComposite?: boolean;
   readonly pivotX?: number;
   readonly pivotY?: number;
   readonly worldPivotX?: number;
