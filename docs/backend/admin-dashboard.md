@@ -7,9 +7,11 @@ Connect with the server-side reporting credential (`DASHBOARD_DATABASE_URL`)
 or `service_role`. Do not expose service-role keys to the browser. Prefer
 these contracts over ad-hoc table SQL in dashboard code.
 
-`admin_dashboard_snapshot()` and `admin_list_cron_job_runs()` are
-`SECURITY DEFINER` and **execute is granted only to `service_role`** (not
-`anon` / `authenticated`). Client JWT callers must be denied.
+All `admin_*` views and admin/health definer RPCs
+(`admin_dashboard_snapshot`, `admin_list_cron_job_runs`,
+`backend_health_snapshot`, `outbox_status_snapshot`, `admin_list_cron_jobs`)
+are **granted only to `service_role`** (not `anon` / `authenticated`).
+Client JWT callers must be denied.
 
 ## One-shot poll
 

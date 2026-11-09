@@ -305,10 +305,13 @@ left join public.battle_replays r
   on r.battle_id = b.battle_id
 order by b.started_at desc;
 
-grant select on public.admin_recent_battles to authenticated, anon;
+revoke all on table public.admin_recent_battles from public;
+revoke all on table public.admin_recent_battles from anon;
+revoke all on table public.admin_recent_battles from authenticated;
+grant select on public.admin_recent_battles to service_role;
 
 comment on view public.admin_recent_battles is
-  'Admin/ops view of persisted fights (incl. atlas version pins) for future B2 dashboard.';
+  'Admin/ops view of persisted fights (incl. atlas version pins); service_role only.';
 
 -- ---------------------------------------------------------------------------
 -- Storage bucket + policies + published-prefix immutability guard
@@ -880,7 +883,10 @@ select
 from public.atlas_versions av
 order by av.version;
 
-grant select on public.admin_atlas_overview to authenticated, anon;
+revoke all on table public.admin_atlas_overview from public;
+revoke all on table public.admin_atlas_overview from anon;
+revoke all on table public.admin_atlas_overview from authenticated;
+grant select on public.admin_atlas_overview to service_role;
 
 -- ---------------------------------------------------------------------------
 -- Health: include atlas pack readiness (preserve F4 gates)
@@ -1170,7 +1176,9 @@ end;
 $$;
 
 revoke all on function public.backend_health_snapshot() from public;
-grant execute on function public.backend_health_snapshot() to authenticated, anon, service_role;
+revoke all on function public.backend_health_snapshot() from anon;
+revoke all on function public.backend_health_snapshot() from authenticated;
+grant execute on function public.backend_health_snapshot() to service_role;
 
 -- ---------------------------------------------------------------------------
 -- Placeholder proof pack seed (v1) — DRAFT only

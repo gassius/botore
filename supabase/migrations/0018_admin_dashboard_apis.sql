@@ -60,10 +60,13 @@ left join lateral (
 ) xp on true
 order by a.created_at;
 
-grant select on public.admin_players_overview to authenticated, anon;
+revoke all on table public.admin_players_overview from public;
+revoke all on table public.admin_players_overview from anon;
+revoke all on table public.admin_players_overview from authenticated;
+grant select on public.admin_players_overview to service_role;
 
 comment on view public.admin_players_overview is
-  'Admin/ops player roster for future B2 dashboard (accounts, bots, allowances, fights).';
+  'Admin/ops player roster for future B2 dashboard (service_role only).';
 
 -- ---------------------------------------------------------------------------
 -- Bots (player + opponent characters)
@@ -96,10 +99,13 @@ left join public.current_bot_loadouts cl using (character_id)
 left join public.admin_fight_readiness fr using (character_id)
 order by c.is_opponent, c.character_id;
 
-grant select on public.admin_bots_overview to authenticated, anon;
+revoke all on table public.admin_bots_overview from public;
+revoke all on table public.admin_bots_overview from anon;
+revoke all on table public.admin_bots_overview from authenticated;
+grant select on public.admin_bots_overview to service_role;
 
 comment on view public.admin_bots_overview is
-  'Admin/ops bot roster (builds + loadouts + readiness) for future B2 dashboard.';
+  'Admin/ops bot roster (builds + loadouts + readiness); service_role only.';
 
 -- ---------------------------------------------------------------------------
 -- Fight aggregates (replaces ad-hoc dashboard SQL)
@@ -153,10 +159,13 @@ select
     (select count(*)::integer from public.characters where is_opponent = false) as player_bot_count,
     (select count(*)::integer from public.characters where is_opponent = true) as opponent_bot_count;
 
-grant select on public.admin_fight_stats to authenticated, anon;
+revoke all on table public.admin_fight_stats from public;
+revoke all on table public.admin_fight_stats from anon;
+revoke all on table public.admin_fight_stats from authenticated;
+grant select on public.admin_fight_stats to service_role;
 
 comment on view public.admin_fight_stats is
-  'Single-row fight/player aggregates for future B2 dashboard (no ad-hoc SQL).';
+  'Single-row fight/player aggregates for future B2 dashboard (service_role only).';
 
 -- Daily active accounts (fixed 30-day window; dashboard can filter further).
 create or replace view public.admin_daily_active_accounts
@@ -175,10 +184,13 @@ left join public.battles b on b.utc_day = d.utc_day
 group by d.utc_day
 order by d.utc_day;
 
-grant select on public.admin_daily_active_accounts to authenticated, anon;
+revoke all on table public.admin_daily_active_accounts from public;
+revoke all on table public.admin_daily_active_accounts from anon;
+revoke all on table public.admin_daily_active_accounts from authenticated;
+grant select on public.admin_daily_active_accounts to service_role;
 
 comment on view public.admin_daily_active_accounts is
-  'Last 30 UTC days of distinct fight initiators for future B2 dashboard.';
+  'Last 30 UTC days of distinct fight initiators (service_role only).';
 
 -- ---------------------------------------------------------------------------
 -- pg_cron recent run history (cron.job_run_details is not client-granted)
