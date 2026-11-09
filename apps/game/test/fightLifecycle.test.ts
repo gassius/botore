@@ -206,6 +206,16 @@ describe('foreign in-flight must not be joined (P1)', () => {
       }),
     ).toBe(false);
 
+    // DEV scaffold is never first-run playback-ready (no sealed combat-v1 replay).
+    expect(
+      shouldAcceptFightNavigation({
+        fight: fightA,
+        expectedOpponentId: 'opp-sir-bot',
+        navigationGeneration: 1,
+        activeNavigationGeneration: 1,
+      }),
+    ).toBe(false);
+
     expect(shouldPreserveUnresolvedIntent(intentA, dex.characterId)).toBe(false);
   });
 });

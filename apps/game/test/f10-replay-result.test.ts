@@ -28,6 +28,8 @@ import {
   replayIdentityFingerprint,
   reservedReplayChromeHeight,
   DEFAULT_REPLAY_CHROME,
+  isServerPlaybackReady,
+  resolveFirstRunConfirmedResult,
   resolvePlaybackMedia,
   resolveSessionConfirmedResult,
   restartState,
@@ -35,6 +37,7 @@ import {
   sealedBuildsForDevReplay,
   stageViewportFromPlayer,
   togglePlayState,
+  tryConfirmedResultFromFight,
 } from '../src/replay';
 import type { FightComputeResponse } from '@botore/contracts';
 import type { FightSuccess } from '../src/fight/request/types';
@@ -341,7 +344,7 @@ describe('confirmed result integrity + server mapping', () => {
     expect(resolveSessionConfirmedResult(fight).label).toBe('CONFIRMED');
   });
 
-  it('falls back to DEV golden when FightSuccess replay is not sealed', () => {
+  it('falls back to DEV golden when FightSuccess replay is not sealed (standalone only)', () => {
     const scaffold: FightSuccess = {
       battleId: 'dev-battle',
       status: 'completed',
@@ -366,9 +369,11 @@ describe('confirmed result integrity + server mapping', () => {
     expect(resolved.xpAwarded).toBeNull();
     expect(resolved.builds.attacker.paint).toBe('paint-cobalt');
     expect(resolveSessionConfirmedResult(null).label).toBe('DEV');
+    expect(isServerPlaybackReady(scaffold)).toBe(false);
+    expect(tryConfirmedResultFromFight(scaffold)).toBeNull();
   });
 
-  it('falls back to DEV when FightSuccess lacks sealedBuilds', () => {
+  it('falls back to DEV when FightSuccess lacks sealedBuilds (standalone only)', () => {
     const base = loadDevGoldenConfirmedResult(0);
     const fight: FightSuccess = {
       battleId: base.battleId,
@@ -393,6 +398,106 @@ describe('confirmed result integrity + server mapping', () => {
     };
     const resolved = resolveSessionConfirmedResult(fight);
     expect(resolved.label).toBe('DEV');
+    expect(isServerPlaybackReady(fight)).toBe(false);
+  });
+
+  it('C3 first-run resolve refuses fixture fallback and keeps garage sealed builds', () => {
+    expect(resolveFirstRunConfirmedResult(null).status).toBe('blocked');
+
+    const scaffold: FightSuccess = {
+      battleId: 'dev-battle',
+      status: 'completed',
+      rulesVersion: 'combat-v1',
+      seed: '0'.repeat(64),
+      outcome: { winner: 'player-hero', reason: 'defeat' },
+      replay: { note: 'DEV scaffold — not sealed' },
+      replayChecksum: 'dev-checksum',
+      xpAwarded: 0,
+      allowancesRemaining: 2,
+      utcDay: '2026-11-09',
+      repeated: false,
+      persistence: 'persisted',
+      loadoutVersionIds: { attacker: 'a', defender: 'b' },
+      atlasVersions: { attacker: 'v1', defender: 'v1' },
+      sealedBuilds: {
+        attacker: {
+          chassis: 'chassis-basic',
+          paint: 'paint-oxide',
+          weapon: 'weapon-axe',
+          loadoutVersionId: 'garage-attacker',
+          atlasVersion: 'v1',
+        },
+        defender: {
+          chassis: 'chassis-basic',
+          paint: 'paint-petrol',
+          weapon: 'weapon-sword',
+          loadoutVersionId: 'garage-defender',
+          atlasVersion: 'v1',
+        },
+      },
+      opponentId: 'opp',
+      idempotencyKey: 'idem-dev',
+    };
+    const blocked = resolveFirstRunConfirmedResult(scaffold);
+    expect(blocked.status).toBe('blocked');
+    if (blocked.status === 'blocked') {
+      expect(blocked.reason).toBe('invalid_replay');
+    }
+
+    const base = loadDevGoldenConfirmedResult(0);
+    const live: FightSuccess = {
+      battleId: base.battleId,
+      status: 'completed',
+      rulesVersion: base.rulesVersion,
+      seed: base.replay.seed,
+      outcome: {
+        winner: base.replay.outcome.winner,
+        reason: base.replay.outcome.reason,
+      },
+      replay: base.replay,
+      replayChecksum: base.replay.checksum,
+      xpAwarded: 2,
+      allowancesRemaining: 1,
+      utcDay: '2026-11-09',
+      repeated: false,
+      persistence: 'persisted',
+      loadoutVersionIds: {
+        attacker: '22222222-2222-4222-8222-222222222222',
+        defender: '33333333-3333-4333-8333-333333333333',
+      },
+      atlasVersions: { attacker: 'v1', defender: 'v1' },
+      sealedBuilds: {
+        attacker: {
+          chassis: 'chassis-basic',
+          paint: 'paint-oxide',
+          weapon: 'weapon-axe',
+          loadoutVersionId: 'garage-attacker',
+          atlasVersion: 'v1',
+        },
+        defender: {
+          chassis: 'chassis-basic',
+          paint: 'paint-petrol',
+          weapon: 'weapon-sword',
+          loadoutVersionId: 'garage-defender',
+          atlasVersion: 'v1',
+        },
+      },
+      opponentId: 'opp-sir-bot',
+      idempotencyKey: 'idem-live-c3',
+    };
+    const ok = resolveFirstRunConfirmedResult(live);
+    expect(ok.status).toBe('confirmed');
+    if (ok.status === 'confirmed') {
+      expect(ok.confirmed.serverConfirmed).toBe(true);
+      expect(ok.confirmed.xpAwarded).toBe(2);
+      expect(ok.confirmed.allowancesRemaining).toBe(1);
+      expect(ok.confirmed.builds.attacker.paint).toBe('paint-oxide');
+      expect(ok.confirmed.builds.attacker.weapon).toBe('weapon-axe');
+      expect(ok.confirmed.builds.defender.paint).toBe('paint-petrol');
+      // Must not silently swap to fixture cobalt/crimson.
+      expect(ok.confirmed.builds.attacker.paint).not.toBe('paint-cobalt');
+    }
+    expect(isServerPlaybackReady(live)).toBe(true);
   });
 });
 

@@ -1,3 +1,4 @@
+import { isServerPlaybackReady } from '../replay/serverPlayback';
 import type { OpponentCandidate } from './candidates/types';
 import { resolveFightIntent, type FightIntent } from './request/idempotency';
 import type { FightRequestPort } from './request/FightRequestPort';
@@ -114,6 +115,8 @@ export function computeConfirmFightControls(input: {
 /**
  * Late completions must not navigate away from a screen that no longer owns
  * the active intent/opponent (Back → pick B while A's HTTP is outstanding).
+ * Also refuse DEV scaffold / unsealed payloads — first-run Replay needs a
+ * server-precomputed sealed battle with garage sealed builds (same robot).
  */
 export function shouldAcceptFightNavigation(input: {
   fight: FightSuccess | null;
@@ -124,6 +127,7 @@ export function shouldAcceptFightNavigation(input: {
   if (!input.fight || !input.expectedOpponentId) return false;
   if (input.fight.opponentId !== input.expectedOpponentId) return false;
   if (input.navigationGeneration !== input.activeNavigationGeneration) return false;
+  if (!isServerPlaybackReady(input.fight)) return false;
   return true;
 }
 
