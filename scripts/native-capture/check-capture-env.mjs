@@ -55,8 +55,12 @@ if (!ok) {
     [
       '',
       'Capture tooling incomplete for requested platform.',
-      needAndroid && !report.adb ? '- Install Android platform-tools (adb) and start an emulator/device.' : null,
-      needIos && !report.xcrun ? '- iOS captures require macOS + Xcode Simulator (xcrun simctl).' : null,
+      needAndroid && !report.adb
+        ? '- Install Android platform-tools (adb) and start an emulator/device.'
+        : null,
+      needIos && !report.xcrun
+        ? '- iOS captures require macOS + Xcode Simulator (xcrun simctl).'
+        : null,
       '- See docs/architecture/native-design-captures.md',
     ]
       .filter(Boolean)

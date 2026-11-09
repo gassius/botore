@@ -1,7 +1,7 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useDesignCaptureDeepLink } from '../design-capture';
+import { useDesignCaptureDeepLink } from '../design-capture/useDesignCaptureDeepLink';
 import { FirstRunProvider, useFirstRun } from './FirstRunContext';
 import type { FirstRunRoute } from './routes';
 import { StableSlot } from './slots/StableSlot';
