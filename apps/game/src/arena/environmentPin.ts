@@ -37,3 +37,9 @@ export function fxCueSiblingZ(family: ArenaFxFamily): number {
 export function fxRendersAboveFloor(family: ArenaFxFamily): boolean {
   return FX_FAMILY_Z[family] > ENVIRONMENT_LAYER_Z.floor;
 }
+
+/** Peak-visibility frame for 3-frame FX strips (hit-spark-01 / dust-01). */
+export function fxPeakFrameIndex(frameCount: number): number {
+  if (frameCount <= 1) return 0;
+  return Math.min(1, frameCount - 1);
+}

@@ -58,3 +58,16 @@ export function restartState(totalCommands: number): PlaybackUiState {
     totalCommands: Math.max(0, totalCommands),
   };
 }
+
+/**
+ * Same-tick emit helper for the rAF loop: keep a mutable ref in sync so a
+ * pause/resume inside `onFxCue` (or any listener) wins before the next emit.
+ * Returns whether the playback loop should schedule another frame.
+ */
+export function emitPlaybackUi(
+  ref: { current: PlaybackUiState },
+  next: PlaybackUiState,
+): { readonly state: PlaybackUiState; readonly shouldContinue: boolean } {
+  ref.current = next;
+  return { state: next, shouldContinue: next.playing };
+}

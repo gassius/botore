@@ -31,6 +31,7 @@ export {
 } from './resolveSessionResult';
 export type { FirstRunResultBlockReason, FirstRunResultResolution } from './serverPlayback';
 export {
+  emitPlaybackUi,
   initialPlaybackUi,
   pauseState,
   playbackUiAfterAdvance,
@@ -46,4 +47,22 @@ export {
   reservedReplayChromeHeight,
   stageViewportFromPlayer,
 } from './replayLayout';
+export {
+  FX_CAPTURE_FAMILIES,
+  FX_CAPTURE_HOLD_MS,
+  FX_CAPTURE_HOLD_SETTLE_MS,
+  FX_CAPTURE_IDLE_BEFORE_PLAY_MS,
+  completeFxCaptureHold,
+  countFxEvents,
+  countFxEventsFromReplay,
+  eventsFromFightReplay,
+  formatArenaReadyLog,
+  formatFxCaptureLog,
+  formatReplayIdleLog,
+  formatReplayPlayLog,
+  fxFamilyFromAnimationCommand,
+  initialFxCaptureHoldState,
+  noteFxCaptureCue,
+} from './fxCaptureHold';
+export type { FxCaptureFamily, FxCaptureHoldState } from './fxCaptureHold';
 // UI: import FightResultContent / CanonicalReplayPlayer from their files (RN).

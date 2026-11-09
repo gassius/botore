@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useFightSession } from '../fight';
 import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { useFirstRun } from '../first-run/FirstRunContext';
+import { countFxEventsFromReplay } from '../replay/fxCaptureHold';
 import { isLiveFightCaptureEnabled } from './captureEnv';
 
 export type CaptureFightProof = {
@@ -17,6 +18,8 @@ export type CaptureFightProof = {
   readonly attackerWeapon: string;
   readonly defenderPaint: string;
   readonly defenderWeapon: string;
+  /** Recorded FX event counts from the sealed replay (not client invent). */
+  readonly fxEvents: { readonly hit: number; readonly dodge: number; readonly defeat: number };
 };
 
 function logFightProof(proof: CaptureFightProof): void {
@@ -142,6 +145,7 @@ export function useDesignCaptureLiveFight(): void {
       attackerWeapon: lastFight.sealedBuilds.attacker.weapon,
       defenderPaint: lastFight.sealedBuilds.defender.paint,
       defenderWeapon: lastFight.sealedBuilds.defender.weapon,
+      fxEvents: countFxEventsFromReplay(lastFight.replay),
     });
   }, [enabled, lastFight]);
 }

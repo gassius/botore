@@ -32,17 +32,20 @@ import {
 import type { ActiveFxCue } from '../arena/EventFxLayer';
 import { EventFxLayer } from '../arena/EventFxLayer';
 import { RepairYardArena } from '../arena/RepairYardArena';
+import type { ArenaFxFamily } from '../arena/environmentPin';
 import { garageTag } from '../garage-tag';
 import { compileAnimationQueue, commandDuration, PlaybackController } from '../replay-playback';
 import type { ConfirmedFightResult } from './confirmedResult';
 import { formatOutcomeLine, resolvePlaybackMedia } from './confirmedResult';
 import { assemblerLoadoutFromBuild } from './fighterLoadout';
+import { formatArenaReadyLog, fxFamilyFromAnimationCommand } from './fxCaptureHold';
 import {
   applyAnimationCommand,
   initialPresentationState,
   type ReplayPresentationState,
 } from './playbackState';
 import {
+  emitPlaybackUi,
   initialPlaybackUi,
   pauseState,
   playbackUiAfterAdvance,
@@ -76,6 +79,11 @@ export interface CanonicalReplayPlayerProps {
   readonly showLocalControls?: boolean;
   readonly onFinished?: () => void;
   readonly onPlaybackChange?: (state: PlaybackUiState) => void;
+  /**
+   * Fired when an FX family cue is spawned from a recorded animation command.
+   * Design-capture uses this for per-family still holds — never invents FX.
+   */
+  readonly onFxCue?: (family: ArenaFxFamily) => void;
   readonly testID?: string;
 }
 
@@ -102,6 +110,7 @@ export const CanonicalReplayPlayer = forwardRef<
     showLocalControls = true,
     onFinished,
     onPlaybackChange,
+    onFxCue,
     testID = 'canonical-replay-player',
   },
   ref,
@@ -148,6 +157,8 @@ export const CanonicalReplayPlayer = forwardRef<
   const rafRef = useRef<number | null>(null);
   const playbackUiRef = useRef(playbackUi);
   playbackUiRef.current = playbackUi;
+  const presentationRef = useRef(presentation);
+  presentationRef.current = presentation;
   const perfEnabled = isPerfSampleEnabled();
   const perfLoadKind = readPerfLoadKind();
   const perfSamplerRef = useRef(perfEnabled ? createFrameTimeSampler() : null);
@@ -170,6 +181,16 @@ export const CanonicalReplayPlayer = forwardRef<
     perfPlayReadyMarkedRef.current = true;
   }, [perfEnabled, media.assetsAvailable, result.replay.checksum, stageBox.height, stageBox.width]);
 
+  // C4 capture: layered Repair Yard is ready once assets + measured stage exist.
+  const arenaReadyLoggedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!media.assetsAvailable || stageBox.width <= 0 || stageBox.height <= 0) return;
+    const key = result.replay.checksum;
+    if (arenaReadyLoggedRef.current === key) return;
+    arenaReadyLoggedRef.current = key;
+    console.log(formatArenaReadyLog());
+  }, [media.assetsAvailable, result.replay.checksum, stageBox.height, stageBox.width]);
+
   const trialAudio = useTrialReplayAudio({
     muted,
     playing: playbackUi.playing,
@@ -178,8 +199,11 @@ export const CanonicalReplayPlayer = forwardRef<
 
   const emitPlayback = useCallback(
     (next: PlaybackUiState) => {
-      setPlaybackUi(next);
-      onPlaybackChange?.(next);
+      // Sync the ref immediately so same-tick pause/resume (e.g. FX capture hold)
+      // is visible before the next emitPlayback in this rAF tick.
+      const { state } = emitPlaybackUi(playbackUiRef, next);
+      setPlaybackUi(state);
+      onPlaybackChange?.(state);
     },
     [onPlaybackChange],
   );
@@ -207,7 +231,9 @@ export const CanonicalReplayPlayer = forwardRef<
       playbackRef.current = new PlaybackController(queue);
       cueSeqRef.current = 0;
       waitUntilRef.current = 0;
-      setPresentation(initialPresentationState(nearFighter.characterId, farFighter.characterId));
+      const initial = initialPresentationState(nearFighter.characterId, farFighter.characterId);
+      presentationRef.current = initial;
+      setPresentation(initial);
       setFxCues([]);
       try {
         trialAudio.reset();
@@ -318,13 +344,33 @@ export const CanonicalReplayPlayer = forwardRef<
       } catch {
         // Missing/failed audio never desyncs the fight clock.
       }
-      setPresentation((prev) => {
-        const next = applyAnimationCommand(prev, cmd, cueSeqRef.current, maxHp);
-        pushFxFromState(next);
-        return next;
-      });
+      const fxFamily = fxFamilyFromAnimationCommand(cmd);
+      // Apply presentation + FX cues before onFxCue pause so the frozen peak
+      // frame is committed for capture stills (not pose-only / idle).
+      const nextPresentation = applyAnimationCommand(
+        presentationRef.current,
+        cmd,
+        cueSeqRef.current,
+        maxHp,
+      );
+      presentationRef.current = nextPresentation;
+      setPresentation(nextPresentation);
+      pushFxFromState(nextPresentation);
+      // Advance first, then FX cue (may pause). Ref must already be synced so
+      // pause is not overwritten by a stale playing:true emit.
       emitPlayback(playbackUiAfterAdvance(playbackUiRef.current, pb.position));
+      if (fxFamily) {
+        try {
+          onFxCue?.(fxFamily);
+        } catch {
+          // Capture hooks must never break playback.
+        }
+      }
       waitUntilRef.current = now + commandDuration(cmd);
+      if (!playbackUiRef.current.playing) {
+        // FX capture hold (or external pause) — do not schedule the next frame.
+        return;
+      }
       if (!pb.finished) {
         rafRef.current = requestAnimationFrame(tick);
       } else {
@@ -348,6 +394,7 @@ export const CanonicalReplayPlayer = forwardRef<
     maxHp,
     media.assetsAvailable,
     onFinished,
+    onFxCue,
     playbackUi.playing,
     pushFxFromState,
     trialAudio.onCommand,
@@ -486,7 +533,13 @@ export const CanonicalReplayPlayer = forwardRef<
                 testID={`${testID}-near`}
               />
             </View>
-            <EventFxLayer cues={fxCues} reducedMotion={reducedMotion} />
+            <EventFxLayer
+              cues={fxCues}
+              reducedMotion={reducedMotion}
+              // Freeze peak FX frame for the whole pause / C4 capture hold so
+              // stills are not taken after the ~270ms strip has already hidden.
+              paused={!playbackUi.playing}
+            />
             {presentation.banner ? (
               <Text style={styles.banner} testID={`${testID}-banner`}>
                 {presentation.banner}

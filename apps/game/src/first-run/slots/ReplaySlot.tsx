@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   PrimaryButton,
@@ -10,11 +10,24 @@ import {
   garageTag,
 } from '../../garage-tag';
 import { useFightSession } from '../../fight';
+import type { ArenaFxFamily } from '../../arena/environmentPin';
 import {
   CanonicalReplayPlayer,
   type CanonicalReplayPlayerHandle,
 } from '../../replay/CanonicalReplayPlayer';
 import { formatOutcomeLine } from '../../replay/confirmedResult';
+import {
+  FX_CAPTURE_HOLD_MS,
+  FX_CAPTURE_HOLD_SETTLE_MS,
+  FX_CAPTURE_IDLE_BEFORE_PLAY_MS,
+  completeFxCaptureHold,
+  formatFxCaptureLog,
+  formatReplayIdleLog,
+  formatReplayPlayLog,
+  initialFxCaptureHoldState,
+  noteFxCaptureCue,
+  type FxCaptureHoldState,
+} from '../../replay/fxCaptureHold';
 import { initialPlaybackUi, type PlaybackUiState } from '../../replay/playbackControl';
 import { isLiveFightCaptureEnabled } from '../../design-capture';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
@@ -30,27 +43,61 @@ export function ReplaySlot(): React.ReactElement {
   const { goBack, goNext, muted, toggleMute, reducedMotion } = useFirstRun();
   const { lastFight, fightKind } = useFightSession();
   const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
-  const impactHeld = useRef(false);
+  const fxHoldRef = useRef<FxCaptureHoldState>(initialFxCaptureHoldState());
+  const fxHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idlePlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [playback, setPlayback] = useState<PlaybackUiState>(() => initialPlaybackUi(0));
   const liveCapture = isLiveFightCaptureEnabled();
 
   const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
+  const replayChecksum =
+    resolution.status === 'confirmed' ? resolution.confirmed.replay.checksum : null;
 
-  const onPlaybackChange = useCallback(
-    (state: PlaybackUiState) => {
-      setPlayback(state);
-      // C3 UI evidence: hold a mid-impact frame for the capture still.
-      if (
-        liveCapture &&
-        !impactHeld.current &&
-        state.playing &&
-        state.progress >= 0.28 &&
-        state.progress < 0.72
-      ) {
-        impactHeld.current = true;
-        playerRef.current?.pause();
-        console.log(`BOTORE_CAPTURE_REPLAY_IMPACT:progress=${state.progress.toFixed(3)}`);
-      }
+  const onPlaybackChange = useCallback((state: PlaybackUiState) => {
+    setPlayback(state);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (fxHoldTimerRef.current) clearTimeout(fxHoldTimerRef.current);
+      if (idlePlayTimerRef.current) clearTimeout(idlePlayTimerRef.current);
+    };
+  }, []);
+
+  // Live capture: start paused so CI can still replay-start / arena at idle,
+  // then auto-play after a short window (avoids start≡first-hit-hold).
+  useEffect(() => {
+    if (!liveCapture || !replayChecksum) return;
+    console.log(formatReplayIdleLog());
+    if (idlePlayTimerRef.current) clearTimeout(idlePlayTimerRef.current);
+    idlePlayTimerRef.current = setTimeout(() => {
+      console.log(formatReplayPlayLog());
+      playerRef.current?.play();
+    }, FX_CAPTURE_IDLE_BEFORE_PLAY_MS);
+    return () => {
+      if (idlePlayTimerRef.current) clearTimeout(idlePlayTimerRef.current);
+    };
+  }, [liveCapture, replayChecksum]);
+
+  const onFxCue = useCallback(
+    (family: ArenaFxFamily) => {
+      if (!liveCapture) return;
+      console.log(formatFxCaptureLog(family, 'fire'));
+      const { next, shouldHold } = noteFxCaptureCue(fxHoldRef.current, family);
+      fxHoldRef.current = next;
+      if (!shouldHold) return;
+      // Pause first so EventFxLayer freezes the peak FX frame; log HOLD only after
+      // settle so CI screencaps the spark/dust, not the pre-cue idle frame.
+      playerRef.current?.pause();
+      if (fxHoldTimerRef.current) clearTimeout(fxHoldTimerRef.current);
+      fxHoldTimerRef.current = setTimeout(() => {
+        console.log(formatFxCaptureLog(family, 'hold'));
+        fxHoldTimerRef.current = setTimeout(() => {
+          fxHoldRef.current = completeFxCaptureHold(fxHoldRef.current);
+          console.log(formatFxCaptureLog(family, 'resume'));
+          playerRef.current?.play();
+        }, FX_CAPTURE_HOLD_MS);
+      }, FX_CAPTURE_HOLD_SETTLE_MS);
     },
     [liveCapture],
   );
@@ -103,11 +150,13 @@ export function ReplaySlot(): React.ReactElement {
           ref={playerRef}
           result={confirmed}
           muted={muted}
-          // Live capture needs motion poses for mid-impact stills.
+          // Live capture needs motion poses + FX frames for stills (not reduced-motion accents).
           reducedMotion={liveCapture ? false : reducedMotion}
-          autoPlay
+          // Live capture starts idle so replay-start ≠ first hit hold; play() after idle window.
+          autoPlay={!liveCapture}
           showLocalControls={false}
           onPlaybackChange={onPlaybackChange}
+          onFxCue={onFxCue}
           testID="slot-replay-player"
         />
       </View>

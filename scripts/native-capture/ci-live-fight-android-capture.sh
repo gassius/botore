@@ -17,6 +17,9 @@ mkdir -p "${OUT_DIR}"
 export CAPTURE_DEVICE="${CAPTURE_DEVICE:-pixel_6}"
 PACKAGE="${CAPTURE_ANDROID_PACKAGE:-${PACKAGE_ANDROID}}"
 ARCHS="${CAPTURE_RN_ARCHITECTURES:-x86_64}"
+# C4: live-fight path records a short replay FX clip by default (stills still required).
+# Workflow CAPTURE_CLIPS can still override to false.
+export CAPTURE_CLIPS="${CAPTURE_CLIPS:-true}"
 
 echo "ci-live-fight-android-capture: tip=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" >&2
 
@@ -193,70 +196,245 @@ capture_named() {
   echo "ok: ${matches[0]}" >&2
 }
 
+# Screenshot current frame without re-deep-linking (C4 FX holds).
+capture_current() {
+  local label="$1"
+  "${SCRIPT_DIR}/android-screencap.sh" \
+    --out "${OUT_DIR}" \
+    --name "${label}" >/dev/null
+  local matches=( "${OUT_DIR}"/android-*-"${label}".png )
+  if [[ ! -e "${matches[0]:-}" ]]; then
+    echo "error: missing PNG for ${label}" >&2
+    return 1
+  fi
+  write_manifest_line "${MANIFEST}" "still.android.${label}" "${matches[0]}"
+  echo "ok: ${matches[0]}" >&2
+}
+
+wait_logcat_marker() {
+  local marker="$1"
+  local timeout_sec="${2:-90}"
+  local deadline=$((SECONDS + timeout_sec))
+  local line=""
+  while (( SECONDS < deadline )); do
+    line="$(adb logcat -d 2>/dev/null | tr -d '\r' | grep -F "${marker}" | tail -n 1 || true)"
+    if [[ -n "${line}" ]]; then
+      printf '%s\n' "${line}"
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
 # 1) Garage (Stable equipped loadout)
 capture_named Stable garage 5
 
 # 2) Confirm — both bots (orchestrator selects opponent)
 capture_named ConfirmFight confirm 8
 
-# 3) Replay mid-impact — starts combat-v1 then holds impact frame
-capture_named Replay replay-impact 14
+# 3) Replay — live-capture starts paused (~3s idle) so replay-start is NOT the
+# first hit-hold frame. Settle must stay below FX_CAPTURE_IDLE_BEFORE_PLAY_MS.
+# Then poll fight proof + arena/FX markers; stills land while FX peak is frozen.
+capture_named Replay replay-start 2
 
-# Wait for fight proof (orchestrator starts combat-v1 on Replay; Edge + persist
-# can take longer than the first settle window).
 FIGHT_LINE=""
-FIGHT_WAIT_SEC="${CAPTURE_FIGHT_WAIT_SEC:-90}"
-FIGHT_DEADLINE=$((SECONDS + FIGHT_WAIT_SEC))
-while (( SECONDS < FIGHT_DEADLINE )); do
-  FIGHT_LINE="$(adb logcat -d 2>/dev/null | tr -d '\r' | grep -F 'BOTORE_CAPTURE_FIGHT_JSON:' | tail -n 1 || true)"
-  if [[ -n "${FIGHT_LINE}" ]]; then
-    break
+FIGHT_JSON=""
+FX_HIT="0"
+FX_DODGE="0"
+FX_DEFEAT="0"
+GOT_ARENA=0
+GOT_HIT=0
+GOT_DODGE=0
+GOT_DEFEAT=0
+FIGHT_WAIT_SEC="${CAPTURE_FIGHT_WAIT_SEC:-120}"
+FX_DEADLINE=$((SECONDS + FIGHT_WAIT_SEC))
+
+logcat_dump() {
+  adb logcat -d 2>/dev/null | tr -d '\r' || true
+}
+
+# Pipe logcat → grep (never printf a multi-MB DUMP into argv — ARG_MAX false-negatives).
+logcat_has() {
+  logcat_dump | grep -aFq "$1"
+}
+
+ensure_arena_layers_still() {
+  if [[ "${GOT_ARENA}" -eq 1 ]]; then
+    return 0
   fi
-  if adb logcat -d 2>/dev/null | tr -d '\r' | grep -Fq 'BOTORE_CAPTURE_HYDRATE_ERROR:'; then
+  echo "capturing arena-layers…" >&2
+  capture_current arena-layers
+  GOT_ARENA=1
+}
+
+# Prefer capturing before RESUME while the player is paused on the FX cue.
+capture_fx_while_held() {
+  local family="$1"
+  local label="$2"
+  local hold_marker="BOTORE_CAPTURE_FX_HOLD:family=${family}"
+  local resume_marker="BOTORE_CAPTURE_FX_RESUME:family=${family}"
+  echo "capturing ${label} during FX hold…" >&2
+  # Soft fail if the hold window already closed (late still is still evidence).
+  if logcat_has "${resume_marker}"; then
+    echo "note: ${family} resume already logged — capturing late frame" >&2
+  fi
+  # HOLD is logged after a short settle so the frozen peak FX frame is painted.
+  sleep 0.35
+  capture_current "${label}"
+  # Repair Yard is on-screen during FX holds — grab arena here so we do not
+  # depend solely on a separate ARENA_READY poll (missed on tip 564718f).
+  ensure_arena_layers_still
+  if [[ "${family}" == "hit" ]]; then
+    local hits=( "${OUT_DIR}"/android-*-"${label}".png )
+    if [[ -e "${hits[0]:-}" ]]; then
+      local impact_copy="${OUT_DIR}/android-$(stamp)-replay-impact.png"
+      cp "${hits[0]}" "${impact_copy}"
+      write_manifest_line "${MANIFEST}" "still.android.replay-impact" "${impact_copy}"
+    fi
+  fi
+  # Nudge past the hold so the next family can fire (hold is ~8s; don't busy-wait adb).
+  if ! logcat_has "${resume_marker}"; then
+    echo "waiting briefly for ${hold_marker} resume…" >&2
+    sleep 1
+  fi
+}
+
+while (( SECONDS < FX_DEADLINE )); do
+  if [[ -z "${FIGHT_JSON}" ]]; then
+    FIGHT_LINE="$(logcat_dump | grep -aF 'BOTORE_CAPTURE_FIGHT_JSON:' | tail -n 1 || true)"
+    if [[ -n "${FIGHT_LINE}" ]]; then
+      FIGHT_JSON="${FIGHT_LINE#*BOTORE_CAPTURE_FIGHT_JSON:}"
+      write_manifest_line "${MANIFEST}" fight_proof_json "${FIGHT_JSON}"
+      BATTLE_ID="$(node -e "const j=JSON.parse(process.argv[1]); if(!j.battleId||!j.serverConfirmed) process.exit(2); console.log(j.battleId)" "${FIGHT_JSON}")"
+      CHECKSUM="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.replayChecksum||'')" "${FIGHT_JSON}")"
+      XP="$(node -e "const j=JSON.parse(process.argv[1]); console.log(String(j.xpAwarded))" "${FIGHT_JSON}")"
+      FX_HIT="$(node -e "const j=JSON.parse(process.argv[1]); console.log(String((j.fxEvents&&j.fxEvents.hit)||0))" "${FIGHT_JSON}")"
+      FX_DODGE="$(node -e "const j=JSON.parse(process.argv[1]); console.log(String((j.fxEvents&&j.fxEvents.dodge)||0))" "${FIGHT_JSON}")"
+      FX_DEFEAT="$(node -e "const j=JSON.parse(process.argv[1]); console.log(String((j.fxEvents&&j.fxEvents.defeat)||0))" "${FIGHT_JSON}")"
+      write_manifest_line "${MANIFEST}" fight_id "${BATTLE_ID}"
+      write_manifest_line "${MANIFEST}" replay_checksum "${CHECKSUM}"
+      write_manifest_line "${MANIFEST}" xp_awarded "${XP}"
+      write_manifest_line "${MANIFEST}" server_confirmed "true"
+      write_manifest_line "${MANIFEST}" fx_events_hit "${FX_HIT}"
+      write_manifest_line "${MANIFEST}" fx_events_dodge "${FX_DODGE}"
+      write_manifest_line "${MANIFEST}" fx_events_defeat "${FX_DEFEAT}"
+      echo "fight proof: battleId=${BATTLE_ID} xp=${XP} fx hit=${FX_HIT} dodge=${FX_DODGE} defeat=${FX_DEFEAT}" >&2
+      if [[ "${FX_HIT}" -lt 1 || "${FX_DEFEAT}" -lt 1 ]]; then
+        echo "error: sealed replay missing required FX events (hit=${FX_HIT} defeat=${FX_DEFEAT})" >&2
+        exit 1
+      fi
+    fi
+  fi
+
+  if logcat_has 'BOTORE_CAPTURE_HYDRATE_ERROR:'; then
     echo "error: loadout hydrate failed — see BOTORE_CAPTURE_HYDRATE_ERROR in logcat" >&2
-    adb logcat -d 2>/dev/null | tr -d '\r' | grep -E 'BOTORE_CAPTURE_' >&2 || true
+    logcat_dump | grep -aE 'BOTORE_CAPTURE_' >&2 || true
     exit 1
   fi
-  if adb logcat -d 2>/dev/null | tr -d '\r' | grep -Fq 'BOTORE_CAPTURE_FIGHT_ERROR:'; then
-    echo "error: live-fight orchestrator reported BOTORE_CAPTURE_FIGHT_ERROR" >&2
-    adb logcat -d 2>/dev/null | tr -d '\r' | grep -E 'BOTORE_CAPTURE_' >&2 || true
-    # Keep waiting if the only error is transient canProgress before hydrate;
-    # hard-fail below if we never get FIGHT_JSON.
+
+  # Stills only during FX holds — never concurrent adb screenrecord (deadlocks screencap).
+  if [[ "${GOT_ARENA}" -eq 0 ]] && logcat_has 'BOTORE_CAPTURE_ARENA_READY:'; then
+    ensure_arena_layers_still
   fi
-  sleep 2
+
+  if [[ "${GOT_HIT}" -eq 0 ]] && logcat_has 'BOTORE_CAPTURE_FX_HOLD:family=hit'; then
+    capture_fx_while_held hit replay-fx-hit
+    GOT_HIT=1
+  fi
+  if [[ "${GOT_DODGE}" -eq 0 ]] && logcat_has 'BOTORE_CAPTURE_FX_HOLD:family=dodge'; then
+    capture_fx_while_held dodge replay-fx-dodge
+    GOT_DODGE=1
+  fi
+  if [[ "${GOT_DEFEAT}" -eq 0 ]] && logcat_has 'BOTORE_CAPTURE_FX_HOLD:family=defeat'; then
+    capture_fx_while_held defeat replay-fx-defeat
+    GOT_DEFEAT=1
+  fi
+
+  # Done when fight proof + arena + required FX stills are in.
+  if [[ -n "${FIGHT_JSON}" && "${GOT_ARENA}" -eq 1 && "${GOT_HIT}" -eq 1 && "${GOT_DEFEAT}" -eq 1 ]]; then
+    if [[ "${FX_DODGE}" -eq 0 || "${GOT_DODGE}" -eq 1 ]]; then
+      break
+    fi
+  fi
+  sleep 0.5
 done
 
-if [[ -z "${FIGHT_LINE}" ]]; then
+if [[ -z "${FIGHT_JSON}" ]]; then
   echo "error: no BOTORE_CAPTURE_FIGHT_JSON in logcat after ${FIGHT_WAIT_SEC}s — live fight did not confirm" >&2
-  adb logcat -d 2>/dev/null | tr -d '\r' | grep -E 'BOTORE_CAPTURE_|combat|Fight|permission denied|ERROR' >&2 || true
+  logcat_dump | grep -aE 'BOTORE_CAPTURE_|combat|Fight|permission denied|ERROR' >&2 || true
   ls -la "${OUT_DIR}" >&2 || true
   exit 1
 fi
-FIGHT_JSON="${FIGHT_LINE#*BOTORE_CAPTURE_FIGHT_JSON:}"
-write_manifest_line "${MANIFEST}" fight_proof_json "${FIGHT_JSON}"
-BATTLE_ID="$(node -e "const j=JSON.parse(process.argv[1]); if(!j.battleId||!j.serverConfirmed) process.exit(2); console.log(j.battleId)" "${FIGHT_JSON}")"
-CHECKSUM="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.replayChecksum||'')" "${FIGHT_JSON}")"
-XP="$(node -e "const j=JSON.parse(process.argv[1]); console.log(String(j.xpAwarded))" "${FIGHT_JSON}")"
-write_manifest_line "${MANIFEST}" fight_id "${BATTLE_ID}"
-write_manifest_line "${MANIFEST}" replay_checksum "${CHECKSUM}"
-write_manifest_line "${MANIFEST}" xp_awarded "${XP}"
-write_manifest_line "${MANIFEST}" server_confirmed "true"
-echo "fight proof: battleId=${BATTLE_ID} xp=${XP}" >&2
+
+# Last-chance arena still (replay stage still up before Result deep-link).
+if [[ "${GOT_ARENA}" -eq 0 ]]; then
+  echo "note: arena-layers not captured during holds — taking late still" >&2
+  ensure_arena_layers_still
+fi
+
+if [[ "${FX_DODGE}" -eq 0 ]]; then
+  write_manifest_line "${MANIFEST}" fx_dodge "absent-from-recorded-events"
+  echo "note: no dodge in sealed replay — dodge FX correctly not invented" >&2
+fi
+
+# Optional clip AFTER stills only (serial adb). Bound with timeout so a wedged
+# screenrecord cannot hang the job past the hold/stills phase.
+if [[ "${CAPTURE_CLIPS:-false}" == "true" || "${CAPTURE_CLIPS:-0}" == "1" ]]; then
+  echo "recording post-stills replay FX clip…" >&2
+  CLIP_SEC="${CAPTURE_FX_CLIP_SEC:-8}"
+  CLIP_TIMEOUT=$((CLIP_SEC + 15))
+  set +e
+  timeout "${CLIP_TIMEOUT}" env CAPTURE_SECONDS="${CLIP_SEC}" \
+    "${SCRIPT_DIR}/android-screenrecord.sh" \
+    --out "${OUT_DIR}" \
+    --name "replay-fx" >/tmp/botore-replay-fx-clip.path 2>/tmp/botore-replay-fx-clip.err
+  clip_rc=$?
+  set -e
+  if [[ "${clip_rc}" -eq 0 ]]; then
+    clip_matches=( "${OUT_DIR}"/android-*-replay-fx.mp4 )
+    if [[ -e "${clip_matches[0]:-}" ]]; then
+      write_manifest_line "${MANIFEST}" "clip.android.replay-fx" "${clip_matches[0]}"
+      echo "ok: ${clip_matches[0]}" >&2
+    fi
+  else
+    echo "note: replay-fx clip skipped (rc=${clip_rc}); stills remain required" >&2
+    cat /tmp/botore-replay-fx-clip.err >&2 || true
+  fi
+fi
 
 # 4) Result — backend XP / allowances (after server confirm so UI can show XP)
 capture_named FightResult result 5
 
-# Assert all four stills exist (if-no-files-found equivalent).
+# Assert required stills exist (if-no-files-found equivalent).
 missing=0
-for label in garage confirm replay-impact result; do
+required_labels=(garage confirm arena-layers replay-fx-hit replay-fx-defeat result)
+if [[ "${FX_DODGE}" -ge 1 ]]; then
+  required_labels+=(replay-fx-dodge)
+fi
+for label in "${required_labels[@]}"; do
   matches=( "${OUT_DIR}"/android-*-"${label}".png )
   if [[ ! -e "${matches[0]:-}" ]]; then
     echo "error: missing capture PNG ${label}" >&2
     missing=1
   fi
 done
+
+# Hit still must differ from idle replay-start (guards start≡first-hit-hold).
+start_matches=( "${OUT_DIR}"/android-*-replay-start.png )
+hit_matches=( "${OUT_DIR}"/android-*-replay-fx-hit.png )
+if [[ -e "${start_matches[0]:-}" && -e "${hit_matches[0]:-}" ]]; then
+  if cmp -s "${start_matches[0]}" "${hit_matches[0]}"; then
+    echo "error: replay-fx-hit is byte-identical to replay-start (hit spark not captured)" >&2
+    missing=1
+  else
+    echo "ok: replay-fx-hit differs from replay-start" >&2
+  fi
+fi
+
 if [[ "${missing}" != "0" ]]; then
   ls -la "${OUT_DIR}" >&2 || true
+  logcat_dump | grep -aE 'BOTORE_CAPTURE_' >&2 || true
   exit 1
 fi
 
