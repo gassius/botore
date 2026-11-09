@@ -233,9 +233,10 @@ capture_named Stable garage 5
 # 2) Confirm — both bots (orchestrator selects opponent)
 capture_named ConfirmFight confirm 8
 
-# 3) Replay — start combat-v1; C4 holds (~8s) on recorded hit/dodge/defeat FX.
-# Poll fight proof + arena/FX markers concurrently so stills land while paused.
-capture_named Replay replay-start 3
+# 3) Replay — live-capture starts paused (~3s idle) so replay-start is NOT the
+# first hit-hold frame. Settle must stay below FX_CAPTURE_IDLE_BEFORE_PLAY_MS.
+# Then poll fight proof + arena/FX markers; stills land while FX peak is frozen.
+capture_named Replay replay-start 2
 
 FIGHT_LINE=""
 FIGHT_JSON=""
@@ -418,9 +419,22 @@ for label in "${required_labels[@]}"; do
     missing=1
   fi
 done
+
+# Hit still must differ from idle replay-start (guards start≡first-hit-hold).
+start_matches=( "${OUT_DIR}"/android-*-replay-start.png )
+hit_matches=( "${OUT_DIR}"/android-*-replay-fx-hit.png )
+if [[ -e "${start_matches[0]:-}" && -e "${hit_matches[0]:-}" ]]; then
+  if cmp -s "${start_matches[0]}" "${hit_matches[0]}"; then
+    echo "error: replay-fx-hit is byte-identical to replay-start (hit spark not captured)" >&2
+    missing=1
+  else
+    echo "ok: replay-fx-hit differs from replay-start" >&2
+  fi
+fi
+
 if [[ "${missing}" != "0" ]]; then
   ls -la "${OUT_DIR}" >&2 || true
-  logcat_dump | grep -E 'BOTORE_CAPTURE_' >&2 || true
+  logcat_dump | grep -aE 'BOTORE_CAPTURE_' >&2 || true
   exit 1
 fi
 

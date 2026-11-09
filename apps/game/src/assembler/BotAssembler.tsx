@@ -263,11 +263,13 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
           ),
         )}
       </Animated.View>
-      <Text style={styles.badge} testID={`${testID}-badge`}>
-        {assembled.placeholder
-          ? `PLACEHOLDER · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()}`
-          : `kit-v002 local · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()} · NOT FINAL`}
-      </Text>
+      {__DEV__ ? (
+        <Text style={styles.badge} testID={`${testID}-badge`}>
+          {assembled.placeholder
+            ? `PLACEHOLDER · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()}`
+            : `kit-v002 local · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()} · NOT FINAL`}
+        </Text>
+      ) : null}
     </View>
   );
 };

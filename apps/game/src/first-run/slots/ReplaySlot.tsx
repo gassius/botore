@@ -19,8 +19,11 @@ import { formatOutcomeLine } from '../../replay/confirmedResult';
 import {
   FX_CAPTURE_HOLD_MS,
   FX_CAPTURE_HOLD_SETTLE_MS,
+  FX_CAPTURE_IDLE_BEFORE_PLAY_MS,
   completeFxCaptureHold,
   formatFxCaptureLog,
+  formatReplayIdleLog,
+  formatReplayPlayLog,
   initialFxCaptureHoldState,
   noteFxCaptureCue,
   type FxCaptureHoldState,
@@ -42,10 +45,13 @@ export function ReplaySlot(): React.ReactElement {
   const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
   const fxHoldRef = useRef<FxCaptureHoldState>(initialFxCaptureHoldState());
   const fxHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idlePlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [playback, setPlayback] = useState<PlaybackUiState>(() => initialPlaybackUi(0));
   const liveCapture = isLiveFightCaptureEnabled();
 
   const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
+  const replayChecksum =
+    resolution.status === 'confirmed' ? resolution.confirmed.replay.checksum : null;
 
   const onPlaybackChange = useCallback((state: PlaybackUiState) => {
     setPlayback(state);
@@ -54,8 +60,24 @@ export function ReplaySlot(): React.ReactElement {
   useEffect(() => {
     return () => {
       if (fxHoldTimerRef.current) clearTimeout(fxHoldTimerRef.current);
+      if (idlePlayTimerRef.current) clearTimeout(idlePlayTimerRef.current);
     };
   }, []);
+
+  // Live capture: start paused so CI can still replay-start / arena at idle,
+  // then auto-play after a short window (avoids start≡first-hit-hold).
+  useEffect(() => {
+    if (!liveCapture || !replayChecksum) return;
+    console.log(formatReplayIdleLog());
+    if (idlePlayTimerRef.current) clearTimeout(idlePlayTimerRef.current);
+    idlePlayTimerRef.current = setTimeout(() => {
+      console.log(formatReplayPlayLog());
+      playerRef.current?.play();
+    }, FX_CAPTURE_IDLE_BEFORE_PLAY_MS);
+    return () => {
+      if (idlePlayTimerRef.current) clearTimeout(idlePlayTimerRef.current);
+    };
+  }, [liveCapture, replayChecksum]);
 
   const onFxCue = useCallback(
     (family: ArenaFxFamily) => {
@@ -130,7 +152,8 @@ export function ReplaySlot(): React.ReactElement {
           muted={muted}
           // Live capture needs motion poses + FX frames for stills (not reduced-motion accents).
           reducedMotion={liveCapture ? false : reducedMotion}
-          autoPlay
+          // Live capture starts idle so replay-start ≠ first hit hold; play() after idle window.
+          autoPlay={!liveCapture}
           showLocalControls={false}
           onPlaybackChange={onPlaybackChange}
           onFxCue={onFxCue}

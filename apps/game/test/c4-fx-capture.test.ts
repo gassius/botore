@@ -5,6 +5,7 @@ import {
   FX_CAPTURE_FAMILIES,
   FX_CAPTURE_HOLD_MS,
   FX_CAPTURE_HOLD_SETTLE_MS,
+  FX_CAPTURE_IDLE_BEFORE_PLAY_MS,
   completeFxCaptureHold,
   countFxEventsFromReplay,
   formatArenaReadyLog,
@@ -102,6 +103,7 @@ describe('C4 event-driven FX capture holds', () => {
     // Strip is 3×90ms ≈ 270ms; without pause-freeze stills land after auto-hide.
     expect(FX_CAPTURE_HOLD_SETTLE_MS).toBeGreaterThanOrEqual(100);
     expect(FX_CAPTURE_HOLD_SETTLE_MS).toBeLessThan(FX_CAPTURE_HOLD_MS);
+    expect(FX_CAPTURE_IDLE_BEFORE_PLAY_MS).toBeGreaterThan(FX_CAPTURE_HOLD_SETTLE_MS);
     expect(fxPeakFrameIndex(3)).toBe(1);
     expect(fxPeakFrameIndex(1)).toBe(0);
     expect(fxPeakFrameIndex(0)).toBe(0);

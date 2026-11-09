@@ -25,6 +25,20 @@ export const FX_CAPTURE_HOLD_MS = 8000;
  */
 export const FX_CAPTURE_HOLD_SETTLE_MS = 150;
 
+/**
+ * Live-capture: keep replay paused at idle this long so CI can screencap
+ * replay-start / arena-layers before the first FX hold freezes a hit frame.
+ */
+export const FX_CAPTURE_IDLE_BEFORE_PLAY_MS = 3000;
+
+export function formatReplayIdleLog(): string {
+  return 'BOTORE_CAPTURE_REPLAY_IDLE:waiting-for-play';
+}
+
+export function formatReplayPlayLog(): string {
+  return 'BOTORE_CAPTURE_REPLAY_PLAY:starting';
+}
+
 export const FX_CAPTURE_FAMILIES: readonly FxCaptureFamily[] = ['hit', 'dodge', 'defeat'];
 
 export function initialFxCaptureHoldState(): FxCaptureHoldState {
