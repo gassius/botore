@@ -182,7 +182,7 @@ export function OpponentsScreen(props: {
                       facing="left"
                       paintId={c.loadout.paint}
                       weaponId={c.loadout.weapon}
-                      size={96}
+                      size={120}
                       reducedMotion
                       motionPose="idle"
                       testID={`opponent-preview-${c.characterId}`}
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 0,
-    maxHeight: 460,
+    maxHeight: 520,
   },
   list: {
     gap: 12,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    minHeight: 128,
+    minHeight: 148,
     padding: 12,
     backgroundColor: garageTag.cream,
     borderWidth: garageTag.outline,
@@ -263,8 +263,8 @@ const styles = StyleSheet.create({
     borderColor: garageTag.mustard,
   },
   preview: {
-    width: 104,
-    minHeight: 120,
+    width: 128,
+    minHeight: 148,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -299,8 +299,8 @@ const styles = StyleSheet.create({
     backgroundColor: garageTag.paper,
   },
   weaponGlyph: {
-    width: 22,
-    height: 22,
+    width: 28,
+    height: 28,
   },
   weaponLabel: {
     fontWeight: '800',
