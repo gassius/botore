@@ -160,31 +160,38 @@ pnpm test:coverage:db -- --log /tmp/db-tests.log
 pnpm test:coverage:edge
 ```
 
-## Admin dashboard readiness (B2 later)
+## Admin dashboard readiness (B2 APIs/views)
 
-Read-only views / envelopes prepared for a future dashboard — do not build B2 UI
-here:
+Backend contract for a future dashboard UI — **no `apps/dashboard` UI in this
+slice**. Full table: [`docs/backend/admin-dashboard.md`](./admin-dashboard.md).
 
-| View / function              | Purpose                                        |
-| ---------------------------- | ---------------------------------------------- |
-| `admin_catalogue_summary`    | Part counts by slot                            |
-| `admin_inventory_overview`   | Owned parts with account display names         |
-| `admin_loadout_overview`     | Current confirmed loadouts per character       |
-| `admin_fight_readiness`      | Fight eligibility + allowance depth            |
-| `backend_health_snapshot()`  | Aggregated SQL health for ops / smoke / UI     |
-| `GET /functions/v1/health`   | SQL snapshot + `checks.edge_functions` probes  |
-| `prepare_fight_context()`    | Eligibility + immutable fighter snapshots (F2) |
-| `persist_fight_result()`     | Atomic fight persist + idempotency (F3)        |
-| `admin_recent_battles`       | Recent persisted fights + outbox pending       |
-| `admin_outbox_overview`      | Outbox pending / failing / dead-lettered depth |
-| `admin_outbox_failures`      | Visible failed outbox rows                     |
-| `admin_list_cron_jobs()`     | Scheduled botore pg_cron jobs                  |
-| `outbox_status_snapshot()`   | Aggregated outbox + cron status                |
-| `process_analytics_outbox()` | Idempotent outbox drain (service_role / cron)  |
-| `ensure_fight_allowances()`  | Idempotent allowance horizon refresh           |
-| `retry_outbox_event()`       | Requeue a dead-lettered / failed row           |
-| `current_bot_loadouts`       | Latest immutable loadout per character         |
-| `inventory_balances`         | Reconstructable ownership quantities           |
+| View / function               | Purpose                                        |
+| ----------------------------- | ---------------------------------------------- |
+| `admin_dashboard_snapshot()`  | One-shot JSON for health + fights + ops panes  |
+| `admin_players_overview`      | Players, allowances, fight/XP totals           |
+| `admin_bots_overview`         | Player + opponent bots (build/loadout/ready)   |
+| `admin_fight_stats`           | Single-row fight/player aggregates             |
+| `admin_daily_active_accounts` | Distinct initiators per UTC day (30d)          |
+| `admin_list_cron_job_runs(n)` | Recent botore pg_cron run history              |
+| `admin_atlas_overview`        | Pack / atlas versions (F5)                     |
+| `admin_catalogue_summary`     | Part counts by slot                            |
+| `admin_inventory_overview`    | Owned parts with account display names         |
+| `admin_loadout_overview`      | Current confirmed loadouts per character       |
+| `admin_fight_readiness`       | Fight eligibility + allowance depth            |
+| `backend_health_snapshot()`   | Aggregated SQL health for ops / smoke / UI     |
+| `GET /functions/v1/health`    | SQL snapshot + `checks.edge_functions` probes  |
+| `prepare_fight_context()`     | Eligibility + immutable fighter snapshots (F2) |
+| `persist_fight_result()`      | Atomic fight persist + idempotency (F3)        |
+| `admin_recent_battles`        | Recent persisted fights + outbox pending       |
+| `admin_outbox_overview`       | Outbox pending / failing / dead-lettered depth |
+| `admin_outbox_failures`       | Visible failed outbox rows                     |
+| `admin_list_cron_jobs()`      | Scheduled botore pg_cron jobs                  |
+| `outbox_status_snapshot()`    | Aggregated outbox + cron status                |
+| `process_analytics_outbox()`  | Idempotent outbox drain (service_role / cron)  |
+| `ensure_fight_allowances()`   | Idempotent allowance horizon refresh           |
+| `retry_outbox_event()`        | Requeue a dead-lettered / failed row           |
+| `current_bot_loadouts`        | Latest immutable loadout per character         |
+| `inventory_balances`          | Reconstructable ownership quantities           |
 
 ## Full quality gate
 

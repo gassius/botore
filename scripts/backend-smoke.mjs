@@ -447,6 +447,42 @@ const fightReady = Number(
   psql(`select count(*) from admin_fight_readiness where readiness='ready_as_opponent'`),
 );
 if (fightReady !== 3) fail(`admin_fight_readiness opponents expected 3, got ${fightReady}`);
+const playerRows = Number(
+  psql(
+    `select count(*) from admin_players_overview where account_id='00000000-0000-4000-8000-000000000001'`,
+  ),
+);
+if (playerRows !== 1) fail(`admin_players_overview expected 1 seed player, got ${playerRows}`);
+const botRows = Number(psql('select count(*) from admin_bots_overview'));
+if (botRows < 4) fail(`admin_bots_overview expected >= 4 rows, got ${botRows}`);
+const fightStatsJson = psql('select to_jsonb(s)::text from admin_fight_stats s');
+let fightStats;
+try {
+  fightStats = JSON.parse(fightStatsJson);
+} catch {
+  fail(`admin_fight_stats did not return JSON: ${fightStatsJson}`);
+}
+if ((fightStats.opponent_bot_count ?? 0) !== 3) {
+  fail(`admin_fight_stats.opponent_bot_count expected 3, got ${fightStatsJson}`);
+}
+const dailyRows = Number(psql('select count(*) from admin_daily_active_accounts'));
+if (dailyRows !== 30) fail(`admin_daily_active_accounts expected 30 days, got ${dailyRows}`);
+const dashSnapJson = psql('select public.admin_dashboard_snapshot()::text');
+let dashSnap;
+try {
+  dashSnap = JSON.parse(dashSnapJson);
+} catch {
+  fail(`admin_dashboard_snapshot did not return JSON: ${dashSnapJson}`);
+}
+if (!dashSnap.ok) fail(`admin_dashboard_snapshot not ok: ${dashSnapJson}`);
+if (!Array.isArray(dashSnap.atlasVersions) || dashSnap.atlasVersions.length < 1) {
+  fail(`admin_dashboard_snapshot missing atlasVersions: ${dashSnapJson}`);
+}
+if (!Array.isArray(dashSnap.cronJobs) || dashSnap.cronJobs.length !== 2) {
+  fail(`admin_dashboard_snapshot cronJobs expected 2, got ${dashSnapJson}`);
+}
+// Runs may be empty before cron fires; RPC must still succeed.
+psql('select count(*) from public.admin_list_cron_job_runs(5)');
 console.log('SMOKE-OK admin reporting views');
 
 // prepare_fight_context requires service_role or matching auth.uid(); smoke uses service_role.

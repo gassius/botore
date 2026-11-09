@@ -1374,3 +1374,96 @@ begin
   );
   raise notice 'TEST-OK F5 fight media refs + health atlas flags';
 end $$;
+
+-- =========================================================================
+-- B2: admin dashboard read APIs (views + snapshot) — no UI
+-- =========================================================================
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_snap jsonb;
+  v_stats record;
+  v_count int;
+begin
+  perform tests.assert(
+    exists (
+      select 1 from public.admin_players_overview
+       where account_id = v_account
+         and character_id = 'player-hero'
+    ),
+    'admin_players_overview lists seed player'
+  );
+
+  select count(*) into v_count from public.admin_bots_overview;
+  perform tests.assert(v_count >= 4, 'admin_bots_overview has player + opponents');
+
+  perform tests.assert(
+    exists (
+      select 1 from public.admin_bots_overview
+       where character_id = 'player-hero'
+         and readiness is not null
+         and loadout_version_id is not null
+    ),
+    'admin_bots_overview exposes readiness + loadout'
+  );
+
+  select * into v_stats from public.admin_fight_stats;
+  perform tests.assert(v_stats.player_count >= 1, 'admin_fight_stats player_count');
+  perform tests.assert(v_stats.opponent_bot_count = 3, 'admin_fight_stats opponent_bot_count');
+  perform tests.assert(v_stats.total_battles >= 0, 'admin_fight_stats total_battles');
+
+  select count(*) into v_count from public.admin_daily_active_accounts;
+  perform tests.assert(v_count = 30, 'admin_daily_active_accounts is 30-day window');
+
+  perform tests.assert(
+    exists (select 1 from public.admin_atlas_overview where version = 'v1'),
+    'admin_atlas_overview readable for pack versions'
+  );
+
+  perform tests.assert(
+    exists (select 1 from public.admin_list_cron_jobs() where jobname = 'botore-outbox-drain'),
+    'admin_list_cron_jobs still lists outbox drain'
+  );
+
+  -- Runs may be empty before cron fires; RPC must still succeed.
+  perform tests.assert(
+    (select count(*) >= 0 from public.admin_list_cron_job_runs(10)),
+    'admin_list_cron_job_runs callable'
+  );
+
+  select public.admin_dashboard_snapshot() into v_snap;
+  perform tests.assert((v_snap->>'ok')::boolean, 'admin_dashboard_snapshot ok');
+  perform tests.assert(v_snap->>'service' = 'admin-dashboard', 'snapshot service tag');
+  perform tests.assert(jsonb_typeof(v_snap->'health') = 'object', 'snapshot health object');
+  perform tests.assert(jsonb_typeof(v_snap->'outbox') = 'object', 'snapshot outbox object');
+  perform tests.assert(jsonb_typeof(v_snap->'fightStats') = 'object', 'snapshot fightStats object');
+  perform tests.assert(jsonb_typeof(v_snap->'players') = 'array', 'snapshot players array');
+  perform tests.assert(jsonb_typeof(v_snap->'bots') = 'array', 'snapshot bots array');
+  perform tests.assert(jsonb_typeof(v_snap->'atlasVersions') = 'array', 'snapshot atlasVersions array');
+  perform tests.assert(jsonb_typeof(v_snap->'cronJobs') = 'array', 'snapshot cronJobs array');
+  perform tests.assert(jsonb_typeof(v_snap->'cronJobRuns') = 'array', 'snapshot cronJobRuns array');
+  perform tests.assert(jsonb_typeof(v_snap->'dailyActiveAccounts') = 'array', 'snapshot dailyActiveAccounts array');
+  perform tests.assert(jsonb_typeof(v_snap->'recentBattles') = 'array', 'snapshot recentBattles array');
+  perform tests.assert(
+    jsonb_array_length(v_snap->'players') >= 1,
+    'snapshot includes seed player'
+  );
+  perform tests.assert(
+    jsonb_array_length(v_snap->'bots') >= 4,
+    'snapshot includes bots'
+  );
+  perform tests.assert(
+    jsonb_array_length(v_snap->'cronJobs') = 2,
+    'snapshot lists 2 cron jobs'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_snap->'atlasVersions') a
+       where a->>'version' = 'v1'
+    ),
+    'snapshot includes atlas v1'
+  );
+
+  raise notice 'TEST-OK B2 admin dashboard APIs';
+end $$;

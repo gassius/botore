@@ -31,16 +31,17 @@ Published packs are **immutable**: triggers reject insert/update/delete of manif
 
 ## Database
 
-| Relation / RPC                         | Purpose                                                                       |
-| -------------------------------------- | ----------------------------------------------------------------------------- |
-| `atlas_versions`                       | Version registry + JSON manifest (`budgets_final` stays false until approved) |
-| `atlas_manifest_entries`               | Part / base / arena / FX → file path map                                      |
-| `atlas_missing_storage_paths(version)` | Paths lacking Storage objects (publish gate / health)                         |
-| `atlas_lock_versions(text[])`          | Sorted per-version row locks for publish + mutations                          |
-| `get_atlas_manifest(version)`          | Published manifest + entry list for clients                                   |
-| `publish_atlas_version(version)`       | `service_role` draft → published after object check                           |
-| `battle_participants.atlas_version`    | Fight-time media version pin (from loadout)                                   |
-| `admin_atlas_overview`                 | Ops/readiness for a future B2 dashboard                                       |
+| Relation / RPC                         | Purpose                                                                            |
+| -------------------------------------- | ---------------------------------------------------------------------------------- |
+| `atlas_versions`                       | Version registry + JSON manifest (`budgets_final` stays false until approved)      |
+| `atlas_manifest_entries`               | Part / base / arena / FX → file path map                                           |
+| `atlas_missing_storage_paths(version)` | Paths lacking Storage objects (publish gate / health)                              |
+| `atlas_lock_versions(text[])`          | Sorted per-version row locks for publish + mutations                               |
+| `get_atlas_manifest(version)`          | Published manifest + entry list for clients                                        |
+| `publish_atlas_version(version)`       | `service_role` draft → published after object check                                |
+| `battle_participants.atlas_version`    | Fight-time media version pin (from loadout)                                        |
+| `admin_atlas_overview`                 | Ops/readiness for a future B2 dashboard                                            |
+| `admin_dashboard_snapshot()`           | Bundles atlas versions with health / fights / cron for B2 (see admin-dashboard.md) |
 
 ## Proof pack (v1 placeholders)
 

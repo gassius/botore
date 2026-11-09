@@ -22,9 +22,10 @@ Backend health / smoke / coverage: `docs/backend/verify.md`.
 
 Bots-as-data tables (F1): `parts_catalogue`, `inventory_ledger`,
 `bot_loadout_versions`, plus `save_bot_loadout()` for ownership and slot
-checks. Admin-oriented read views (`admin_*`), `backend_health_snapshot()`,
-and Edge `/functions/v1/health` (SQL snapshot + live Edge probes) are ready
-for a future dashboard (B2) — not built here.
+checks. Admin read APIs (`admin_*` views, `admin_dashboard_snapshot()`,
+`backend_health_snapshot()`, and Edge `/functions/v1/health`) are ready for
+a future dashboard UI — see `docs/backend/admin-dashboard.md`. Dashboard
+pages are not built here.
 
 Edge combat (F2/F3): `supabase/functions/combat-v1` runs deterministic
 `combat-v1` with a server CSPRNG seed after `prepare_fight_context()`
