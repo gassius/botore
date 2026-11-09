@@ -199,11 +199,13 @@ jobs:
       - name: Capture tooling check (scripts + eas.json)
         run: node scripts/native-capture/check-capture-env.mjs --platform ios --tools-only
 
-      - name: Install postgresql client (auth repair)
+      - name: Install postgresql client + Colima/QEMU (local Supabase)
         run: |
           set -euo pipefail
-          brew install libpq || true
+          brew install libpq colima docker docker-compose qemu lima || true
           echo "$(brew --prefix libpq)/bin" >> "${GITHUB_PATH}"
+          echo "$(brew --prefix docker)/bin" >> "${GITHUB_PATH}"
+          echo "$(brew --prefix colima)/bin" >> "${GITHUB_PATH}"
 
       - name: Expo prebuild (ios)
         run: |

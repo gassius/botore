@@ -51,6 +51,26 @@ if (!appGradle.includes(SIGN_MARKER)) {
   console.log('ci signing patch already applied');
 }
 
+// Capture APKs set android:debuggable for run-as cold-start markers. lintVitalRelease
+// HardcodedDebugMode would fail assemble — skip vital lint on CI capture builds.
+{
+  let gradle = readFileSync(buildGradle, 'utf8');
+  const LINT_MARKER = '// botore-ci-skip-lint-vital';
+  if (!gradle.includes(LINT_MARKER) && /android\s*\{/.test(gradle)) {
+    gradle = gradle.replace(
+      /android\s*\{/,
+      (m) => `${m}
+    ${LINT_MARKER}
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }`,
+    );
+    writeFileSync(buildGradle, gradle);
+    console.log(`patched ${buildGradle} (lint checkReleaseBuilds false)`);
+  }
+}
+
 if (existsSync(gradleProps)) {
   let props = readFileSync(gradleProps, 'utf8');
   const line = `android.kotlinVersion=${KOTLIN_PIN}`;

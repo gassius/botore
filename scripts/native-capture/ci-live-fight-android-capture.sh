@@ -112,6 +112,7 @@ echo "assembleRelease (live fight env)…" >&2
     EXPO_PUBLIC_SUPABASE_ANON_KEY="${EXPO_PUBLIC_SUPABASE_ANON_KEY}" \
     EXPO_USE_COMMUNITY_AUTOLINKING=0 \
     ./gradlew assembleRelease \
+    -x lintVitalRelease \
     -PreactNativeArchitectures="${ARCHS}" \
     -Pandroid.kotlinVersion=1.9.25 \
     --no-daemon \

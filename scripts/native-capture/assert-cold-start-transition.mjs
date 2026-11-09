@@ -27,7 +27,9 @@ function parseArgs(argv) {
 
 const { platform, outDir, minGraphite, minDiffPct } = parseArgs(process.argv.slice(2));
 const frames = readdirSync(outDir)
-  .filter((f) => f.startsWith(`${platform}-`) && f.includes('-ColdStart-frame') && f.endsWith('.png'))
+  .filter(
+    (f) => f.startsWith(`${platform}-`) && f.includes('-ColdStart-frame') && f.endsWith('.png'),
+  )
   .sort();
 
 if (frames.length < 2) {

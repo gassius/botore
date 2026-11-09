@@ -19,26 +19,66 @@ DEVICE_CANDIDATES="${CAPTURE_IOS_DEVICE:-iPhone 16,iPhone 16 Plus,iPhone 15,iPho
 
 echo "ci-live-fight-ios-capture: tip=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" >&2
 
+dump_colima_logs() {
+  echo "---- colima status ----" >&2
+  colima status >&2 || true
+  echo "---- lima ha.stderr.log ----" >&2
+  cat "${HOME}/.colima/_lima/colima/ha.stderr.log" 2>/dev/null | tail -n 80 >&2 || true
+  echo "---- lima ha.stdout.log ----" >&2
+  cat "${HOME}/.colima/_lima/colima/ha.stdout.log" 2>/dev/null | tail -n 40 >&2 || true
+}
+
 ensure_docker() {
   if docker info >/dev/null 2>&1; then
     echo "docker ok" >&2
     return 0
   fi
   echo "docker unavailable — installing/starting Colima…" >&2
-  if ! command -v colima >/dev/null 2>&1; then
-    brew install docker colima docker-compose || true
+  if ! command -v colima >/dev/null 2>&1 || ! command -v docker >/dev/null 2>&1; then
+    brew install docker colima docker-compose qemu lima || true
   fi
-  colima start --cpu "${COLIMA_CPU:-4}" --memory "${COLIMA_MEMORY_GB:-8}" --disk "${COLIMA_DISK_GB:-60}" || \
-    colima start
-  # Wait for docker.
-  for _ in $(seq 1 60); do
+  # GHA macos hosted runners: VZ nested virt is unreliable (disk convert fatals).
+  # Prefer qemu (software) with modest resources; fall back carefully.
+  colima delete -f >/dev/null 2>&1 || true
+  rm -rf "${HOME}/.colima/_lima/colima" 2>/dev/null || true
+  local started=0
+  local attempt
+  for attempt in \
+    "--vm-type qemu --cpu ${COLIMA_CPU:-2} --memory ${COLIMA_MEMORY_GB:-4} --disk ${COLIMA_DISK_GB:-20} --runtime docker" \
+    "--vm-type qemu --cpu 2 --memory 4 --disk 15 --runtime docker --mount-type 9p" \
+    "--vm-type vz --cpu 2 --memory 4 --disk 15 --mount-type virtiofs --runtime docker"; do
+    echo "colima start ${attempt}" >&2
+    # shellcheck disable=SC2086
+    if colima start ${attempt}; then
+      started=1
+      break
+    fi
+    echo "warn: colima start failed (${attempt}); dumping logs + retrying…" >&2
+    dump_colima_logs
+    colima delete -f >/dev/null 2>&1 || true
+    rm -rf "${HOME}/.colima/_lima/colima" 2>/dev/null || true
+    sleep 2
+  done
+  if [[ "${started}" != "1" ]]; then
+    echo "error: all Colima start attempts failed" >&2
+    dump_colima_logs
+    return 1
+  fi
+  # Point docker CLI at Colima's socket when needed.
+  if [[ -S "${HOME}/.colima/default/docker.sock" ]]; then
+    export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+  elif [[ -S "${HOME}/.colima/docker.sock" ]]; then
+    export DOCKER_HOST="unix://${HOME}/.colima/docker.sock"
+  fi
+  for _ in $(seq 1 90); do
     if docker info >/dev/null 2>&1; then
-      echo "colima docker ready" >&2
+      echo "colima docker ready (DOCKER_HOST=${DOCKER_HOST:-default})" >&2
       return 0
     fi
     sleep 2
   done
   echo "error: docker still unavailable after Colima start" >&2
+  dump_colima_logs
   return 1
 }
 
