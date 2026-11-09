@@ -62,9 +62,14 @@ OUT_DIR="$(ensure_out_dir "${OUT_DIR}")"
 MANIFEST="${OUT_DIR}/manifest-$(stamp).txt"
 : >"${MANIFEST}"
 write_manifest_line "${MANIFEST}" tip_sha "${TIP_SHA}"
+write_manifest_line "${MANIFEST}" commit "$(git -C "${REPO_ROOT}" rev-parse HEAD 2>/dev/null || echo unknown)"
 write_manifest_line "${MANIFEST}" platform "${PLATFORM}"
+write_manifest_line "${MANIFEST}" device "${CAPTURE_DEVICE:-unknown}"
 write_manifest_line "${MANIFEST}" design_capture "native-phone"
 write_manifest_line "${MANIFEST}" web_preview "not-accepted"
+if [[ "${CAPTURE_WELCOME:-0}" == "1" || "${CAPTURE_WELCOME:-0}" == "true" ]]; then
+  write_manifest_line "${MANIFEST}" welcome "petrol+axe/dagger-on-Stable-Customise"
+fi
 
 ROUTES=()
 if [[ -n "${ROUTES_CSV}" ]]; then
@@ -77,8 +82,13 @@ fi
 
 capture_android_route() {
   local route="$1"
+  local paint weapon
+  paint="$(welcome_paint_for_route "${route}")"
+  weapon="$(welcome_weapon_for_route "${route}")"
   local args=(--out "${OUT_DIR}" --route "${route}" --name "${route}")
   if [[ -n "${MUTE}" ]]; then args+=(--mute); fi
+  if [[ -n "${paint}" ]]; then args+=(--paint "${paint}"); fi
+  if [[ -n "${weapon}" ]]; then args+=(--weapon "${weapon}"); fi
   local file
   file="$("${SCRIPT_DIR}/android-screencap.sh" "${args[@]}")"
   # Trim accidental whitespace/newlines from command substitution.
@@ -96,8 +106,14 @@ capture_android_route() {
 
 capture_ios_route() {
   local route="$1"
+  local paint weapon
+  paint="$(welcome_paint_for_route "${route}")"
+  weapon="$(welcome_weapon_for_route "${route}")"
   local args=(--out "${OUT_DIR}" --route "${route}" --name "${route}")
   if [[ -n "${MUTE}" ]]; then args+=(--mute); fi
+  if [[ -n "${paint}" ]]; then args+=(--paint "${paint}"); fi
+  if [[ -n "${weapon}" ]]; then args+=(--weapon "${weapon}"); fi
+  if [[ -n "${CAPTURE_IOS_UDID:-}" ]]; then args+=(--udid "${CAPTURE_IOS_UDID}"); fi
   local file
   file="$("${SCRIPT_DIR}/ios-screencap.sh" "${args[@]}")"
   file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"

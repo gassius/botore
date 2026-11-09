@@ -30,11 +30,51 @@ stamp() {
 capture_url_for_route() {
   local route="$1"
   local mute="${2:-}"
+  local paint="${3:-}"
+  local weapon="${4:-}"
+  local query=()
   if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then
-    printf '%s/%s?mute=1' "${SCHEME_CAPTURE_PREFIX}" "${route}"
-  else
-    printf '%s/%s' "${SCHEME_CAPTURE_PREFIX}" "${route}"
+    query+=("mute=1")
   fi
+  if [[ -n "${paint}" ]]; then
+    query+=("paint=${paint}")
+  fi
+  if [[ -n "${weapon}" ]]; then
+    query+=("weapon=${weapon}")
+  fi
+  if [[ ${#query[@]} -eq 0 ]]; then
+    printf '%s/%s' "${SCHEME_CAPTURE_PREFIX}" "${route}"
+  else
+    local joined
+    joined="$(IFS='&'; echo "${query[*]}")"
+    printf '%s/%s?%s' "${SCHEME_CAPTURE_PREFIX}" "${route}" "${joined}"
+  fi
+}
+
+# Optional welcome coverage for Stable/Customise (Petrol + axe/dagger).
+# Controlled by CAPTURE_WELCOME=1; per-route overrides via CAPTURE_PAINT_* / CAPTURE_WEAPON_*.
+welcome_paint_for_route() {
+  local route="$1"
+  if [[ "${CAPTURE_WELCOME:-0}" != "1" && "${CAPTURE_WELCOME:-0}" != "true" ]]; then
+    return 0
+  fi
+  case "${route}" in
+    Stable) printf '%s' "${CAPTURE_PAINT_STABLE:-petrol}" ;;
+    Customise) printf '%s' "${CAPTURE_PAINT_CUSTOMISE:-petrol}" ;;
+    *) ;;
+  esac
+}
+
+welcome_weapon_for_route() {
+  local route="$1"
+  if [[ "${CAPTURE_WELCOME:-0}" != "1" && "${CAPTURE_WELCOME:-0}" != "true" ]]; then
+    return 0
+  fi
+  case "${route}" in
+    Stable) printf '%s' "${CAPTURE_WEAPON_STABLE:-axe}" ;;
+    Customise) printf '%s' "${CAPTURE_WEAPON_CUSTOMISE:-dagger}" ;;
+    *) ;;
+  esac
 }
 
 list_default_routes() {

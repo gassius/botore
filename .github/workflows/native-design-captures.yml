@@ -1,5 +1,5 @@
 # C7 — native design-review captures (NOT part of required PR quality gate).
-# Produces Android emulator stills for human design review.
+# Produces Android emulator + iOS Simulator stills for human design review.
 # No pixel-exact layout assertions.
 #
 # reactivecircus/android-emulator-runner runs each `script:` newline in its own
@@ -128,23 +128,54 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: native-design-captures-${{ github.sha }}
+          name: native-design-captures-android-${{ github.sha }}
           path: artifacts/native-captures/
           if-no-files-found: error
           retention-days: 14
 
-  ios-simulator-note:
-    name: iOS Simulator path (macOS)
-    runs-on: ubuntu-latest
+  ios-simulator-captures:
+    name: iOS Simulator captures
+    runs-on: macos-14
+    timeout-minutes: 90
     steps:
-      - name: Document iOS path
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Select Xcode
         run: |
-          cat <<'EOF'
-          iOS Simulator captures require a macOS runner + Xcode.
-          Local (preferred):
-            cd apps/game && EXPO_PUBLIC_DESIGN_CAPTURE=1 pnpm exec expo run:ios
-            ./scripts/native-capture/run-design-capture.sh --platform ios
-          Optional EAS (after eas init / project link):
-            pnpm --filter @botore/game run eas:design-review:ios
-          See docs/architecture/native-design-captures.md
-          EOF
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer \
+            || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+          xcrun simctl list devices available | head -n 80
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Build game workspace deps (dist/ for Metro)
+        run: pnpm --filter @botore/game^... run build
+
+      - name: Capture tooling check (scripts + eas.json)
+        run: node scripts/native-capture/check-capture-env.mjs --platform ios --tools-only
+
+      - name: Build + run captures on iOS Simulator
+        env:
+          CAPTURE_WELCOME: '1'
+          CAPTURE_OUT_DIR: artifacts/native-captures
+        run: bash scripts/native-capture/ci-ios-simulator-capture.sh
+
+      - name: Upload capture artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-design-captures-ios-${{ github.sha }}
+          path: artifacts/native-captures/
+          if-no-files-found: error
+          retention-days: 14

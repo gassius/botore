@@ -119,25 +119,28 @@ fast path for PR evidence; EAS is optional for a cloud binary.
 
 Workflow: `.github/workflows/native-design-captures.yml`
 
-- Triggers: `pull_request` (path-gated on game / capture scripts / this
-  workflow) and `workflow_dispatch`
+- Triggers: `pull_request` (path-gated on `apps/game/**`, capture scripts, this
+  workflow, docs, `eas.json`) and `workflow_dispatch` (manual; saves macOS
+  minutes when iterating docs-only)
 - Not part of the required PR quality gate (`lint · typecheck · unit tests`)
-- Job entrypoint is a **single-line** call to
-  `scripts/native-capture/ci-android-emulator-capture.sh` (the emulator
-  action runs each `script:` newline in its own shell)
-- Builds game workspace deps first (`pnpm --filter @botore/game^... run build`)
+- **Android** (`ubuntu-latest`): single-line
+  `scripts/native-capture/ci-android-emulator-capture.sh` via
+  `reactivecircus/android-emulator-runner` (that action runs each `script:`
+  newline in its own shell)
+- **iOS** (`macos-14`): `scripts/native-capture/ci-ios-simulator-capture.sh` —
+  clean Expo prebuild, **Release** iphonesimulator build (bundle embedded),
+  phone-size iPhone Simulator, Stable / Customise / Replay PNGs
+- Both jobs build workspace deps first (`pnpm --filter @botore/game^... run build`)
   so Metro can resolve `@botore/*/dist`
 - Pins Android Kotlin **1.9.25** via `expo-build-properties` (Compose 1.5.15)
 - Hoists `expo-modules-core` / `expo-modules-autolinking` for pnpm so Gradle
   resolves Expo packages; `expo prebuild --clean` keeps `useExpoModules()`
-- Builds a **JS-bundle-embedded** `assembleRelease` APK (debug-signed for CI
-  install) so `EXPO_PUBLIC_DESIGN_CAPTURE*` is inlined at Metro bundle time —
-  no Metro server in CI
-- Uploads `artifacts/native-captures/` and fails if no files
-  (`if-no-files-found: error`)
-
-iOS Simulator steps need a macOS runner; the workflow documents that path and
-skips iOS on Linux.
+- Manifest tags: `commit`, `platform`, `device` (+ tip SHA / welcome note)
+- Uploads separate artifacts
+  `native-design-captures-android-<sha>` and
+  `native-design-captures-ios-<sha>` with `if-no-files-found: error`
+- Optional welcome coverage on iOS: Petrol + axe (Stable) / dagger (Customise)
+  via `botore://capture/…?paint=&weapon=` deep links (`CAPTURE_WELCOME=1`)
 
 ## Honesty rules
 

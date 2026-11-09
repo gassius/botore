@@ -13,6 +13,8 @@ export {
   listCaptureRoutes,
   parseDesignCaptureUrl,
   readDesignCaptureConfig,
+  readDesignCaptureInitialPaint,
   readDesignCaptureInitialRoute,
+  readDesignCaptureInitialWeapon,
   type DesignCaptureConfig,
 } from './captureEnv';

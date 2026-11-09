@@ -18,6 +18,10 @@ export type DesignCaptureConfig = {
   readonly enabled: boolean;
   /** Initial first-run route when capture mode boots. */
   readonly initialRoute: FirstRunRoute | null;
+  /** Optional demo paint id when capture mode boots (e.g. petrol). */
+  readonly initialPaintId: string | null;
+  /** Optional demo weapon id when capture mode boots (e.g. axe). */
+  readonly initialWeaponId: string | null;
 };
 
 function trimPublic(value: string | undefined): string | undefined {
@@ -46,14 +50,30 @@ export function readDesignCaptureInitialRoute(
   return isFirstRunRoute(raw) ? raw : null;
 }
 
+export function readDesignCaptureInitialPaint(
+  paint: string | undefined = process.env.EXPO_PUBLIC_DESIGN_CAPTURE_PAINT,
+): string | null {
+  return trimPublic(paint) ?? null;
+}
+
+export function readDesignCaptureInitialWeapon(
+  weapon: string | undefined = process.env.EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON,
+): string | null {
+  return trimPublic(weapon) ?? null;
+}
+
 export function readDesignCaptureConfig(opts?: {
   flag?: string | undefined;
   route?: string | undefined;
+  paint?: string | undefined;
+  weapon?: string | undefined;
 }): DesignCaptureConfig {
   const enabled = isDesignCaptureEnabled(opts?.flag);
   return {
     enabled,
     initialRoute: enabled ? readDesignCaptureInitialRoute(opts?.route) : null,
+    initialPaintId: enabled ? readDesignCaptureInitialPaint(opts?.paint) : null,
+    initialWeaponId: enabled ? readDesignCaptureInitialWeapon(opts?.weapon) : null,
   };
 }
 
@@ -62,16 +82,19 @@ export function readDesignCaptureConfig(opts?: {
  * - `botore://capture/Replay`
  * - `botore://capture?route=Replay`
  * - `botore://capture/Replay?mute=1`
+ * - `botore://capture/Stable?paint=petrol&weapon=axe`
  *
  * Custom-scheme URL parsing differs across RN / JS engines; normalize first.
  */
 export function parseDesignCaptureUrl(url: string): {
   route: FirstRunRoute | null;
   mute: boolean | null;
+  paintId: string | null;
+  weaponId: string | null;
 } {
   const trimmed = url.trim();
   if (!trimmed.toLowerCase().startsWith(`${DESIGN_CAPTURE_SCHEME}:`)) {
-    return { route: null, mute: null };
+    return { route: null, mute: null, paintId: null, weaponId: null };
   }
 
   // Normalize `botore://capture/Replay?mute=1` → path + query without scheme.
@@ -86,7 +109,7 @@ export function parseDesignCaptureUrl(url: string): {
     .filter(Boolean);
 
   if (segments[0] !== DESIGN_CAPTURE_HOST) {
-    return { route: null, mute: null };
+    return { route: null, mute: null, paintId: null, weaponId: null };
   }
 
   const params = new URLSearchParams(queryPart);
@@ -102,12 +125,22 @@ export function parseDesignCaptureUrl(url: string): {
     mute = v === '1' || v === 'true' || v === 'yes';
   }
 
-  return { route, mute };
+  const paintId = trimPublic(params.get('paint') ?? undefined) ?? null;
+  const weaponId = trimPublic(params.get('weapon') ?? undefined) ?? null;
+
+  return { route, mute, paintId, weaponId };
 }
 
-export function buildDesignCaptureUrl(route: FirstRunRoute, opts?: { mute?: boolean }): string {
-  const mute = opts?.mute === true ? '?mute=1' : '';
-  return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${mute}`;
+export function buildDesignCaptureUrl(
+  route: FirstRunRoute,
+  opts?: { mute?: boolean; paintId?: string; weaponId?: string },
+): string {
+  const query: string[] = [];
+  if (opts?.mute === true) query.push('mute=1');
+  if (opts?.paintId) query.push(`paint=${encodeURIComponent(opts.paintId)}`);
+  if (opts?.weaponId) query.push(`weapon=${encodeURIComponent(opts.weaponId)}`);
+  const q = query.length > 0 ? `?${query.join('&')}` : '';
+  return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${q}`;
 }
 
 export function listCaptureRoutes(): readonly FirstRunRoute[] {

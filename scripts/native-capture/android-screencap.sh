@@ -10,6 +10,8 @@ OUT_DIR="${DEFAULT_OUT_DIR}"
 NAME=""
 ROUTE=""
 MUTE=""
+PAINT=""
+WEAPON=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -29,6 +31,14 @@ while [[ $# -gt 0 ]]; do
       MUTE="1"
       shift
       ;;
+    --paint)
+      PAINT="$2"
+      shift 2
+      ;;
+    --weapon)
+      WEAPON="$2"
+      shift 2
+      ;;
     -h | --help)
       sed -n '2,5p' "$0"
       exit 0
@@ -45,7 +55,7 @@ OUT_DIR="$(ensure_out_dir "${OUT_DIR}")"
 android_assert_app_foreground "${PACKAGE_ANDROID}"
 
 if [[ -n "${ROUTE}" ]]; then
-  URL="$(capture_url_for_route "${ROUTE}" "${MUTE}")"
+  URL="$(capture_url_for_route "${ROUTE}" "${MUTE}" "${PAINT}" "${WEAPON}")"
   echo "opening ${URL}" >&2
   adb shell am start -a android.intent.action.VIEW -d "${URL}" >/dev/null
   # Settle UI after deep link (not a pixel assertion — just wait for paint).

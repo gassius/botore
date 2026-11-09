@@ -8,7 +8,7 @@ import { isDesignCaptureEnabled, parseDesignCaptureUrl } from './captureEnv';
  * links so adb/simctl scripts can jump screens without pixel-exact UI automation.
  */
 export function useDesignCaptureDeepLink(): void {
-  const { goTo, muted, toggleMute } = useFirstRun();
+  const { goTo, muted, toggleMute, setDemoPaintId, setDemoWeaponId } = useFirstRun();
 
   useEffect(() => {
     if (!isDesignCaptureEnabled()) return;
@@ -17,6 +17,8 @@ export function useDesignCaptureDeepLink(): void {
       if (!url) return;
       const parsed = parseDesignCaptureUrl(url);
       if (parsed.route) goTo(parsed.route);
+      if (parsed.paintId) setDemoPaintId(parsed.paintId);
+      if (parsed.weaponId) setDemoWeaponId(parsed.weaponId);
       if (parsed.mute === true && !muted) toggleMute();
       if (parsed.mute === false && muted) toggleMute();
     };
@@ -28,5 +30,5 @@ export function useDesignCaptureDeepLink(): void {
     return () => {
       sub.remove();
     };
-  }, [goTo, muted, toggleMute]);
+  }, [goTo, muted, setDemoPaintId, setDemoWeaponId, toggleMute]);
 }

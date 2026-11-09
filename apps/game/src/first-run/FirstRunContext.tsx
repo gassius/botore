@@ -36,8 +36,9 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
   const [route, setRoute] = useState<FirstRunRoute>(initialCaptureRoute);
   const { muted, toggleMute } = useMute(false);
   const { reducedMotion, forceReducedMotion, setForceReducedMotion } = useReducedMotion();
-  const [demoPaintId, setDemoPaintId] = useState('oxide');
-  const [demoWeaponId, setDemoWeaponId] = useState('sword');
+  const captureBoot = readDesignCaptureConfig();
+  const [demoPaintId, setDemoPaintId] = useState(captureBoot.initialPaintId ?? 'oxide');
+  const [demoWeaponId, setDemoWeaponId] = useState(captureBoot.initialWeaponId ?? 'sword');
   const [demoOpponentId, setDemoOpponentId] = useState<string | null>(null);
 
   const value = useMemo<FirstRunContextValue>(

@@ -9,6 +9,8 @@ OUT_DIR="${DEFAULT_OUT_DIR}"
 NAME=""
 ROUTE=""
 MUTE=""
+PAINT=""
+WEAPON=""
 UDID="booted"
 
 while [[ $# -gt 0 ]]; do
@@ -29,6 +31,14 @@ while [[ $# -gt 0 ]]; do
       MUTE="1"
       shift
       ;;
+    --paint)
+      PAINT="$2"
+      shift 2
+      ;;
+    --weapon)
+      WEAPON="$2"
+      shift 2
+      ;;
     --udid)
       UDID="$2"
       shift 2
@@ -48,7 +58,7 @@ require_cmd xcrun
 OUT_DIR="$(ensure_out_dir "${OUT_DIR}")"
 
 if [[ -n "${ROUTE}" ]]; then
-  URL="$(capture_url_for_route "${ROUTE}" "${MUTE}")"
+  URL="$(capture_url_for_route "${ROUTE}" "${MUTE}" "${PAINT}" "${WEAPON}")"
   echo "opening ${URL}" >&2
   xcrun simctl openurl "${UDID}" "${URL}"
   sleep "${CAPTURE_SETTLE_SEC:-2}"

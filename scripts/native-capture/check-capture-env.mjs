@@ -39,7 +39,8 @@ const report = {
   toolsOnly,
   repoRoot,
   scriptsPresent: existsSync(join(__dirname, 'run-design-capture.sh')),
-  ciScriptPresent: existsSync(join(__dirname, 'ci-android-emulator-capture.sh')),
+  ciAndroidScriptPresent: existsSync(join(__dirname, 'ci-android-emulator-capture.sh')),
+  ciIosScriptPresent: existsSync(join(__dirname, 'ci-ios-simulator-capture.sh')),
   easJson: existsSync(join(repoRoot, 'apps/game/eas.json')),
   adb: hasCmd('adb'),
   xcrun: hasCmd('xcrun'),
@@ -49,7 +50,9 @@ const report = {
 const needAndroid = platform === 'android' || platform === 'both';
 const needIos = platform === 'ios' || platform === 'both';
 
-let ok = report.scriptsPresent && report.ciScriptPresent && report.easJson;
+let ok = report.scriptsPresent && report.easJson;
+if (needAndroid && !report.ciAndroidScriptPresent) ok = false;
+if (needIos && !report.ciIosScriptPresent) ok = false;
 if (!toolsOnly) {
   if (needAndroid && !report.adb) ok = false;
   if (needIos && !report.xcrun) ok = false;
@@ -62,8 +65,11 @@ if (!ok) {
       '',
       'Capture tooling incomplete for requested platform.',
       !report.scriptsPresent ? '- Missing scripts/native-capture/run-design-capture.sh' : null,
-      !report.ciScriptPresent
+      needAndroid && !report.ciAndroidScriptPresent
         ? '- Missing scripts/native-capture/ci-android-emulator-capture.sh'
+        : null,
+      needIos && !report.ciIosScriptPresent
+        ? '- Missing scripts/native-capture/ci-ios-simulator-capture.sh'
         : null,
       !report.easJson ? '- Missing apps/game/eas.json' : null,
       !toolsOnly && needAndroid && !report.adb

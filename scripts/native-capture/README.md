@@ -10,10 +10,14 @@ node scripts/native-capture/check-capture-env.mjs --platform android --tools-onl
 ./scripts/native-capture/run-design-capture.sh --platform android
 ```
 
-CI entrypoint (single line for android-emulator-runner):
+CI entrypoints:
 
 ```bash
+# Android emulator (single line for android-emulator-runner)
 bash scripts/native-capture/ci-android-emulator-capture.sh
+
+# iOS Simulator (macOS + Xcode; Release / phone-size device)
+bash scripts/native-capture/ci-ios-simulator-capture.sh
 ```
 
 Not a pixel-exact E2E suite. Web preview is not acceptance.

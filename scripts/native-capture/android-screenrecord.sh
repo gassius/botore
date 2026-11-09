@@ -10,6 +10,8 @@ OUT_DIR="${DEFAULT_OUT_DIR}"
 NAME=""
 ROUTE=""
 MUTE=""
+PAINT=""
+WEAPON=""
 SECONDS_N="${CAPTURE_SECONDS:-8}"
 
 while [[ $# -gt 0 ]]; do
@@ -29,6 +31,14 @@ while [[ $# -gt 0 ]]; do
     --mute)
       MUTE="1"
       shift
+      ;;
+    --paint)
+      PAINT="$2"
+      shift 2
+      ;;
+    --weapon)
+      WEAPON="$2"
+      shift 2
       ;;
     --seconds)
       SECONDS_N="$2"
@@ -50,7 +60,7 @@ OUT_DIR="$(ensure_out_dir "${OUT_DIR}")"
 android_assert_app_foreground "${PACKAGE_ANDROID}"
 
 if [[ -n "${ROUTE}" ]]; then
-  URL="$(capture_url_for_route "${ROUTE}" "${MUTE}")"
+  URL="$(capture_url_for_route "${ROUTE}" "${MUTE}" "${PAINT}" "${WEAPON}")"
   echo "opening ${URL}" >&2
   adb shell am start -a android.intent.action.VIEW -d "${URL}" >/dev/null
   sleep "${CAPTURE_SETTLE_SEC:-2}"

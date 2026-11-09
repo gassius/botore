@@ -17,5 +17,9 @@ declare namespace NodeJS {
     EXPO_PUBLIC_DESIGN_CAPTURE?: string;
     /** Optional initial first-run route when design capture is enabled. */
     EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE?: string;
+    /** Optional demo paint id for capture boots (e.g. petrol). */
+    EXPO_PUBLIC_DESIGN_CAPTURE_PAINT?: string;
+    /** Optional demo weapon id for capture boots (e.g. axe). */
+    EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON?: string;
   }
 }
