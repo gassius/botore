@@ -6,8 +6,14 @@ design review (ClickUp C7).
 Full guide: [`docs/architecture/native-design-captures.md`](../../docs/architecture/native-design-captures.md)
 
 ```bash
-node scripts/native-capture/check-capture-env.mjs --platform android
+node scripts/native-capture/check-capture-env.mjs --platform android --tools-only
 ./scripts/native-capture/run-design-capture.sh --platform android
+```
+
+CI entrypoint (single line for android-emulator-runner):
+
+```bash
+bash scripts/native-capture/ci-android-emulator-capture.sh
 ```
 
 Not a pixel-exact E2E suite. Web preview is not acceptance.

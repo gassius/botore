@@ -49,7 +49,7 @@ OUT_DIR="$(ensure_out_dir "${OUT_DIR}")"
 
 if [[ -n "${ROUTE}" ]]; then
   URL="$(capture_url_for_route "${ROUTE}" "${MUTE}")"
-  echo "opening ${URL}"
+  echo "opening ${URL}" >&2
   xcrun simctl openurl "${UDID}" "${URL}"
   sleep "${CAPTURE_SETTLE_SEC:-2}"
 fi
@@ -57,4 +57,4 @@ fi
 LABEL="${NAME:-${ROUTE:-screen}}"
 FILE="${OUT_DIR}/ios-$(stamp)-${LABEL}.png"
 xcrun simctl io "${UDID}" screenshot "${FILE}"
-echo "${FILE}"
+printf '%s\n' "${FILE}"

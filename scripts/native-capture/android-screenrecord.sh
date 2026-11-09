@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Record a short MP4 clip from a connected Android emulator/device via adb.
 # Usage: android-screenrecord.sh [--out DIR] [--name LABEL] [--seconds N] [--route Route] [--mute]
+# Only the output file path is printed on stdout (for $(…) capture).
 set -euo pipefail
 # shellcheck source=lib.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
@@ -34,7 +35,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h | --help)
-      sed -n '2,4p' "$0"
+      sed -n '2,5p' "$0"
       exit 0
       ;;
     *)
@@ -46,12 +47,14 @@ done
 
 require_cmd adb
 OUT_DIR="$(ensure_out_dir "${OUT_DIR}")"
+android_assert_app_foreground "${PACKAGE_ANDROID}"
 
 if [[ -n "${ROUTE}" ]]; then
   URL="$(capture_url_for_route "${ROUTE}" "${MUTE}")"
-  echo "opening ${URL}"
+  echo "opening ${URL}" >&2
   adb shell am start -a android.intent.action.VIEW -d "${URL}" >/dev/null
   sleep "${CAPTURE_SETTLE_SEC:-2}"
+  android_assert_app_foreground "${PACKAGE_ANDROID}"
 fi
 
 LABEL="${NAME:-${ROUTE:-clip}}"
@@ -63,4 +66,4 @@ adb shell screenrecord --time-limit "${SECONDS_N}" "${REMOTE}"
 adb pull "${REMOTE}" "${FILE}" >/dev/null
 adb shell rm -f "${REMOTE}" >/dev/null || true
 
-echo "${FILE}"
+printf '%s\n' "${FILE}"

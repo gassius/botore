@@ -47,3 +47,27 @@ write_manifest_line() {
   local value="$3"
   printf '%s=%s\n' "${key}" "${value}" >>"${manifest}"
 }
+
+# Assert the Android package is running and resumed in the foreground.
+# Status noise must go to stderr so $(screencap) only captures the file path.
+android_assert_app_foreground() {
+  local pkg="${1:-$PACKAGE_ANDROID}"
+  local pid
+  pid="$(adb shell pidof -s "${pkg}" 2>/dev/null | tr -d '\r' || true)"
+  if [[ -z "${pid}" ]]; then
+    echo "error: package ${pkg} is not running (crashed / not started)" >&2
+    adb logcat -d -t 80 '*:E' >&2 || true
+    exit 1
+  fi
+  local focus
+  focus="$(adb shell dumpsys activity activities 2>/dev/null | tr -d '\r' | grep -m1 'mResumedActivity' || true)"
+  if [[ -z "${focus}" ]]; then
+    # Older emulators use mFocusedActivity
+    focus="$(adb shell dumpsys activity activities 2>/dev/null | tr -d '\r' | grep -m1 'mFocusedActivity' || true)"
+  fi
+  if [[ -n "${focus}" && "${focus}" != *"${pkg}"* ]]; then
+    echo "error: ${pkg} not in foreground (pid=${pid}): ${focus}" >&2
+    exit 1
+  fi
+  echo "android foreground ok: ${pkg} pid=${pid}" >&2
+}

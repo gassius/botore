@@ -81,13 +81,16 @@ capture_android_route() {
   if [[ -n "${MUTE}" ]]; then args+=(--mute); fi
   local file
   file="$("${SCRIPT_DIR}/android-screencap.sh" "${args[@]}")"
+  # Trim accidental whitespace/newlines from command substitution.
+  file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
   write_manifest_line "${MANIFEST}" "still.android.${route}" "${file}"
-  echo "android still: ${file}"
+  echo "android still: ${file}" >&2
   if [[ "${DO_CLIPS}" == "1" ]]; then
     local clip
     clip="$("${SCRIPT_DIR}/android-screenrecord.sh" "${args[@]}" --seconds "${CAPTURE_SECONDS:-6}")"
+    clip="$(printf '%s' "${clip}" | tr -d '\r' | tail -n 1)"
     write_manifest_line "${MANIFEST}" "clip.android.${route}" "${clip}"
-    echo "android clip: ${clip}"
+    echo "android clip: ${clip}" >&2
   fi
 }
 
@@ -97,13 +100,15 @@ capture_ios_route() {
   if [[ -n "${MUTE}" ]]; then args+=(--mute); fi
   local file
   file="$("${SCRIPT_DIR}/ios-screencap.sh" "${args[@]}")"
+  file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
   write_manifest_line "${MANIFEST}" "still.ios.${route}" "${file}"
-  echo "ios still: ${file}"
+  echo "ios still: ${file}" >&2
   if [[ "${DO_CLIPS}" == "1" ]]; then
     local clip
     clip="$("${SCRIPT_DIR}/ios-record.sh" "${args[@]}" --seconds "${CAPTURE_SECONDS:-6}")"
+    clip="$(printf '%s' "${clip}" | tr -d '\r' | tail -n 1)"
     write_manifest_line "${MANIFEST}" "clip.ios.${route}" "${clip}"
-    echo "ios clip: ${clip}"
+    echo "ios clip: ${clip}" >&2
   fi
 }
 
@@ -140,5 +145,5 @@ case "${PLATFORM}" in
     ;;
 esac
 
-echo "manifest: ${MANIFEST}"
-echo "${OUT_DIR}"
+echo "manifest: ${MANIFEST}" >&2
+printf '%s\n' "${OUT_DIR}"

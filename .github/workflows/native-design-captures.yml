@@ -1,15 +1,18 @@
-# C7 — optional native design-review captures (NOT required PR CI).
-# Produces Android emulator stills/clips for human design review.
+# C7 — native design-review captures (NOT part of required PR quality gate).
+# Produces Android emulator stills for human design review.
 # No pixel-exact layout assertions.
+#
+# reactivecircus/android-emulator-runner runs each `script:` newline in its own
+# `sh -c` — keep `script:` as a single line that invokes the committed bash job.
 name: Native design captures
 
 on:
   workflow_dispatch:
     inputs:
       routes:
-        description: Comma-separated first-run routes (empty = all)
+        description: Comma-separated first-run routes
         required: false
-        default: 'Stable,Customise,Opponents,ConfirmFight,Replay,FightResult,Ranking'
+        default: 'Stable,Customise,Replay'
       clips:
         description: Also record short clips (true/false)
         required: false
@@ -18,13 +21,31 @@ on:
         description: Android emulator API level
         required: false
         default: '34'
+  pull_request:
+    paths:
+      - 'apps/game/**'
+      - 'scripts/native-capture/**'
+      - '.github/workflows/native-design-captures.yml'
+      - 'docs/architecture/native-design-captures.md'
+      - 'apps/game/eas.json'
 
 concurrency:
-  group: native-captures-${{ github.ref }}
+  group: native-captures-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+
+env:
+  # Prefer workflow_dispatch inputs; PR events fall back to design-review defaults.
+  CAPTURE_ROUTES: ${{ github.event.inputs.routes || 'Stable,Customise,Replay' }}
+  CAPTURE_CLIPS: ${{ github.event.inputs.clips || 'false' }}
+  CAPTURE_API_LEVEL: ${{ github.event.inputs.api_level || '34' }}
+  EXPO_PUBLIC_DESIGN_CAPTURE: '1'
+  EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
+  CAPTURE_SETTLE_SEC: '3'
+  CAPTURE_SECONDS: '5'
+  CAPTURE_OUT_DIR: artifacts/native-captures
 
 jobs:
   android-emulator-captures:
@@ -48,17 +69,33 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties', 'apps/game/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: ${{ runner.os }}-avd-${{ env.CAPTURE_API_LEVEL }}-x86_64-pixel6
+
       - name: Install workspace
         run: pnpm install --frozen-lockfile
 
-      - name: Capture env check (scripts + eas.json)
-        run: node scripts/native-capture/check-capture-env.mjs --platform android || true
+      - name: Capture tooling check (scripts + eas.json)
+        run: node scripts/native-capture/check-capture-env.mjs --platform android --tools-only
 
       - name: Expo prebuild (android CNG)
         working-directory: apps/game
-        env:
-          EXPO_PUBLIC_DESIGN_CAPTURE: '1'
-          EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
         run: pnpm exec expo prebuild --platform android --non-interactive
 
       - name: Enable KVM
@@ -68,37 +105,17 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Build + run captures on emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        env:
-          EXPO_PUBLIC_DESIGN_CAPTURE: '1'
-          EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
-          CAPTURE_SETTLE_SEC: '3'
-          CAPTURE_SECONDS: '5'
+        # Pin to v2.38.0 commit (do not float on @v2).
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
-          api-level: ${{ inputs.api_level }}
+          api-level: ${{ env.CAPTURE_API_LEVEL }}
           arch: x86_64
           profile: pixel_6
-          force-avd-creation: false
+          force-avd-creation: ${{ steps.avd-cache.outputs.cache-hit != 'true' }}
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            set -euo pipefail
-            cd apps/game
-            # Debug installable binary with capture env baked via Metro/Gradle extras.
-            ./android/gradlew -p android assembleDebug
-            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-            adb shell am start -n com.botore.game/.MainActivity || \
-              adb shell monkey -p com.botore.game -c android.intent.category.LAUNCHER 1
-            sleep 8
-            ROUTES='${{ inputs.routes }}'
-            CLIP_ARGS=()
-            if [[ '${{ inputs.clips }}' == 'true' ]]; then CLIP_ARGS+=(--clips); fi
-            cd ../..
-            ./scripts/native-capture/run-design-capture.sh \
-              --platform android \
-              --out artifacts/native-captures \
-              --routes "${ROUTES}" \
-              "${CLIP_ARGS[@]}"
+          # ONE LINE ONLY — action splits newlines into separate sh -c invocations.
+          script: bash scripts/native-capture/ci-android-emulator-capture.sh
 
       - name: Upload capture artifacts
         if: always()
@@ -106,7 +123,7 @@ jobs:
         with:
           name: native-design-captures-${{ github.sha }}
           path: artifacts/native-captures/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
 
   ios-simulator-note:
@@ -120,7 +137,7 @@ jobs:
           Local (preferred):
             cd apps/game && EXPO_PUBLIC_DESIGN_CAPTURE=1 pnpm exec expo run:ios
             ./scripts/native-capture/run-design-capture.sh --platform ios
-          Optional EAS:
-            npx eas-cli@latest build -p ios --profile design-review
+          Optional EAS (after eas init / project link):
+            pnpm --filter @botore/game run eas:design-review:ios
           See docs/architecture/native-design-captures.md
           EOF

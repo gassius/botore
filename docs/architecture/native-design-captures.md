@@ -112,18 +112,24 @@ npx eas-cli@latest build -p ios --profile design-review
 ```
 
 Install the APK on an emulator, launch the app, then run
-`run-design-capture.sh` as above. CI can trigger the same profile with
-`EXPO_TOKEN` (see workflow below) — local `adb` captures still produce the
-PR evidence.
+`run-design-capture.sh` as above. Local `adb` / Simulator captures remain the
+fast path for PR evidence; EAS is optional for a cloud binary.
 
 ## GitHub Actions
 
 Workflow: `.github/workflows/native-design-captures.yml`
 
-- `workflow_dispatch` only (not part of required PR CI)
-- Builds a local Android debug binary via Expo prebuild when the runner has
-  an emulator
-- Runs `run-design-capture.sh` and uploads `artifacts/native-captures/`
+- Triggers: `pull_request` (path-gated on game / capture scripts / this
+  workflow) and `workflow_dispatch`
+- Not part of the required PR quality gate (`lint · typecheck · unit tests`)
+- Job entrypoint is a **single-line** call to
+  `scripts/native-capture/ci-android-emulator-capture.sh` (the emulator
+  action runs each `script:` newline in its own shell)
+- Builds a **JS-bundle-embedded** `assembleRelease` APK (debug-signed for CI
+  install) so `EXPO_PUBLIC_DESIGN_CAPTURE*` is inlined at Metro bundle time —
+  no Metro server in CI
+- Uploads `artifacts/native-captures/` and fails if no files
+  (`if-no-files-found: error`)
 
 iOS Simulator steps need a macOS runner; the workflow documents that path and
 skips iOS on Linux.

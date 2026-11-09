@@ -54,7 +54,7 @@ OUT_DIR="$(ensure_out_dir "${OUT_DIR}")"
 
 if [[ -n "${ROUTE}" ]]; then
   URL="$(capture_url_for_route "${ROUTE}" "${MUTE}")"
-  echo "opening ${URL}"
+  echo "opening ${URL}" >&2
   xcrun simctl openurl "${UDID}" "${URL}"
   sleep "${CAPTURE_SETTLE_SEC:-2}"
 fi
@@ -69,4 +69,4 @@ sleep "${SECONDS_N}"
 kill -INT "${REC_PID}" >/dev/null 2>&1 || true
 wait "${REC_PID}" >/dev/null 2>&1 || true
 
-echo "${FILE}"
+printf '%s\n' "${FILE}"

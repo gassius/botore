@@ -32,3 +32,8 @@ apps/game/ios/
 
 # Native design-review captures (C7) — attach on PRs / Project store, do not commit dumps
 artifacts/native-captures/
+
+# Expo public env files written by capture CI (never commit)
+apps/game/.env
+apps/game/.env.*
+!.env.example
