@@ -19,7 +19,7 @@ export function ConfirmFightScreen(props: {
   onBack: () => void;
   onFightStarted: () => void;
 }): React.ReactElement {
-  const { loadout, session } = useGarageSession();
+  const { loadout, session, canProgress } = useGarageSession();
   const {
     selected,
     submit,
@@ -32,7 +32,9 @@ export function ConfirmFightScreen(props: {
     bumpNavigationGeneration,
     navigationGeneration,
   } = useFightSession();
+  // Inherit F8 hydration — never invent a confirmed loadout here.
   const confirmed = loadout.confirmedLoadout;
+  const playerName = loadout.displayName ?? 'Pilot';
   const [eligMessage, setEligMessage] = useState<string | null>(null);
   const [eligAllowances, setEligAllowances] = useState<number | null>(null);
   const [eligLoading, setEligLoading] = useState(false);
@@ -93,12 +95,15 @@ export function ConfirmFightScreen(props: {
   const networkError = submit.status === 'error' && submit.code === 'network_error';
   const allowanceError = submit.status === 'error' && submit.code === 'allowance_exhausted';
   const otherError = submit.status === 'error' && !networkError && !allowanceError ? submit : null;
-  const startDisabled = isStartFightDisabled({
-    submitting,
-    sessionPresent: !!session,
-    allowances,
-    submitCode: submit.status === 'error' ? submit.code : null,
-  });
+  const startDisabled =
+    !canProgress ||
+    confirmed === null ||
+    isStartFightDisabled({
+      submitting,
+      sessionPresent: !!session,
+      allowances,
+      submitCode: submit.status === 'error' ? submit.code : null,
+    });
 
   const runStart = () => {
     clearSubmitError();
@@ -155,42 +160,53 @@ export function ConfirmFightScreen(props: {
         testID="confirm-arena"
       />
 
-      <View style={styles.fighters}>
-        <View style={styles.fighter}>
-          <View style={styles.botFrame}>
-            <BotAssemblerSlot
-              loadout={{
-                chassisId: confirmed.chassis,
-                paintId: confirmed.paint,
-                weaponId: confirmed.weapon,
-              }}
-              facing="right"
-              size={132}
-              reducedMotion
-              label="You"
-              testID="confirm-you"
-            />
+      {!confirmed || !canProgress ? (
+        <StatusErrorBanner
+          title="Equipped loadout unavailable"
+          detail={
+            loadout.lastError ??
+            'Server-confirmed loadout is required before starting a fight (F8 hydration).'
+          }
+          testID="confirm-hydration-blocked"
+        />
+      ) : (
+        <View style={styles.fighters}>
+          <View style={styles.fighter}>
+            <View style={styles.botFrame}>
+              <BotAssemblerSlot
+                loadout={{
+                  chassisId: confirmed.chassis,
+                  paintId: confirmed.paint,
+                  weaponId: confirmed.weapon,
+                }}
+                facing="right"
+                size={132}
+                reducedMotion
+                label="You"
+                testID="confirm-you"
+              />
+            </View>
+            <Nameplate name={playerName} badge="You" />
           </View>
-          <Nameplate name="Player Hero" badge="You" />
-        </View>
-        <View style={styles.fighter}>
-          <View style={[styles.botFrame, styles.botFar]}>
-            <BotAssemblerSlot
-              loadout={{
-                chassisId: selected.loadout.chassis,
-                paintId: selected.loadout.paint,
-                weaponId: selected.loadout.weapon,
-              }}
-              facing="left"
-              size={118}
-              reducedMotion
-              label={selected.displayName}
-              testID="confirm-opponent"
-            />
+          <View style={styles.fighter}>
+            <View style={[styles.botFrame, styles.botFar]}>
+              <BotAssemblerSlot
+                loadout={{
+                  chassisId: selected.loadout.chassis,
+                  paintId: selected.loadout.paint,
+                  weaponId: selected.loadout.weapon,
+                }}
+                facing="left"
+                size={118}
+                reducedMotion
+                label={selected.displayName}
+                testID="confirm-opponent"
+              />
+            </View>
+            <Nameplate name={selected.displayName} />
           </View>
-          <Nameplate name={selected.displayName} />
         </View>
-      </View>
+      )}
 
       {eligLoading ? (
         <View style={styles.eligRow}>

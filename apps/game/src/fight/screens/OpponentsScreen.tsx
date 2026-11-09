@@ -9,6 +9,7 @@ import {
   StatusErrorBanner,
   garageTag,
 } from '../../garage-tag';
+import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import { weaponUiAlias } from '../../garage/loadout/proofCatalogue';
 import { canContinueToConfirm } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
@@ -18,6 +19,7 @@ export function OpponentsScreen(props: {
   onBack: () => void;
   onContinue: () => void;
 }): React.ReactElement {
+  const { canProgress, loadout } = useGarageSession();
   const {
     list,
     selected,
@@ -45,13 +47,15 @@ export function OpponentsScreen(props: {
   const recoverable =
     !!selected && pendingIntent !== null && pendingIntent.opponentId === selected.characterId;
 
-  const canContinue = canContinueToConfirm({
-    selected,
-    listReady: list.status === 'ready',
-    emptyCandidates,
-    allowancesRemaining: list.status === 'ready' ? list.allowancesRemaining : 0,
-    pendingIntent,
-  });
+  const canContinue =
+    canProgress &&
+    canContinueToConfirm({
+      selected,
+      listReady: list.status === 'ready',
+      emptyCandidates,
+      allowancesRemaining: list.status === 'ready' ? list.allowancesRemaining : 0,
+      pendingIntent,
+    });
 
   return (
     <ScreenChrome
@@ -77,6 +81,17 @@ export function OpponentsScreen(props: {
       }
     >
       <ScreenHeader title="Opponents" onBack={props.onBack} />
+
+      {!canProgress ? (
+        <StatusErrorBanner
+          title="Equipped loadout unavailable"
+          detail={
+            loadout.lastError ??
+            'Hydrate a server-confirmed loadout in the garage before requesting a fight.'
+          }
+          testID="opponents-hydration-blocked"
+        />
+      ) : null}
 
       {list.status === 'loading' || list.status === 'idle' ? (
         <View style={styles.center} testID="opponents-loading">
