@@ -5,9 +5,9 @@
  * fight_allowances / profiles. JSON keys match prepare_fight_context (camelCase).
  * Backend owns the SQL; this module is the client-side name + payload contract.
  *
- * Owned character + roster: empty body `{}` (auth.uid()).
- * Allowance summary: send `p_account_id` equal to the JWT account (B enforces
- * equality and queries auth.uid() only).
+ * All three are auth.uid()-scoped. Call with empty JSON body `{}`.
+ * `get_fight_allowance_summary` takes no client account arg (B drops
+ * `p_account_id`).
  */
 
 export const OWNED_CHARACTER_RPC = 'get_owned_character' as const;

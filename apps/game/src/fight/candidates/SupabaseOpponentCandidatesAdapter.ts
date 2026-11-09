@@ -41,14 +41,14 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
           },
           body: JSON.stringify({}),
         }),
-        // B: p_account_id must equal auth.uid(); SQL ignores the arg for the query.
+        // auth.uid()-only — empty body; B is dropping p_account_id.
         fetch(`${this.config.url}/rest/v1/rpc/${FIGHT_ALLOWANCE_SUMMARY_RPC}`, {
           method: 'POST',
           headers: {
             ...this.headers(input.accessToken),
             Prefer: 'return=representation',
           },
-          body: JSON.stringify({ p_account_id: input.accountId }),
+          body: JSON.stringify({}),
         }),
       ]);
 
