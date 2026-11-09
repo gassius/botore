@@ -1648,7 +1648,7 @@ declare
   v_count int;
   v_day text;
 begin
-  -- Privileges: authenticated EXECUTE; anon denied; no new table SELECT grants
+  -- Privileges: authenticated EXECUTE only; anon + service_role denied
   perform tests.assert(
     has_function_privilege('authenticated', 'public.get_owned_character()', 'EXECUTE'),
     'authenticated EXECUTE get_owned_character'
@@ -1676,6 +1676,22 @@ begin
   perform tests.assert(
     not has_function_privilege('anon', 'public.get_fight_allowance_summary(uuid)', 'EXECUTE'),
     'anon must not EXECUTE get_fight_allowance_summary'
+  );
+  perform tests.assert(
+    not has_function_privilege('service_role', 'public.get_owned_character()', 'EXECUTE'),
+    'service_role must not EXECUTE get_owned_character'
+  );
+  perform tests.assert(
+    not has_function_privilege('service_role', 'public.list_opponent_roster()', 'EXECUTE'),
+    'service_role must not EXECUTE list_opponent_roster'
+  );
+  perform tests.assert(
+    not has_function_privilege(
+      'service_role',
+      'public.get_fight_allowance_summary(uuid)',
+      'EXECUTE'
+    ),
+    'service_role must not EXECUTE get_fight_allowance_summary'
   );
   raise notice 'TEST-OK B client-read RPC privileges';
 
@@ -1716,7 +1732,7 @@ begin
   reset role;
   raise notice 'TEST-OK B client-read RPC happy path (authenticated)';
 
-  -- Cross-account denial on allowance summary
+  -- Negative: cross-account allowance read (p_account_id != auth.uid())
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   perform set_config('request.jwt.claim.sub', v_account::text, true);
   set local role authenticated;
@@ -1726,12 +1742,12 @@ begin
   exception
     when insufficient_privilege then null;
     when others then
-      if sqlerrm like 'forbidden:%' then null; else raise; end if;
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
   end;
   reset role;
   raise notice 'TEST-OK B get_fight_allowance_summary denies cross-account';
 
-  -- Anon cannot execute (privilege revoke)
+  -- Negative: anon cannot execute any of the three RPCs
   set local role anon;
   begin
     perform public.get_owned_character();
@@ -1760,7 +1776,38 @@ begin
   reset role;
   raise notice 'TEST-OK B client-read RPCs deny anon';
 
-  -- Unauthenticated JWT role denied
+  -- Negative: service_role cannot EXECUTE (authenticated-only grants)
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role service_role;
+  begin
+    perform public.get_owned_character();
+    raise exception 'SERVICE FAIL: get_owned_character allowed for service_role';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.list_opponent_roster();
+    raise exception 'SERVICE FAIL: list_opponent_roster allowed for service_role';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.get_fight_allowance_summary(v_account);
+    raise exception 'SERVICE FAIL: get_fight_allowance_summary allowed for service_role';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+  raise notice 'TEST-OK B client-read RPCs deny service_role EXECUTE';
+
+  -- Negative: unauthenticated JWT role denied (body gate even if EXECUTE present)
   perform set_config('request.jwt.claim.role', '', true);
   perform set_config('request.jwt.claim.sub', '', true);
   begin
@@ -1769,7 +1816,7 @@ begin
   exception
     when insufficient_privilege then null;
     when others then
-      if sqlerrm like 'forbidden:%' then null; else raise; end if;
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
   end;
   begin
     perform public.list_opponent_roster();
@@ -1777,7 +1824,7 @@ begin
   exception
     when insufficient_privilege then null;
     when others then
-      if sqlerrm like 'forbidden:%' then null; else raise; end if;
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
   end;
   begin
     perform public.get_fight_allowance_summary(v_account);
@@ -1785,27 +1832,7 @@ begin
   exception
     when insufficient_privilege then null;
     when others then
-      if sqlerrm like 'forbidden:%' then null; else raise; end if;
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
   end;
   raise notice 'TEST-OK B client-read RPC authz gates';
-
-  -- service_role: roster without sub; allowance with p_account_id; owned needs sub
-  perform set_config('request.jwt.claim.role', 'service_role', true);
-  perform set_config('request.jwt.claim.sub', '', true);
-  v_res := public.list_opponent_roster();
-  perform tests.assert((v_res->>'ok')::boolean, 'service_role roster ok');
-  v_res := public.get_fight_allowance_summary(v_account);
-  perform tests.assert((v_res->>'ok')::boolean, 'service_role allowance ok');
-  begin
-    perform public.get_owned_character();
-    raise exception 'AUTHZ FAIL: service_role get_owned_character without sub allowed';
-  exception
-    when insufficient_privilege then null;
-    when others then
-      if sqlerrm like 'forbidden:%' then null; else raise; end if;
-  end;
-  perform set_config('request.jwt.claim.sub', v_account::text, true);
-  v_res := public.get_owned_character();
-  perform tests.assert((v_res->>'ok')::boolean, 'service_role owned with sub');
-  raise notice 'TEST-OK B client-read RPC service_role paths';
 end $$;

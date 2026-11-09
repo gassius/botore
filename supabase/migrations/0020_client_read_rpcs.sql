@@ -7,13 +7,14 @@
 --   (b) list_opponent_roster()                        → opponents[{characterId, displayName}]
 --   (c) get_fight_allowance_summary(p_account_id)     → {utcDay, allowancesRemaining}
 --
--- Contract: internal/c3-b-client-read-rpc-contract.md (C3 adapters already coded).
--- All three are SECURITY DEFINER, search_path pinned, scoped to auth.uid().
--- EXECUTE is granted to authenticated (and service_role for ops/smoke).
--- This migration does NOT GRANT SELECT on characters or fight_allowances.
+-- PRR (gasnet on #30): SECURITY DEFINER must derive the account from
+-- auth.uid(). p_account_id is accepted for the C3 PostgREST contract but
+-- MUST equal auth.uid(); the query uses auth.uid() only.
+-- EXECUTE granted to authenticated only (REVOKE public + anon + service_role).
+-- set search_path pinned. No table GRANTs.
 
 -- ---------------------------------------------------------------------------
--- (a) Owned character resolve
+-- (a) Owned character resolve — auth.uid() only
 -- ---------------------------------------------------------------------------
 create or replace function public.get_owned_character()
 returns jsonb
@@ -28,19 +29,8 @@ declare
     v_character_id text;
     v_display_name text;
 begin
-    if v_jwt_role = 'service_role' then
-        -- Ops/smoke may call with a sub claim; otherwise require authenticated.
-        if v_caller is null then
-            raise exception 'forbidden: get_owned_character requires auth.uid()'
-                using errcode = '42501';
-        end if;
-    elsif v_jwt_role = 'authenticated' then
-        if v_caller is null then
-            raise exception 'forbidden: get_owned_character requires auth.uid()'
-                using errcode = '42501';
-        end if;
-    else
-        raise exception 'forbidden: get_owned_character requires authenticated'
+    if v_jwt_role is distinct from 'authenticated' or v_caller is null then
+        raise exception 'forbidden: get_owned_character requires authenticated auth.uid()'
             using errcode = '42501';
     end if;
 
@@ -69,14 +59,14 @@ $$;
 
 revoke all on function public.get_owned_character() from public;
 revoke all on function public.get_owned_character() from anon;
-grant execute on function public.get_owned_character()
-    to authenticated, service_role;
+revoke all on function public.get_owned_character() from service_role;
+grant execute on function public.get_owned_character() to authenticated;
 
 comment on function public.get_owned_character() is
-  'Sanctioned client read: owned player character for auth.uid(). Returns {ok, characterId, displayName}. No table GRANT.';
+  'Sanctioned client read: owned player character for auth.uid() only. Returns {ok, characterId, displayName}. EXECUTE authenticated only. No table GRANT.';
 
 -- ---------------------------------------------------------------------------
--- (b) System opponent roster
+-- (b) System opponent roster — authenticated auth.uid() required
 -- ---------------------------------------------------------------------------
 create or replace function public.list_opponent_roster()
 returns jsonb
@@ -90,15 +80,8 @@ declare
     v_jwt_role text := coalesce(auth.role(), '');
     v_opponents jsonb;
 begin
-    if v_jwt_role = 'service_role' then
-        null; -- roster is non-tenant; service_role may list without a sub
-    elsif v_jwt_role = 'authenticated' then
-        if v_caller is null then
-            raise exception 'forbidden: list_opponent_roster requires auth.uid()'
-                using errcode = '42501';
-        end if;
-    else
-        raise exception 'forbidden: list_opponent_roster requires authenticated'
+    if v_jwt_role is distinct from 'authenticated' or v_caller is null then
+        raise exception 'forbidden: list_opponent_roster requires authenticated auth.uid()'
             using errcode = '42501';
     end if;
 
@@ -125,14 +108,14 @@ $$;
 
 revoke all on function public.list_opponent_roster() from public;
 revoke all on function public.list_opponent_roster() from anon;
-grant execute on function public.list_opponent_roster()
-    to authenticated, service_role;
+revoke all on function public.list_opponent_roster() from service_role;
+grant execute on function public.list_opponent_roster() to authenticated;
 
 comment on function public.list_opponent_roster() is
-  'Sanctioned client read: system opponent roster ({characterId, displayName}) for Confirm + prepare_fight_context. No table GRANT.';
+  'Sanctioned client read: system opponent roster for authenticated auth.uid(). Returns {ok, opponents:[{characterId, displayName}]}. EXECUTE authenticated only. No table GRANT.';
 
 -- ---------------------------------------------------------------------------
--- (c) Fight allowance summary for caller
+-- (c) Fight allowance summary — p_account_id must equal auth.uid(); query uses uid
 -- ---------------------------------------------------------------------------
 create or replace function public.get_fight_allowance_summary(
     p_account_id uuid
@@ -149,32 +132,21 @@ declare
     v_utc_day date := (now() at time zone 'utc')::date;
     v_remaining integer;
 begin
-    -- Mirror prepare_fight_context: service_role may query any account;
-    -- authenticated callers may only query their own account_id.
-    if v_jwt_role = 'service_role' then
-        null;
-    elsif v_jwt_role = 'authenticated' then
-        if v_caller is null or v_caller is distinct from p_account_id then
-            raise exception 'forbidden: get_fight_allowance_summary requires matching auth.uid()'
-                using errcode = '42501';
-        end if;
-    else
-        raise exception 'forbidden: get_fight_allowance_summary requires authenticated or service_role'
+    if v_jwt_role is distinct from 'authenticated' or v_caller is null then
+        raise exception 'forbidden: get_fight_allowance_summary requires authenticated auth.uid()'
             using errcode = '42501';
     end if;
 
-    if p_account_id is null then
-        return jsonb_build_object(
-            'ok', false,
-            'code', 'unauthenticated',
-            'message', 'account required'
-        );
+    -- C3 PostgREST contract still sends p_account_id; never trust it for the read.
+    if p_account_id is null or p_account_id is distinct from v_caller then
+        raise exception 'forbidden: get_fight_allowance_summary requires p_account_id = auth.uid()'
+            using errcode = '42501';
     end if;
 
     select count(*)::integer
       into v_remaining
       from public.fight_allowances fa
-     where fa.account_id = p_account_id
+     where fa.account_id = v_caller
        and fa.utc_day = v_utc_day
        and fa.used_at is null;
 
@@ -188,8 +160,8 @@ $$;
 
 revoke all on function public.get_fight_allowance_summary(uuid) from public;
 revoke all on function public.get_fight_allowance_summary(uuid) from anon;
-grant execute on function public.get_fight_allowance_summary(uuid)
-    to authenticated, service_role;
+revoke all on function public.get_fight_allowance_summary(uuid) from service_role;
+grant execute on function public.get_fight_allowance_summary(uuid) to authenticated;
 
 comment on function public.get_fight_allowance_summary(uuid) is
-  'Sanctioned client read: allowance summary {utcDay, allowancesRemaining} for p_account_id (auth.uid() match). Server UTC. No table GRANT.';
+  'Sanctioned client read: allowance summary for auth.uid() only. p_account_id must equal auth.uid(); query ignores the arg. EXECUTE authenticated only. No table GRANT.';
