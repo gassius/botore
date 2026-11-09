@@ -135,7 +135,10 @@ jobs:
 
   ios-simulator-captures:
     name: iOS Simulator captures
-    # macos-14 retired (macos-14-arm64-us-default unsupported); public repo has free macOS minutes.
+    # C7b follow-up: do not run on pull_request (saves macOS minutes; must not block #28).
+    # Manual: Actions → Native design captures → Run workflow.
+    if: github.event_name == 'workflow_dispatch'
+    # macos-14 retired; public repo has free macOS minutes on macos-15.
     runs-on: macos-15
     timeout-minutes: 90
     steps:

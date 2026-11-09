@@ -129,9 +129,12 @@ Workflow: `.github/workflows/native-design-captures.yml`
   newline in its own shell)
 - **iOS** (`macos-15`; `macos-14` retired): `scripts/native-capture/ci-ios-simulator-capture.sh` —
   clean Expo prebuild, **Release** iphonesimulator build (bundle embedded),
-  phone-size iPhone Simulator, Stable / Customise / Replay PNGs
-- Both jobs build workspace deps first (`pnpm --filter @botore/game^... run build`)
-  so Metro can resolve `@botore/*/dist`
+  phone-size iPhone Simulator, Stable / Customise / Replay PNGs.
+  **PR path skips iOS** (`workflow_dispatch` only) — follow-up **C7b**; Android
+  remains the PR capture gate for C7.
+- Android (and iOS on dispatch) build workspace deps first
+  (`pnpm --filter @botore/game^... run build`) so Metro can resolve
+  `@botore/*/dist`
 - Pins Android Kotlin **1.9.25** via `expo-build-properties` (Compose 1.5.15)
 - Hoists `expo-modules-core` / `expo-modules-autolinking` for pnpm so Gradle
   resolves Expo packages; `expo prebuild --clean` keeps `useExpoModules()`
