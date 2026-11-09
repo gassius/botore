@@ -38,9 +38,13 @@ loader fetches them on demand for the player's stable and current fight.
 - Same version + complete files → reuse offline (no re-download).
 - Version change → new directory → fetch.
 - Failed downloads mark the asset `missing` and continue.
-- Index commits **merge under an exclusive lock** for the version so concurrent
-  same-version loads do not clobber each other's discoverability entries.
-  Writes go tmp → final; a failed commit leaves the last valid index readable.
+- Index commits **merge under a root-keyed exclusive lock** (`canonicalCacheRoot`
+  - version) so concurrent same-version loads across **separate store handles**
+    sharing one cache directory do not clobber each other's discoverability.
+    Publication is staged to `index.json.tmp` then **atomically replaced** via
+    `PackFileStore.replaceFile` (rename/move — never truncating in-place writes
+    on the live index). A failed replace leaves the previous final readable; a
+    complete staged tmp can recover a torn/missing final on the next read.
 - Cache index entries persist original F5 `partId` / `role` (no filename reinfer
   on warm/offline hits).
 - Cache I/O failures are best-effort: `ensurePacks` still returns bundled base /

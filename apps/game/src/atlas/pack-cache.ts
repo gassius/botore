@@ -2,8 +2,12 @@ import type { CacheIndex, CacheIndexEntry, PackFileStore } from './types';
 
 const INDEX_NAME = 'index.json';
 
-/** In-process exclusive chains keyed by store identity (fallback when store has no runExclusive). */
-const exclusiveChains = new WeakMap<object, Map<string, Promise<unknown>>>();
+/**
+ * Cross-instance exclusive chains keyed by canonical cache root + lock key.
+ * Separate PackFileStore handles that share a physical cache directory must
+ * serialize through this map — per-instance mutexes are not enough.
+ */
+const rootExclusiveChains = new Map<string, Promise<unknown>>();
 
 export function cacheDirForVersion(version: string): string {
   return `packs/${version}`;
@@ -13,15 +17,46 @@ export function cacheIndexPath(version: string): string {
   return `${cacheDirForVersion(version)}/${INDEX_NAME}`;
 }
 
+export function cacheIndexTmpPath(version: string): string {
+  return `${cacheIndexPath(version)}.tmp`;
+}
+
 export function cacheFilePath(version: string, packRelativePath: string): string {
   return `${cacheDirForVersion(version)}/files/${packRelativePath}`;
+}
+
+/** Canonicalize store.rootUri so shared directories share one lock namespace. */
+export function canonicalCacheRoot(rootUri: string): string {
+  return rootUri.replace(/\/+$/, '') || rootUri;
 }
 
 export async function readCacheIndex(
   store: PackFileStore,
   version: string,
 ): Promise<CacheIndex | null> {
-  const path = cacheIndexPath(version);
+  const finalPath = cacheIndexPath(version);
+  const tmpPath = cacheIndexTmpPath(version);
+
+  const fromFinal = await tryParseIndexFile(store, finalPath, version);
+  if (fromFinal) return fromFinal;
+
+  // Process-restart recovery: a complete staged tmp can outlive a torn/missing final.
+  const fromTmp = await tryParseIndexFile(store, tmpPath, version);
+  if (!fromTmp) return null;
+
+  try {
+    await store.replaceFile(tmpPath, finalPath);
+  } catch {
+    // Still return the parsed staged index for this process even if promote fails.
+  }
+  return fromTmp;
+}
+
+async function tryParseIndexFile(
+  store: PackFileStore,
+  path: string,
+  version: string,
+): Promise<CacheIndex | null> {
   try {
     if (!(await store.exists(path))) return null;
     const raw = await store.readText(path);
@@ -61,35 +96,24 @@ export function normalizeCacheIndex(index: CacheIndex): CacheIndex {
 }
 
 /**
- * Write index via tmp → final so a failed write leaves the last valid snapshot.
- * Not a product durability SLA — best-effort atomicity for the shared cache.
+ * Stage the index to `.tmp`, then atomically replace the final path.
+ * Never opens/truncates the live index for in-place writes — a failed
+ * replace leaves the previous final (and the staged tmp) readable.
  */
 export async function writeCacheIndex(store: PackFileStore, index: CacheIndex): Promise<void> {
   const dir = cacheDirForVersion(index.version);
   const finalPath = cacheIndexPath(index.version);
-  const tmpPath = `${finalPath}.tmp`;
+  const tmpPath = cacheIndexTmpPath(index.version);
   await store.ensureDir(dir);
   const payload = JSON.stringify(index);
   await store.writeText(tmpPath, payload);
-  try {
-    await store.writeText(finalPath, payload);
-  } catch (err) {
-    // Final replace failed — previous finalPath (if any) stays readable.
-    throw err;
-  } finally {
-    if (store.remove) {
-      try {
-        await store.remove(tmpPath);
-      } catch {
-        // best-effort cleanup
-      }
-    }
-  }
+  await store.replaceFile(tmpPath, finalPath);
 }
 
 /**
- * Merge `newEntries` into the on-disk index under an exclusive lock for this
- * version, so concurrent same-version loads retain each other's discoverability.
+ * Merge `newEntries` into the on-disk index under a root-keyed exclusive lock,
+ * so concurrent same-version loads across separate store handles retain each
+ * other's discoverability.
  */
 export async function mergeCommitCacheIndex(
   store: PackFileStore,
@@ -123,18 +147,11 @@ export async function runStoreExclusive<T>(
   lockKey: string,
   task: () => Promise<T>,
 ): Promise<T> {
-  if (store.runExclusive) {
-    return store.runExclusive(lockKey, task);
-  }
-  let byKey = exclusiveChains.get(store);
-  if (!byKey) {
-    byKey = new Map();
-    exclusiveChains.set(store, byKey);
-  }
-  const previous = byKey.get(lockKey) ?? Promise.resolve();
+  const fullKey = `${canonicalCacheRoot(store.rootUri)}::${lockKey}`;
+  const previous = rootExclusiveChains.get(fullKey) ?? Promise.resolve();
   const run = previous.catch(() => undefined).then(() => task());
-  byKey.set(
-    lockKey,
+  rootExclusiveChains.set(
+    fullKey,
     run.then(
       () => undefined,
       () => undefined,

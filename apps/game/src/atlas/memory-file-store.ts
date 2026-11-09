@@ -1,19 +1,38 @@
 import type { PackFileStore } from './types';
 
+type MemoryBackend = {
+  files: Map<string, Uint8Array | string>;
+  dirs: Set<string>;
+};
+
+/** Shared backends keyed by canonical rootUri so separate store handles share files. */
+const sharedBackends = new Map<string, MemoryBackend>();
+
+function canonicalizeRoot(rootUri: string): string {
+  return rootUri.replace(/\/+$/, '') || rootUri;
+}
+
 /**
  * In-memory PackFileStore for unit tests and web-preview fallback.
  * Not a substitute for native documentDirectory caching on device.
+ *
+ * Handles created with the same `rootUri` share one backend (files + dirs) so
+ * concurrent loader/store instances can exercise the shared-cache contract.
  */
 export function createMemoryPackFileStore(rootUri = 'memory://atlas-cache/'): PackFileStore {
-  const files = new Map<string, Uint8Array | string>();
-  const dirs = new Set<string>(['']);
-  const exclusive = new Map<string, Promise<unknown>>();
+  const rootKey = canonicalizeRoot(rootUri);
+  let backend = sharedBackends.get(rootKey);
+  if (!backend) {
+    backend = { files: new Map(), dirs: new Set<string>(['']) };
+    sharedBackends.set(rootKey, backend);
+  }
+  const { files, dirs } = backend;
 
   const normalize = (relativePath: string): string =>
     relativePath.replace(/^\/+/, '').replace(/\/+$/, '');
 
   const store: PackFileStore = {
-    rootUri,
+    rootUri: rootKey.endsWith('/') ? rootKey : `${rootKey}/`,
     async exists(relativePath) {
       const key = normalize(relativePath);
       return files.has(key) || dirs.has(key);
@@ -55,25 +74,29 @@ export function createMemoryPackFileStore(rootUri = 'memory://atlas-cache/'): Pa
       }
     },
     uriFor(relativePath) {
-      return `${rootUri}${normalize(relativePath)}`;
+      return `${store.rootUri}${normalize(relativePath)}`;
+    },
+    async replaceFile(fromRelativePath, toRelativePath) {
+      const from = normalize(fromRelativePath);
+      const to = normalize(toRelativePath);
+      if (!files.has(from)) {
+        throw new Error(`memory-store replace missing source: ${from}`);
+      }
+      // Single-turn publish: destination flips to the staged bytes without an
+      // intermediate empty/truncated destination visible to other readers.
+      files.set(to, files.get(from)!);
+      files.delete(from);
     },
     async remove(relativePath) {
       const key = normalize(relativePath);
       files.delete(key);
     },
-    async runExclusive<T>(lockKey: string, task: () => Promise<T>): Promise<T> {
-      const previous = exclusive.get(lockKey) ?? Promise.resolve();
-      const run = previous.catch(() => undefined).then(() => task());
-      exclusive.set(
-        lockKey,
-        run.then(
-          () => undefined,
-          () => undefined,
-        ),
-      );
-      return run;
-    },
   };
 
   return store;
+}
+
+/** Test helper: drop a shared memory backend (does not affect other roots). */
+export function resetMemoryPackFileStore(rootUri = 'memory://atlas-cache/'): void {
+  sharedBackends.delete(canonicalizeRoot(rootUri));
 }

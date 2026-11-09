@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AtlasManifestResponse } from '@botore/contracts';
 import {
   AtlasPackLoader,
@@ -7,6 +7,7 @@ import {
   WORKSHOP_FRAME_KIT,
   atlasPathForWorkshopKitFile,
   cacheIndexPath,
+  cacheIndexTmpPath,
   createMemoryPackFileStore,
   createUriMapBundledBasePack,
   findPartAudioUri,
@@ -15,6 +16,7 @@ import {
   mergeCommitCacheIndex,
   partIdsForWorkshopFrameLoadout,
   readCacheIndex,
+  resetMemoryPackFileStore,
   resolveAudioCue,
   resolvePaintCatalogueId,
   resolvePaintToken,
@@ -23,6 +25,7 @@ import {
   resolveWorkshopWeaponAssetId,
   selectEntriesToFetch,
   workshopFrameAtlasPathsForAsset,
+  writeCacheIndex,
   type PackFileStore,
 } from '../src/atlas';
 
@@ -102,6 +105,14 @@ function sampleManifest(version = 'v1'): AtlasManifestResponse {
 }
 
 describe('atlas pack loader (F6)', () => {
+  beforeEach(() => {
+    resetMemoryPackFileStore();
+    resetMemoryPackFileStore('memory://atlas-enospace/');
+    resetMemoryPackFileStore('memory://atlas-shared-concurrent/');
+    resetMemoryPackFileStore('memory://atlas-replace-fail/');
+    resetMemoryPackFileStore('memory://atlas-torn-recovery/');
+  });
+
   it('registers only base-pack paths as bundle-eligible (no catalogue)', () => {
     for (const role of BASE_AUDIO_ROLES) {
       const path = BUNDLED_BASE_AUDIO_PATHS[role];
@@ -379,7 +390,9 @@ describe('atlas pack loader (F6)', () => {
   });
 
   it('keeps bundled fallback when index write rejects after a failed audio download', async () => {
-    const base = createMemoryPackFileStore();
+    const root = 'memory://atlas-enospace/';
+    resetMemoryPackFileStore(root);
+    const base = createMemoryPackFileStore(root);
     const store: PackFileStore = {
       rootUri: base.rootUri,
       exists: (p) => base.exists(p),
@@ -387,8 +400,8 @@ describe('atlas pack loader (F6)', () => {
       writeBytes: (p, d) => base.writeBytes(p, d),
       ensureDir: (p) => base.ensureDir(p),
       uriFor: (p) => base.uriFor(p),
+      replaceFile: (from, to) => base.replaceFile(from, to),
       remove: (p) => base.remove!(p),
-      runExclusive: (key, task) => base.runExclusive!(key, task),
       async writeText(relativePath, contents) {
         if (relativePath.includes('index.json')) {
           throw new Error('ENOSPC');
@@ -432,8 +445,12 @@ describe('atlas pack loader (F6)', () => {
     expect(cue.uri).toBe('bundle://swing');
   });
 
-  it('merges concurrent same-version loads so offline discovers both parts', async () => {
-    const store = createMemoryPackFileStore();
+  it('merges concurrent loads across two store handles sharing one cache dir', async () => {
+    const root = 'memory://atlas-shared-concurrent/';
+    resetMemoryPackFileStore(root);
+    const storeA = createMemoryPackFileStore(root);
+    const storeB = createMemoryPackFileStore(root);
+    expect(storeA).not.toBe(storeB);
     const bundled = createUriMapBundledBasePack({ hit: 'bundle://hit' });
     const waiting: Array<() => void> = [];
     let downloadsOpen = false;
@@ -449,8 +466,8 @@ describe('atlas pack loader (F6)', () => {
       fetchManifest: async () => sampleManifest('v1'),
       downloadObject,
     };
-    const loaderA = new AtlasPackLoader({ transport, store, bundledBase: bundled });
-    const loaderB = new AtlasPackLoader({ transport, store, bundledBase: bundled });
+    const loaderA = new AtlasPackLoader({ transport, store: storeA, bundledBase: bundled });
+    const loaderB = new AtlasPackLoader({ transport, store: storeB, bundledBase: bundled });
 
     const pA = loaderA.ensurePacks({
       atlasVersion: 'v1',
@@ -475,10 +492,12 @@ describe('atlas pack loader (F6)', () => {
     expect(a.fetched).toBe(true);
     expect(b.fetched).toBe(true);
 
-    const index = await readCacheIndex(store, 'v1');
+    const index = await readCacheIndex(storeA, 'v1');
     expect(index?.entries['parts.weapon-sword.sprite']).toBeTruthy();
     expect(index?.entries['parts.chassis-basic.body']).toBeTruthy();
 
+    // Recreate a third handle on the same root — offline must see both entries.
+    const storeC = createMemoryPackFileStore(root);
     const offlineLoader = new AtlasPackLoader({
       transport: {
         fetchManifest: async () => {
@@ -488,7 +507,7 @@ describe('atlas pack loader (F6)', () => {
           throw new Error('offline');
         },
       },
-      store,
+      store: storeC,
       bundledBase: bundled,
     });
     const offline = await offlineLoader.ensurePacks({
@@ -511,8 +530,10 @@ describe('atlas pack loader (F6)', () => {
     ).toBe(true);
   });
 
-  it('retains the previous cache index when a merge commit write fails', async () => {
-    const base = createMemoryPackFileStore();
+  it('retains the previous cache index when atomic replaceFile fails', async () => {
+    const root = 'memory://atlas-replace-fail/';
+    resetMemoryPackFileStore(root);
+    const base = createMemoryPackFileStore(root);
     await mergeCommitCacheIndex(base, 'v1', {
       'parts.weapon-sword.sprite': {
         assetKey: 'parts.weapon-sword.sprite',
@@ -528,25 +549,25 @@ describe('atlas pack loader (F6)', () => {
       encodeUtf8('sprite-bytes'),
     );
 
-    let failFinal = false;
+    let failReplace = false;
     const store: PackFileStore = {
       rootUri: base.rootUri,
       exists: (p) => base.exists(p),
       readText: (p) => base.readText(p),
+      writeText: (p, c) => base.writeText(p, c),
       writeBytes: (p, d) => base.writeBytes(p, d),
       ensureDir: (p) => base.ensureDir(p),
       uriFor: (p) => base.uriFor(p),
       remove: (p) => base.remove!(p),
-      runExclusive: (key, task) => base.runExclusive!(key, task),
-      async writeText(relativePath, contents) {
-        if (failFinal && relativePath === cacheIndexPath('v1')) {
-          throw new Error('interrupted commit');
+      async replaceFile(fromRelativePath, toRelativePath) {
+        if (failReplace && toRelativePath === cacheIndexPath('v1')) {
+          throw new Error('interrupted replace');
         }
-        return base.writeText(relativePath, contents);
+        return base.replaceFile(fromRelativePath, toRelativePath);
       },
     };
 
-    failFinal = true;
+    failReplace = true;
     await expect(
       mergeCommitCacheIndex(store, 'v1', {
         'parts.chassis-basic.body': {
@@ -558,11 +579,72 @@ describe('atlas pack loader (F6)', () => {
           role: 'body',
         },
       }),
-    ).rejects.toThrow(/interrupted commit/);
+    ).rejects.toThrow(/interrupted replace/);
 
+    // Prior final remains; staged tmp may exist but must not drop the old entry.
     const retained = await readCacheIndex(store, 'v1');
     expect(retained?.entries['parts.weapon-sword.sprite']).toBeTruthy();
-    expect(retained?.entries['parts.chassis-basic.body']).toBeUndefined();
+    // After failed replace, promote from tmp would merge new entry — simulate
+    // process restart that only sees the intact final (tmp removed).
+    if (await base.exists(cacheIndexTmpPath('v1'))) {
+      await base.remove!(cacheIndexTmpPath('v1'));
+    }
+    const afterRestart = await readCacheIndex(createMemoryPackFileStore(root), 'v1');
+    expect(afterRestart?.entries['parts.weapon-sword.sprite']).toBeTruthy();
+    expect(afterRestart?.entries['parts.chassis-basic.body']).toBeUndefined();
+  });
+
+  it('recovers a torn final index from a complete staged tmp on restart', async () => {
+    const root = 'memory://atlas-torn-recovery/';
+    resetMemoryPackFileStore(root);
+    const store = createMemoryPackFileStore(root);
+    await writeCacheIndex(store, {
+      version: 'v1',
+      entries: {
+        'parts.weapon-sword.sprite': {
+          assetKey: 'parts.weapon-sword.sprite',
+          path: 'parts/weapon-sword/sprite.png',
+          kind: 'image',
+          relativeFile: 'packs/v1/files/parts/weapon-sword/sprite.png',
+          partId: 'weapon-sword',
+          role: 'sprite',
+        },
+      },
+    });
+
+    // Simulate legacy truncating write on the live path + a complete staged tmp.
+    await store.writeText(cacheIndexPath('v1'), '{"version":"v1","entries":');
+    await store.writeText(
+      cacheIndexTmpPath('v1'),
+      JSON.stringify({
+        version: 'v1',
+        entries: {
+          'parts.weapon-sword.sprite': {
+            assetKey: 'parts.weapon-sword.sprite',
+            path: 'parts/weapon-sword/sprite.png',
+            kind: 'image',
+            relativeFile: 'packs/v1/files/parts/weapon-sword/sprite.png',
+            partId: 'weapon-sword',
+            role: 'sprite',
+          },
+          'parts.chassis-basic.body': {
+            assetKey: 'parts.chassis-basic.body',
+            path: 'parts/chassis-basic/body.png',
+            kind: 'image',
+            relativeFile: 'packs/v1/files/parts/chassis-basic/body.png',
+            partId: 'chassis-basic',
+            role: 'body',
+          },
+        },
+      }),
+    );
+
+    const recovered = await readCacheIndex(createMemoryPackFileStore(root), 'v1');
+    expect(recovered?.entries['parts.weapon-sword.sprite']).toBeTruthy();
+    expect(recovered?.entries['parts.chassis-basic.body']).toBeTruthy();
+    // Promoted final should now be valid JSON again.
+    const rawFinal = await store.readText(cacheIndexPath('v1'));
+    expect(() => JSON.parse(rawFinal)).not.toThrow();
   });
 
   it('preserves workshop partId/role across cold, warm, and offline resolve', async () => {

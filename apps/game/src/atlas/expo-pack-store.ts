@@ -15,6 +15,7 @@ type ExpoFileSystemModule = {
     contents: string,
     options?: { encoding?: string },
   ) => Promise<void>;
+  moveAsync: (options: { from: string; to: string }) => Promise<void>;
   deleteAsync?: (fileUri: string, options?: { idempotent?: boolean }) => Promise<void>;
   EncodingType?: { Base64: string; UTF8: string };
 };
@@ -26,6 +27,11 @@ type ExpoFileSystemModule = {
  *
  * Uses the classic `expo-file-system` API (SDK 52). Prefer this over the
  * beta `expo-file-system/next` entry until the client upgrades past SDK 52.
+ *
+ * Index publication uses `replaceFile` → `moveAsync` (never truncating
+ * `writeAsStringAsync` on the live index). Same-version commit serialization
+ * is root-keyed in `pack-cache` so separate store handles sharing this
+ * directory still cooperate.
  */
 export async function createExpoPackFileStore(subdir = 'atlas-cache'): Promise<PackFileStore> {
   let FileSystem: ExpoFileSystemModule;
@@ -43,7 +49,6 @@ export async function createExpoPackFileStore(subdir = 'atlas-cache'): Promise<P
 
   const rootUri = root.endsWith('/') ? `${root}${subdir}/` : `${root}/${subdir}/`;
   await FileSystem.makeDirectoryAsync(rootUri, { intermediates: true });
-  const exclusive = new Map<string, Promise<unknown>>();
 
   const toUri = (relativePath: string): string => {
     const cleaned = relativePath.replace(/^\/+/, '');
@@ -84,21 +89,38 @@ export async function createExpoPackFileStore(subdir = 'atlas-cache'): Promise<P
     uriFor(relativePath) {
       return toUri(relativePath);
     },
+    async replaceFile(fromRelativePath, toRelativePath) {
+      const fromUri = toUri(fromRelativePath);
+      const toFileUri = toUri(toRelativePath);
+      const destInfo = await FileSystem.getInfoAsync(toFileUri);
+      if (!destInfo.exists) {
+        await FileSystem.moveAsync({ from: fromUri, to: toFileUri });
+        return;
+      }
+      // Move live index aside, then promote staged file. On promote failure,
+      // restore the previous final so readers never keep a truncated path.
+      const bakUri = `${toFileUri}.bak`;
+      if (FileSystem.deleteAsync) {
+        await FileSystem.deleteAsync(bakUri, { idempotent: true });
+      }
+      await FileSystem.moveAsync({ from: toFileUri, to: bakUri });
+      try {
+        await FileSystem.moveAsync({ from: fromUri, to: toFileUri });
+        if (FileSystem.deleteAsync) {
+          await FileSystem.deleteAsync(bakUri, { idempotent: true });
+        }
+      } catch (err) {
+        try {
+          await FileSystem.moveAsync({ from: bakUri, to: toFileUri });
+        } catch {
+          // best-effort restore
+        }
+        throw err;
+      }
+    },
     async remove(relativePath) {
       if (!FileSystem.deleteAsync) return;
       await FileSystem.deleteAsync(toUri(relativePath), { idempotent: true });
-    },
-    async runExclusive<T>(lockKey: string, task: () => Promise<T>): Promise<T> {
-      const previous = exclusive.get(lockKey) ?? Promise.resolve();
-      const run = previous.catch(() => undefined).then(() => task());
-      exclusive.set(
-        lockKey,
-        run.then(
-          () => undefined,
-          () => undefined,
-        ),
-      );
-      return run;
     },
   };
 }

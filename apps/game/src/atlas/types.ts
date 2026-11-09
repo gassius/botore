@@ -58,14 +58,14 @@ export type PackFileStore = {
   ensureDir(relativePath: string): Promise<void>;
   /** Absolute/local URI the playback layer can open. */
   uriFor(relativePath: string): string;
-  /** Best-effort delete (used for atomic index tmp cleanup). */
-  remove?(relativePath: string): Promise<void>;
   /**
-   * Serialize work for a lock key across callers that share this store.
-   * Cache-index merge commits use this so concurrent same-version loads
-   * cannot clobber each other's discoverability entries.
+   * Atomically publish `fromRelativePath` over `toRelativePath` (rename/replace).
+   * Must not truncate/open the destination for in-place writes — readers should
+   * keep seeing the previous complete file until this resolves successfully.
    */
-  runExclusive?<T>(lockKey: string, task: () => Promise<T>): Promise<T>;
+  replaceFile(fromRelativePath: string, toRelativePath: string): Promise<void>;
+  /** Best-effort delete (tmp cleanup after successful publish). */
+  remove?(relativePath: string): Promise<void>;
 };
 
 export type BundledBasePack = {

@@ -31,13 +31,15 @@ export {
   isBundledBaseAudioPath,
 } from './bundled-base-pack';
 
-export { createMemoryPackFileStore } from './memory-file-store';
+export { createMemoryPackFileStore, resetMemoryPackFileStore } from './memory-file-store';
 export { selectEntriesToFetch, storagePathForEntry } from './manifest-select';
 export {
   areKeysCached,
   cacheDirForVersion,
   cacheFilePath,
   cacheIndexPath,
+  cacheIndexTmpPath,
+  canonicalCacheRoot,
   mergeCommitCacheIndex,
   normalizeCacheIndex,
   readCacheIndex,
