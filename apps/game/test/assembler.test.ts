@@ -18,7 +18,13 @@ import {
   listWorkshopFrameGaps,
 } from '../src/assembler/workshopFrameAdapter';
 import { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from '../src/assembler/workshopFramePin';
-import { transformPoint } from '../src/assembler/kitMath';
+import {
+  applyCenterOriginScaleX,
+  childLocalMatrix,
+  decomposeTranslateRotate,
+  rotateCwDeg,
+  transformPoint,
+} from '../src/assembler/kitMath';
 import v001ManifestJson from '../assets/workshop-frame-kit-v001/manifest.json';
 
 const baseLoadout = {
@@ -173,6 +179,58 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
     expect(attacking.layers.find((l) => l.id === 'torso')?.rotateCwDeg).not.toBe(
       player.layers.find((l) => l.id === 'torso')?.rotateCwDeg,
     );
+  });
+
+  it('RN centre-origin scaleX(-1) mirrors canvas endpoints about mid-X (no double pivot)', () => {
+    // Shipped proof/replay opponent box is often 170dp; kit canvas is 640.
+    for (const width of [170, WORKSHOP_FRAME_MANIFEST.canvas[0]]) {
+      const mid = width / 2;
+      expect(applyCenterOriginScaleX(0, width, -1)).toBeCloseTo(width, 10);
+      expect(applyCenterOriginScaleX(width, width, -1)).toBeCloseTo(0, 10);
+      expect(applyCenterOriginScaleX(mid, width, -1)).toBeCloseTo(mid, 10);
+      expect(applyCenterOriginScaleX(mid / 2, width, -1)).toBeCloseTo(width - mid / 2, 10);
+      // Broken sandwich translate(w/2)·scaleX(-1)·translate(-w/2) on top of centre origin:
+      // effective x' = 2w - x (shifts centre by +w). Must not be what we use.
+      const brokenDoublePivot = (x: number) => 2 * width - x;
+      expect(applyCenterOriginScaleX(mid, width, -1)).not.toBeCloseTo(
+        brokenDoublePivot(mid),
+        5,
+      );
+    }
+    expect(WORKSHOP_FRAME_MANIFEST.mirror).toMatch(/x_new=640-x|x=320/);
+  });
+
+  it('uses +Y-down clockwise rotation: +90° sends +X to +Y; idle upper_arm_r elbow matches v002', () => {
+    expect(transformPoint(rotateCwDeg(90), 1, 0)).toEqual({
+      x: expect.closeTo(0, 10),
+      y: expect.closeTo(1, 10),
+    });
+    expect(transformPoint(rotateCwDeg(90), 0, 1)).toEqual({
+      x: expect.closeTo(-1, 10),
+      y: expect.closeTo(0, 10),
+    });
+    expect(decomposeTranslateRotate(rotateCwDeg(-24)).rotateCwDeg).toBeCloseTo(-24, 10);
+    expect(decomposeTranslateRotate(rotateCwDeg(45)).rotateCwDeg).toBeCloseTo(45, 10);
+
+    const arm = WORKSHOP_FRAME_MANIFEST.assets.find((a) => a.id === 'upper_arm_r')!;
+    expect(arm.angle).toBe(-24);
+    const elbow = arm.sockets.elbow!;
+    const local = childLocalMatrix(0, 0, arm.angle, arm.pivot[0], arm.pivot[1]);
+    const elbowRel = transformPoint(local, elbow[0], elbow[1]);
+    // Contract: relative to shoulder/pivot after CW -24°, elbow ≈ (+25.413, +57.078), not mirrored X.
+    expect(elbowRel.x).toBeCloseTo(25.413, 2);
+    expect(elbowRel.y).toBeCloseTo(57.078, 2);
+    expect(elbowRel.x).toBeGreaterThan(0);
+
+    const { matrices } = buildWorkshopFrameWorldMatrices('oxide', 'weapon-sword', 'idle');
+    const torso = WORKSHOP_FRAME_MANIFEST.assets.find((a) => a.id === 'torso')!;
+    const shoulder = torso.sockets.shoulder_r!;
+    const armM = matrices.get('upper_arm_r')!;
+    const elbowWorld = transformPoint(armM, elbow[0], elbow[1]);
+    const torsoM = matrices.get('torso')!;
+    const shoulderWorld = transformPoint(torsoM, shoulder[0], shoulder[1]);
+    expect(elbowWorld.x - shoulderWorld.x).toBeCloseTo(25.413, 2);
+    expect(elbowWorld.y - shoulderWorld.y).toBeCloseTo(57.078, 2);
   });
 
   it('honours paintId / weaponId overrides for preview without mutating input loadout', () => {

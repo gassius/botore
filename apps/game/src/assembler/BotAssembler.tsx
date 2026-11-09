@@ -82,8 +82,8 @@ function KitLayer({
   }
   const pivotX = (layer.pivotX ?? 0) * scale;
   const pivotY = (layer.pivotY ?? 0) * scale;
-  // RN rotate is counter-clockwise positive; kit angles are clockwise.
-  const rotateCcw = -((layer.rotateCwDeg ?? 0) % 360);
+  // Kit + RN native: +Y down, clockwise-positive degrees — pass kit CW angle as-is.
+  const rotateCw = (layer.rotateCwDeg ?? 0) % 360;
   // Per-layer mirror (not parent canvas scaleX:-1) so Expo web keeps Images
   // inside overflow clips — same fix as F9 Confirm tip 1f25ea0.
   const left = kitLayerAnchorLeft(layer.worldPivotX, scale, canvasSize, mirrored);
@@ -106,7 +106,7 @@ function KitLayer({
         style={{
           transform: [
             ...(mirrored ? ([{ scaleX: -1 }] as const) : []),
-            { rotate: `${rotateCcw}deg` },
+            { rotate: `${rotateCw}deg` },
           ],
         }}
       >
@@ -215,6 +215,7 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
             width: size,
             height,
             overflow: 'visible',
+            // Mirror is per-layer in KitLayer (Expo web clip-safe). Do not parent scaleX(-1).
             transform: assembled.placeholder ? [{ translateX }, { translateY }, { rotate }] : [],
           },
         ]}

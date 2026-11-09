@@ -52,14 +52,16 @@ export function translate(tx: number, ty: number): Mat3 {
   return [1, 0, tx, 0, 1, ty, 0, 0, 1];
 }
 
-/** Clockwise degrees (kit convention). */
+/**
+ * Clockwise degrees in kit canvas space (origin top-left, +X right, +Y down).
+ * Column-vector linear part is [[c, -s], [s, c]] → x'=c*x-s*y, y'=s*x+c*y.
+ * At +90°, (1,0) maps to (0,1) (down), not (0,-1).
+ */
 export function rotateCwDeg(degrees: number): Mat3 {
   const rad = (degrees * Math.PI) / 180;
   const c = Math.cos(rad);
   const s = Math.sin(rad);
-  // Clockwise: [[c, s], [-s, c]] in row form for column vectors →
-  // x' = c*x + s*y ; y' = -s*x + c*y
-  return [c, s, 0, -s, c, 0, 0, 0, 1];
+  return [c, -s, 0, s, c, 0, 0, 0, 1];
 }
 
 export function transformPoint(m: Mat3, x: number, y: number): { x: number; y: number } {
@@ -77,7 +79,8 @@ export function decomposeTranslateRotate(m: Mat3): {
 } {
   const x = m[2];
   const y = m[5];
-  const rotateCwDeg = (Math.atan2(m[1], m[0]) * 180) / Math.PI;
+  // For [[c,-s],[s,c]]: atan2(s, c) recovers clockwise θ.
+  const rotateCwDeg = (Math.atan2(m[3], m[0]) * 180) / Math.PI;
   return { x, y, rotateCwDeg };
 }
 
@@ -95,4 +98,14 @@ export function childLocalMatrix(
     multiply(translate(parentSocketX, parentSocketY), rotateCwDeg(angleCwDeg)),
     translate(-pivotX, -pivotY),
   );
+}
+
+/**
+ * RN View `scaleX` with the default centre transform origin.
+ * Hierarchy mirror uses scaleX(-1) only → x' = width - x (kit: about canvas mid-X).
+ * Do not compose extra translate(±width/2); that maps to x' = 2*width - x.
+ */
+export function applyCenterOriginScaleX(x: number, width: number, scaleX: number): number {
+  const centre = width / 2;
+  return centre + (x - centre) * scaleX;
 }
