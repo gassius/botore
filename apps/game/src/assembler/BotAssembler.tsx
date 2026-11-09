@@ -1,7 +1,7 @@
 /**
  * Shared BotAssembler — one module for stable / preview / fight.
  *
- * RN Animated first (no Skia). Workshop Frame kit-v001 PNGs when
+ * RN Animated first (no Skia). Workshop Frame kit-v002 PNGs when
  * `placeholder={false}` (default); geometric PLACEHOLDER when true.
  * Shell and F8 import this component; do not fork a second renderer.
  *

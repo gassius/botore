@@ -1,0 +1,210 @@
+# C7 — native design-review captures (NOT part of required PR quality gate).
+# Produces Android emulator + iOS Simulator stills for human design review.
+# No pixel-exact layout assertions.
+#
+# reactivecircus/android-emulator-runner runs each `script:` newline in its own
+# `sh -c` — keep `script:` as a single line that invokes the committed bash job.
+name: Native design captures
+
+on:
+  workflow_dispatch:
+    inputs:
+      routes:
+        description: Comma-separated first-run routes
+        required: false
+        default: 'Stable,Customise,Replay'
+      clips:
+        description: Also record short clips (true/false)
+        required: false
+        default: 'false'
+      api_level:
+        description: Android emulator API level
+        required: false
+        default: '34'
+  pull_request:
+    paths:
+      - 'apps/game/**'
+      - 'scripts/native-capture/**'
+      - '.github/workflows/native-design-captures.yml'
+      - 'docs/architecture/native-design-captures.md'
+      - 'apps/game/eas.json'
+
+concurrency:
+  group: native-captures-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Prefer workflow_dispatch inputs; PR events fall back to design-review defaults.
+  CAPTURE_ROUTES: ${{ github.event.inputs.routes || 'Stable,Customise,Replay' }}
+  CAPTURE_CLIPS: ${{ github.event.inputs.clips || 'false' }}
+  CAPTURE_API_LEVEL: ${{ github.event.inputs.api_level || '34' }}
+  EXPO_PUBLIC_DESIGN_CAPTURE: '1'
+  EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
+  CAPTURE_SETTLE_SEC: '3'
+  CAPTURE_SECONDS: '5'
+  CAPTURE_OUT_DIR: artifacts/native-captures
+  # Never use RN community autolinking — PackageList would import nonexistent expo.core.*.
+  EXPO_USE_COMMUNITY_AUTOLINKING: '0'
+  CI: '1'
+
+jobs:
+  android-emulator-captures:
+    name: Android emulator captures
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/gradle-wrapper.properties', 'apps/game/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: ${{ runner.os }}-avd-${{ env.CAPTURE_API_LEVEL }}-x86_64-pixel6
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Build game workspace deps (dist/ for Metro)
+        # Required before :app:createBundleReleaseJsAndAssets — packages export dist/.
+        run: pnpm --filter @botore/game^... run build
+
+      - name: Capture tooling check (scripts + eas.json)
+        run: node scripts/native-capture/check-capture-env.mjs --platform android --tools-only
+
+      - name: Expo prebuild (android CNG, clean)
+        working-directory: apps/game
+        run: pnpm exec expo prebuild --platform android --clean
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Build + run captures on emulator
+        # Pin to v2.38.0 commit (do not float on @v2).
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: ${{ env.CAPTURE_API_LEVEL }}
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: ${{ steps.avd-cache.outputs.cache-hit != 'true' }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          # ONE LINE ONLY — action splits newlines into separate sh -c invocations.
+          script: bash scripts/native-capture/ci-android-emulator-capture.sh
+
+      - name: Upload capture artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-design-captures-android-${{ github.sha }}
+          path: artifacts/native-captures/
+          if-no-files-found: error
+          retention-days: 14
+
+  ios-simulator-captures:
+    name: iOS Simulator captures
+    # C7b follow-up: do not run on pull_request (saves macOS minutes; must not block #28).
+    # Manual: Actions → Native design captures → Run workflow.
+    if: github.event_name == 'workflow_dispatch'
+    # macos-14 retired; public repo has free macOS minutes on macos-15.
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Select Xcode + list phone simulators
+        run: |
+          set -euo pipefail
+          echo "Available Xcode apps:"
+          ls -1d /Applications/Xcode*.app 2>/dev/null || true
+          # Prefer newest Xcode_* then fall back to Xcode.app (macos-15 image).
+          SELECTED=""
+          for candidate in \
+            /Applications/Xcode_16.4.app \
+            /Applications/Xcode_16.3.app \
+            /Applications/Xcode_16.2.app \
+            /Applications/Xcode_16.1.app \
+            /Applications/Xcode_16.0.app \
+            /Applications/Xcode.app; do
+            if [[ -d "${candidate}/Contents/Developer" ]]; then
+              SELECTED="${candidate}"
+              break
+            fi
+          done
+          if [[ -z "${SELECTED}" ]]; then
+            echo "error: no Xcode.app found under /Applications" >&2
+            exit 1
+          fi
+          echo "Selecting ${SELECTED}"
+          sudo xcode-select -s "${SELECTED}/Contents/Developer"
+          xcodebuild -version
+          echo "Available phone-size simulators:"
+          xcrun simctl list devices available | grep -E 'iPhone' | head -n 80
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Build game workspace deps (dist/ for Metro)
+        run: pnpm --filter @botore/game^... run build
+
+      - name: Capture tooling check (scripts + eas.json)
+        run: node scripts/native-capture/check-capture-env.mjs --platform ios --tools-only
+
+      - name: Build + run captures on iOS Simulator
+        env:
+          CAPTURE_WELCOME: '1'
+          CAPTURE_OUT_DIR: artifacts/native-captures
+          CAPTURE_IOS_SCHEME: BotoreGameClient
+          # Prefer devices present on macos-15 / Xcode 16 images; script falls back.
+          CAPTURE_IOS_DEVICE: 'iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14'
+        run: bash scripts/native-capture/ci-ios-simulator-capture.sh
+
+      - name: Upload capture artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-design-captures-ios-${{ github.sha }}
+          path: artifacts/native-captures/
+          if-no-files-found: error
+          retention-days: 14

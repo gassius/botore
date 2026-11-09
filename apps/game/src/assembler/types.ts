@@ -81,7 +81,7 @@ export interface BotAssemblerProps {
   readonly reducedMotion?: boolean;
   /**
    * When true, render geometric PLACEHOLDER stand-ins. When false/omitted,
-   * use Workshop Frame kit-v001 (local integration only — not likeness/native
+   * use Workshop Frame kit-v002 (local integration only — not likeness/native
    * acceptance).
    */
   readonly placeholder?: boolean;
@@ -110,7 +110,7 @@ export interface AssembledLayer {
   /** Offset from parent pivot (PROVISIONAL). */
   readonly attachOffset?: ProvisionalPoint;
   readonly label?: string;
-  /** Relative path under workshop-frame-kit-v001 (e.g. parts/torso-oxide.png). */
+  /** Relative path under workshop-frame-kit-v002 (e.g. parts/torso-oxide.png). */
   readonly imagePath?: string;
   readonly pivotX?: number;
   readonly pivotY?: number;
@@ -135,7 +135,7 @@ export interface AssembledBot {
   readonly canvas: { readonly width: number; readonly height: number; readonly provisional: true };
   readonly grip: ProvisionalPoint;
   readonly layers: readonly AssembledLayer[];
-  /** Set when assembled from Game Art workshop-frame-v001. */
+  /** Set when assembled from Game Art workshop-frame-v002. */
   readonly kitId?: string;
   readonly kitPoseKey?: string;
 }

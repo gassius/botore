@@ -6,14 +6,19 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "export:web": "expo export --platform web",
     "build": "pnpm run export:web",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "capture:check": "node ../../scripts/native-capture/check-capture-env.mjs --platform android",
+    "capture:android": "bash ../../scripts/native-capture/run-design-capture.sh --platform android",
+    "capture:ios": "bash ../../scripts/native-capture/run-design-capture.sh --platform ios",
+    "eas:design-review:android": "npx eas-cli@latest build -p android --profile design-review",
+    "eas:design-review:ios": "npx eas-cli@latest build -p ios --profile design-review"
   },
   "dependencies": {
     "@babel/runtime": "^7.25.0",
@@ -26,6 +31,7 @@
     "expo": "^52.0.0",
     "expo-asset": "~11.0.5",
     "expo-av": "~15.0.2",
+    "expo-build-properties": "~0.13.3",
     "expo-file-system": "~18.0.12",
     "expo-status-bar": "~2.0.0",
     "react": "18.3.1",

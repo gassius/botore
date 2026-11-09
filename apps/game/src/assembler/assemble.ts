@@ -1,7 +1,7 @@
 /**
  * Pure bot assembly: loadout → ordered layers (stable / preview / fight).
  *
- * Dispatches to Workshop Frame kit-v001 when `placeholder` is false; otherwise
+ * Dispatches to Workshop Frame kit-v002 when `placeholder` is false; otherwise
  * geometric PLACEHOLDER stand-ins. Framework-free core stays in
  * `workshopFrameAdapter` / this file for headless tests.
  */
@@ -30,7 +30,7 @@ export interface AssembleBotInput {
   readonly weaponId?: string;
   readonly motionPose?: MotionPose;
   /**
-   * true → geometric PLACEHOLDER; false/undefined → kit-v001 when available.
+   * true → geometric PLACEHOLDER; false/undefined → kit-v002 when available.
    * Setting false is local integration only — not likeness/native acceptance.
    */
   readonly placeholder?: boolean;

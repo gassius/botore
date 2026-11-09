@@ -1,8 +1,8 @@
 /**
  * Adapter: Workshop Frame kit media schema → existing BotAssembler props/model.
  *
- * ACTIVE PIN: kit-v002 (coherent manifest + parts). v001 remains immutable under
- * `assets/workshop-frame-kit-v001/` — NEVER mix v001 coordinates with v002 assets.
+ * ACTIVE PIN: kit-v002 (coherent manifest + parts + provenance). v001 removed
+ * from the tree — NEVER load stale v001 coordinates against v002 assets.
  *
  * Does NOT invent a parallel public component API. Maps kit paint/weapon/pose
  * ids onto F7 `assembleBot` / `BotAssemblerProps`. Catalogue ids stay
@@ -287,7 +287,7 @@ export function workshopFramePaintToken(paintId: string): string {
 
 export function listWorkshopFrameGaps(): readonly string[] {
   return [
-    'ACTIVE pin is v002; v001 kept immutable — must_not_mix_versions (coords/padding differ). Prefer sealed atomic packs so F7 never sees partial trees.',
+    'ACTIVE pin is v002 only; v001 assets removed — must_not_mix_versions (coords/padding differ). Prefer sealed atomic packs so F7 never sees partial trees.',
     'Kit pose keys include heavy_windup/heavy_attack; F7 MotionPose only exposes attack→quick_attack — need product mapping for heavy hits without forking props. heavy_windup.root_y changed 20→45 in v002 only.',
     'Runtime uses precomposited parts/{id}-{paint}.png (documented fallback). Live under→mask→over compositing needs Skia or offline bake; RN Image cannot alpha-mask tint alone.',
     'No arena/FX/audio in kit-v002 — fight stage still uses separate quiet-arena placeholders when those land.',

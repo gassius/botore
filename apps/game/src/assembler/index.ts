@@ -2,7 +2,7 @@
  * F7 shared bot assembler — single export surface for shell / F8 / fight.
  *
  * Import `BotAssembler` + types from here. Do not duplicate assembly in screen
- * packages. Pack loading remains F6; this module maps Workshop Frame kit-v001
+ * packages. Pack loading remains F6; this module maps Workshop Frame kit-v002
  * behind the existing props (adapter — not a competing schema).
  */
 

@@ -69,6 +69,21 @@ Use EAS when native builds or OTA updates are needed (`eas build`, `eas submit`,
 `eas update`). Prefer `npx eas-cli@latest` (or `pnpm exec eas-cli`) over a bare
 `eas` binary. Docs: https://docs.expo.dev/eas/index.md
 
+Profiles live in `eas.json`. The `design-review` profile bakes
+`EXPO_PUBLIC_DESIGN_CAPTURE=1` for native phone screenshots/clips. See
+`docs/architecture/native-design-captures.md` and
+`scripts/native-capture/`. Web preview is not design-review acceptance.
+
+## Native design captures (C7)
+
+```bash
+# After a capture-mode native run is on an emulator/device:
+node scripts/native-capture/check-capture-env.mjs --platform android
+./scripts/native-capture/run-design-capture.sh --platform android --routes Stable,Replay
+```
+
+Optional CI: `.github/workflows/native-design-captures.yml` (`workflow_dispatch`).
+
 ## Rules
 
 - If `ios/` and `android/` directories do not exist, they are generated (CNG).

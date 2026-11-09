@@ -17,11 +17,15 @@ renderer. Pack download/cache remains F6.
 
 Game Art delivered `workshop-frame-v002` (integration prototype, **not** Carlos
 likeness / native-perf / replay acceptance). Visible build pins a **coherent
-v002** set under `apps/game/assets/workshop-frame-kit-v002/` (manifest +
-precomposited `parts/{id}-{paint}.png` + integration delta).
+v002** set under `apps/game/assets/workshop-frame-kit-v002/`:
 
-`workshop-frame-kit-v001/` remains **immutable** for history. **Never mix v001
-coordinates with v002 assets** (`must_not_mix_versions`).
+- `manifest.json` + precomposited `parts/{id}-{paint}.png` (runtime)
+- `masks/` + `materials/` (under→mask→over layers; live composite still future)
+- `PROVENANCE.md`, `README.md`, integration delta, `SHA256SUMS` (vendored subset)
+- `SHA256SUMS.full-kit` keeps the Game Art full-kit seal (source/validation omitted from the app tree)
+
+`workshop-frame-kit-v001/` is **removed**. **Never mix stale v001 coordinates
+with v002 assets** (`must_not_mix_versions`).
 
 `workshopFrameAdapter.ts` maps kit media behind existing
 `BotAssemblerProps` — paint aliases `oxide`/`petrol` ↔ catalogue

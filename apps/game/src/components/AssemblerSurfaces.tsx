@@ -43,7 +43,7 @@ export const AssemblerSurfaces: React.FC = () => {
     <View style={styles.root} testID="assembler-surfaces">
       <Text style={styles.title}>F7 BotAssembler proof</Text>
       <Text style={styles.sub}>
-        Same module · Workshop Frame PLACEHOLDER · Oxide/Petrol masks · shared grip
+        Same module · Workshop Frame kit-v002 · Oxide/Petrol · shared grip
       </Text>
 
       <View style={styles.tabs}>

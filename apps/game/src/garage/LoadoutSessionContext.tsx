@@ -1,4 +1,17 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  DESIGN_CAPTURE_DEV_EMAIL,
+  DESIGN_CAPTURE_DEV_PASSWORD,
+  isDesignCaptureEnabled,
+} from '../design-capture';
 import { createAuthClient } from './auth/createAuthClient';
 import type { AuthPort, AuthSession } from './auth/AuthPort';
 import { createLoadoutSaveClient } from './loadout/createLoadoutSaveClient';
@@ -100,9 +113,36 @@ export function GarageSessionProvider(props: {
     setBooting(false);
   }, [auth, loadouts]);
 
+  const captureAutoSignInStarted = useRef(false);
+
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
+
+  /**
+   * C7 design-capture builds auto-enter the DEV garage so capture scripts can
+   * deep-link into first-run routes without tapping the auth form.
+   * Opt-in only (`EXPO_PUBLIC_DESIGN_CAPTURE=1`); never for store builds.
+   */
+  useEffect(() => {
+    if (!isDesignCaptureEnabled()) return;
+    if (captureAutoSignInStarted.current) return;
+    if (booting || session) return;
+    captureAutoSignInStarted.current = true;
+    void (async () => {
+      const result = await auth.signInWithPassword({
+        email: DESIGN_CAPTURE_DEV_EMAIL,
+        password: DESIGN_CAPTURE_DEV_PASSWORD,
+      });
+      if (!result.ok) {
+        captureAutoSignInStarted.current = false;
+        return;
+      }
+      setBooting(true);
+      setSession(result.session);
+      await hydrate();
+    })();
+  }, [auth, booting, hydrate, session]);
 
   const value = useMemo<GarageSessionContextValue>(
     () => ({

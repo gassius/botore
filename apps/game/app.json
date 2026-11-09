@@ -5,6 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "scheme": "botore",
     "icon": "./assets/ui-kit-v0.1/brand/app-icon.png",
     "splash": {
       "image": "./assets/ui-kit-v0.1/brand/launch-static.png",
@@ -28,6 +29,16 @@
       "bundler": "metro",
       "favicon": "./assets/ui-kit-v0.1/brand/robot-head-small.png"
     },
-    "plugins": ["expo-asset"]
+    "plugins": [
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ]
+    ]
   }
 }
