@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   PrimaryButton,
@@ -50,10 +50,16 @@ export function ReplaySlot(): React.ReactElement {
     setPlayback(state);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (fxHoldTimerRef.current) clearTimeout(fxHoldTimerRef.current);
+    };
+  }, []);
+
   const onFxCue = useCallback(
     (family: ArenaFxFamily) => {
-      console.log(formatFxCaptureLog(family, 'fire'));
       if (!liveCapture) return;
+      console.log(formatFxCaptureLog(family, 'fire'));
       const { next, shouldHold } = noteFxCaptureCue(fxHoldRef.current, family);
       fxHoldRef.current = next;
       if (!shouldHold) return;

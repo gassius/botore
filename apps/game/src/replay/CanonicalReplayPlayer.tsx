@@ -45,6 +45,7 @@ import {
   type ReplayPresentationState,
 } from './playbackState';
 import {
+  emitPlaybackUi,
   initialPlaybackUi,
   pauseState,
   playbackUiAfterAdvance,
@@ -196,8 +197,11 @@ export const CanonicalReplayPlayer = forwardRef<
 
   const emitPlayback = useCallback(
     (next: PlaybackUiState) => {
-      setPlaybackUi(next);
-      onPlaybackChange?.(next);
+      // Sync the ref immediately so same-tick pause/resume (e.g. FX capture hold)
+      // is visible before the next emitPlayback in this rAF tick.
+      const { state } = emitPlaybackUi(playbackUiRef, next);
+      setPlaybackUi(state);
+      onPlaybackChange?.(state);
     },
     [onPlaybackChange],
   );
@@ -342,6 +346,9 @@ export const CanonicalReplayPlayer = forwardRef<
         pushFxFromState(next);
         return next;
       });
+      // Advance first, then FX cue (may pause). Ref must already be synced so
+      // pause is not overwritten by a stale playing:true emit.
+      emitPlayback(playbackUiAfterAdvance(playbackUiRef.current, pb.position));
       if (fxFamily) {
         try {
           onFxCue?.(fxFamily);
@@ -349,8 +356,11 @@ export const CanonicalReplayPlayer = forwardRef<
           // Capture hooks must never break playback.
         }
       }
-      emitPlayback(playbackUiAfterAdvance(playbackUiRef.current, pb.position));
       waitUntilRef.current = now + commandDuration(cmd);
+      if (!playbackUiRef.current.playing) {
+        // FX capture hold (or external pause) — do not schedule the next frame.
+        return;
+      }
       if (!pb.finished) {
         rafRef.current = requestAnimationFrame(tick);
       } else {

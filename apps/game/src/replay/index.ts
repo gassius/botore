@@ -31,6 +31,7 @@ export {
 } from './resolveSessionResult';
 export type { FirstRunResultBlockReason, FirstRunResultResolution } from './serverPlayback';
 export {
+  emitPlaybackUi,
   initialPlaybackUi,
   pauseState,
   playbackUiAfterAdvance,
