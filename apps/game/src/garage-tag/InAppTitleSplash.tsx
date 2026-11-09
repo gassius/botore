@@ -11,6 +11,10 @@ export type InAppTitleSplashProps = {
    * (contain, bottom-centred per launch-v001 title notes).
    */
   fill?: boolean;
+  /** Fires once the silhouette bitmap is decoded and ready to paint. */
+  onImageLoad?: () => void;
+  /** Fires if the silhouette bitmap fails to decode. */
+  onImageError?: () => void;
 };
 
 /**
@@ -22,6 +26,8 @@ export function InAppTitleSplash({
   style,
   testID = 'in-app-title-splash',
   fill = true,
+  onImageLoad,
+  onImageError,
 }: InAppTitleSplashProps): React.ReactElement {
   return (
     <View
@@ -35,6 +41,12 @@ export function InAppTitleSplash({
         style={styles.image}
         resizeMode="contain"
         accessibilityIgnoresInvertColors
+        onLoad={() => {
+          onImageLoad?.();
+        }}
+        onError={() => {
+          onImageError?.();
+        }}
       />
     </View>
   );

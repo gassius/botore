@@ -4,6 +4,18 @@ Brand FINAL for C6 ([ClickUp](https://app.clickup.com/t/1amjtrey13r)): wordmark,
 icon (iOS + Android adaptive/monochrome), native splash, and in-app silhouette
 title. Oxide paint token remains kit-v002 `#E8771C`.
 
+## Provenance / licence
+
+- **Source kit:** Botore-launch-v001 (Project store `media/launch-v001/`), built
+  against Art Direction v0.3 and selected REF-01 logo/splash direction.
+- **Author:** Botore brand/UI production for this project (hand-constructed SVG
+  path geometry → raster PNG). Not third-party stock.
+- **Fonts:** none. The wordmark is original path geometry (mechanical second O);
+  **no third-party font files or font licences** are bundled or required to
+  reproduce these PNGs.
+- **Licence:** project-owned brand assets for Botore app/store use. Do not treat
+  as freely redistributable clip-art.
+
 ## Shipped paths (runtime)
 
 | Path | Use |

@@ -31,7 +31,7 @@ All images use straight/unassociated RGBA, transparent background, sRGB colour v
 
 This derives both sample paints from the same geometry while keeping steel/linework/shading intact. Precomposited `parts/{id}-{paint}.png` are fallback/reference renders, not the only customisation path. No linear tint over the full sprite. Renderer should premultiply only as required by its image API; don't double-premultiply exports. Bilinear/cubic filtering may produce edge differences; validate actual phone fringes on cream/dark backgrounds.
 
-Proposed sample tokens: Oxide `#e8771c`, Petrol `#27877b`. They are not approved brand/UI tokens. No broad palette or decal system is proven.
+Final paint tokens: Oxide `#E8771C`, Petrol `#27877B` (brand FINAL, UI/UX 2026-11-09). No broad palette or decal system is proven.
 
 ## Reproduce / verify
 Python 3 with CairoSVG, Pillow and NumPy:
