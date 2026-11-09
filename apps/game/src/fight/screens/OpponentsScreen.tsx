@@ -182,7 +182,7 @@ export function OpponentsScreen(props: {
                       facing="left"
                       paintId={c.loadout.paint}
                       weaponId={c.loadout.weapon}
-                      size={120}
+                      size={112}
                       reducedMotion
                       motionPose="idle"
                       testID={`opponent-preview-${c.characterId}`}
@@ -249,9 +249,9 @@ const styles = StyleSheet.create({
   },
   card: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
-    minHeight: 148,
+    minHeight: 168,
     padding: 12,
     backgroundColor: garageTag.cream,
     borderWidth: garageTag.outline,
@@ -263,15 +263,18 @@ const styles = StyleSheet.create({
     borderColor: garageTag.mustard,
   },
   preview: {
-    width: 128,
-    minHeight: 148,
+    width: 120,
+    paddingTop: 4,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    flexShrink: 0,
   },
   metaCol: {
     flex: 1,
-    gap: 6,
+    gap: 8,
     minWidth: 0,
+    paddingTop: 8,
+    paddingRight: 28,
   },
   name: {
     fontWeight: '800',
@@ -291,7 +294,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 6,
-    paddingVertical: 4,
+    paddingVertical: 6,
     paddingHorizontal: 8,
     borderWidth: garageTag.outline,
     borderColor: garageTag.graphite,

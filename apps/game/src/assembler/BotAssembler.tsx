@@ -67,9 +67,13 @@ function PlaceholderLayer({
 function KitLayer({
   layer,
   scale,
+  mirrored,
+  canvasSize,
 }: {
   layer: AssembledLayer;
   scale: number;
+  mirrored: boolean;
+  canvasSize: number;
 }): React.ReactElement | null {
   const source = layer.imagePath ? workshopFramePartSource(layer.imagePath) : undefined;
   if (!source || layer.worldPivotX === undefined || layer.worldPivotY === undefined) {
@@ -79,6 +83,10 @@ function KitLayer({
   const pivotY = (layer.pivotY ?? 0) * scale;
   // RN rotate is counter-clockwise positive; kit angles are clockwise.
   const rotateCcw = -((layer.rotateCwDeg ?? 0) % 360);
+  // When the parent canvas is mirrored on web, also flip layer local X so Image
+  // bitmaps stay on-screen (parent-only scaleX leaves a blank cream box).
+  const worldX = layer.worldPivotX * scale;
+  const left = mirrored ? canvasSize - worldX : worldX;
 
   return (
     <View
@@ -87,14 +95,21 @@ function KitLayer({
       pointerEvents="none"
       style={{
         position: 'absolute',
-        left: layer.worldPivotX * scale,
+        left,
         top: layer.worldPivotY * scale,
         width: 0,
         height: 0,
         zIndex: layer.zIndex,
       }}
     >
-      <View style={{ transform: [{ rotate: `${rotateCcw}deg` }] }}>
+      <View
+        style={{
+          transform: [
+            ...(mirrored ? ([{ scaleX: -1 }] as const) : []),
+            { rotate: `${rotateCcw}deg` },
+          ],
+        }}
+      >
         <Image
           source={source}
           style={{
@@ -183,13 +198,15 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
     ],
   });
 
+  // Expo web: parent canvas scaleX(-1) + absolute Image layers paints a blank cream
+  // box. Mirror per-layer in KitLayer instead (kit README facing still honored).
   return (
     <View
       testID={testID}
       accessibilityLabel={`bot ${assembled.paintVisual} ${assembled.weaponKind} facing ${facing}${
         assembled.placeholder ? ' PLACEHOLDER' : ` ${assembled.kitId ?? 'kit'}`
       }`}
-      style={[styles.root, { width: size, height }]}
+      style={[styles.root, { width: size, minHeight: height }]}
     >
       <Animated.View
         style={[
@@ -197,13 +214,8 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
           {
             width: size,
             height,
-            transform: [
-              // Whole-hierarchy mirror about canvas centre (kit README).
-              { translateX: size / 2 },
-              { scaleX: assembled.mirrored ? -1 : 1 },
-              { translateX: -size / 2 },
-              ...(assembled.placeholder ? [{ translateX }, { translateY }, { rotate }] : []),
-            ],
+            overflow: 'visible',
+            transform: assembled.placeholder ? [{ translateX }, { translateY }, { rotate }] : [],
           },
         ]}
       >
@@ -211,7 +223,13 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
           assembled.placeholder ? (
             <PlaceholderLayer key={layer.id} layer={layer} scale={scale} />
           ) : (
-            <KitLayer key={layer.id} layer={layer} scale={scale} />
+            <KitLayer
+              key={layer.id}
+              layer={layer}
+              scale={scale}
+              mirrored={assembled.mirrored}
+              canvasSize={size}
+            />
           ),
         )}
       </Animated.View>

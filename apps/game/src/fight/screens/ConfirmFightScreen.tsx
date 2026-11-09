@@ -176,9 +176,9 @@ export function ConfirmFightScreen(props: {
           testID="confirm-hydration-blocked"
         />
       ) : (
-        <View style={styles.fighters} testID="confirm-fighters">
-          {/* Both fighters are live kit-v002 BotAssemblers — not Repair Yard placeholders. */}
-          <View style={styles.fighter} testID="confirm-fighter-you">
+        <View style={styles.arena} testID="confirm-fighters">
+          {/* Dual kit-v002 BotAssemblers — no Repair Yard KitArtPlaceholder. */}
+          <View style={styles.near} testID="confirm-fighter-you">
             <BotAssemblerSlot
               loadout={{
                 chassisId: confirmed.chassis,
@@ -188,7 +188,7 @@ export function ConfirmFightScreen(props: {
               facing="right"
               paintId={confirmed.paint}
               weaponId={confirmed.weapon}
-              size={148}
+              size={160}
               reducedMotion
               motionPose="idle"
               label="You"
@@ -196,7 +196,7 @@ export function ConfirmFightScreen(props: {
             />
             <Nameplate name={playerName} badge="You" />
           </View>
-          <View style={styles.fighter} testID="confirm-fighter-opponent">
+          <View style={styles.far} testID="confirm-fighter-opponent">
             <BotAssemblerSlot
               loadout={{
                 chassisId: selected.loadout.chassis,
@@ -206,7 +206,7 @@ export function ConfirmFightScreen(props: {
               facing="left"
               paintId={selected.loadout.paint}
               weaponId={selected.loadout.weapon}
-              size={136}
+              size={140}
               reducedMotion
               motionPose="idle"
               label={selected.displayName}
@@ -283,19 +283,31 @@ export function ConfirmFightScreen(props: {
 }
 
 const styles = StyleSheet.create({
-  fighters: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: 12,
-    minHeight: 220,
-    paddingVertical: 4,
+  arena: {
+    width: '100%',
+    minHeight: 280,
+    position: 'relative',
+    backgroundColor: garageTag.paper,
+    borderWidth: garageTag.outline,
+    borderColor: garageTag.graphite,
+    borderRadius: garageTag.cutCorner,
+    paddingBottom: 8,
   },
-  fighter: {
-    flex: 1,
-    gap: 8,
+  near: {
+    position: 'absolute',
+    left: 8,
+    bottom: 12,
     alignItems: 'center',
-    minWidth: 0,
+    gap: 6,
+    zIndex: 2,
+  },
+  far: {
+    position: 'absolute',
+    right: 8,
+    top: 12,
+    alignItems: 'center',
+    gap: 6,
+    zIndex: 1,
   },
   arenaNote: {
     textAlign: 'center',
