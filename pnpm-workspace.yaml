@@ -2,6 +2,14 @@ packages:
   - 'apps/*'
   - 'packages/*'
 
+# Expo / RN Android Gradle autolinking cannot follow pnpm's isolated layout for
+# expo-modules-core (PackageList imports expo.core.ExpoModulesPackage). Hoist
+# the linking packages so createBundle/assembleRelease can resolve them.
+publicHoistPattern:
+  - '*expo-modules-core*'
+  - '*expo-modules-autolinking*'
+  - '*babel-preset-expo*'
+
 # pnpm 10+ blocks dependency build scripts by default.
 # This is the explicit allowlist (pnpm >= 11 schema: allowBuilds.<name>: true).
 allowBuilds:

@@ -29,6 +29,16 @@
       "bundler": "metro",
       "favicon": "./assets/ui-kit-v0.1/brand/robot-head-small.png"
     },
-    "plugins": ["expo-asset"]
+    "plugins": [
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ]
+    ]
   }
 }

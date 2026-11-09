@@ -46,6 +46,9 @@ env:
   CAPTURE_SETTLE_SEC: '3'
   CAPTURE_SECONDS: '5'
   CAPTURE_OUT_DIR: artifacts/native-captures
+  # Never use RN community autolinking — PackageList would import nonexistent expo.core.*.
+  EXPO_USE_COMMUNITY_AUTOLINKING: '0'
+  CI: '1'
 
 jobs:
   android-emulator-captures:
@@ -98,9 +101,9 @@ jobs:
       - name: Capture tooling check (scripts + eas.json)
         run: node scripts/native-capture/check-capture-env.mjs --platform android --tools-only
 
-      - name: Expo prebuild (android CNG)
+      - name: Expo prebuild (android CNG, clean)
         working-directory: apps/game
-        run: pnpm exec expo prebuild --platform android --non-interactive
+        run: pnpm exec expo prebuild --platform android --clean
 
       - name: Enable KVM
         run: |

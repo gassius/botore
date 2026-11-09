@@ -127,6 +127,9 @@ Workflow: `.github/workflows/native-design-captures.yml`
   action runs each `script:` newline in its own shell)
 - Builds game workspace deps first (`pnpm --filter @botore/game^... run build`)
   so Metro can resolve `@botore/*/dist`
+- Pins Android Kotlin **1.9.25** via `expo-build-properties` (Compose 1.5.15)
+- Hoists `expo-modules-core` / `expo-modules-autolinking` for pnpm so Gradle
+  resolves Expo packages; `expo prebuild --clean` keeps `useExpoModules()`
 - Builds a **JS-bundle-embedded** `assembleRelease` APK (debug-signed for CI
   install) so `EXPO_PUBLIC_DESIGN_CAPTURE*` is inlined at Metro bundle time —
   no Metro server in CI

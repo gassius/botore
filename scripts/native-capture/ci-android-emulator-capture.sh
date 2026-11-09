@@ -36,12 +36,19 @@ EXPO_PUBLIC_DESIGN_CAPTURE=${EXPO_PUBLIC_DESIGN_CAPTURE}
 EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE=${EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE}
 EOF
 
-if [[ ! -d "${REPO_ROOT}/apps/game/android" ]]; then
-  echo "expo prebuild (android)…" >&2
-  (
-    cd "${REPO_ROOT}/apps/game"
-    pnpm exec expo prebuild --platform android --non-interactive
-  )
+# Always clean-prebuild so settings.gradle keeps useExpoModules() +
+# expo-modules-autolinking (RN community autolinking emits expo.core.*).
+export EXPO_USE_COMMUNITY_AUTOLINKING="${EXPO_USE_COMMUNITY_AUTOLINKING:-0}"
+echo "expo prebuild --clean (android)…" >&2
+(
+  cd "${REPO_ROOT}/apps/game"
+  CI=1 pnpm exec expo prebuild --platform android --clean
+)
+
+# Sanity: Expo settings must call useExpoModules (not community-only path).
+if ! grep -q 'useExpoModules()' "${REPO_ROOT}/apps/game/android/settings.gradle"; then
+  echo "error: apps/game/android/settings.gradle missing useExpoModules()" >&2
+  exit 1
 fi
 
 node "${SCRIPT_DIR}/patch-android-ci-signing.mjs"
@@ -52,12 +59,25 @@ echo "assembleRelease (bundle-embedded, debug-signed)…" >&2
   # Ensure Gradle/Metro see the same public env the .env file carries.
   EXPO_PUBLIC_DESIGN_CAPTURE="${EXPO_PUBLIC_DESIGN_CAPTURE}" \
     EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE="${EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE}" \
+    EXPO_USE_COMMUNITY_AUTOLINKING=0 \
     ./gradlew assembleRelease \
     -PreactNativeArchitectures="${ARCHS}" \
     -Pandroid.kotlinVersion=1.9.25 \
     --no-daemon \
     --build-cache
 )
+
+# Fail fast if PackageList still points at nonexistent expo.core.ExpoModulesPackage.
+PACKAGE_LIST="$(find "${REPO_ROOT}/apps/game/android" -path '*/generated/autolinking/*/PackageList.java' | head -n 1 || true)"
+if [[ -n "${PACKAGE_LIST}" ]]; then
+  if grep -q 'expo\.core\.ExpoModulesPackage' "${PACKAGE_LIST}"; then
+    echo "error: ${PACKAGE_LIST} imports expo.core.ExpoModulesPackage (RN CLI autolinking)" >&2
+    echo "expected expo.modules.ExpoModulesPackage from expo-modules-autolinking" >&2
+    head -n 80 "${PACKAGE_LIST}" >&2 || true
+    exit 1
+  fi
+  echo "PackageList ok: ${PACKAGE_LIST}" >&2
+fi
 
 APK="$(find "${REPO_ROOT}/apps/game/android/app/build/outputs/apk/release" -name '*.apk' | head -n 1 || true)"
 if [[ -z "${APK}" || ! -f "${APK}" ]]; then
