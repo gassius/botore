@@ -35,7 +35,7 @@ function logFightProof(proof: CaptureFightProof): void {
 export function useDesignCaptureLiveFight(): void {
   const enabled = isLiveFightCaptureEnabled();
   const { route } = useFirstRun();
-  const { canProgress, session } = useGarageSession();
+  const { canProgress, session, loadout } = useGarageSession();
   const {
     list,
     selected,
@@ -50,14 +50,32 @@ export function useDesignCaptureLiveFight(): void {
   const candidatesRequested = useRef(false);
   const fightStartedForKey = useRef<string | null>(null);
   const proofLoggedForBattle = useRef<string | null>(null);
+  const progressBlockedLogged = useRef(false);
 
   useEffect(() => {
-    if (!enabled || !session || !canProgress) return;
-    if (candidatesRequested.current) return;
+    if (!enabled) return;
     if (route !== 'ConfirmFight' && route !== 'Replay' && route !== 'FightResult') return;
+    if (!session) {
+      if (!progressBlockedLogged.current) {
+        progressBlockedLogged.current = true;
+        console.warn('BOTORE_CAPTURE_FIGHT_ERROR:no session on fight route');
+      }
+      return;
+    }
+    if (!canProgress) {
+      if (!progressBlockedLogged.current) {
+        progressBlockedLogged.current = true;
+        console.warn(
+          `BOTORE_CAPTURE_FIGHT_ERROR:canProgress=false hydration=${loadout.hydration} message=${loadout.lastError ?? ''}`,
+        );
+      }
+      return;
+    }
+    progressBlockedLogged.current = false;
+    if (candidatesRequested.current) return;
     candidatesRequested.current = true;
     void refreshCandidates();
-  }, [enabled, session, canProgress, route, refreshCandidates]);
+  }, [enabled, session, canProgress, route, refreshCandidates, loadout.hydration, loadout.lastError]);
 
   useEffect(() => {
     if (!enabled || !canProgress) return;

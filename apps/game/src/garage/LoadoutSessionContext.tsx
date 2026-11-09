@@ -70,6 +70,11 @@ export function GarageSessionProvider(props: {
 
     const owned = await loadouts.resolveOwnedCharacter(current.accessToken);
     if (!owned.ok) {
+      if (isDesignCaptureEnabled()) {
+        console.warn(
+          `BOTORE_CAPTURE_HYDRATE_ERROR:owned code=${owned.code} message=${owned.message}`,
+        );
+      }
       setLoadout((prev) =>
         markHydrationUnavailable(prev, {
           accountId: current.userId,
@@ -86,6 +91,11 @@ export function GarageSessionProvider(props: {
       accessToken: current.accessToken,
     });
     if (fetched.ok) {
+      if (isDesignCaptureEnabled()) {
+        console.log(
+          `BOTORE_CAPTURE_HYDRATE_OK:characterId=${owned.character.characterId} version=${fetched.snapshot.loadoutVersionId}`,
+        );
+      }
       setLoadout(
         createLoadoutPreviewState({
           accountId: current.userId,
@@ -97,6 +107,11 @@ export function GarageSessionProvider(props: {
         }),
       );
     } else {
+      if (isDesignCaptureEnabled()) {
+        console.warn(
+          `BOTORE_CAPTURE_HYDRATE_ERROR:loadout characterId=${owned.character.characterId} code=${fetched.code} message=${fetched.message}`,
+        );
+      }
       setLoadout((prev) =>
         markHydrationUnavailable(prev, {
           accountId: current.userId,

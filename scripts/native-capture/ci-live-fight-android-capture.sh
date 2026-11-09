@@ -202,11 +202,33 @@ capture_named ConfirmFight confirm 8
 # 3) Replay mid-impact — starts combat-v1 then holds impact frame
 capture_named Replay replay-impact 14
 
-# Pull fight proof from logcat (written by useDesignCaptureLiveFight).
-FIGHT_LINE="$(adb logcat -d 2>/dev/null | tr -d '\r' | grep -F 'BOTORE_CAPTURE_FIGHT_JSON:' | tail -n 1 || true)"
+# Wait for fight proof (orchestrator starts combat-v1 on Replay; Edge + persist
+# can take longer than the first settle window).
+FIGHT_LINE=""
+FIGHT_WAIT_SEC="${CAPTURE_FIGHT_WAIT_SEC:-90}"
+FIGHT_DEADLINE=$((SECONDS + FIGHT_WAIT_SEC))
+while (( SECONDS < FIGHT_DEADLINE )); do
+  FIGHT_LINE="$(adb logcat -d 2>/dev/null | tr -d '\r' | grep -F 'BOTORE_CAPTURE_FIGHT_JSON:' | tail -n 1 || true)"
+  if [[ -n "${FIGHT_LINE}" ]]; then
+    break
+  fi
+  if adb logcat -d 2>/dev/null | tr -d '\r' | grep -Fq 'BOTORE_CAPTURE_HYDRATE_ERROR:'; then
+    echo "error: loadout hydrate failed — see BOTORE_CAPTURE_HYDRATE_ERROR in logcat" >&2
+    adb logcat -d 2>/dev/null | tr -d '\r' | grep -E 'BOTORE_CAPTURE_' >&2 || true
+    exit 1
+  fi
+  if adb logcat -d 2>/dev/null | tr -d '\r' | grep -Fq 'BOTORE_CAPTURE_FIGHT_ERROR:'; then
+    echo "error: live-fight orchestrator reported BOTORE_CAPTURE_FIGHT_ERROR" >&2
+    adb logcat -d 2>/dev/null | tr -d '\r' | grep -E 'BOTORE_CAPTURE_' >&2 || true
+    # Keep waiting if the only error is transient canProgress before hydrate;
+    # hard-fail below if we never get FIGHT_JSON.
+  fi
+  sleep 2
+done
+
 if [[ -z "${FIGHT_LINE}" ]]; then
-  echo "error: no BOTORE_CAPTURE_FIGHT_JSON in logcat — live fight did not confirm" >&2
-  adb logcat -d -t 200 '*:I' | grep -E 'BOTORE_CAPTURE|combat|Fight|ERROR' >&2 || true
+  echo "error: no BOTORE_CAPTURE_FIGHT_JSON in logcat after ${FIGHT_WAIT_SEC}s — live fight did not confirm" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -E 'BOTORE_CAPTURE_|combat|Fight|permission denied|ERROR' >&2 || true
   ls -la "${OUT_DIR}" >&2 || true
   exit 1
 fi
@@ -221,7 +243,7 @@ write_manifest_line "${MANIFEST}" xp_awarded "${XP}"
 write_manifest_line "${MANIFEST}" server_confirmed "true"
 echo "fight proof: battleId=${BATTLE_ID} xp=${XP}" >&2
 
-# 4) Result — backend XP / allowances
+# 4) Result — backend XP / allowances (after server confirm so UI can show XP)
 capture_named FightResult result 5
 
 # Assert all four stills exist (if-no-files-found equivalent).
