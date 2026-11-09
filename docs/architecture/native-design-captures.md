@@ -133,8 +133,10 @@ Workflow: `.github/workflows/native-design-captures.yml`
   clean Expo prebuild, **Release** iphonesimulator build (bundle embedded),
   `BotoreGameClient` scheme, `-derivedDataPath` under `ios/DerivedData` (not
   `ios/build`), phone-size iPhone Simulator, Stable / Customise / Replay PNGs.
-  Each route cold-starts via `simctl openurl` + a Documents intent file so
-  FirstRunShell receives the route after DEV auth; CI asserts route PNGs are
+  Each route is launched via `simctl launch` + a Documents intent file
+  (`botore-design-capture-intent.json`). Do **not** rely on cold `simctl openurl`
+  for custom schemes on iOS 18 Simulator — SpringBoard shows “Open in …?” and
+  stills capture that dialog instead of the app. CI asserts route PNGs are
   meaningfully distinct (≥0.5% pixel diff, not status-bar clock ticks).
   **Non-gating UI/UX:** `ios-cold-start-capture.sh` records a short splash→title
   frame sequence + MP4 before route stills (failures warn only). Runs on

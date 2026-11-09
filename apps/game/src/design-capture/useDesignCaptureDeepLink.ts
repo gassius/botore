@@ -11,9 +11,11 @@ import {
 import { loadCaptureIntentFile } from './readCaptureIntentFile';
 
 /**
- * When design-capture mode is enabled, honor `botore://capture/<Route>` deep
- * links (and the CI Documents intent file) so adb/simctl scripts can jump
- * screens without pixel-exact UI automation.
+ * When design-capture mode is enabled, honor the CI Documents intent file
+ * (and any deep link that arrives without SpringBoard's "Open in…?" sheet).
+ * iOS Simulator `simctl openurl` for custom schemes often shows that sheet
+ * instead of delivering the URL — CI therefore launches via `simctl launch`
+ * and plants `botore-design-capture-intent.json`.
  */
 export function useDesignCaptureDeepLink(): void {
   const { goTo, muted, toggleMute, setDemoPaintId, setDemoWeaponId } = useFirstRun();
@@ -40,19 +42,26 @@ export function useDesignCaptureDeepLink(): void {
       applyIntent(parseDesignCaptureUrl(url));
     };
 
-    // Apply anything armed during auth, then the Documents file, then live URLs.
     applyIntent(readCaptureIntentForShell());
-    void loadCaptureIntentFile().then((intent) => {
-      applyIntent(intent);
-      // Re-apply peek in case a warm openurl landed during the file read.
-      applyIntent(peekCaptureIntent());
-    });
+
+    let cancelled = false;
+    void (async () => {
+      // Poll the Documents intent file — CI may rewrite it after FirstRunShell mounts.
+      for (let i = 0; i < 40 && !cancelled; i++) {
+        const intent = await loadCaptureIntentFile();
+        if (cancelled) return;
+        applyIntent(intent);
+        applyIntent(peekCaptureIntent());
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    })();
 
     void Linking.getInitialURL().then(applyUrl);
     const sub = Linking.addEventListener('url', (event) => {
       applyUrl(event.url);
     });
     return () => {
+      cancelled = true;
       sub.remove();
     };
   }, [goTo, muted, setDemoPaintId, setDemoWeaponId, toggleMute]);

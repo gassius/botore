@@ -20,4 +20,8 @@ bash scripts/native-capture/ci-android-emulator-capture.sh
 bash scripts/native-capture/ci-ios-simulator-capture.sh
 ```
 
+iOS routes: `simctl launch` + Documents intent file (avoid cold `simctl openurl`
+— iOS 18 SpringBoard “Open in …?” sheets were captured instead of the app).
+Non-gating splash→title: `ios-cold-start-capture.sh`.
+
 Not a pixel-exact E2E suite. Web preview is not acceptance.

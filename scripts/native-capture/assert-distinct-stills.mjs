@@ -124,6 +124,21 @@ function pixelDiffPct(a, b) {
   return (100 * diff) / total;
 }
 
+/** Garage Tag cream #F4E4C8 — SpringBoard "Open in…?" stills are blue wallpaper. */
+function looksLikeSpringBoardOpenDialog(decoded) {
+  const { w, h, rows } = decoded;
+  const sample = (x, y) => {
+    const row = rows[Math.min(h - 1, Math.max(0, y))];
+    const i = Math.min(w - 1, Math.max(0, x)) * 4;
+    return [row[i], row[i + 1], row[i + 2]];
+  };
+  // Center band of an "Open in" sheet sits over blue wallpaper; garage is cream.
+  const [r, g, b] = sample(Math.floor(w / 2), Math.floor(h * 0.35));
+  const tealWallpaper = b > 140 && g > 140 && r < 160 && b >= r;
+  const creamGarage = r > 200 && g > 180 && b > 150 && r >= g && g >= b;
+  return tealWallpaper && !creamGarage;
+}
+
 const { platform, outDir, routes, minPct } = parseArgs(process.argv.slice(2));
 const files = [];
 for (const route of routes) {
@@ -137,6 +152,12 @@ for (const route of routes) {
   const decoded = decodePngRgba(buf);
   files.push({ route, file, sha, decoded });
   console.error(`ok: ${file} sha256=${sha.slice(0, 12)}… ${decoded.w}x${decoded.h}`);
+  if (platform === 'ios' && looksLikeSpringBoardOpenDialog(decoded)) {
+    console.error(
+      `error: ${file} looks like SpringBoard "Open in …?" (custom-scheme openurl dialog) — use simctl launch + intent file`,
+    );
+    process.exit(1);
+  }
 }
 
 let failed = false;

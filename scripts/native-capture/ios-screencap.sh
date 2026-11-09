@@ -82,35 +82,73 @@ write_capture_intent_file() {
   return 0
 }
 
-# Cold-start each route: write Documents intent file + openurl so GarageRoot
-# arms Linking before FirstRunShell mounts (warm openurl alone left every
-# still on Stable — Replay only differed by the status-bar clock).
-if [[ -n "${ROUTE}" ]]; then
-  URL="$(capture_url_for_route "${ROUTE}" "${MUTE}" "${PAINT}" "${WEAPON}")"
-  echo "opening ${URL} (cold-start + intent file)" >&2
-  xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
-  # Launch once so the data container exists, then plant the intent file.
+# iOS 18 Simulator shows SpringBoard "Open in …?" for custom-scheme
+# `simctl openurl` when the app is not already foreground — our stills were
+# that dialog, not Stable/Customise/Replay. Prefer Documents intent + launch.
+ensure_app_data_container() {
+  if xcrun simctl get_app_container "${UDID}" "${BUNDLE_ID}" data >/dev/null 2>&1; then
+    return 0
+  fi
   xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
   sleep 2
   xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
-  write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" || true
-  if ! xcrun simctl openurl "${UDID}" "${URL}"; then
-    echo "error: simctl openurl failed for ${URL}" >&2
+  sleep 1
+}
+
+dismiss_open_in_alert_if_any() {
+  # Best-effort: if a prior openurl left the confirmation sheet up, dismiss it.
+  osascript >/dev/null 2>&1 <<'APPLESCRIPT' || true
+tell application "Simulator" to activate
+delay 0.2
+tell application "System Events"
+  if exists process "Simulator" then
+    tell process "Simulator"
+      try
+        if exists button "Open" of window 1 then
+          click button "Open" of window 1
+        end if
+      end try
+      try
+        if exists button "Cancel" of window 1 then
+          click button "Cancel" of window 1
+        end if
+      end try
+    end tell
+  end if
+end tell
+APPLESCRIPT
+}
+
+if [[ -n "${ROUTE}" ]]; then
+  echo "launching ${BUNDLE_ID} for route=${ROUTE} (intent file; no openurl)" >&2
+  xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
+  dismiss_open_in_alert_if_any
+  ensure_app_data_container
+  if ! write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}"; then
+    echo "error: could not write capture intent file for ${ROUTE}" >&2
     exit 1
   fi
-  # Auth auto-sign-in + intent file read + FirstRunShell mount + route paint.
-  sleep "${CAPTURE_IOS_COLD_SEC:-${CAPTURE_SETTLE_SEC:-14}}"
-  # Re-deliver once the shell is mounted (Linking 'url' event) + refresh file.
+  LAUNCH_OUT="$(xcrun simctl launch "${UDID}" "${BUNDLE_ID}" 2>&1 || true)"
+  echo "${LAUNCH_OUT}" >&2
+  APP_PID="$(echo "${LAUNCH_OUT}" | sed -nE 's/.*: ([0-9]+)$/\1/p' | tail -n 1)"
+  if [[ -z "${APP_PID}" ]]; then
+    echo "error: simctl launch did not return a PID for ${BUNDLE_ID}" >&2
+    exit 1
+  fi
+  # Auth auto-sign-in + intent file poll + FirstRunShell route paint.
+  sleep "${CAPTURE_IOS_COLD_SEC:-${CAPTURE_SETTLE_SEC:-16}}"
+  # Re-write intent in case Documents was recreated, then bring app forward.
   write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" || true
-  echo "re-opening ${URL} (warm)" >&2
-  xcrun simctl openurl "${UDID}" "${URL}" >/dev/null || true
-  sleep "${CAPTURE_SETTLE_SEC:-4}"
+  xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
+  sleep "${CAPTURE_SETTLE_SEC:-5}"
+  dismiss_open_in_alert_if_any
 fi
 
 LABEL="${NAME:-${ROUTE:-screen}}"
 FILE="${OUT_DIR}/ios-$(stamp)-${LABEL}.png"
 # Bring Simulator forward so the framebuffer is composited on GHA.
 osascript -e 'tell application "Simulator" to activate' >/dev/null 2>&1 || true
+dismiss_open_in_alert_if_any
 xcrun simctl io "${UDID}" screenshot "${FILE}"
 if [[ ! -s "${FILE}" ]]; then
   echo "error: empty screenshot ${FILE}" >&2
