@@ -17,8 +17,10 @@ import {
 } from '../src/fight/fightSessionLifecycle';
 import { DevFightRequestAdapter } from '../src/fight/request/DevFightRequestAdapter';
 import { createFightIdempotencyKey, resolveFightIntent } from '../src/fight/request/idempotency';
+import type { FightSuccess } from '../src/fight/request/types';
 import type { OpponentCandidate } from '../src/fight/candidates/types';
 import { DEFAULT_CONFIRMED_LOADOUT } from '../src/garage/loadout/proofCatalogue';
+import { loadDevGoldenConfirmedResult } from '../src/replay/loadDevReplay';
 
 const sir: OpponentCandidate = {
   characterId: 'opp-sir-bot',
@@ -217,6 +219,59 @@ describe('foreign in-flight must not be joined (P1)', () => {
     ).toBe(false);
 
     expect(shouldPreserveUnresolvedIntent(intentA, dex.characterId)).toBe(false);
+  });
+
+  it('accepts navigation when FightSuccess carries sealed builds + validateable replay', () => {
+    const base = loadDevGoldenConfirmedResult(0);
+    const live: FightSuccess = {
+      battleId: base.battleId,
+      status: 'completed',
+      rulesVersion: base.rulesVersion,
+      seed: base.replay.seed,
+      outcome: {
+        winner: base.replay.outcome.winner,
+        reason: base.replay.outcome.reason,
+      },
+      replay: base.replay,
+      replayChecksum: base.replay.checksum,
+      xpAwarded: 2,
+      allowancesRemaining: 1,
+      utcDay: '2026-11-09',
+      repeated: false,
+      persistence: 'persisted',
+      loadoutVersionIds: {
+        attacker: '22222222-2222-4222-8222-222222222222',
+        defender: '33333333-3333-4333-8333-333333333333',
+      },
+      atlasVersions: { attacker: 'v1', defender: 'v1' },
+      sealedBuilds: {
+        attacker: {
+          chassis: 'chassis-basic',
+          paint: 'paint-oxide',
+          weapon: 'weapon-axe',
+          loadoutVersionId: 'garage-attacker',
+          atlasVersion: 'v1',
+        },
+        defender: {
+          chassis: 'chassis-basic',
+          paint: 'paint-petrol',
+          weapon: 'weapon-sword',
+          loadoutVersionId: 'garage-defender',
+          atlasVersion: 'v1',
+        },
+      },
+      opponentId: 'opp-sir-bot',
+      idempotencyKey: 'idem-live-accept',
+    };
+
+    expect(
+      shouldAcceptFightNavigation({
+        fight: live,
+        expectedOpponentId: 'opp-sir-bot',
+        navigationGeneration: 3,
+        activeNavigationGeneration: 3,
+      }),
+    ).toBe(true);
   });
 });
 

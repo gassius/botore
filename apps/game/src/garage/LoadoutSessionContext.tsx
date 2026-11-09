@@ -7,11 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {
-  DESIGN_CAPTURE_DEV_EMAIL,
-  DESIGN_CAPTURE_DEV_PASSWORD,
-  isDesignCaptureEnabled,
-} from '../design-capture';
+import { designCaptureCredentials, isDesignCaptureEnabled } from '../design-capture';
 import { createAuthClient } from './auth/createAuthClient';
 import type { AuthPort, AuthSession } from './auth/AuthPort';
 import { createLoadoutSaveClient } from './loadout/createLoadoutSaveClient';
@@ -130,9 +126,10 @@ export function GarageSessionProvider(props: {
     if (booting || session) return;
     captureAutoSignInStarted.current = true;
     void (async () => {
+      const creds = designCaptureCredentials();
       const result = await auth.signInWithPassword({
-        email: DESIGN_CAPTURE_DEV_EMAIL,
-        password: DESIGN_CAPTURE_DEV_PASSWORD,
+        email: creds.email,
+        password: creds.password,
       });
       if (!result.ok) {
         captureAutoSignInStarted.current = false;

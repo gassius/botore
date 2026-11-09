@@ -21,5 +21,10 @@ declare namespace NodeJS {
     EXPO_PUBLIC_DESIGN_CAPTURE_PAINT?: string;
     /** Optional demo weapon id for capture boots (e.g. axe). */
     EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON?: string;
+    /**
+     * C3 live first-run fight capture (`1` / `true`).
+     * Requires design-capture + baked Supabase public env. Never for store builds.
+     */
+    EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT?: string;
   }
 }

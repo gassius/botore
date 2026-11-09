@@ -2,9 +2,13 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  DESIGN_CAPTURE_DEV_EMAIL,
   DESIGN_CAPTURE_SCHEME,
+  LIVE_FIGHT_CAPTURE_EMAIL,
   buildDesignCaptureUrl,
+  designCaptureCredentials,
   isDesignCaptureEnabled,
+  isLiveFightCaptureEnabled,
   listCaptureRoutes,
   parseDesignCaptureUrl,
   readDesignCaptureConfig,
@@ -97,6 +101,7 @@ describe('C7 design-capture helpers', () => {
     expect(source).toContain('process.env.EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE');
     expect(source).toContain('process.env.EXPO_PUBLIC_DESIGN_CAPTURE_PAINT');
     expect(source).toContain('process.env.EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON');
+    expect(source).toContain('process.env.EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT');
     expect(source).not.toMatch(/process\?\.env/);
     expect(source).not.toMatch(/env\?\.\[/);
     const bootstrap = readFileSync(
@@ -104,5 +109,27 @@ describe('C7 design-capture helpers', () => {
       'utf8',
     );
     expect(bootstrap).toContain('isDesignCaptureEnabled');
+    expect(bootstrap).toContain('designCaptureCredentials');
+  });
+
+  it('C3 live-fight capture credentials require both flags', () => {
+    const prevCapture = process.env.EXPO_PUBLIC_DESIGN_CAPTURE;
+    const prevLive = process.env.EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT;
+    try {
+      delete process.env.EXPO_PUBLIC_DESIGN_CAPTURE;
+      delete process.env.EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT;
+      expect(isLiveFightCaptureEnabled()).toBe(false);
+      expect(designCaptureCredentials().email).toBe(DESIGN_CAPTURE_DEV_EMAIL);
+
+      process.env.EXPO_PUBLIC_DESIGN_CAPTURE = '1';
+      process.env.EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT = '1';
+      expect(isLiveFightCaptureEnabled()).toBe(true);
+      expect(designCaptureCredentials().email).toBe(LIVE_FIGHT_CAPTURE_EMAIL);
+    } finally {
+      if (prevCapture === undefined) delete process.env.EXPO_PUBLIC_DESIGN_CAPTURE;
+      else process.env.EXPO_PUBLIC_DESIGN_CAPTURE = prevCapture;
+      if (prevLive === undefined) delete process.env.EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT;
+      else process.env.EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT = prevLive;
+    }
   });
 });

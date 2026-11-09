@@ -16,6 +16,7 @@ import {
 } from '../../replay/CanonicalReplayPlayer';
 import { formatOutcomeLine } from '../../replay/confirmedResult';
 import { initialPlaybackUi, type PlaybackUiState } from '../../replay/playbackControl';
+import { isLiveFightCaptureEnabled } from '../../design-capture';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
 import { useFirstRun } from '../FirstRunContext';
 import { DomainNote } from './DomainNote';
@@ -29,13 +30,30 @@ export function ReplaySlot(): React.ReactElement {
   const { goBack, goNext, muted, toggleMute, reducedMotion } = useFirstRun();
   const { lastFight, fightKind } = useFightSession();
   const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
+  const impactHeld = useRef(false);
   const [playback, setPlayback] = useState<PlaybackUiState>(() => initialPlaybackUi(0));
+  const liveCapture = isLiveFightCaptureEnabled();
 
   const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
 
-  const onPlaybackChange = useCallback((state: PlaybackUiState) => {
-    setPlayback(state);
-  }, []);
+  const onPlaybackChange = useCallback(
+    (state: PlaybackUiState) => {
+      setPlayback(state);
+      // C3 UI evidence: hold a mid-impact frame for the capture still.
+      if (
+        liveCapture &&
+        !impactHeld.current &&
+        state.playing &&
+        state.progress >= 0.28 &&
+        state.progress < 0.72
+      ) {
+        impactHeld.current = true;
+        playerRef.current?.pause();
+        console.log(`BOTORE_CAPTURE_REPLAY_IMPACT:progress=${state.progress.toFixed(3)}`);
+      }
+    },
+    [liveCapture],
+  );
 
   if (resolution.status === 'blocked') {
     return (
@@ -85,7 +103,8 @@ export function ReplaySlot(): React.ReactElement {
           ref={playerRef}
           result={confirmed}
           muted={muted}
-          reducedMotion={reducedMotion}
+          // Live capture needs motion poses for mid-impact stills.
+          reducedMotion={liveCapture ? false : reducedMotion}
           autoPlay
           showLocalControls={false}
           onPlaybackChange={onPlaybackChange}
