@@ -43,17 +43,72 @@ export function canContinueToConfirm(input: {
   return input.allowancesRemaining > 0 || recoverable;
 }
 
-/** Start is blocked when Edge reports allowance_exhausted even without a numeric counter. */
+/**
+ * Start/Retry disable rules for ConfirmFight.
+ * Zero eligibility / allowance_exhausted block *new* fights only.
+ * An unresolved matching same-opponent intent must stay actionable so Edge
+ * lookup-before-eligibility can recover a committed final-slot result.
+ */
 export function isStartFightDisabled(input: {
   submitting: boolean;
   sessionPresent: boolean;
   allowances: number | null;
   submitCode: string | null;
+  /** Retained Idempotency-Key for the selected opponent (lost-response recovery). */
+  recoverableSameOpponentIntent?: boolean;
 }): boolean {
   if (!input.sessionPresent || input.submitting) return true;
+  if (input.recoverableSameOpponentIntent === true) {
+    return false;
+  }
   if (input.submitCode === 'allowance_exhausted') return true;
   if (input.allowances !== null && input.allowances < 1) return true;
   return false;
+}
+
+/** ConfirmFight footer action state — shared by UI + regression harness. */
+export function computeConfirmFightControls(input: {
+  canProgress: boolean;
+  hasConfirmedLoadout: boolean;
+  submitting: boolean;
+  sessionPresent: boolean;
+  allowances: number | null;
+  submitStatus: 'idle' | 'submitting' | 'success' | 'error';
+  submitCode: string | null;
+  pendingIntent: FightIntent | null;
+  selectedOpponentId: string | null;
+}): {
+  recoverable: boolean;
+  startDisabled: boolean;
+  showRetry: boolean;
+  retryDisabled: boolean;
+} {
+  const recoverable =
+    input.pendingIntent !== null &&
+    input.selectedOpponentId !== null &&
+    input.pendingIntent.opponentId === input.selectedOpponentId;
+
+  const startDisabled =
+    !input.canProgress ||
+    !input.hasConfirmedLoadout ||
+    isStartFightDisabled({
+      submitting: input.submitting,
+      sessionPresent: input.sessionPresent,
+      allowances: input.allowances,
+      submitCode: input.submitCode,
+      recoverableSameOpponentIntent: recoverable,
+    });
+
+  const networkOrOtherError =
+    input.submitStatus === 'error' &&
+    input.submitCode !== null &&
+    input.submitCode !== 'allowance_exhausted';
+
+  // Remounted Confirm after lost response is often idle — still expose Retry for recovery.
+  const showRetry = recoverable || networkOrOtherError;
+  const retryDisabled = startDisabled || input.submitting;
+
+  return { recoverable, startDisabled, showRetry, retryDisabled };
 }
 
 /**

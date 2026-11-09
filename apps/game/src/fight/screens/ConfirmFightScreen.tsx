@@ -11,7 +11,7 @@ import {
   StatusErrorBanner,
   garageTag,
 } from '../../garage-tag';
-import { isStartFightDisabled, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
+import { computeConfirmFightControls, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
 
 /** ConfirmFight domain — mounts into shell ConfirmFight slot; starts combat-v1. */
@@ -31,6 +31,7 @@ export function ConfirmFightScreen(props: {
     fightInFlight,
     bumpNavigationGeneration,
     navigationGeneration,
+    pendingIntent,
   } = useFightSession();
   // Inherit F8 hydration — never invent a confirmed loadout here.
   const confirmed = loadout.confirmedLoadout;
@@ -51,6 +52,15 @@ export function ConfirmFightScreen(props: {
     let cancelled = false;
     async function refreshEligibility() {
       if (!session || !selected) return;
+      // Skip new-fight eligibility gate when recovering a retained same-opponent key —
+      // Edge lookup-before-eligibility is authoritative for that path.
+      const recovering =
+        pendingIntent !== null && pendingIntent.opponentId === selected.characterId;
+      if (recovering) {
+        setEligLoading(false);
+        setEligMessage(null);
+        return;
+      }
       setEligLoading(true);
       const result = await prepareEligibility();
       if (cancelled) return;
@@ -72,7 +82,7 @@ export function ConfirmFightScreen(props: {
     return () => {
       cancelled = true;
     };
-  }, [session, selected, prepareEligibility]);
+  }, [session, selected, prepareEligibility, pendingIntent]);
 
   if (!selected) {
     return (
@@ -91,19 +101,23 @@ export function ConfirmFightScreen(props: {
   }
 
   const submitting = submit.status === 'submitting' || fightInFlight;
-  const noAllowance = allowances !== null && allowances < 1;
+  const controls = computeConfirmFightControls({
+    canProgress,
+    hasConfirmedLoadout: confirmed !== null,
+    submitting,
+    sessionPresent: !!session,
+    allowances,
+    submitStatus: submit.status,
+    submitCode: submit.status === 'error' ? submit.code : null,
+    pendingIntent,
+    selectedOpponentId: selected.characterId,
+  });
+  const noAllowance = allowances !== null && allowances < 1 && !controls.recoverable;
   const networkError = submit.status === 'error' && submit.code === 'network_error';
-  const allowanceError = submit.status === 'error' && submit.code === 'allowance_exhausted';
+  const allowanceError =
+    submit.status === 'error' && submit.code === 'allowance_exhausted' && !controls.recoverable;
   const otherError = submit.status === 'error' && !networkError && !allowanceError ? submit : null;
-  const startDisabled =
-    !canProgress ||
-    confirmed === null ||
-    isStartFightDisabled({
-      submitting,
-      sessionPresent: !!session,
-      allowances,
-      submitCode: submit.status === 'error' ? submit.code : null,
-    });
+  const { startDisabled, showRetry, retryDisabled, recoverable } = controls;
 
   const runStart = () => {
     clearSubmitError();
@@ -135,19 +149,19 @@ export function ConfirmFightScreen(props: {
       footer={
         <>
           <PrimaryButton
-            label={submitting ? 'Starting…' : 'Start fight'}
+            label={submitting ? 'Starting…' : recoverable ? 'Recover fight' : 'Start fight'}
             disabled={startDisabled}
             onPress={runStart}
             testID="confirm-start"
           />
-          {(networkError || otherError) && (
+          {showRetry ? (
             <PrimaryButton
               label="Retry"
-              disabled={submitting || startDisabled}
+              disabled={retryDisabled}
               onPress={runStart}
               testID="confirm-retry"
             />
-          )}
+          ) : null}
         </>
       }
     >
@@ -221,6 +235,14 @@ export function ConfirmFightScreen(props: {
           {candidatesKind === 'dev' ? ' · DEV' : ''}
         </Text>
       )}
+
+      {recoverable && (allowances === null || allowances < 1) ? (
+        <StatusErrorBanner
+          title="Recover previous fight"
+          detail="A fight may already be committed for this opponent. Start/Retry reuses the same idempotency key — it will not spend another slot."
+          testID="confirm-recover-intent"
+        />
+      ) : null}
 
       {noAllowance || allowanceError ? (
         <StatusErrorBanner

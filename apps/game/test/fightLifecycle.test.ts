@@ -9,6 +9,7 @@ import {
 import {
   canContinueToConfirm,
   canJoinInFlight,
+  computeConfirmFightControls,
   intentAfterFightResult,
   isStartFightDisabled,
   shouldAcceptFightNavigation,
@@ -103,6 +104,38 @@ describe('unresolved intent preservation (P1)', () => {
         allowancesRemaining: list.allowancesRemaining,
         pendingIntent: intent,
       }),
+    ).toBe(true);
+
+    // Remounted Confirm at zero eligibility must keep Start/Retry actionable.
+    const controls = computeConfirmFightControls({
+      canProgress: true,
+      hasConfirmedLoadout: true,
+      submitting: false,
+      sessionPresent: true,
+      allowances: 0,
+      submitStatus: 'idle',
+      submitCode: null,
+      pendingIntent: intent,
+      selectedOpponentId: 'opp-sir-bot',
+    });
+    expect(controls.recoverable).toBe(true);
+    expect(controls.startDisabled).toBe(false);
+    expect(controls.showRetry).toBe(true);
+    expect(controls.retryDisabled).toBe(false);
+
+    // Without retained intent, zero eligibility still blocks a *new* fight.
+    expect(
+      computeConfirmFightControls({
+        canProgress: true,
+        hasConfirmedLoadout: true,
+        submitting: false,
+        sessionPresent: true,
+        allowances: 0,
+        submitStatus: 'idle',
+        submitCode: null,
+        pendingIntent: null,
+        selectedOpponentId: 'opp-sir-bot',
+      }).startDisabled,
     ).toBe(true);
 
     const recovered = await fights.requestFight({
