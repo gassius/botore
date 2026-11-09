@@ -10,5 +10,12 @@ declare namespace NodeJS {
     EXPO_PUBLIC_PERF_SAMPLE?: string;
     /** Optional load verdict mode: `warm` | `cold`. Unset = report only. */
     EXPO_PUBLIC_PERF_LOAD_KIND?: string;
+    /**
+     * Design-review native capture mode (`1` / `true`).
+     * Auto DEV sign-in + deep-link route jumps. Never for store builds.
+     */
+    EXPO_PUBLIC_DESIGN_CAPTURE?: string;
+    /** Optional initial first-run route when design capture is enabled. */
+    EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE?: string;
   }
 }

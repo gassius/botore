@@ -13,7 +13,12 @@
     "build": "pnpm run export:web",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "capture:check": "node ../../scripts/native-capture/check-capture-env.mjs --platform android",
+    "capture:android": "bash ../../scripts/native-capture/run-design-capture.sh --platform android",
+    "capture:ios": "bash ../../scripts/native-capture/run-design-capture.sh --platform ios",
+    "eas:design-review:android": "npx eas-cli@latest build -p android --profile design-review",
+    "eas:design-review:ios": "npx eas-cli@latest build -p ios --profile design-review"
   },
   "dependencies": {
     "@babel/runtime": "^7.25.0",

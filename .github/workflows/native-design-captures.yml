@@ -1,0 +1,126 @@
+# C7 — optional native design-review captures (NOT required PR CI).
+# Produces Android emulator stills/clips for human design review.
+# No pixel-exact layout assertions.
+name: Native design captures
+
+on:
+  workflow_dispatch:
+    inputs:
+      routes:
+        description: Comma-separated first-run routes (empty = all)
+        required: false
+        default: 'Stable,Customise,Opponents,ConfirmFight,Replay,FightResult,Ranking'
+      clips:
+        description: Also record short clips (true/false)
+        required: false
+        default: 'false'
+      api_level:
+        description: Android emulator API level
+        required: false
+        default: '34'
+
+concurrency:
+  group: native-captures-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android-emulator-captures:
+    name: Android emulator captures
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Capture env check (scripts + eas.json)
+        run: node scripts/native-capture/check-capture-env.mjs --platform android || true
+
+      - name: Expo prebuild (android CNG)
+        working-directory: apps/game
+        env:
+          EXPO_PUBLIC_DESIGN_CAPTURE: '1'
+          EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
+        run: pnpm exec expo prebuild --platform android --non-interactive
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Build + run captures on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          EXPO_PUBLIC_DESIGN_CAPTURE: '1'
+          EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
+          CAPTURE_SETTLE_SEC: '3'
+          CAPTURE_SECONDS: '5'
+        with:
+          api-level: ${{ inputs.api_level }}
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            cd apps/game
+            # Debug installable binary with capture env baked via Metro/Gradle extras.
+            ./android/gradlew -p android assembleDebug
+            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n com.botore.game/.MainActivity || \
+              adb shell monkey -p com.botore.game -c android.intent.category.LAUNCHER 1
+            sleep 8
+            ROUTES='${{ inputs.routes }}'
+            CLIP_ARGS=()
+            if [[ '${{ inputs.clips }}' == 'true' ]]; then CLIP_ARGS+=(--clips); fi
+            cd ../..
+            ./scripts/native-capture/run-design-capture.sh \
+              --platform android \
+              --out artifacts/native-captures \
+              --routes "${ROUTES}" \
+              "${CLIP_ARGS[@]}"
+
+      - name: Upload capture artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-design-captures-${{ github.sha }}
+          path: artifacts/native-captures/
+          if-no-files-found: warn
+          retention-days: 14
+
+  ios-simulator-note:
+    name: iOS Simulator path (macOS)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Document iOS path
+        run: |
+          cat <<'EOF'
+          iOS Simulator captures require a macOS runner + Xcode.
+          Local (preferred):
+            cd apps/game && EXPO_PUBLIC_DESIGN_CAPTURE=1 pnpm exec expo run:ios
+            ./scripts/native-capture/run-design-capture.sh --platform ios
+          Optional EAS:
+            npx eas-cli@latest build -p ios --profile design-review
+          See docs/architecture/native-design-captures.md
+          EOF

@@ -46,6 +46,10 @@ Media packs (F5): versioned `atlas/vN/` in Supabase Storage with an immutable
 published manifest (`atlas_versions` / `atlas_manifest_entries`). Fights pin
 `battle_participants.atlas_version`. See `docs/architecture/atlas.md`.
 
+Native design-review captures (C7): Android/iOS stills + short clips for UI
+supervisor review — `docs/architecture/native-design-captures.md` (not web
+preview; not pixel-exact E2E).
+
 Android release-build phone perf (F12): proposed thresholds, measurement
 protocol, parked native acceptance checks, and cost ledger —
 `docs/architecture/android-release-perf.md`. Agree limits on ClickUp before

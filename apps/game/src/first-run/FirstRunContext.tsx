@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
+import { readDesignCaptureConfig } from '../design-capture';
 import { useMute } from '../hooks/useMute';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { nextRoute, prevRoute, type FirstRunRoute } from './routes';
@@ -27,8 +28,12 @@ export type FirstRunContextValue = {
 
 const FirstRunContext = createContext<FirstRunContextValue | null>(null);
 
+function initialCaptureRoute(): FirstRunRoute {
+  return readDesignCaptureConfig().initialRoute ?? 'Stable';
+}
+
 export function FirstRunProvider({ children }: { children: React.ReactNode }): React.ReactElement {
-  const [route, setRoute] = useState<FirstRunRoute>('Stable');
+  const [route, setRoute] = useState<FirstRunRoute>(initialCaptureRoute);
   const { muted, toggleMute } = useMute(false);
   const { reducedMotion, forceReducedMotion, setForceReducedMotion } = useReducedMotion();
   const [demoPaintId, setDemoPaintId] = useState('oxide');
