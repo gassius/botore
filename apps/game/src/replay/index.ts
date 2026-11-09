@@ -23,7 +23,13 @@ export {
   weaponIdFromKind,
 } from './fighterLoadout';
 export type { SealedBotBuild, SealedFightBuilds } from './fighterLoadout';
-export { resolveSessionConfirmedResult } from './resolveSessionResult';
+export {
+  isServerPlaybackReady,
+  resolveFirstRunConfirmedResult,
+  resolveSessionConfirmedResult,
+  tryConfirmedResultFromFight,
+} from './resolveSessionResult';
+export type { FirstRunResultBlockReason, FirstRunResultResolution } from './serverPlayback';
 export {
   initialPlaybackUi,
   pauseState,

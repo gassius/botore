@@ -1850,4 +1850,90 @@ begin
       if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
   end;
   raise notice 'TEST-OK B client-read RPC authz gates';
+
+  -- =========================================================================
+  -- 0021: loadout RLS helpers (no characters table GRANT)
+  -- =========================================================================
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.bot_character_owned_by_caller(text)', 'EXECUTE'),
+    'authenticated EXECUTE bot_character_owned_by_caller'
+  );
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.bot_character_is_system_opponent(text)', 'EXECUTE'),
+    'authenticated EXECUTE bot_character_is_system_opponent'
+  );
+  perform tests.assert(
+    has_function_privilege('anon', 'public.bot_character_is_system_opponent(text)', 'EXECUTE'),
+    'anon EXECUTE bot_character_is_system_opponent (opponent loadout RLS)'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.bot_character_owned_by_caller(text)', 'EXECUTE'),
+    'anon must not EXECUTE bot_character_owned_by_caller'
+  );
+  perform tests.assert(
+    not has_table_privilege('authenticated', 'public.characters', 'SELECT'),
+    'authenticated must still lack SELECT on characters (SEC)'
+  );
+  perform tests.assert(
+    not has_table_privilege('anon', 'public.characters', 'SELECT'),
+    'anon must still lack SELECT on characters (SEC)'
+  );
+  raise notice 'TEST-OK 0021 helper privileges (no characters GRANT)';
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  select count(*) into v_count
+    from public.current_bot_loadouts
+   where character_id = 'player-hero';
+  perform tests.assert(v_count = 1, 'authenticated can read own current loadout via RLS helpers');
+
+  select count(*) into v_count
+    from public.current_bot_loadouts
+   where character_id = 'opp-sir-bot';
+  perform tests.assert(v_count = 1, 'authenticated can read opponent current loadout via RLS helpers');
+
+  select count(*) into v_count
+    from public.bot_loadout_versions
+   where character_id = 'player-hero';
+  perform tests.assert(v_count >= 1, 'authenticated can read own loadout versions');
+  reset role;
+
+  -- Cross-account fixture as table owner, then re-check as caller
+  insert into public.accounts (id) values (v_other) on conflict do nothing;
+  insert into public.characters (character_id, account_id, display_name, is_opponent)
+  values ('other-hero', v_other, 'Other', false)
+  on conflict (character_id) do nothing;
+  insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
+  select 'other-hero',
+         '{"chassis":"chassis-basic","paint":"paint-cobalt","weapon":"weapon-sword","shield":null,"drone":null,"decals":[],"soundTags":["chassis.light","weapon.sword"]}'::jsonb,
+         'v1'
+   where not exists (
+     select 1 from public.bot_loadout_versions where character_id = 'other-hero'
+   );
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  select count(*) into v_count
+    from public.current_bot_loadouts
+   where character_id = 'other-hero';
+  perform tests.assert(v_count = 0, 'cross-account loadout hidden without characters GRANT');
+
+  begin
+    perform 1 from public.characters where character_id = 'player-hero';
+    -- If SELECT somehow works, fail the SEC invariant.
+    if found then
+      raise exception 'SEC FAIL: authenticated SELECT on characters succeeded';
+    end if;
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+
+  reset role;
+  raise notice 'TEST-OK 0021 loadout RLS via SECURITY DEFINER helpers';
 end $$;

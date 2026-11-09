@@ -7,11 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {
-  DESIGN_CAPTURE_DEV_EMAIL,
-  DESIGN_CAPTURE_DEV_PASSWORD,
-  isDesignCaptureEnabled,
-} from '../design-capture';
+import { designCaptureCredentials, isDesignCaptureEnabled } from '../design-capture';
 import { createAuthClient } from './auth/createAuthClient';
 import type { AuthPort, AuthSession } from './auth/AuthPort';
 import { createLoadoutSaveClient } from './loadout/createLoadoutSaveClient';
@@ -74,6 +70,11 @@ export function GarageSessionProvider(props: {
 
     const owned = await loadouts.resolveOwnedCharacter(current.accessToken);
     if (!owned.ok) {
+      if (isDesignCaptureEnabled()) {
+        console.warn(
+          `BOTORE_CAPTURE_HYDRATE_ERROR:owned code=${owned.code} message=${owned.message}`,
+        );
+      }
       setLoadout((prev) =>
         markHydrationUnavailable(prev, {
           accountId: current.userId,
@@ -90,6 +91,11 @@ export function GarageSessionProvider(props: {
       accessToken: current.accessToken,
     });
     if (fetched.ok) {
+      if (isDesignCaptureEnabled()) {
+        console.log(
+          `BOTORE_CAPTURE_HYDRATE_OK:characterId=${owned.character.characterId} version=${fetched.snapshot.loadoutVersionId}`,
+        );
+      }
       setLoadout(
         createLoadoutPreviewState({
           accountId: current.userId,
@@ -101,6 +107,11 @@ export function GarageSessionProvider(props: {
         }),
       );
     } else {
+      if (isDesignCaptureEnabled()) {
+        console.warn(
+          `BOTORE_CAPTURE_HYDRATE_ERROR:loadout characterId=${owned.character.characterId} code=${fetched.code} message=${fetched.message}`,
+        );
+      }
       setLoadout((prev) =>
         markHydrationUnavailable(prev, {
           accountId: current.userId,
@@ -130,14 +141,19 @@ export function GarageSessionProvider(props: {
     if (booting || session) return;
     captureAutoSignInStarted.current = true;
     void (async () => {
+      const creds = designCaptureCredentials();
       const result = await auth.signInWithPassword({
-        email: DESIGN_CAPTURE_DEV_EMAIL,
-        password: DESIGN_CAPTURE_DEV_PASSWORD,
+        email: creds.email,
+        password: creds.password,
       });
       if (!result.ok) {
         captureAutoSignInStarted.current = false;
+        console.warn(
+          `BOTORE_CAPTURE_AUTH_ERROR:sign_in_failed email=${creds.email} message=${result.message}`,
+        );
         return;
       }
+      console.log(`BOTORE_CAPTURE_AUTH_OK:email=${creds.email}`);
       setBooting(true);
       setSession(result.session);
       await hydrate();

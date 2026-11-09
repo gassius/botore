@@ -6,6 +6,7 @@ import {
   ScreenChrome,
   ScreenHeader,
   SecondaryButton,
+  StatusErrorBanner,
   garageTag,
 } from '../../garage-tag';
 import { useFightSession } from '../../fight';
@@ -15,26 +16,71 @@ import {
 } from '../../replay/CanonicalReplayPlayer';
 import { formatOutcomeLine } from '../../replay/confirmedResult';
 import { initialPlaybackUi, type PlaybackUiState } from '../../replay/playbackControl';
-import { resolveSessionConfirmedResult } from '../../replay/resolveSessionResult';
+import { isLiveFightCaptureEnabled } from '../../design-capture';
+import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
 import { useFirstRun } from '../FirstRunContext';
 import { DomainNote } from './DomainNote';
 
 /**
  * Shell Replay slot — F10 domain player inside Garage Tag chrome.
- * Prefers F9 `lastFight` sealed replay; falls back to DEV golden fixture.
- * Shell ReplayAudioControls are the authoritative play/pause/timeline surface.
+ * Server-precomputed lastFight only (same sealed builds as garage → confirm).
+ * Never silently plays DEV golden fixtures on the first-run path.
  */
 export function ReplaySlot(): React.ReactElement {
   const { goBack, goNext, muted, toggleMute, reducedMotion } = useFirstRun();
-  const { lastFight } = useFightSession();
+  const { lastFight, fightKind } = useFightSession();
   const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
+  const impactHeld = useRef(false);
   const [playback, setPlayback] = useState<PlaybackUiState>(() => initialPlaybackUi(0));
+  const liveCapture = isLiveFightCaptureEnabled();
 
-  const confirmed = useMemo(() => resolveSessionConfirmedResult(lastFight), [lastFight]);
+  const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
 
-  const onPlaybackChange = useCallback((state: PlaybackUiState) => {
-    setPlayback(state);
-  }, []);
+  const onPlaybackChange = useCallback(
+    (state: PlaybackUiState) => {
+      setPlayback(state);
+      // C3 UI evidence: hold a mid-impact frame for the capture still.
+      if (
+        liveCapture &&
+        !impactHeld.current &&
+        state.playing &&
+        state.progress >= 0.28 &&
+        state.progress < 0.72
+      ) {
+        impactHeld.current = true;
+        playerRef.current?.pause();
+        console.log(`BOTORE_CAPTURE_REPLAY_IMPACT:progress=${state.progress.toFixed(3)}`);
+      }
+    },
+    [liveCapture],
+  );
+
+  if (resolution.status === 'blocked') {
+    return (
+      <ScreenChrome
+        testID="slot-replay"
+        footer={
+          <PrimaryButton label="Back to confirm" onPress={goBack} testID="replay-back-blocked" />
+        }
+      >
+        <ScreenHeader title="Fight Replay" onBack={goBack} />
+        <StatusErrorBanner
+          title="Server fight required"
+          detail={resolution.message}
+          testID="replay-blocked"
+        />
+        <DomainNote
+          text={
+            fightKind === 'dev'
+              ? 'Domain: F10 · blocked — DEV adapters cannot supply a sealed combat-v1 replay for first-run.'
+              : `Domain: F10 · blocked (${resolution.reason}) — no fixture playback.`
+          }
+        />
+      </ScreenChrome>
+    );
+  }
+
+  const confirmed = resolution.confirmed;
 
   return (
     <ScreenChrome
@@ -57,7 +103,8 @@ export function ReplaySlot(): React.ReactElement {
           ref={playerRef}
           result={confirmed}
           muted={muted}
-          reducedMotion={reducedMotion}
+          // Live capture needs motion poses for mid-impact stills.
+          reducedMotion={liveCapture ? false : reducedMotion}
           autoPlay
           showLocalControls={false}
           onPlaybackChange={onPlaybackChange}
@@ -84,11 +131,7 @@ export function ReplaySlot(): React.ReactElement {
         testID="replay-controls"
       />
       <DomainNote
-        text={
-          confirmed.serverConfirmed
-            ? `Domain: F10 · server-confirmed replay · ${formatOutcomeLine(confirmed.outcome)}`
-            : 'Domain: F10 · DEV golden fixture until F9 lastFight is available. Mute/reduced-motion from shell.'
-        }
+        text={`Domain: F10 · server-confirmed replay · ${formatOutcomeLine(confirmed.outcome)} · builds ${confirmed.builds.attacker.paint}/${confirmed.builds.attacker.weapon}`}
       />
     </ScreenChrome>
   );

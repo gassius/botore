@@ -101,9 +101,8 @@ jobs:
       - name: Capture tooling check (scripts + eas.json)
         run: node scripts/native-capture/check-capture-env.mjs --platform android --tools-only
 
-      - name: Expo prebuild (android CNG, clean)
-        working-directory: apps/game
-        run: pnpm exec expo prebuild --platform android --clean
+      - name: Install postgresql client (auth repair)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Enable KVM
         run: |
@@ -111,8 +110,9 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Build + run captures on emulator
+      - name: Build + live first-run fight captures on emulator
         # Pin to v2.38.0 commit (do not float on @v2).
+        # C3: garage → confirm → server replay → result against local Supabase/combat-v1.
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
           api-level: ${{ env.CAPTURE_API_LEVEL }}
@@ -122,7 +122,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           # ONE LINE ONLY — action splits newlines into separate sh -c invocations.
-          script: bash scripts/native-capture/ci-android-emulator-capture.sh
+          script: bash scripts/native-capture/ci-live-fight-android-capture.sh
 
       - name: Upload capture artifacts
         if: always()

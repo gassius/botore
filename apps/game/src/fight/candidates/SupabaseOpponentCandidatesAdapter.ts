@@ -1,18 +1,25 @@
 import type { SupabasePublicConfig } from '../../garage/auth/supabasePublicConfig';
 import { normalizeGarageLoadout } from '../../garage/loadout/normalizeLoadout';
-import { summarizeAllowanceRows } from './allowanceSummary';
+import {
+  FIGHT_ALLOWANCE_SUMMARY_RPC,
+  OPPONENT_ROSTER_RPC,
+  type ClientReadRpcFail,
+  type FightAllowanceSummaryRpcOk,
+  type OpponentRosterRpcOk,
+} from '../../supabase/clientReadRpcs';
 import type { OpponentCandidatesPort } from './OpponentCandidatesPort';
 import type { ListCandidatesResult, OpponentCandidate, PrepareEligibilityResult } from './types';
 
 type ErrBody = { message?: string; code?: string; details?: string; hint?: string };
 
 /**
- * Live reads:
- * - `characters` (RLS: is_opponent=true)
- * - `current_bot_loadouts` (opponent loadouts readable)
- * - `fight_allowances` (own rows; day/count derived from server data, not device clock)
+ * Live reads via ticket-B SECURITY DEFINER RPCs + sanctioned loadout view:
+ * - `list_opponent_roster` (system opponents for Confirm / prepare_fight_context)
+ * - `get_fight_allowance_summary` ({ utcDay, allowancesRemaining })
+ * - `current_bot_loadouts` (opponent loadouts once character ids are known)
  * - `prepare_fight_context` RPC for eligibility (does not consume allowance)
  *
+ * Does NOT SELECT characters / fight_allowances / profiles tables.
  * Does NOT invent ranking / freshness / anti-farming — that RPC does not exist.
  */
 export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort {
@@ -25,24 +32,32 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
     accountId: string;
   }): Promise<ListCandidatesResult> {
     try {
-      const [charsRes, allowRes] = await Promise.all([
-        fetch(
-          `${this.config.url}/rest/v1/characters?is_opponent=eq.true&select=character_id,display_name&order=character_id.asc`,
-          { headers: this.headers(input.accessToken) },
-        ),
-        // No device-calendar filter — derive the active UTC day from returned rows.
-        fetch(
-          `${this.config.url}/rest/v1/fight_allowances?account_id=eq.${encodeURIComponent(input.accountId)}&select=utc_day,used_at,slot_index&order=utc_day.desc`,
-          { headers: this.headers(input.accessToken) },
-        ),
+      const [rosterRes, allowRes] = await Promise.all([
+        fetch(`${this.config.url}/rest/v1/rpc/${OPPONENT_ROSTER_RPC}`, {
+          method: 'POST',
+          headers: {
+            ...this.headers(input.accessToken),
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify({}),
+        }),
+        // auth.uid()-only — empty body; B is dropping p_account_id.
+        fetch(`${this.config.url}/rest/v1/rpc/${FIGHT_ALLOWANCE_SUMMARY_RPC}`, {
+          method: 'POST',
+          headers: {
+            ...this.headers(input.accessToken),
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify({}),
+        }),
       ]);
 
-      if (!charsRes.ok) {
-        const err = (await charsRes.json().catch(() => ({}))) as ErrBody;
+      if (!rosterRes.ok) {
+        const err = (await rosterRes.json().catch(() => ({}))) as ErrBody;
         return {
           ok: false,
-          code: err.code ?? `http_${charsRes.status}`,
-          message: err.message ?? `Failed to load opponents (${charsRes.status})`,
+          code: err.code ?? `http_${rosterRes.status}`,
+          message: err.message ?? `Failed to load opponents (${rosterRes.status})`,
         };
       }
       if (!allowRes.ok) {
@@ -54,25 +69,52 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         };
       }
 
-      const chars = (await charsRes.json()) as Array<{
-        character_id?: string;
-        display_name?: string;
-      }>;
-      const allowRows = (await allowRes.json()) as Array<{
-        utc_day?: unknown;
-        used_at?: unknown;
-      }>;
-      const { utcDay, allowancesRemaining } = summarizeAllowanceRows(
-        Array.isArray(allowRows) ? allowRows : [],
-      );
+      const rosterBody = (await rosterRes.json()) as OpponentRosterRpcOk | ClientReadRpcFail | null;
+      const allowBody = (await allowRes.json()) as
+        FightAllowanceSummaryRpcOk | ClientReadRpcFail | null;
 
-      if (chars.length === 0) {
+      if (!rosterBody || typeof rosterBody !== 'object' || rosterBody.ok !== true) {
+        return {
+          ok: false,
+          code:
+            rosterBody && typeof rosterBody === 'object' && rosterBody.ok === false
+              ? (rosterBody.code ?? 'roster_unavailable')
+              : 'invalid_response',
+          message:
+            rosterBody && typeof rosterBody === 'object' && rosterBody.ok === false
+              ? (rosterBody.message ?? 'Opponent roster unavailable')
+              : 'Opponent roster RPC returned a malformed body',
+        };
+      }
+
+      let utcDay = '';
+      let allowancesRemaining = 0;
+      if (allowBody && typeof allowBody === 'object' && allowBody.ok === true) {
+        utcDay = typeof allowBody.utcDay === 'string' ? allowBody.utcDay : '';
+        allowancesRemaining =
+          typeof allowBody.allowancesRemaining === 'number' ? allowBody.allowancesRemaining : 0;
+      } else if (allowBody && typeof allowBody === 'object' && allowBody.ok === false) {
+        return {
+          ok: false,
+          code: allowBody.code ?? 'allowance_unavailable',
+          message: allowBody.message ?? 'Fight allowance summary unavailable',
+        };
+      } else {
+        return {
+          ok: false,
+          code: 'invalid_response',
+          message: 'Allowance summary RPC returned a malformed body',
+        };
+      }
+
+      const opponents = Array.isArray(rosterBody.opponents) ? rosterBody.opponents : [];
+      if (opponents.length === 0) {
         return { ok: true, candidates: [], allowancesRemaining, utcDay };
       }
 
-      const ids = chars
-        .map((c) => c.character_id)
-        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+      const ids = opponents
+        .map((c) => (typeof c.characterId === 'string' ? c.characterId : ''))
+        .filter((id) => id.length > 0);
       const loadoutUrl = new URL(`${this.config.url}/rest/v1/current_bot_loadouts`);
       loadoutUrl.searchParams.set('character_id', `in.(${ids.join(',')})`);
       loadoutUrl.searchParams.set(
@@ -110,16 +152,16 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
       }
 
       const candidates: OpponentCandidate[] = [];
-      for (const c of chars) {
-        const id = c.character_id;
+      for (const c of opponents) {
+        const id = typeof c.characterId === 'string' ? c.characterId : '';
         if (!id) continue;
         const withLoadout = byId.get(id);
         if (!withLoadout) continue; // incomplete opponent — not fight-ready
         candidates.push({
           ...withLoadout,
           displayName:
-            typeof c.display_name === 'string' && c.display_name.trim().length > 0
-              ? c.display_name
+            typeof c.displayName === 'string' && c.displayName.trim().length > 0
+              ? c.displayName.trim()
               : id,
         });
       }

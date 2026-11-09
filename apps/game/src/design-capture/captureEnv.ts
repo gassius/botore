@@ -14,6 +14,13 @@ export const DESIGN_CAPTURE_HOST = 'capture';
 export const DESIGN_CAPTURE_DEV_EMAIL = 'capture@botore.local';
 export const DESIGN_CAPTURE_DEV_PASSWORD = 'design-capture';
 
+/**
+ * Live first-run fight capture (C3) — seed player repaired by CI
+ * (`scripts/native-capture/prepare-live-fight-backend.mjs`) to a GoTrue-safe mailbox.
+ */
+export const LIVE_FIGHT_CAPTURE_EMAIL = 'dev-player@example.com';
+export const LIVE_FIGHT_CAPTURE_PASSWORD = 'local-only-password';
+
 export type DesignCaptureConfig = {
   readonly enabled: boolean;
   /** Initial first-run route when capture mode boots. */
@@ -40,6 +47,24 @@ export function isDesignCaptureEnabled(
   flag: string | undefined = process.env.EXPO_PUBLIC_DESIGN_CAPTURE,
 ): boolean {
   return truthyFlag(flag);
+}
+
+/**
+ * True when design-capture + live fight path are enabled.
+ * Requires baked `EXPO_PUBLIC_SUPABASE_*` so adapters hit combat-v1 (not DEV scaffold).
+ */
+export function isLiveFightCaptureEnabled(
+  flag: string | undefined = process.env.EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT,
+): boolean {
+  return isDesignCaptureEnabled() && truthyFlag(flag);
+}
+
+/** Credentials used by capture auto sign-in. */
+export function designCaptureCredentials(): { email: string; password: string } {
+  if (isLiveFightCaptureEnabled()) {
+    return { email: LIVE_FIGHT_CAPTURE_EMAIL, password: LIVE_FIGHT_CAPTURE_PASSWORD };
+  }
+  return { email: DESIGN_CAPTURE_DEV_EMAIL, password: DESIGN_CAPTURE_DEV_PASSWORD };
 }
 
 export function readDesignCaptureInitialRoute(

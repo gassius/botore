@@ -5,8 +5,10 @@
  * 1. Force `release` to sign with the debug keystore (installable without secrets).
  * 2. Pin Kotlin to 1.9.25 so expo-modules-core Compose compiler matches
  *    (CI otherwise resolved 1.9.24 and failed compileReleaseKotlin).
+ * 3. Allow cleartext HTTP to the emulator loopback (10.0.2.2) so live-fight
+ *    captures can reach local Supabase — release builds block cleartext by default.
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,8 +18,12 @@ const androidRoot = join(repoRoot, 'apps/game/android');
 const buildGradle = join(androidRoot, 'app/build.gradle');
 const rootBuildGradle = join(androidRoot, 'build.gradle');
 const gradleProps = join(androidRoot, 'gradle.properties');
+const manifestPath = join(androidRoot, 'app/src/main/AndroidManifest.xml');
+const xmlDir = join(androidRoot, 'app/src/main/res/xml');
+const networkSecurityConfig = join(xmlDir, 'network_security_config.xml');
 
 const SIGN_MARKER = '// botore-ci-design-capture-debug-signing';
+const CLEARTEXT_MARKER = 'botore-ci-cleartext-loopback';
 const KOTLIN_PIN = '1.9.25';
 
 if (!existsSync(buildGradle)) {
@@ -77,5 +83,38 @@ if (existsSync(rootBuildGradle)) {
       `kotlinVersion = findProperty('android.kotlinVersion') ?: '${KOTLIN_PIN}'`,
     );
     writeFileSync(rootBuildGradle, root);
+  }
+}
+
+// Live-fight captures talk to host Supabase via http://10.0.2.2:54321.
+if (existsSync(manifestPath)) {
+  mkdirSync(xmlDir, { recursive: true });
+  writeFileSync(
+    networkSecurityConfig,
+    `<?xml version="1.0" encoding="utf-8"?>
+<!-- ${CLEARTEXT_MARKER}: CI / local emulator only -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
+`,
+  );
+  let manifest = readFileSync(manifestPath, 'utf8');
+  if (!manifest.includes('android:networkSecurityConfig')) {
+    if (!/<application\b[^>]*>/.test(manifest)) {
+      console.error('error: could not find <application> in AndroidManifest.xml');
+      process.exit(1);
+    }
+    manifest = manifest.replace(/<application\b([^>]*)>/, (_m, attrs) => {
+      const cleaned = String(attrs).replace(/\s+android:usesCleartextTraffic="[^"]*"/g, '');
+      return `<application${cleaned} android:networkSecurityConfig="@xml/network_security_config" android:usesCleartextTraffic="true">`;
+    });
+    writeFileSync(manifestPath, manifest);
+    console.log(`patched ${manifestPath} (cleartext → 10.0.2.2 / localhost)`);
+  } else {
+    console.log('ci cleartext networkSecurityConfig already present');
   }
 }

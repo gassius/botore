@@ -10,6 +10,7 @@ import {
   StatusErrorBanner,
   garageTag,
 } from '../../garage-tag';
+import { isServerPlaybackReady } from '../../replay/serverPlayback';
 import { computeConfirmFightControls, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
 
@@ -26,6 +27,7 @@ export function ConfirmFightScreen(props: {
     startFight,
     clearSubmitError,
     candidatesKind,
+    fightKind,
     prepareEligibility,
     fightInFlight,
     bumpNavigationGeneration,
@@ -38,6 +40,7 @@ export function ConfirmFightScreen(props: {
   const [eligMessage, setEligMessage] = useState<string | null>(null);
   const [eligAllowances, setEligAllowances] = useState<number | null>(null);
   const [eligLoading, setEligLoading] = useState(false);
+  const [playbackBlocked, setPlaybackBlocked] = useState<string | null>(null);
   const activeNavGenRef = useRef(navigationGeneration);
   activeNavGenRef.current = navigationGeneration;
 
@@ -120,6 +123,7 @@ export function ConfirmFightScreen(props: {
 
   const runStart = () => {
     clearSubmitError();
+    setPlaybackBlocked(null);
     const expectedOpponentId = selected.characterId;
     const genAtStart = navigationGeneration;
     void startFight().then((fight) => {
@@ -132,6 +136,15 @@ export function ConfirmFightScreen(props: {
         })
       ) {
         props.onFightStarted();
+        return;
+      }
+      // Fight returned but cannot drive first-run Replay (DEV scaffold / unsealed).
+      if (fight && fight.opponentId === expectedOpponentId && !isServerPlaybackReady(fight)) {
+        setPlaybackBlocked(
+          fightKind === 'dev'
+            ? 'Live combat-v1 is required for first-run Replay. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY — DEV scaffold is not a sealed server fight.'
+            : 'Fight response was not a sealed combat-v1 replay with garage sealed builds. Replay stayed blocked so fixture robots and sample XP cannot appear.',
+        );
       }
     });
   };
@@ -275,8 +288,17 @@ export function ConfirmFightScreen(props: {
         />
       ) : null}
 
+      {playbackBlocked ? (
+        <StatusErrorBanner
+          title="Server fight required"
+          detail={playbackBlocked}
+          testID="confirm-playback-blocked"
+        />
+      ) : null}
+
       <Text style={styles.note} allowFontScaling>
-        XP and outcomes come from combat-v1 after the request — not from REF samples.
+        XP, cost, and outcomes come from combat-v1 after the request — not from REF samples.
+        {fightKind === 'dev' ? ' · DEV adapters active until public Supabase env is set.' : ''}
       </Text>
     </ScreenChrome>
   );

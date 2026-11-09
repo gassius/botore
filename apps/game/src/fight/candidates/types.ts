@@ -1,6 +1,6 @@
 import type { GarageLoadout } from '../../garage/loadout/loadoutTypes';
 
-/** System opponent visible to the client via characters RLS + current_bot_loadouts. */
+/** System opponent from list_opponent_roster + current_bot_loadouts. */
 export type OpponentCandidate = {
   readonly characterId: string;
   readonly displayName: string;

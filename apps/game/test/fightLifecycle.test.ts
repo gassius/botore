@@ -17,8 +17,10 @@ import {
 } from '../src/fight/fightSessionLifecycle';
 import { DevFightRequestAdapter } from '../src/fight/request/DevFightRequestAdapter';
 import { createFightIdempotencyKey, resolveFightIntent } from '../src/fight/request/idempotency';
+import type { FightSuccess } from '../src/fight/request/types';
 import type { OpponentCandidate } from '../src/fight/candidates/types';
 import { DEFAULT_CONFIRMED_LOADOUT } from '../src/garage/loadout/proofCatalogue';
+import { loadDevGoldenConfirmedResult } from '../src/replay/loadDevReplay';
 
 const sir: OpponentCandidate = {
   characterId: 'opp-sir-bot',
@@ -206,7 +208,70 @@ describe('foreign in-flight must not be joined (P1)', () => {
       }),
     ).toBe(false);
 
+    // DEV scaffold is never first-run playback-ready (no sealed combat-v1 replay).
+    expect(
+      shouldAcceptFightNavigation({
+        fight: fightA,
+        expectedOpponentId: 'opp-sir-bot',
+        navigationGeneration: 1,
+        activeNavigationGeneration: 1,
+      }),
+    ).toBe(false);
+
     expect(shouldPreserveUnresolvedIntent(intentA, dex.characterId)).toBe(false);
+  });
+
+  it('accepts navigation when FightSuccess carries sealed builds + validateable replay', () => {
+    const base = loadDevGoldenConfirmedResult(0);
+    const live: FightSuccess = {
+      battleId: base.battleId,
+      status: 'completed',
+      rulesVersion: base.rulesVersion,
+      seed: base.replay.seed,
+      outcome: {
+        winner: base.replay.outcome.winner,
+        reason: base.replay.outcome.reason,
+      },
+      replay: base.replay,
+      replayChecksum: base.replay.checksum,
+      xpAwarded: 2,
+      allowancesRemaining: 1,
+      utcDay: '2026-11-09',
+      repeated: false,
+      persistence: 'persisted',
+      loadoutVersionIds: {
+        attacker: '22222222-2222-4222-8222-222222222222',
+        defender: '33333333-3333-4333-8333-333333333333',
+      },
+      atlasVersions: { attacker: 'v1', defender: 'v1' },
+      sealedBuilds: {
+        attacker: {
+          chassis: 'chassis-basic',
+          paint: 'paint-oxide',
+          weapon: 'weapon-axe',
+          loadoutVersionId: 'garage-attacker',
+          atlasVersion: 'v1',
+        },
+        defender: {
+          chassis: 'chassis-basic',
+          paint: 'paint-petrol',
+          weapon: 'weapon-sword',
+          loadoutVersionId: 'garage-defender',
+          atlasVersion: 'v1',
+        },
+      },
+      opponentId: 'opp-sir-bot',
+      idempotencyKey: 'idem-live-accept',
+    };
+
+    expect(
+      shouldAcceptFightNavigation({
+        fight: live,
+        expectedOpponentId: 'opp-sir-bot',
+        navigationGeneration: 3,
+        activeNavigationGeneration: 3,
+      }),
+    ).toBe(true);
   });
 });
 
@@ -280,30 +345,34 @@ describe('server-derived allowance day (P2)', () => {
     expect(summary.allowancesRemaining).toBe(1);
   });
 
-  it('does not filter fight_allowances by device Date in Supabase adapter', async () => {
+  it('uses B RPCs for roster + allowance summary (no table SELECTs / device day filter)', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-11-10T12:00:00.000Z'));
 
     const fetches: string[] = [];
+    const bodies: Array<{ url: string; body: unknown }> = [];
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         fetches.push(url);
-        if (url.includes('/characters')) {
+        if (init?.body) bodies.push({ url, body: JSON.parse(String(init.body)) });
+        if (url.includes('/rpc/list_opponent_roster')) {
           return new Response(
-            JSON.stringify([{ character_id: 'opp-sir-bot', display_name: 'Sir Bot' }]),
+            JSON.stringify({
+              ok: true,
+              opponents: [{ characterId: 'opp-sir-bot', displayName: 'Sir Bot' }],
+            }),
             { status: 200 },
           );
         }
-        if (url.includes('/fight_allowances')) {
-          expect(url).not.toContain('utc_day=eq.');
+        if (url.includes('/rpc/get_fight_allowance_summary')) {
           return new Response(
-            JSON.stringify([
-              { utc_day: '2026-11-09', used_at: null, slot_index: 1 },
-              { utc_day: '2026-11-09', used_at: null, slot_index: 2 },
-              { utc_day: '2026-11-09', used_at: null, slot_index: 3 },
-            ]),
+            JSON.stringify({
+              ok: true,
+              utcDay: '2026-11-09',
+              allowancesRemaining: 3,
+            }),
             { status: 200 },
           );
         }
@@ -340,9 +409,18 @@ describe('server-derived allowance day (P2)', () => {
     if (!result.ok) return;
     expect(result.utcDay).toBe('2026-11-09');
     expect(result.allowancesRemaining).toBe(3);
-    expect(fetches.some((u) => u.includes('fight_allowances') && u.includes('utc_day=eq.'))).toBe(
-      false,
+    expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0]?.characterId).toBe('opp-sir-bot');
+    expect(fetches.some((u) => u.includes('/rest/v1/characters'))).toBe(false);
+    expect(fetches.some((u) => u.includes('/rest/v1/fight_allowances'))).toBe(false);
+    expect(fetches.some((u) => u.includes('/rpc/list_opponent_roster'))).toBe(true);
+    expect(fetches.some((u) => u.includes('/rpc/get_fight_allowance_summary'))).toBe(true);
+    const allowanceBodies = bodies.filter((b) =>
+      b.url.includes('/rpc/get_fight_allowance_summary'),
     );
+    expect(allowanceBodies).toHaveLength(1);
+    expect(allowanceBodies[0]?.body).toEqual({});
+    expect(JSON.stringify(allowanceBodies[0]?.body)).not.toContain('p_account_id');
     vi.useRealTimers();
   });
 });
