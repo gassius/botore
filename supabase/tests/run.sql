@@ -1516,3 +1516,123 @@ begin
 
   raise notice 'TEST-OK B2 admin dashboard APIs';
 end $$;
+-- =========================================================================
+-- SEC: catalog-wide admin privilege invariant (order-independent)
+-- =========================================================================
+-- Fails if ANY public.admin_% view or admin/health definer function is
+-- selectable/executable by anon/authenticated — regardless of which
+-- migrations (0017/0018/0019…) have landed. Also asserts service_role can.
+do $$
+declare
+  r record;
+  v_count int := 0;
+  v_fn_count int := 0;
+  v_json jsonb;
+  v_health jsonb;
+  v_outbox jsonb;
+  v_dash jsonb;
+  v_cron_ok boolean := false;
+  v_runs_ok boolean := false;
+  v_dash_present boolean := false;
+  v_runs_present boolean := false;
+begin
+  -- Catalog: every public.admin_% *view* must deny client SELECT ----------
+  -- (tables like admin_audit_log are ledgers, not reporting views)
+  for r in
+    select c.oid, c.relname
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public'
+       and c.relkind = 'v'
+       and c.relname like 'admin_%'
+     order by c.relname
+  loop
+    v_count := v_count + 1;
+    perform tests.assert(
+      not has_table_privilege('anon', r.oid, 'SELECT'),
+      format('anon must not SELECT %s', r.relname)
+    );
+    perform tests.assert(
+      not has_table_privilege('authenticated', r.oid, 'SELECT'),
+      format('authenticated must not SELECT %s', r.relname)
+    );
+    perform tests.assert(
+      has_table_privilege('service_role', r.oid, 'SELECT'),
+      format('service_role must SELECT %s', r.relname)
+    );
+  end loop;
+  perform tests.assert(v_count >= 7, format('expected >=7 admin_%% views, got %s', v_count));
+
+  -- Catalog: admin/health functions must deny client EXECUTE ---------------
+  for r in
+    select p.oid, p.proname, pg_get_function_identity_arguments(p.oid) as args
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and (
+         p.proname like 'admin_%'
+         or p.proname in ('backend_health_snapshot', 'outbox_status_snapshot')
+       )
+     order by p.proname, 3
+  loop
+    v_fn_count := v_fn_count + 1;
+    perform tests.assert(
+      not has_function_privilege('anon', r.oid, 'EXECUTE'),
+      format('anon must not EXECUTE %s(%s)', r.proname, r.args)
+    );
+    perform tests.assert(
+      not has_function_privilege('authenticated', r.oid, 'EXECUTE'),
+      format('authenticated must not EXECUTE %s(%s)', r.proname, r.args)
+    );
+    perform tests.assert(
+      has_function_privilege('service_role', r.oid, 'EXECUTE'),
+      format('service_role must EXECUTE %s(%s)', r.proname, r.args)
+    );
+  end loop;
+  perform tests.assert(
+    v_fn_count >= 3,
+    format('expected >=3 admin/health functions, got %s', v_fn_count)
+  );
+
+  -- service_role positive: live-execute DEFINER RPCs only -----------------
+  -- Do NOT SELECT security_invoker admin views as service_role — that would
+  -- require SELECT on player base tables (e.g. parts_catalogue). View grants
+  -- are already asserted via has_table_privilege above. Dashboard uses the
+  -- owner/reporting DB URL for invoker views.
+  -- Capture results under service_role, then assert as owner (tests schema
+  -- is not granted to service_role).
+  v_dash_present := to_regprocedure('public.admin_dashboard_snapshot()') is not null;
+  v_runs_present := to_regprocedure('public.admin_list_cron_job_runs(integer)') is not null;
+
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+  set local role service_role;
+
+  select public.backend_health_snapshot() into v_health;
+  select public.outbox_status_snapshot() into v_outbox;
+  select exists (select 1 from public.admin_list_cron_jobs() limit 1) into v_cron_ok;
+
+  if v_dash_present then
+    select public.admin_dashboard_snapshot() into v_dash;
+  end if;
+  -- Runs may be empty before cron fires (fresh CI); RPC must still succeed.
+  -- Mirror B2: count(*) >= 0 proves EXECUTE without requiring history rows.
+  if v_runs_present then
+    select (count(*) >= 0) into v_runs_ok from public.admin_list_cron_job_runs(5);
+  else
+    v_runs_ok := true;
+  end if;
+
+  reset role;
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+
+  perform tests.assert(v_health ? 'status', 'service_role backend_health_snapshot');
+  perform tests.assert((v_outbox->>'ok')::boolean, 'service_role outbox_status_snapshot');
+  perform tests.assert(v_cron_ok, 'service_role admin_list_cron_jobs');
+  if v_dash_present then
+    perform tests.assert((v_dash->>'ok')::boolean, 'service_role admin_dashboard_snapshot');
+  end if;
+  perform tests.assert(v_runs_ok, 'service_role admin_list_cron_job_runs (optional)');
+
+  raise notice 'TEST-OK SEC admin grant lockdown (catalog privileges)';
+end $$;

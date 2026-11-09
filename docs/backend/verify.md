@@ -165,6 +165,12 @@ pnpm test:coverage:edge
 Backend contract for a future dashboard UI — **no `apps/dashboard` UI in this
 slice**. Full table: [`docs/backend/admin-dashboard.md`](./admin-dashboard.md).
 
+**SEC lockdown:** `admin_*` views and
+`backend_health_snapshot` / `outbox_status_snapshot` / `admin_list_cron_jobs`
+are granted to **`service_role` only** (not `anon` / `authenticated`). Call
+them from the reporting DB credential or Edge Functions that use the service
+role key. Migration `0019_admin_grant_lockdown.sql`.
+
 | View / function               | Purpose                                        |
 | ----------------------------- | ---------------------------------------------- |
 | `admin_dashboard_snapshot()`  | One-shot JSON for health + fights + ops panes  |
