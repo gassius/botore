@@ -1953,6 +1953,51 @@ begin
     'service_role must not EXECUTE list_ranking'
   );
 
+  -- Early suite truncates progression_ledger (append-only cleanup). Restore the
+  -- 1002 ranking-peer XP packs as table owner so list_ranking has a known board.
+  -- Peers/characters themselves remain from seed; this only re-appends XP rows.
+  reset role;
+  perform tests.assert(
+    exists (select 1 from public.characters where character_id = 'peer-bolt' and is_opponent = false),
+    'ranking peer-bolt character present'
+  );
+  if not exists (
+    select 1 from public.progression_ledger where character_id = 'peer-bolt'
+  ) then
+    insert into public.progression_ledger (account_id, character_id, delta_xp, reason)
+    values
+      ('00000000-0000-4000-8000-000000000011', 'peer-bolt', 2, 'battle'),
+      ('00000000-0000-4000-8000-000000000011', 'peer-bolt', 2, 'battle'),
+      ('00000000-0000-4000-8000-000000000011', 'peer-bolt', 2, 'battle');
+  end if;
+  if not exists (
+    select 1 from public.progression_ledger where character_id = 'peer-clank'
+  ) then
+    insert into public.progression_ledger (account_id, character_id, delta_xp, reason)
+    values
+      ('00000000-0000-4000-8000-000000000012', 'peer-clank', 2, 'battle'),
+      ('00000000-0000-4000-8000-000000000012', 'peer-clank', 1, 'battle');
+  end if;
+  if not exists (
+    select 1 from public.progression_ledger where character_id = 'peer-rivet'
+  ) then
+    insert into public.progression_ledger (account_id, character_id, delta_xp, reason)
+    values
+      ('00000000-0000-4000-8000-000000000013', 'peer-rivet', 1, 'battle');
+  end if;
+  perform tests.assert(
+    (select coalesce(sum(delta_xp), 0) from public.progression_ledger where character_id = 'peer-bolt') = 6,
+    'restored peer-bolt XP totals 6'
+  );
+  perform tests.assert(
+    (select coalesce(sum(delta_xp), 0) from public.progression_ledger where character_id = 'peer-clank') = 3,
+    'restored peer-clank XP totals 3'
+  );
+  perform tests.assert(
+    (select coalesce(sum(delta_xp), 0) from public.progression_ledger where character_id = 'peer-rivet') = 1,
+    'restored peer-rivet XP totals 1'
+  );
+
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   perform set_config('request.jwt.claim.sub', v_account::text, true);
   set local role authenticated;
@@ -1974,7 +2019,7 @@ begin
        where r->>'characterId' = 'peer-bolt'
          and (r->>'totalXp')::integer = 6
     ),
-    'peer-bolt seed totalXp is 6'
+    'peer-bolt list_ranking totalXp is 6'
   );
   perform tests.assert(
     exists (
@@ -1983,7 +2028,7 @@ begin
        where r->>'characterId' = 'peer-clank'
          and (r->>'totalXp')::integer = 3
     ),
-    'peer-clank seed totalXp is 3'
+    'peer-clank list_ranking totalXp is 3'
   );
   perform tests.assert(
     exists (
@@ -1992,7 +2037,7 @@ begin
        where r->>'characterId' = 'peer-rivet'
          and (r->>'totalXp')::integer = 1
     ),
-    'peer-rivet seed totalXp is 1'
+    'peer-rivet list_ranking totalXp is 1'
   );
   -- Server order: totalXp desc, then characterId asc. Adjacent rows must obey.
   -- (Earlier suite steps may award XP to player-hero, so absolute ranks vary.)
