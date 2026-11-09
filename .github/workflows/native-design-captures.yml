@@ -91,6 +91,10 @@ jobs:
       - name: Install workspace
         run: pnpm install --frozen-lockfile
 
+      - name: Build game workspace deps (dist/ for Metro)
+        # Required before :app:createBundleReleaseJsAndAssets — packages export dist/.
+        run: pnpm --filter @botore/game^... run build
+
       - name: Capture tooling check (scripts + eas.json)
         run: node scripts/native-capture/check-capture-env.mjs --platform android --tools-only
 

@@ -25,6 +25,11 @@ export EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE="${EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE:-Sta
 
 echo "ci-android-emulator-capture: tip=$(git rev-parse --short HEAD 2>/dev/null || echo unknown) routes=${ROUTES}" >&2
 
+# Workspace packages export dist/ only — Metro createBundleReleaseJsAndAssets
+# resolves @botore/replay (etc.) through main/exports → ./dist/index.js.
+echo "build @botore/game workspace deps (dist/)…" >&2
+pnpm --filter @botore/game^... run build
+
 # Expo CLI loads .env during createBundle*JsAndAssets — bake capture flags in.
 cat >"${REPO_ROOT}/apps/game/.env" <<EOF
 EXPO_PUBLIC_DESIGN_CAPTURE=${EXPO_PUBLIC_DESIGN_CAPTURE}
