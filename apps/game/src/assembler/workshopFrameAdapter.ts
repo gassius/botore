@@ -183,6 +183,7 @@ function layerFromAsset(
   const topLeft = transformPoint(matrix, 0, 0);
   const pivotWorld = transformPoint(matrix, asset.pivot[0], asset.pivot[1]);
   const decomp = decomposeTranslateRotate(matrix);
+  const paintToken = WORKSHOP_FRAME_MANIFEST.paint_tokens[paint];
   return {
     id: asset.id,
     role: asset.id.startsWith('weapon_')
@@ -200,10 +201,16 @@ function layerFromAsset(
     y: topLeft.y,
     width: asset.width,
     height: asset.height,
-    color: WORKSHOP_FRAME_MANIFEST.paint_tokens[paint],
+    // Paint token used only to tint the mask layer — never a whole-sprite tint.
+    color: paintToken,
     isPaintMask: asset.has_paint,
     label: `${WORKSHOP_FRAME_KIT_ID}:${asset.id}`,
+    // Precomposite kept as reference/fallback; live path is under→mask→over.
     imagePath: asset.files[paint],
+    materialUnderPath: asset.material_under,
+    materialOverPath: asset.material_over,
+    ...(asset.has_paint ? { paintMaskPath: asset.paint_mask } : {}),
+    paintComposite: true,
     pivotX: asset.pivot[0],
     pivotY: asset.pivot[1],
     worldPivotX: pivotWorld.x,
@@ -222,7 +229,11 @@ export interface AssembleWorkshopFrameInput {
   readonly motionPose?: MotionPose;
 }
 
-/** Assemble using measured kit-v002 geometry + precomposited Oxide/Petrol PNGs. */
+/**
+ * Assemble using measured kit-v002 geometry.
+ * Paint swap uses kit masks (under → tinted mask → over), not a whole-robot tint.
+ * Precomposited `parts/{id}-{paint}.png` remain on each layer as fallback/reference.
+ */
 export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): AssembledBot {
   const paintId = input.paintId ?? input.loadout.paint;
   const weaponId = input.weaponId ?? input.loadout.weapon;
@@ -289,7 +300,7 @@ export function listWorkshopFrameGaps(): readonly string[] {
   return [
     'ACTIVE pin is v002 only; v001 assets removed — must_not_mix_versions (coords/padding differ). Prefer sealed atomic packs so F7 never sees partial trees.',
     'Kit pose keys include heavy_windup/heavy_attack; F7 MotionPose only exposes attack→quick_attack — need product mapping for heavy hits without forking props. heavy_windup.root_y changed 20→45 in v002 only.',
-    'Runtime uses precomposited parts/{id}-{paint}.png (documented fallback). Live under→mask→over compositing needs Skia or offline bake; RN Image cannot alpha-mask tint alone.',
+    'Paint path: under→mask-tint(color)→over via kit materials/masks (RN Image tintColor on mask alpha). Precomposited parts/{id}-{paint}.png retained as fallback/reference only — do not whole-sprite tint.',
     'No arena/FX/audio in kit-v002 — fight stage still uses separate quiet-arena placeholders when those land.',
     'Shield/drone/decal are reserved only; assembler ignores loadout.shield/drone/decals.',
     'l/r are view sides not anatomical — document for animators; mirror is whole-hierarchy scaleX about canvas centre.',

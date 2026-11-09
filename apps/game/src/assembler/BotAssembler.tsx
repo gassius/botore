@@ -3,6 +3,7 @@
  *
  * RN Animated first (no Skia). Workshop Frame kit-v002 PNGs when
  * `placeholder={false}` (default); geometric PLACEHOLDER when true.
+ * Paint uses kit under→mask→over (tint mask only); never a whole-sprite tint.
  * Shell and F8 import this component; do not fork a second renderer.
  *
  * Local validation only — not approved final likeness or native perf/replay.
@@ -76,10 +77,24 @@ function KitLayer({
   mirrored: boolean;
   canvasSize: number;
 }): React.ReactElement | null {
-  const source = layer.imagePath ? workshopFramePartSource(layer.imagePath) : undefined;
-  if (!source || layer.worldPivotX === undefined || layer.worldPivotY === undefined) {
+  if (layer.worldPivotX === undefined || layer.worldPivotY === undefined) {
     return null;
   }
+
+  const under = layer.materialUnderPath
+    ? workshopFramePartSource(layer.materialUnderPath)
+    : undefined;
+  const mask =
+    layer.paintMaskPath && layer.isPaintMask
+      ? workshopFramePartSource(layer.paintMaskPath)
+      : undefined;
+  const over = layer.materialOverPath ? workshopFramePartSource(layer.materialOverPath) : undefined;
+  const fallback = layer.imagePath ? workshopFramePartSource(layer.imagePath) : undefined;
+  const useComposite = Boolean(layer.paintComposite && under && over);
+  if (!useComposite && !fallback) {
+    return null;
+  }
+
   const pivotX = (layer.pivotX ?? 0) * scale;
   const pivotY = (layer.pivotY ?? 0) * scale;
   // Kit + RN native: +Y down, clockwise-positive degrees — pass kit CW angle as-is.
@@ -87,6 +102,13 @@ function KitLayer({
   // Per-layer mirror (not parent canvas scaleX:-1) so Expo web keeps Images
   // inside overflow clips — same fix as F9 Confirm tip 1f25ea0.
   const left = kitLayerAnchorLeft(layer.worldPivotX, scale, canvasSize, mirrored);
+  const imgStyle = {
+    position: 'absolute' as const,
+    left: -pivotX,
+    top: -pivotY,
+    width: layer.width * scale,
+    height: layer.height * scale,
+  };
 
   return (
     <View
@@ -110,16 +132,23 @@ function KitLayer({
           ],
         }}
       >
-        <Image
-          source={source}
-          style={{
-            position: 'absolute',
-            left: -pivotX,
-            top: -pivotY,
-            width: layer.width * scale,
-            height: layer.height * scale,
-          }}
-        />
+        {useComposite ? (
+          <>
+            <Image source={under!} style={imgStyle} testID={`assembler-layer-${layer.id}-under`} />
+            {mask ? (
+              <Image
+                source={mask}
+                style={imgStyle}
+                // Colourise mask alpha to the selected paint token only — never tint under/over.
+                tintColor={layer.color}
+                testID={`assembler-layer-${layer.id}-paint-mask`}
+              />
+            ) : null}
+            <Image source={over!} style={imgStyle} testID={`assembler-layer-${layer.id}-over`} />
+          </>
+        ) : (
+          <Image source={fallback!} style={imgStyle} />
+        )}
       </View>
     </View>
   );

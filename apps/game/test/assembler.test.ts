@@ -107,9 +107,14 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
   it('maps catalogue / alias paints onto Oxide and Petrol without catalogue expansion', () => {
     expect(resolvePaintVisual('oxide').cataloguePaintId).toBe('paint-crimson');
     expect(resolvePaintVisual('petrol').cataloguePaintId).toBe('paint-cobalt');
-    expect(OXIDE_PAINT.armourColor).toBe(WORKSHOP_FRAME_MANIFEST.paint_tokens.oxide);
-    expect(PETROL_PAINT.armourColor).toBe(WORKSHOP_FRAME_MANIFEST.paint_tokens.petrol);
-    expect(OXIDE_PAINT.armourColor).not.toBe(PETROL_PAINT.armourColor);
+    expect(OXIDE_PAINT.armourColor.toLowerCase()).toBe(
+      WORKSHOP_FRAME_MANIFEST.paint_tokens.oxide.toLowerCase(),
+    );
+    expect(OXIDE_PAINT.armourColor.toLowerCase()).toBe('#e8771c');
+    expect(PETROL_PAINT.armourColor.toLowerCase()).toBe(
+      WORKSHOP_FRAME_MANIFEST.paint_tokens.petrol.toLowerCase(),
+    );
+    expect(OXIDE_PAINT.armourColor.toLowerCase()).not.toBe(PETROL_PAINT.armourColor.toLowerCase());
   });
 
   it('assembles 15 robot parts + weapon from measured pivots with shared grip rotation', () => {
@@ -119,6 +124,9 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
     expect(bot.canvas.width).toBe(640);
     expect(bot.layers.length).toBe(16); // 15 body + weapon
     expect(bot.layers.every((l) => typeof l.imagePath === 'string')).toBe(true);
+    expect(bot.layers.every((l) => l.paintComposite === true)).toBe(true);
+    expect(bot.layers.every((l) => typeof l.materialUnderPath === 'string')).toBe(true);
+    expect(bot.layers.every((l) => typeof l.materialOverPath === 'string')).toBe(true);
     expect(bot.layers.find((l) => l.id === 'weapon_sword')).toBeTruthy();
     expect(bot.layers.map((l) => l.zIndex)).toEqual(
       [...bot.layers]
@@ -139,7 +147,7 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
     expect(WORKSHOP_FRAME_MANIFEST.weapon_grip_rotation_degrees).toBe(180);
   });
 
-  it('swaps Oxide/Petrol and sword/axe/dagger via existing BotAssembler props', () => {
+  it('swaps Oxide/Petrol via kit paint masks (shared under/over; tint token only)', () => {
     const oxideSword = assembleBot({ loadout: baseLoadout, facing: 'right', placeholder: false });
     const petrol = withPaint(oxideSword, 'petrol');
     const axe = withWeapon(oxideSword, 'weapon-axe');
@@ -147,10 +155,27 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
 
     expect(oxideSword.paintVisual).toBe('oxide');
     expect(petrol.paintVisual).toBe('petrol');
-    expect(oxideSword.layers.find((l) => l.id === 'torso')?.imagePath).toBe(
-      'parts/torso-oxide.png',
-    );
-    expect(petrol.layers.find((l) => l.id === 'torso')?.imagePath).toBe('parts/torso-petrol.png');
+
+    const oxideTorso = oxideSword.layers.find((l) => l.id === 'torso')!;
+    const petrolTorso = petrol.layers.find((l) => l.id === 'torso')!;
+    // Same geometry layers — paint swap must not retarget under/mask/over paths.
+    expect(oxideTorso.materialUnderPath).toBe('materials/torso-under.png');
+    expect(oxideTorso.paintMaskPath).toBe('masks/torso-paint.png');
+    expect(oxideTorso.materialOverPath).toBe('materials/torso-over.png');
+    expect(petrolTorso.materialUnderPath).toBe(oxideTorso.materialUnderPath);
+    expect(petrolTorso.paintMaskPath).toBe(oxideTorso.paintMaskPath);
+    expect(petrolTorso.materialOverPath).toBe(oxideTorso.materialOverPath);
+    expect(oxideTorso.color.toLowerCase()).toBe('#e8771c');
+    expect(petrolTorso.color.toLowerCase()).toBe('#27877b');
+    expect(oxideTorso.color).not.toBe(petrolTorso.color);
+    // Precomposites remain as reference/fallback only.
+    expect(oxideTorso.imagePath).toBe('parts/torso-oxide.png');
+    expect(petrolTorso.imagePath).toBe('parts/torso-petrol.png');
+
+    // Empty-mask parts (hands / pelvis / weapons) stay metal — no paintMaskPath.
+    expect(oxideSword.layers.find((l) => l.id === 'hand_r')?.paintMaskPath).toBeUndefined();
+    expect(oxideSword.layers.find((l) => l.id === 'hand_r')?.isPaintMask).toBe(false);
+    expect(oxideSword.layers.find((l) => l.id === 'weapon_sword')?.paintMaskPath).toBeUndefined();
 
     expect(axe.weaponKind).toBe('axe');
     expect(dagger.weaponKind).toBe('dagger');
