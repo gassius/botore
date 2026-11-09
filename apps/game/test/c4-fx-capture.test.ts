@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { compileAnimationQueue } from '../src/replay-playback';
+import { fxPeakFrameIndex } from '../src/arena/environmentPin';
 import {
   FX_CAPTURE_FAMILIES,
   FX_CAPTURE_HOLD_MS,
+  FX_CAPTURE_HOLD_SETTLE_MS,
   completeFxCaptureHold,
   countFxEventsFromReplay,
   formatArenaReadyLog,
@@ -94,6 +96,15 @@ describe('C4 event-driven FX capture holds', () => {
     expect(formatFxCaptureLog('hit', 'hold')).toBe('BOTORE_CAPTURE_FX_HOLD:family=hit');
     expect(formatFxCaptureLog('dodge', 'fire')).toBe('BOTORE_CAPTURE_FX_FIRE:family=dodge');
     expect(formatFxCaptureLog('defeat', 'resume')).toBe('BOTORE_CAPTURE_FX_RESUME:family=defeat');
+  });
+
+  it('settles before HOLD so CI does not screencap pre-FX idle, and freezes peak frame', () => {
+    // Strip is 3×90ms ≈ 270ms; without pause-freeze stills land after auto-hide.
+    expect(FX_CAPTURE_HOLD_SETTLE_MS).toBeGreaterThanOrEqual(100);
+    expect(FX_CAPTURE_HOLD_SETTLE_MS).toBeLessThan(FX_CAPTURE_HOLD_MS);
+    expect(fxPeakFrameIndex(3)).toBe(1);
+    expect(fxPeakFrameIndex(1)).toBe(0);
+    expect(fxPeakFrameIndex(0)).toBe(0);
   });
 });
 

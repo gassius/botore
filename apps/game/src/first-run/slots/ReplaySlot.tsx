@@ -18,6 +18,7 @@ import {
 import { formatOutcomeLine } from '../../replay/confirmedResult';
 import {
   FX_CAPTURE_HOLD_MS,
+  FX_CAPTURE_HOLD_SETTLE_MS,
   completeFxCaptureHold,
   formatFxCaptureLog,
   initialFxCaptureHoldState,
@@ -63,14 +64,18 @@ export function ReplaySlot(): React.ReactElement {
       const { next, shouldHold } = noteFxCaptureCue(fxHoldRef.current, family);
       fxHoldRef.current = next;
       if (!shouldHold) return;
-      console.log(formatFxCaptureLog(family, 'hold'));
+      // Pause first so EventFxLayer freezes the peak FX frame; log HOLD only after
+      // settle so CI screencaps the spark/dust, not the pre-cue idle frame.
       playerRef.current?.pause();
       if (fxHoldTimerRef.current) clearTimeout(fxHoldTimerRef.current);
       fxHoldTimerRef.current = setTimeout(() => {
-        fxHoldRef.current = completeFxCaptureHold(fxHoldRef.current);
-        console.log(formatFxCaptureLog(family, 'resume'));
-        playerRef.current?.play();
-      }, FX_CAPTURE_HOLD_MS);
+        console.log(formatFxCaptureLog(family, 'hold'));
+        fxHoldTimerRef.current = setTimeout(() => {
+          fxHoldRef.current = completeFxCaptureHold(fxHoldRef.current);
+          console.log(formatFxCaptureLog(family, 'resume'));
+          playerRef.current?.play();
+        }, FX_CAPTURE_HOLD_MS);
+      }, FX_CAPTURE_HOLD_SETTLE_MS);
     },
     [liveCapture],
   );

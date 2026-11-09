@@ -19,6 +19,12 @@ export type FxCaptureHoldState = {
  */
 export const FX_CAPTURE_HOLD_MS = 8000;
 
+/**
+ * Wait for React to commit the FX cue + paused peak frame before logging HOLD.
+ * CI keys stills off the HOLD marker; logging too early yields idle/pose-only PNGs.
+ */
+export const FX_CAPTURE_HOLD_SETTLE_MS = 150;
+
 export const FX_CAPTURE_FAMILIES: readonly FxCaptureFamily[] = ['hit', 'dodge', 'defeat'];
 
 export function initialFxCaptureHoldState(): FxCaptureHoldState {

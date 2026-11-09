@@ -278,7 +278,8 @@ capture_fx_while_held() {
   if logcat_has "${resume_marker}"; then
     echo "note: ${family} resume already logged — capturing late frame" >&2
   fi
-  sleep 0.2
+  # HOLD is logged after a short settle so the frozen peak FX frame is painted.
+  sleep 0.35
   capture_current "${label}"
   # Repair Yard is on-screen during FX holds — grab arena here so we do not
   # depend solely on a separate ARENA_READY poll (missed on tip 564718f).
