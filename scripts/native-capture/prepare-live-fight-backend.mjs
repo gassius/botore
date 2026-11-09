@@ -50,7 +50,8 @@ function loadSupabaseKeys() {
       const key = m[1];
       const val = m[2].replace(/^"|"$/g, '');
       if (key === 'ANON_KEY' || key === 'SUPABASE_ANON_KEY') anon = anon || val;
-      if (key === 'SERVICE_ROLE_KEY' || key === 'SUPABASE_SERVICE_ROLE_KEY') service = service || val;
+      if (key === 'SERVICE_ROLE_KEY' || key === 'SUPABASE_SERVICE_ROLE_KEY')
+        service = service || val;
     }
   }
   if (!anon || !service) fail('missing ANON_KEY / SERVICE_ROLE_KEY (start supabase first)');
