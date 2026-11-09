@@ -1,14 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { FixtureRankingReadAdapter } from '../ranking/adapters/FixtureRankingReadAdapter';
 import type { RankingReadPort } from '../ranking/RankingReadPort';
+import { createRankingLoadController } from '../ranking/rankingLoadController';
 import {
-  applyRankingLoadResult,
-  beginRankingLoad,
   createInitialRankingSession,
-  loadRankingFromPort,
   rankingRowAccessibilityLabel,
 } from '../ranking/rankingSession';
+import { RANKING_SCREEN_CHROME_SCROLL } from '../ranking/rankingScrollContract';
 import type { RankingRow, RankingSessionState } from '../ranking/types';
 import {
   GaragePanel,
@@ -34,6 +33,9 @@ export type RankingScreenProps = {
 /**
  * First-run Ranking screen (REF-03). Uses shell Garage Tag exports.
  * Fixture-backed scaffolding only — no client ranking algorithm.
+ *
+ * Scroll owner: ScreenChrome body ScrollView (`RANKING_SCREEN_CHROME_SCROLL`).
+ * Footer Back stays outside the scroll region.
  */
 export const RankingScreen: React.FC<RankingScreenProps> = ({
   port: injectedPort,
@@ -44,29 +46,39 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
     () => injectedPort ?? new FixtureRankingReadAdapter({ scenario: 'populated' }),
   );
   const [session, setSession] = useState<RankingSessionState>(createInitialRankingSession);
+  const setSessionRef = useRef(setSession);
+  setSessionRef.current = setSession;
 
-  const runLoad = useCallback(async () => {
-    setSession((prev) => beginRankingLoad(prev));
-    const result = await loadRankingFromPort(port);
-    setSession((prev) => applyRankingLoadResult(prev, result));
-  }, [port]);
+  const controller = useMemo(
+    () =>
+      createRankingLoadController(port, (updater) => {
+        setSessionRef.current(updater);
+      }),
+    [port],
+  );
 
   useEffect(() => {
     if (!autoLoad) {
       return;
     }
-    void runLoad();
-  }, [autoLoad, runLoad]);
+    void controller.load();
+  }, [autoLoad, controller]);
+
+  const loadBusy = session.phase === 'loading' || session.phase === 'idle' || session.refreshing;
 
   const footer = onBack ? (
     <PrimaryButton label="Back to stable" onPress={onBack} testID="ranking-back" />
   ) : undefined;
 
   return (
-    <ScreenChrome testID="slot-ranking" scroll={false} {...(footer ? { footer } : {})}>
+    <ScreenChrome
+      testID="slot-ranking"
+      scroll={RANKING_SCREEN_CHROME_SCROLL}
+      {...(footer ? { footer } : {})}
+    >
       <ScreenHeader title="Ranking" {...(onBack ? { onBack } : {})} testID="ranking-header" />
       <DevFixtureBanner />
-      <RankingBody session={session} onRetry={runLoad} />
+      <RankingBody session={session} onRetry={() => void controller.load()} loadBusy={loadBusy} />
       <DomainNote text="Domain: RankingReadPort.list() + DEV fixtures. Live ranking blocked until verified backend contract." />
     </ScreenChrome>
   );
@@ -90,9 +102,10 @@ function DevFixtureBanner(): React.ReactElement {
 type RankingBodyProps = {
   session: RankingSessionState;
   onRetry: () => void;
+  loadBusy: boolean;
 };
 
-function RankingBody({ session, onRetry }: RankingBodyProps): React.ReactElement {
+function RankingBody({ session, onRetry, loadBusy }: RankingBodyProps): React.ReactElement {
   if (session.phase === 'loading' || session.phase === 'idle') {
     return (
       <View style={styles.centerState} accessibilityLabel="Loading ranking">
@@ -127,7 +140,7 @@ function RankingBody({ session, onRetry }: RankingBodyProps): React.ReactElement
           detail={session.errorMessage ?? 'Unknown error'}
           testID="ranking-error"
         />
-        <PrimaryButton label="Retry" onPress={onRetry} testID="ranking-retry" />
+        <PrimaryButton label="Retry" onPress={onRetry} disabled={loadBusy} testID="ranking-retry" />
       </View>
     );
   }
@@ -143,20 +156,30 @@ function RankingBody({ session, onRetry }: RankingBodyProps): React.ReactElement
             DEV fixture returned an empty list. Live ranking remains blocked.
           </Text>
         </GaragePanel>
-        <SecondaryButton label="Retry" onPress={onRetry} testID="ranking-empty-retry" />
+        <SecondaryButton
+          label="Retry"
+          onPress={onRetry}
+          disabled={loadBusy}
+          testID="ranking-empty-retry"
+        />
       </View>
     );
   }
 
   return (
-    <View style={styles.listWrap}>
+    <View style={styles.listWrap} testID="ranking-body-populated">
       {session.errorMessage ? (
         <View style={styles.refreshError} testID="ranking-refresh-failed">
           <StatusErrorBanner title="Refresh failed" detail={session.errorMessage} />
           <Text style={styles.stateHint} allowFontScaling>
             Showing last readable rows.
           </Text>
-          <PrimaryButton label="Retry" onPress={onRetry} testID="ranking-refresh-retry" />
+          <PrimaryButton
+            label="Retry"
+            onPress={onRetry}
+            disabled={loadBusy}
+            testID="ranking-refresh-retry"
+          />
         </View>
       ) : null}
       {session.refreshing ? (
@@ -166,7 +189,12 @@ function RankingBody({ session, onRetry }: RankingBodyProps): React.ReactElement
       ) : null}
       <RankingList rows={session.rows} refreshing={session.refreshing} />
       {!session.errorMessage ? (
-        <SecondaryButton label="Refresh" onPress={onRetry} testID="ranking-refresh" />
+        <SecondaryButton
+          label="Refresh"
+          onPress={onRetry}
+          disabled={loadBusy}
+          testID="ranking-refresh"
+        />
       ) : null}
     </View>
   );
@@ -241,7 +269,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   centerState: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
@@ -269,12 +297,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   listWrap: {
-    flex: 1,
     gap: 10,
   },
   list: {
     gap: 10,
-    flexGrow: 1,
   },
   row: {
     minHeight: garageTag.touchMin,

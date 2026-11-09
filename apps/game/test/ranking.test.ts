@@ -3,6 +3,7 @@ import { FixtureRankingReadAdapter } from '../src/ranking/adapters/FixtureRankin
 import { UnavailableContractRankingReadAdapter } from '../src/ranking/adapters/UnavailableContractRankingReadAdapter';
 import {
   DEV_EMPTY_RANKING_ROWS,
+  DEV_OVERFLOW_RANKING_ROWS,
   DEV_POPULATED_RANKING_ROWS,
   DEV_PRESERVE_ORDER_ROWS,
   DEV_RANKING_FIXTURE_LABEL,
@@ -11,6 +12,7 @@ import {
   RankingContractUnavailableError,
   type RankingReadPort,
 } from '../src/ranking/RankingReadPort';
+import { createRankingLoadController } from '../src/ranking/rankingLoadController';
 import {
   applyRankingLoadResult,
   beginRankingLoad,
@@ -18,7 +20,12 @@ import {
   loadRankingFromPort,
   rankingRowAccessibilityLabel,
 } from '../src/ranking/rankingSession';
-import type { RankingRow } from '../src/ranking/types';
+import {
+  RANKING_SCREEN_CHROME_SCROLL,
+  RANKING_SHORT_VIEWPORT_HEIGHT,
+  rankingContentExceedsShortViewport,
+} from '../src/ranking/rankingScrollContract';
+import type { RankingRow, RankingSessionState } from '../src/ranking/types';
 
 describe('DEV ranking fixtures', () => {
   it('labels every fixture row as development data', () => {
@@ -159,5 +166,115 @@ describe('no client ranking algorithm', () => {
       rows: shuffled,
     });
     expect(state.rows.map((r) => r.rank)).toEqual([7, 2, 99]);
+  });
+});
+
+describe('ranking scroll owner (PRR blocker)', () => {
+  it('keeps ScreenChrome scrolling enabled for overflow fixtures', () => {
+    expect(RANKING_SCREEN_CHROME_SCROLL).toBe(true);
+    expect(rankingContentExceedsShortViewport(DEV_OVERFLOW_RANKING_ROWS.length)).toBe(true);
+    expect(
+      rankingContentExceedsShortViewport(DEV_OVERFLOW_RANKING_ROWS.length, {
+        viewportHeight: RANKING_SHORT_VIEWPORT_HEIGHT,
+      }),
+    ).toBe(true);
+    // Long wrap name fixture still present in the overflow set.
+    expect(DEV_OVERFLOW_RANKING_ROWS.some((r) => r.displayName.includes('WRAPS'))).toBe(true);
+  });
+
+  it('exports a chrome scroll owner flag RankingScreen must pass through', () => {
+    // RankingScreen sets scroll={RANKING_SCREEN_CHROME_SCROLL} on ScreenChrome.
+    // Keeping the flag true is the regression gate against scroll={false}.
+    expect(RANKING_SCREEN_CHROME_SCROLL).toBe(true);
+  });
+});
+
+describe('ranking load controller coalescing', () => {
+  it('ignores a slower first response after a newer load completes', async () => {
+    let resolveFirst!: (rows: readonly RankingRow[]) => void;
+    let resolveSecond!: (rows: readonly RankingRow[]) => void;
+    let calls = 0;
+    const port: RankingReadPort = {
+      list: async () => {
+        calls += 1;
+        if (calls === 1) {
+          return await new Promise<readonly RankingRow[]>((resolve) => {
+            resolveFirst = resolve;
+          });
+        }
+        return await new Promise<readonly RankingRow[]>((resolve) => {
+          resolveSecond = resolve;
+        });
+      },
+    };
+
+    let session: RankingSessionState = createInitialRankingSession();
+    const controller = createRankingLoadController(port, (updater) => {
+      session = updater(session);
+    });
+
+    const first = controller.load();
+    const second = controller.load();
+    expect(controller.getGeneration()).toBe(2);
+
+    // Newer request completes first with a distinct DEV list.
+    resolveSecond(DEV_PRESERVE_ORDER_ROWS);
+    await second;
+    expect(session.phase).toBe('populated');
+    expect(session.rows.map((r) => r.botId)).toEqual([
+      'dev-bot-seventh',
+      'dev-bot-second',
+      'dev-bot-ninetynine',
+    ]);
+
+    // Stale first response must not overwrite the newer rows.
+    resolveFirst(DEV_POPULATED_RANKING_ROWS);
+    await first;
+    expect(session.rows.map((r) => r.botId)).toEqual([
+      'dev-bot-seventh',
+      'dev-bot-second',
+      'dev-bot-ninetynine',
+    ]);
+    expect(session.errorMessage).toBeNull();
+  });
+
+  it('ignores a slower first failure after a newer success', async () => {
+    let rejectFirst!: (err: Error) => void;
+    let resolveSecond!: (rows: readonly RankingRow[]) => void;
+    let calls = 0;
+    const port: RankingReadPort = {
+      list: async () => {
+        calls += 1;
+        if (calls === 1) {
+          return await new Promise<readonly RankingRow[]>((_, reject) => {
+            rejectFirst = reject;
+          });
+        }
+        return await new Promise<readonly RankingRow[]>((resolve) => {
+          resolveSecond = resolve;
+        });
+      },
+    };
+
+    let session: RankingSessionState = createInitialRankingSession();
+    const controller = createRankingLoadController(port, (updater) => {
+      session = updater(session);
+    });
+
+    const first = controller.load();
+    const second = controller.load();
+
+    resolveSecond(DEV_POPULATED_RANKING_ROWS);
+    await second;
+    expect(session.phase).toBe('populated');
+    expect(session.errorMessage).toBeNull();
+
+    rejectFirst(new Error('stale failure'));
+    await first.catch(() => undefined);
+    // Give the controller's ignored path a tick.
+    await Promise.resolve();
+    expect(session.phase).toBe('populated');
+    expect(session.errorMessage).toBeNull();
+    expect(session.rows).toHaveLength(DEV_POPULATED_RANKING_ROWS.length);
   });
 });

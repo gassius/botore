@@ -66,3 +66,23 @@ export const DEV_PRESERVE_ORDER_ROWS: readonly RankingRow[] = Object.freeze([
     source: 'dev-fixture',
   },
 ]);
+
+/**
+ * Many DEV rows for scroll/overflow regression evidence.
+ * Order is fixture order only — not a ranking algorithm.
+ */
+export const DEV_OVERFLOW_RANKING_ROWS: readonly RankingRow[] = Object.freeze(
+  Array.from({ length: 16 }, (_, index) => {
+    const rank = index + 1;
+    return {
+      rank,
+      botId: `dev-bot-overflow-${rank}`,
+      displayName:
+        rank === 5
+          ? 'DEV · VERY LONG OVERFLOW NAME THAT WRAPS ON NARROW LAYOUTS'
+          : `DEV · BOT ${rank}`,
+      isCurrentBot: rank === 8,
+      source: 'dev-fixture' as const,
+    };
+  }),
+);
