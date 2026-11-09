@@ -17,6 +17,9 @@ mkdir -p "${OUT_DIR}"
 export CAPTURE_DEVICE="${CAPTURE_DEVICE:-pixel_6}"
 PACKAGE="${CAPTURE_ANDROID_PACKAGE:-${PACKAGE_ANDROID}}"
 ARCHS="${CAPTURE_RN_ARCHITECTURES:-x86_64}"
+# C4: live-fight path records a short replay FX clip by default (stills still required).
+# Workflow CAPTURE_CLIPS can still override to false.
+export CAPTURE_CLIPS="${CAPTURE_CLIPS:-true}"
 
 echo "ci-live-fight-android-capture: tip=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" >&2
 
