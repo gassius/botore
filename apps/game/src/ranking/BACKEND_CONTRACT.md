@@ -9,7 +9,7 @@ Ticket: [C5 Ranking screen: real data + design captures](https://app.clickup.com
 | `list_ranking()` | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }` |
 
 - Migration: `supabase/migrations/0022_list_ranking.sql`
-- Seed peers (local/CI board density): `1002_seed_ranking_peers.sql`
+- Seed peers (local/CI board density): `supabase/seed.sql` (not hosted `db push`)
 - `SECURITY DEFINER`, `set search_path = public, extensions`
 - `EXECUTE` to **`authenticated` only** (revoked from `public`, `anon`, `service_role`)
 - No table `GRANT SELECT` on `characters` / `progression_ledger` / `profiles`

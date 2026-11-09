@@ -12,7 +12,7 @@ fi
 
 export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
 
-echo "==> supabase db reset (drops, re-applies all migrations + seed.sql)"
+echo "==> supabase db reset (drops, re-applies migrations + [db.seed] seed.sql)"
 pnpm exec supabase db reset --local
 
 echo "==> atlas Storage bootstrap (upload proof pack payloads + publish v1)"
