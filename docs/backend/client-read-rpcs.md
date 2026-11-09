@@ -9,11 +9,11 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 
 ## Contract
 
-| RPC                             | Args                | Success body                                                                 |
-| ------------------------------- | ------------------- | ---------------------------------------------------------------------------- |
-| `get_owned_character()`         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }`                                     |
-| `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName }] }`                    |
-| `get_fight_allowance_summary()` | none (`auth.uid()`) | `{ ok: true, utcDay, allowancesRemaining }`                                  |
+| RPC                             | Args                | Success body                                                                      |
+| ------------------------------- | ------------------- | --------------------------------------------------------------------------------- |
+| `get_owned_character()`         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }`                                          |
+| `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName }] }`                         |
+| `get_fight_allowance_summary()` | none (`auth.uid()`) | `{ ok: true, utcDay, allowancesRemaining }`                                       |
 | `list_ranking()`                | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }` |
 
 Failures: `{ ok: false, code?, message? }` or PostgREST HTTP error (`42501`).

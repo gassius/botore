@@ -22,14 +22,8 @@ import { loadCaptureIntentFile } from './readCaptureIntentFile';
  * and plants `botore-design-capture-intent.json`.
  */
 export function useDesignCaptureDeepLink(): void {
-  const {
-    goTo,
-    muted,
-    toggleMute,
-    setDemoPaintId,
-    setDemoWeaponId,
-    setRankingCaptureScenario,
-  } = useFirstRun();
+  const { goTo, muted, toggleMute, setDemoPaintId, setDemoWeaponId, setRankingCaptureScenario } =
+    useFirstRun();
 
   useEffect(() => {
     if (!isDesignCaptureEnabled()) return;

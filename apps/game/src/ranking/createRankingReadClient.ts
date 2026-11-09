@@ -19,9 +19,7 @@ export type CreateRankingReadClientInput = {
  * Design-capture empty/error forces DEV fixtures for those UI states.
  * Otherwise DEV fixtures (never presented as live players).
  */
-export function createRankingReadClient(
-  input: CreateRankingReadClientInput = {},
-): RankingReadPort {
+export function createRankingReadClient(input: CreateRankingReadClientInput = {}): RankingReadPort {
   const scenario = input.captureScenario ?? null;
   if (scenario === 'empty') {
     return new FixtureRankingReadAdapter({ scenario: 'empty' });

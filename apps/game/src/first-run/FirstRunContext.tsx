@@ -1,8 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import {
-  type DesignCaptureRankingScenario,
-  readDesignCaptureConfig,
-} from '../design-capture';
+import { type DesignCaptureRankingScenario, readDesignCaptureConfig } from '../design-capture';
 import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
 import { useMute } from '../hooks/useMute';
 import { useReducedMotion } from '../hooks/useReducedMotion';
