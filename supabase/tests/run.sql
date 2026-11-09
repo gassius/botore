@@ -1615,9 +1615,10 @@ begin
   if v_dash_present then
     select public.admin_dashboard_snapshot() into v_dash;
   end if;
+  -- Runs may be empty before cron fires (fresh CI); RPC must still succeed.
+  -- Mirror B2: count(*) >= 0 proves EXECUTE without requiring history rows.
   if v_runs_present then
-    select exists (select 1 from public.admin_list_cron_job_runs(5) limit 1)
-      into v_runs_ok;
+    select (count(*) >= 0) into v_runs_ok from public.admin_list_cron_job_runs(5);
   else
     v_runs_ok := true;
   end if;
