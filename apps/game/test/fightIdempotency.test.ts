@@ -65,7 +65,8 @@ describe('DevFightRequestAdapter F3 semantics', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.code).toBe('allowance_exhausted');
-    expect(result.allowancesRemaining).toBe(0);
+    // Edge-shaped: code is authoritative; numeric remaining may be omitted.
+    expect(result.allowancesRemaining).toBeUndefined();
   });
 });
 

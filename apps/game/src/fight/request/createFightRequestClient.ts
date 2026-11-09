@@ -1,4 +1,5 @@
 import { readSupabasePublicConfig } from '../../garage/auth/supabasePublicConfig';
+import { getSharedDevFightBackend } from '../dev/DevFightBackendState';
 import { DevFightRequestAdapter } from './DevFightRequestAdapter';
 import type { FightRequestPort } from './FightRequestPort';
 import { SupabaseFightRequestAdapter } from './SupabaseFightRequestAdapter';
@@ -7,5 +8,5 @@ import { SupabaseFightRequestAdapter } from './SupabaseFightRequestAdapter';
 export function createFightRequestClient(): FightRequestPort {
   const config = readSupabasePublicConfig();
   if (config) return new SupabaseFightRequestAdapter(config);
-  return new DevFightRequestAdapter();
+  return new DevFightRequestAdapter(getSharedDevFightBackend());
 }

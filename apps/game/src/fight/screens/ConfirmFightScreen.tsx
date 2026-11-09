@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
@@ -11,6 +11,7 @@ import {
   StatusErrorBanner,
   garageTag,
 } from '../../garage-tag';
+import { isStartFightDisabled, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
 
 /** ConfirmFight domain — mounts into shell ConfirmFight slot; starts combat-v1. */
@@ -27,11 +28,16 @@ export function ConfirmFightScreen(props: {
     clearSubmitError,
     candidatesKind,
     prepareEligibility,
+    fightInFlight,
+    bumpNavigationGeneration,
+    navigationGeneration,
   } = useFightSession();
   const confirmed = loadout.confirmedLoadout;
   const [eligMessage, setEligMessage] = useState<string | null>(null);
   const [eligAllowances, setEligAllowances] = useState<number | null>(null);
   const [eligLoading, setEligLoading] = useState(false);
+  const activeNavGenRef = useRef(navigationGeneration);
+  activeNavGenRef.current = navigationGeneration;
 
   const allowancesFromList = list.status === 'ready' ? list.allowancesRemaining : null;
   const allowances =
@@ -52,6 +58,8 @@ export function ConfirmFightScreen(props: {
         setEligMessage(result.message);
         if (typeof result.allowancesRemaining === 'number') {
           setEligAllowances(result.allowancesRemaining);
+        } else if (result.code === 'allowance_exhausted') {
+          setEligAllowances(0);
         }
         return;
       }
@@ -80,11 +88,41 @@ export function ConfirmFightScreen(props: {
     );
   }
 
-  const submitting = submit.status === 'submitting';
+  const submitting = submit.status === 'submitting' || fightInFlight;
   const noAllowance = allowances !== null && allowances < 1;
   const networkError = submit.status === 'error' && submit.code === 'network_error';
   const allowanceError = submit.status === 'error' && submit.code === 'allowance_exhausted';
   const otherError = submit.status === 'error' && !networkError && !allowanceError ? submit : null;
+  const startDisabled = isStartFightDisabled({
+    submitting,
+    sessionPresent: !!session,
+    allowances,
+    submitCode: submit.status === 'error' ? submit.code : null,
+  });
+
+  const runStart = () => {
+    clearSubmitError();
+    const expectedOpponentId = selected.characterId;
+    const genAtStart = navigationGeneration;
+    void startFight().then((fight) => {
+      if (
+        shouldAcceptFightNavigation({
+          fight,
+          expectedOpponentId,
+          navigationGeneration: genAtStart,
+          activeNavigationGeneration: activeNavGenRef.current,
+        })
+      ) {
+        props.onFightStarted();
+      }
+    });
+  };
+
+  const onBack = () => {
+    if (submitting) return; // prevent Back → pick B while A is in flight
+    bumpNavigationGeneration();
+    props.onBack();
+  };
 
   return (
     <ScreenChrome
@@ -93,32 +131,22 @@ export function ConfirmFightScreen(props: {
         <>
           <PrimaryButton
             label={submitting ? 'Starting…' : 'Start fight'}
-            disabled={submitting || noAllowance || !session}
-            onPress={() => {
-              clearSubmitError();
-              void startFight().then((fight) => {
-                if (fight) props.onFightStarted();
-              });
-            }}
+            disabled={startDisabled}
+            onPress={runStart}
             testID="confirm-start"
           />
           {(networkError || otherError) && (
             <PrimaryButton
               label="Retry"
-              disabled={submitting}
-              onPress={() => {
-                clearSubmitError();
-                void startFight().then((fight) => {
-                  if (fight) props.onFightStarted();
-                });
-              }}
+              disabled={submitting || startDisabled}
+              onPress={runStart}
               testID="confirm-retry"
             />
           )}
         </>
       }
     >
-      <ScreenHeader title="Confirm Fight" onBack={props.onBack} />
+      <ScreenHeader title="Confirm Fight" onBack={onBack} />
 
       <KitArtPlaceholder
         label="Repair Yard (static)"

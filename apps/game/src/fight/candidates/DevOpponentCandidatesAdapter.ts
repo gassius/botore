@@ -1,8 +1,7 @@
 import { DEFAULT_CONFIRMED_LOADOUT } from '../../garage/loadout/proofCatalogue';
+import { DevFightBackendState, getSharedDevFightBackend } from '../dev/DevFightBackendState';
 import type { OpponentCandidatesPort } from './OpponentCandidatesPort';
 import type { ListCandidatesResult, OpponentCandidate, PrepareEligibilityResult } from './types';
-
-const DEV_UTC_DAY = () => new Date().toISOString().slice(0, 10);
 
 const DEV_OPPONENTS: readonly OpponentCandidate[] = [
   {
@@ -46,13 +45,23 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
 /**
  * DEV roster mirroring seed opponents (1000/1001). Labels itself DEV — not a
  * live ranking algorithm. Controllable empty / no-allowance / network failure.
+ * Allowance depth comes from shared DevFightBackendState.
  */
 export class DevOpponentCandidatesAdapter implements OpponentCandidatesPort {
   readonly kind = 'dev' as const;
   forceNetworkError = false;
   forceEmpty = false;
-  allowancesRemaining = 3;
   private readonly byId = new Map(DEV_OPPONENTS.map((o) => [o.characterId, o]));
+
+  constructor(readonly backend: DevFightBackendState = getSharedDevFightBackend()) {}
+
+  get allowancesRemaining(): number {
+    return this.backend.allowancesRemaining;
+  }
+
+  set allowancesRemaining(value: number) {
+    this.backend.allowancesRemaining = value;
+  }
 
   async listCandidates(input: {
     accessToken: string;
@@ -64,19 +73,19 @@ export class DevOpponentCandidatesAdapter implements OpponentCandidatesPort {
     if (this.forceNetworkError) {
       return { ok: false, code: 'network_error', message: 'DEV network failure (candidates)' };
     }
-    const utcDay = DEV_UTC_DAY();
+    const utcDay = this.backend.utcDay();
     if (this.forceEmpty) {
       return {
         ok: true,
         candidates: [],
-        allowancesRemaining: this.allowancesRemaining,
+        allowancesRemaining: this.backend.allowancesRemaining,
         utcDay,
       };
     }
     return {
       ok: true,
       candidates: [...DEV_OPPONENTS],
-      allowancesRemaining: this.allowancesRemaining,
+      allowancesRemaining: this.backend.allowancesRemaining,
       utcDay,
     };
   }
@@ -92,8 +101,8 @@ export class DevOpponentCandidatesAdapter implements OpponentCandidatesPort {
     if (this.forceNetworkError) {
       return { ok: false, code: 'network_error', message: 'DEV network failure (eligibility)' };
     }
-    const utcDay = DEV_UTC_DAY();
-    if (this.allowancesRemaining < 1) {
+    const utcDay = this.backend.utcDay();
+    if (this.backend.allowancesRemaining < 1) {
       return {
         ok: false,
         code: 'allowance_exhausted',
@@ -108,7 +117,7 @@ export class DevOpponentCandidatesAdapter implements OpponentCandidatesPort {
         ok: false,
         code: 'unknown_opponent',
         message: `unknown opponent: ${input.opponentId}`,
-        allowancesRemaining: this.allowancesRemaining,
+        allowancesRemaining: this.backend.allowancesRemaining,
         utcDay,
       };
     }
@@ -122,7 +131,7 @@ export class DevOpponentCandidatesAdapter implements OpponentCandidatesPort {
     return {
       ok: true,
       code: 'eligible',
-      allowancesRemaining: this.allowancesRemaining,
+      allowancesRemaining: this.backend.allowancesRemaining,
       utcDay,
       rulesVersion: 'combat-v1',
       attackerName: 'Hero',

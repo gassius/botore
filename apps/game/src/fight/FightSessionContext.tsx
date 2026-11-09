@@ -3,6 +3,12 @@ import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { createOpponentCandidatesClient } from './candidates/createOpponentCandidatesClient';
 import type { OpponentCandidatesPort } from './candidates/OpponentCandidatesPort';
 import type { OpponentCandidate, PrepareEligibilityResult } from './candidates/types';
+import {
+  canJoinInFlight,
+  intentAfterFightResult,
+  shouldPreserveUnresolvedIntent,
+  type InFlightFight,
+} from './fightSessionLifecycle';
 import { createFightRequestClient } from './request/createFightRequestClient';
 import type { FightRequestPort } from './request/FightRequestPort';
 import { resolveFightIntent, type FightIntent } from './request/idempotency';
@@ -42,12 +48,21 @@ export type FightSessionContextValue = {
   readonly selected: OpponentCandidate | null;
   readonly submit: FightSubmitState;
   readonly lastFight: FightSuccess | null;
+  /** Unresolved Start-fight intent (survives same-opponent reselection / lost response). */
+  readonly pendingIntent: FightIntent | null;
+  /** True while a combat-v1 request for the selected (or in-flight) opponent is outstanding. */
+  readonly fightInFlight: boolean;
   refreshCandidates: () => Promise<void>;
   prepareEligibility: () => Promise<PrepareEligibilityResult | null>;
-  selectOpponent: (candidate: OpponentCandidate | null) => void;
+  selectOpponent: (
+    candidate: OpponentCandidate | null,
+  ) => { ok: true } | { ok: false; code: string };
   startFight: () => Promise<FightSuccess | null>;
   clearSubmitError: () => void;
   resetIntent: () => void;
+  /** Bump when leaving Confirm so late A completions do not navigate. */
+  bumpNavigationGeneration: () => void;
+  readonly navigationGeneration: number;
 };
 
 const FightSessionContext = createContext<FightSessionContextValue | null>(null);
@@ -68,8 +83,21 @@ export function FightSessionProvider(props: {
   const [selected, setSelected] = useState<OpponentCandidate | null>(null);
   const [submit, setSubmit] = useState<FightSubmitState>({ status: 'idle' });
   const [lastFight, setLastFight] = useState<FightSuccess | null>(null);
+  const [pendingIntent, setPendingIntent] = useState<FightIntent | null>(null);
+  const [navigationGeneration, setNavigationGeneration] = useState(0);
+  const [fightInFlight, setFightInFlight] = useState(false);
+
   const intentRef = useRef<FightIntent | null>(null);
-  const inFlightRef = useRef<Promise<FightSuccess | null> | null>(null);
+  const inFlightRef = useRef<InFlightFight | null>(null);
+  const selectedRef = useRef<OpponentCandidate | null>(null);
+  const listRef = useRef<FightListState>(list);
+  selectedRef.current = selected;
+  listRef.current = list;
+
+  const syncIntent = useCallback((next: FightIntent | null) => {
+    intentRef.current = next;
+    setPendingIntent(next);
+  }, []);
 
   const refreshCandidates = useCallback(async () => {
     if (!session) {
@@ -108,11 +136,30 @@ export function FightSessionProvider(props: {
     });
   }, [candidatesPort, session]);
 
-  const selectOpponent = useCallback((candidate: OpponentCandidate | null) => {
-    setSelected(candidate);
-    intentRef.current = null;
-    setSubmit({ status: 'idle' });
-  }, []);
+  const selectOpponent = useCallback(
+    (candidate: OpponentCandidate | null): { ok: true } | { ok: false; code: string } => {
+      const inFlight = inFlightRef.current;
+      if (inFlight && candidate?.characterId !== inFlight.opponentId && candidate !== null) {
+        // Block switching to B while A's request is outstanding.
+        return { ok: false, code: 'fight_in_flight' };
+      }
+
+      if (shouldPreserveUnresolvedIntent(intentRef.current, candidate?.characterId ?? null)) {
+        setSelected(candidate);
+        // Keep unresolved intent + idle/error submit for recovery; do not wipe key.
+        if (submit.status === 'success') {
+          setSubmit({ status: 'idle' });
+        }
+        return { ok: true };
+      }
+
+      setSelected(candidate);
+      syncIntent(null);
+      setSubmit({ status: 'idle' });
+      return { ok: true };
+    },
+    [submit.status, syncIntent],
+  );
 
   const prepareEligibility = useCallback(async (): Promise<PrepareEligibilityResult | null> => {
     if (!session || !selected) return null;
@@ -128,60 +175,104 @@ export function FightSessionProvider(props: {
   }, []);
 
   const resetIntent = useCallback(() => {
-    intentRef.current = null;
+    syncIntent(null);
     setSubmit({ status: 'idle' });
+  }, [syncIntent]);
+
+  const bumpNavigationGeneration = useCallback(() => {
+    setNavigationGeneration((g) => g + 1);
   }, []);
 
   const startFight = useCallback(async (): Promise<FightSuccess | null> => {
     if (!session || !selected) return null;
 
-    // Double-tap: join the in-flight request instead of starting a second one.
-    if (inFlightRef.current) return inFlightRef.current;
+    if (canJoinInFlight(inFlightRef.current, selected.characterId) && inFlightRef.current) {
+      return inFlightRef.current.promise;
+    }
+    if (inFlightRef.current && inFlightRef.current.opponentId !== selected.characterId) {
+      return null;
+    }
 
     const intent = resolveFightIntent(intentRef.current, selected.characterId);
-    intentRef.current = intent;
+    syncIntent(intent);
+
+    const opponentIdForRequest = selected.characterId;
+    const keyForRequest = intent.idempotencyKey;
 
     const run = (async (): Promise<FightSuccess | null> => {
       setSubmit({ status: 'submitting' });
+      setFightInFlight(true);
       const result = await fightPort.requestFight({
         accessToken: session.accessToken,
-        opponentId: selected.characterId,
-        idempotencyKey: intent.idempotencyKey,
+        opponentId: opponentIdForRequest,
+        idempotencyKey: keyForRequest,
       });
+
+      // Ignore applying foreign late results if selection changed somehow.
+      const stillSameOpponent = selectedRef.current?.characterId === opponentIdForRequest;
+
       if (!result.ok) {
-        if (result.code === 'allowance_exhausted') {
-          intentRef.current = null;
-        }
-        setSubmit({
-          status: 'error',
+        const nextIntent = intentAfterFightResult({
+          prior: { opponentId: opponentIdForRequest, idempotencyKey: keyForRequest },
+          resultOk: false,
           code: result.code,
-          message: result.message,
-          ...(result.allowancesRemaining !== undefined
-            ? { allowancesRemaining: result.allowancesRemaining }
-            : {}),
         });
-        if (typeof result.allowancesRemaining === 'number' && list.status === 'ready') {
-          setList({ ...list, allowancesRemaining: result.allowancesRemaining });
+        syncIntent(nextIntent);
+        if (stillSameOpponent) {
+          setSubmit({
+            status: 'error',
+            code: result.code,
+            message: result.message,
+            ...(result.allowancesRemaining !== undefined
+              ? { allowancesRemaining: result.allowancesRemaining }
+              : result.code === 'allowance_exhausted'
+                ? { allowancesRemaining: 0 }
+                : {}),
+          });
+          const currentList = listRef.current;
+          if (result.code === 'allowance_exhausted' && currentList.status === 'ready') {
+            setList({ ...currentList, allowancesRemaining: 0 });
+          } else if (
+            typeof result.allowancesRemaining === 'number' &&
+            currentList.status === 'ready'
+          ) {
+            setList({ ...currentList, allowancesRemaining: result.allowancesRemaining });
+          }
         }
         return null;
       }
+
+      // Reconcile only when this result still matches the request opponent.
+      if (!stillSameOpponent) {
+        // Keep intent for the original opponent so recovery remains possible if user returns.
+        syncIntent({ opponentId: opponentIdForRequest, idempotencyKey: keyForRequest });
+        return result.fight;
+      }
+
       setLastFight(result.fight);
       setSubmit({ status: 'success', fight: result.fight });
-      if (list.status === 'ready') {
-        setList({ ...list, allowancesRemaining: result.fight.allowancesRemaining });
+      const currentList = listRef.current;
+      if (currentList.status === 'ready') {
+        setList({ ...currentList, allowancesRemaining: result.fight.allowancesRemaining });
       }
-      // Successful settle clears intent so a later rematch gets a new key.
-      intentRef.current = null;
+      syncIntent(intentAfterFightResult({ prior: intent, resultOk: true, code: null }));
       return result.fight;
     })();
 
-    inFlightRef.current = run;
+    inFlightRef.current = {
+      opponentId: opponentIdForRequest,
+      idempotencyKey: keyForRequest,
+      promise: run,
+    };
     try {
       return await run;
     } finally {
-      inFlightRef.current = null;
+      if (inFlightRef.current?.idempotencyKey === keyForRequest) {
+        inFlightRef.current = null;
+      }
+      setFightInFlight(false);
     }
-  }, [session, selected, fightPort, list]);
+  }, [session, selected, fightPort, syncIntent]);
 
   const value = useMemo<FightSessionContextValue>(
     () => ({
@@ -191,12 +282,16 @@ export function FightSessionProvider(props: {
       selected,
       submit,
       lastFight,
+      pendingIntent,
+      fightInFlight,
       refreshCandidates,
       prepareEligibility,
       selectOpponent,
       startFight,
       clearSubmitError,
       resetIntent,
+      bumpNavigationGeneration,
+      navigationGeneration,
     }),
     [
       candidatesPort.kind,
@@ -205,12 +300,16 @@ export function FightSessionProvider(props: {
       selected,
       submit,
       lastFight,
+      pendingIntent,
+      fightInFlight,
       refreshCandidates,
       prepareEligibility,
       selectOpponent,
       startFight,
       clearSubmitError,
       resetIntent,
+      bumpNavigationGeneration,
+      navigationGeneration,
     ],
   );
 

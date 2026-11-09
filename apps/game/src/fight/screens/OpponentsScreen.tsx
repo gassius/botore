@@ -10,6 +10,7 @@ import {
   garageTag,
 } from '../../garage-tag';
 import { weaponUiAlias } from '../../garage/loadout/proofCatalogue';
+import { canContinueToConfirm } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
 
 /** Opponents domain — mounts into shell Opponents slot. */
@@ -17,7 +18,15 @@ export function OpponentsScreen(props: {
   onBack: () => void;
   onContinue: () => void;
 }): React.ReactElement {
-  const { list, selected, candidatesKind, refreshCandidates, selectOpponent } = useFightSession();
+  const {
+    list,
+    selected,
+    candidatesKind,
+    pendingIntent,
+    fightInFlight,
+    refreshCandidates,
+    selectOpponent,
+  } = useFightSession();
 
   useEffect(() => {
     void refreshCandidates();
@@ -33,8 +42,16 @@ export function OpponentsScreen(props: {
   const otherError =
     list.status === 'error' && !networkError && list.code !== 'allowance_exhausted';
 
-  const canContinue =
-    !!selected && list.status === 'ready' && list.allowancesRemaining > 0 && !emptyCandidates;
+  const recoverable =
+    !!selected && pendingIntent !== null && pendingIntent.opponentId === selected.characterId;
+
+  const canContinue = canContinueToConfirm({
+    selected,
+    listReady: list.status === 'ready',
+    emptyCandidates,
+    allowancesRemaining: list.status === 'ready' ? list.allowancesRemaining : 0,
+    pendingIntent,
+  });
 
   return (
     <ScreenChrome
@@ -42,8 +59,8 @@ export function OpponentsScreen(props: {
       footer={
         <>
           <PrimaryButton
-            label="Continue"
-            disabled={!canContinue}
+            label={recoverable && noAllowance ? 'Recover fight' : 'Continue'}
+            disabled={!canContinue || fightInFlight}
             onPress={props.onContinue}
             testID="opponents-continue"
           />
@@ -68,11 +85,19 @@ export function OpponentsScreen(props: {
         </View>
       ) : null}
 
-      {noAllowance ? (
+      {noAllowance && !recoverable ? (
         <StatusErrorBanner
           title="No fight allowance left"
           detail="Your daily fight slots are used. Come back after UTC midnight — allowance is server-owned."
           testID="opponents-no-allowance"
+        />
+      ) : null}
+
+      {noAllowance && recoverable ? (
+        <StatusErrorBanner
+          title="Recover previous fight"
+          detail="A fight may already be committed for this opponent. Continue reuses the same idempotency key — it will not spend another slot."
+          testID="opponents-recover-intent"
         />
       ) : null}
 
@@ -116,7 +141,9 @@ export function OpponentsScreen(props: {
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
                   accessibilityLabel={`${c.displayName}, ${weapon}${isSelected ? ', selected' : ''}`}
-                  onPress={() => selectOpponent(c)}
+                  onPress={() => {
+                    selectOpponent(c);
+                  }}
                   style={[styles.card, isSelected ? styles.cardSelected : null]}
                   testID={`opponent-${c.characterId}`}
                 >

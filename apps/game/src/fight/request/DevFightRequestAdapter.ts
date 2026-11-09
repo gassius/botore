@@ -1,3 +1,4 @@
+import { DevFightBackendState, getSharedDevFightBackend } from '../dev/DevFightBackendState';
 import { isValidIdempotencyKey } from './idempotency';
 import type { FightRequestPort } from './FightRequestPort';
 import type { FightRequestInput, FightRequestResult, FightSuccess } from './types';
@@ -5,15 +6,31 @@ import type { FightRequestInput, FightRequestResult, FightSuccess } from './type
 /**
  * DEV combat-v1 stand-in with in-memory F3 idempotency.
  * Same key → same battle, no second allowance consume.
+ * Allowance depth is shared via DevFightBackendState.
  */
 export class DevFightRequestAdapter implements FightRequestPort {
   readonly kind = 'dev' as const;
   forceNetworkError = false;
   forceAllowanceExhausted = false;
-  allowancesRemaining = 3;
-  private readonly byKey = new Map<string, FightSuccess>();
+  /** Optional latency for delayed-response lifecycle tests. */
+  delayMs = 0;
+
+  constructor(readonly backend: DevFightBackendState = getSharedDevFightBackend()) {}
+
+  get allowancesRemaining(): number {
+    return this.backend.allowancesRemaining;
+  }
+
+  set allowancesRemaining(value: number) {
+    this.backend.allowancesRemaining = value;
+  }
 
   async requestFight(input: FightRequestInput): Promise<FightRequestResult> {
+    if (this.delayMs > 0) {
+      await new Promise<void>((resolve) => {
+        setTimeout(() => resolve(), this.delayMs);
+      });
+    }
     if (!input.accessToken) {
       return { ok: false, code: 'unauthenticated', message: 'Missing access token' };
     }
@@ -28,7 +45,7 @@ export class DevFightRequestAdapter implements FightRequestPort {
       return { ok: false, code: 'network_error', message: 'DEV network failure (fight request)' };
     }
 
-    const prior = this.byKey.get(input.idempotencyKey);
+    const prior = this.backend.fightsByKey.get(input.idempotencyKey);
     if (prior) {
       return {
         ok: true,
@@ -36,23 +53,23 @@ export class DevFightRequestAdapter implements FightRequestPort {
           ...prior,
           repeated: true,
           persistence: 'repeated',
-          allowancesRemaining: this.allowancesRemaining,
+          allowancesRemaining: this.backend.allowancesRemaining,
         },
       };
     }
 
-    if (this.forceAllowanceExhausted || this.allowancesRemaining < 1) {
+    if (this.forceAllowanceExhausted || this.backend.allowancesRemaining < 1) {
       return {
         ok: false,
         code: 'allowance_exhausted',
         message: 'daily fight allowance exhausted',
-        allowancesRemaining: 0,
+        // Match Edge shape: code is authoritative; numeric may be omitted by callers.
         httpStatus: 409,
       };
     }
 
-    this.allowancesRemaining -= 1;
-    const utcDay = new Date().toISOString().slice(0, 10);
+    this.backend.allowancesRemaining -= 1;
+    const utcDay = this.backend.utcDay();
     const battleId = `dev-battle-${input.idempotencyKey.slice(-12)}`;
     const fight: FightSuccess = {
       battleId,
@@ -73,7 +90,7 @@ export class DevFightRequestAdapter implements FightRequestPort {
       replayChecksum: 'dev-checksum',
       // xpAwarded comes from this adapter's simulated backend only — UI must not invent REF samples.
       xpAwarded: 0,
-      allowancesRemaining: this.allowancesRemaining,
+      allowancesRemaining: this.backend.allowancesRemaining,
       utcDay,
       repeated: false,
       persistence: 'persisted',
@@ -82,7 +99,7 @@ export class DevFightRequestAdapter implements FightRequestPort {
       opponentId: input.opponentId,
       idempotencyKey: input.idempotencyKey,
     };
-    this.byKey.set(input.idempotencyKey, fight);
+    this.backend.fightsByKey.set(input.idempotencyKey, fight);
     return { ok: true, fight };
   }
 }

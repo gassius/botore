@@ -1,19 +1,16 @@
 import type { SupabasePublicConfig } from '../../garage/auth/supabasePublicConfig';
 import { normalizeGarageLoadout } from '../../garage/loadout/normalizeLoadout';
+import { summarizeAllowanceRows } from './allowanceSummary';
 import type { OpponentCandidatesPort } from './OpponentCandidatesPort';
 import type { ListCandidatesResult, OpponentCandidate, PrepareEligibilityResult } from './types';
 
 type ErrBody = { message?: string; code?: string; details?: string; hint?: string };
 
-function utcDayString(d = new Date()): string {
-  return d.toISOString().slice(0, 10);
-}
-
 /**
  * Live reads:
  * - `characters` (RLS: is_opponent=true)
  * - `current_bot_loadouts` (opponent loadouts readable)
- * - `fight_allowances` (own remaining slots for today)
+ * - `fight_allowances` (own rows; day/count derived from server data, not device clock)
  * - `prepare_fight_context` RPC for eligibility (does not consume allowance)
  *
  * Does NOT invent ranking / freshness / anti-farming — that RPC does not exist.
@@ -27,15 +24,15 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
     accessToken: string;
     accountId: string;
   }): Promise<ListCandidatesResult> {
-    const utcDay = utcDayString();
     try {
       const [charsRes, allowRes] = await Promise.all([
         fetch(
           `${this.config.url}/rest/v1/characters?is_opponent=eq.true&select=character_id,display_name&order=character_id.asc`,
           { headers: this.headers(input.accessToken) },
         ),
+        // No device-calendar filter — derive the active UTC day from returned rows.
         fetch(
-          `${this.config.url}/rest/v1/fight_allowances?account_id=eq.${encodeURIComponent(input.accountId)}&utc_day=eq.${utcDay}&used_at=is.null&select=slot_index`,
+          `${this.config.url}/rest/v1/fight_allowances?account_id=eq.${encodeURIComponent(input.accountId)}&select=utc_day,used_at,slot_index&order=utc_day.desc`,
           { headers: this.headers(input.accessToken) },
         ),
       ]);
@@ -46,7 +43,6 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
           ok: false,
           code: err.code ?? `http_${charsRes.status}`,
           message: err.message ?? `Failed to load opponents (${charsRes.status})`,
-          utcDay,
         };
       }
       if (!allowRes.ok) {
@@ -55,7 +51,6 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
           ok: false,
           code: err.code ?? `http_${allowRes.status}`,
           message: err.message ?? `Failed to load fight allowance (${allowRes.status})`,
-          utcDay,
         };
       }
 
@@ -63,8 +58,13 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         character_id?: string;
         display_name?: string;
       }>;
-      const allowRows = (await allowRes.json()) as unknown[];
-      const allowancesRemaining = Array.isArray(allowRows) ? allowRows.length : 0;
+      const allowRows = (await allowRes.json()) as Array<{
+        utc_day?: unknown;
+        used_at?: unknown;
+      }>;
+      const { utcDay, allowancesRemaining } = summarizeAllowanceRows(
+        Array.isArray(allowRows) ? allowRows : [],
+      );
 
       if (chars.length === 0) {
         return { ok: true, candidates: [], allowancesRemaining, utcDay };
@@ -130,7 +130,6 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         ok: false,
         code: 'network_error',
         message: err instanceof Error ? err.message : String(err),
-        utcDay,
       };
     }
   }
@@ -180,12 +179,19 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
 
       const defenderRaw = ctx.defender as Record<string, unknown> | undefined;
       const attackerRaw = ctx.attacker as Record<string, unknown> | undefined;
+      if (typeof ctx.utcDay !== 'string' || ctx.utcDay.length < 1) {
+        return {
+          ok: false,
+          code: 'invalid_response',
+          message: 'prepare_fight_context omitted server utcDay',
+        };
+      }
 
       return {
         ok: true,
         code: 'eligible',
         allowancesRemaining: Number(ctx.allowancesRemaining ?? 0),
-        utcDay: String(ctx.utcDay ?? utcDayString()),
+        utcDay: ctx.utcDay,
         rulesVersion: String(ctx.rulesVersion ?? 'combat-v1'),
         attackerName: String(attackerRaw?.displayName ?? 'You'),
         defenderName: String(defenderRaw?.displayName ?? input.opponentId),
