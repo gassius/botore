@@ -3,11 +3,18 @@
  * Prefer F9 `FightSuccess` / FightComputeResponse when present; otherwise DEV
  * golden fixtures. Never invent XP, allowances, or outcomes from art.
  */
-import { validateReplay, type BattleOutcome, type BattleReplay } from '@botore/replay';
+import {
+  ReplayValidationError,
+  validateReplay,
+  verifyReplay,
+  type BattleOutcome,
+  type BattleReplay,
+} from '@botore/replay';
 import type { FightComputeResponse } from '@botore/contracts';
 import type { FightSuccess } from '../fight/request/types';
 import { ACTIVE_ENVIRONMENT_ASSET_VERSION } from '../arena/environmentPin';
 import { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from '../assembler/workshopFramePin';
+import { sealedBuildsForDevReplay, type SealedFightBuilds } from './fighterLoadout';
 
 export type ResultSource = 'server' | 'dev-fixture';
 
@@ -37,12 +44,77 @@ export interface ConfirmedFightResult {
   readonly utcDay: string | null;
   readonly persistence: 'persisted' | 'repeated' | null;
   readonly media: HistoricalMediaVersions;
+  /** Authoritative sealed builds for assembler — not scene paint aliases. */
+  readonly builds: SealedFightBuilds;
   readonly replay: BattleReplay;
   readonly label: 'CONFIRMED' | 'DEV';
 }
 
+export class ConfirmedResultIntegrityError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConfirmedResultIntegrityError';
+  }
+}
+
 function outcomeFromReplay(replay: BattleReplay): BattleOutcome {
   return replay.outcome;
+}
+
+function assertVerified(replay: BattleReplay): void {
+  try {
+    verifyReplay(replay);
+  } catch (err) {
+    if (err instanceof ReplayValidationError) {
+      throw new ConfirmedResultIntegrityError(err.message);
+    }
+    throw err;
+  }
+}
+
+function assertReplayEnvelope(
+  replay: BattleReplay,
+  expected: { battleId: string; rulesVersion: string; replayChecksum: string },
+): void {
+  assertVerified(replay);
+  if (replay.battleId !== expected.battleId) {
+    throw new ConfirmedResultIntegrityError(
+      `replay battleId mismatch: envelope=${replay.battleId} response=${expected.battleId}`,
+    );
+  }
+  if (replay.rulesVersion !== expected.rulesVersion) {
+    throw new ConfirmedResultIntegrityError(
+      `replay rulesVersion mismatch: envelope=${replay.rulesVersion} response=${expected.rulesVersion}`,
+    );
+  }
+  const checksum = expected.replayChecksum || replay.checksum;
+  if (checksum !== replay.checksum) {
+    throw new ConfirmedResultIntegrityError(
+      `replay checksum mismatch: envelope=${replay.checksum} response=${checksum}`,
+    );
+  }
+}
+
+function buildsFromFightSuccess(fight: FightSuccess): SealedFightBuilds {
+  if (!fight.sealedBuilds) {
+    throw new ConfirmedResultIntegrityError(
+      'sealedBuilds required — refuse scene-slot paint substitution for confirmed fights',
+    );
+  }
+  return {
+    attacker: {
+      ...fight.sealedBuilds.attacker,
+      loadoutVersionId:
+        fight.sealedBuilds.attacker.loadoutVersionId ?? fight.loadoutVersionIds.attacker,
+      atlasVersion: fight.sealedBuilds.attacker.atlasVersion ?? fight.atlasVersions.attacker,
+    },
+    defender: {
+      ...fight.sealedBuilds.defender,
+      loadoutVersionId:
+        fight.sealedBuilds.defender.loadoutVersionId ?? fight.loadoutVersionIds.defender,
+      atlasVersion: fight.sealedBuilds.defender.atlasVersion ?? fight.atlasVersions.defender,
+    },
+  };
 }
 
 /**
@@ -51,8 +123,14 @@ function outcomeFromReplay(replay: BattleReplay): BattleOutcome {
  */
 export function confirmedResultFromFightResponse(
   response: FightComputeResponse,
+  builds?: SealedFightBuilds,
 ): ConfirmedFightResult {
   const replay = validateReplay(response.replay);
+  assertReplayEnvelope(replay, {
+    battleId: response.battleId,
+    rulesVersion: response.rulesVersion,
+    replayChecksum: response.replayChecksum,
+  });
   return {
     source: 'server',
     serverConfirmed: true,
@@ -70,6 +148,7 @@ export function confirmedResultFromFightResponse(
       atlasVersions: response.atlasVersions,
       loadoutVersionIds: response.loadoutVersionIds,
     },
+    builds: builds ?? sealedBuildsForDevReplay(replay.fighters),
     replay,
     label: 'CONFIRMED',
   };
@@ -81,6 +160,11 @@ export function confirmedResultFromFightResponse(
  */
 export function confirmedResultFromFightSuccess(fight: FightSuccess): ConfirmedFightResult {
   const replay = validateReplay(fight.replay);
+  assertReplayEnvelope(replay, {
+    battleId: fight.battleId,
+    rulesVersion: fight.rulesVersion,
+    replayChecksum: fight.replayChecksum || (fight.replay as BattleReplay).checksum,
+  });
   const loadoutVersionIds =
     typeof fight.loadoutVersionIds.attacker === 'string' &&
     typeof fight.loadoutVersionIds.defender === 'string'
@@ -112,6 +196,7 @@ export function confirmedResultFromFightSuccess(fight: FightSuccess): ConfirmedF
       atlasVersions: fight.atlasVersions,
       ...(loadoutVersionIds ? { loadoutVersionIds } : {}),
     },
+    builds: buildsFromFightSuccess(fight),
     replay,
     label: 'CONFIRMED',
   };
@@ -124,7 +209,9 @@ export function confirmedResultFromFightSuccess(fight: FightSuccess): ConfirmedF
 export function confirmedResultFromDevReplay(
   replay: BattleReplay,
   media?: Partial<HistoricalMediaVersions>,
+  builds?: SealedFightBuilds,
 ): ConfirmedFightResult {
+  assertVerified(replay);
   return {
     source: 'dev-fixture',
     serverConfirmed: false,
@@ -142,17 +229,26 @@ export function confirmedResultFromDevReplay(
       ...(media?.atlasVersions ? { atlasVersions: media.atlasVersions } : {}),
       ...(media?.loadoutVersionIds ? { loadoutVersionIds: media.loadoutVersionIds } : {}),
     },
+    builds: builds ?? sealedBuildsForDevReplay(replay.fighters),
     replay,
     label: 'DEV',
   };
 }
 
+export type PlaybackMediaResolution = {
+  readonly environmentVersion: string;
+  readonly kitVersion: string;
+  readonly usesStoredVersions: boolean;
+  /**
+   * When false, historical pins are not present in the client pack —
+   * do not silently render the active substitute as that historical fight.
+   */
+  readonly assetsAvailable: boolean;
+  readonly unavailableReason: string | null;
+};
+
 /** Resolve which media pin to render. Historical fights must keep stored versions when present. */
-export function resolvePlaybackMedia(result: ConfirmedFightResult): {
-  environmentVersion: string;
-  kitVersion: string;
-  usesStoredVersions: boolean;
-} {
+export function resolvePlaybackMedia(result: ConfirmedFightResult): PlaybackMediaResolution {
   const environmentVersion = result.media.environmentVersion;
   const kitVersion = result.media.kitVersion;
   const usesStoredVersions =
@@ -160,7 +256,28 @@ export function resolvePlaybackMedia(result: ConfirmedFightResult): {
     kitVersion !== ACTIVE_WORKSHOP_FRAME_ASSET_VERSION ||
     Boolean(result.media.atlasVersions) ||
     Boolean(result.media.loadoutVersionIds);
-  return { environmentVersion, kitVersion, usesStoredVersions };
+
+  const envOk = environmentVersion === ACTIVE_ENVIRONMENT_ASSET_VERSION;
+  const kitOk = kitVersion === ACTIVE_WORKSHOP_FRAME_ASSET_VERSION;
+  if (!envOk || !kitOk) {
+    return {
+      environmentVersion,
+      kitVersion,
+      usesStoredVersions: true,
+      assetsAvailable: false,
+      unavailableReason: !envOk
+        ? `Historical environment ${environmentVersion} not packed (active ${ACTIVE_ENVIRONMENT_ASSET_VERSION})`
+        : `Historical kit ${kitVersion} not packed (active ${ACTIVE_WORKSHOP_FRAME_ASSET_VERSION})`,
+    };
+  }
+
+  return {
+    environmentVersion,
+    kitVersion,
+    usesStoredVersions,
+    assetsAvailable: true,
+    unavailableReason: null,
+  };
 }
 
 export function formatOutcomeLine(outcome: BattleOutcome): string {

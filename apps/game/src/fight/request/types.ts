@@ -1,3 +1,16 @@
+/** Immutable bot build snapshot carried with a fight for historical playback. */
+export type SealedFightBuildSnapshot = {
+  readonly chassis: string;
+  readonly paint: string;
+  readonly weapon: string;
+  readonly shield?: string | null;
+  readonly drone?: string | null;
+  readonly decals?: readonly string[];
+  readonly soundTags?: readonly string[];
+  readonly loadoutVersionId?: string | null;
+  readonly atlasVersion?: string;
+};
+
 /** Successful combat-v1 response (persisted or repeated via F3 idempotency). */
 export type FightSuccess = {
   readonly battleId: string;
@@ -22,6 +35,14 @@ export type FightSuccess = {
   readonly atlasVersions: {
     readonly attacker: string;
     readonly defender: string;
+  };
+  /**
+   * Client-attached sealed builds for F10 historical playback.
+   * Optional on the wire; FightSession attaches them from confirmed + opponent loadouts.
+   */
+  readonly sealedBuilds?: {
+    readonly attacker: SealedFightBuildSnapshot;
+    readonly defender: SealedFightBuildSnapshot;
   };
   readonly opponentId: string;
   readonly idempotencyKey: string;

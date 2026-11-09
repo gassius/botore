@@ -72,7 +72,9 @@ export function FightSessionProvider(props: {
   candidates?: OpponentCandidatesPort;
   fights?: FightRequestPort;
 }): React.ReactElement {
-  const { session } = useGarageSession();
+  const { session, loadout } = useGarageSession();
+  const loadoutRef = useRef(loadout);
+  loadoutRef.current = loadout;
   const candidatesPort = useMemo(
     () => props.candidates ?? createOpponentCandidatesClient(),
     [props.candidates],
@@ -249,14 +251,46 @@ export function FightSessionProvider(props: {
         return result.fight;
       }
 
-      setLastFight(result.fight);
-      setSubmit({ status: 'success', fight: result.fight });
+      const confirmed = loadoutRef.current.confirmedLoadout;
+      const opponent = selectedRef.current;
+      const fightWithBuilds: FightSuccess =
+        confirmed && opponent
+          ? {
+              ...result.fight,
+              sealedBuilds: {
+                attacker: {
+                  chassis: confirmed.chassis,
+                  paint: confirmed.paint,
+                  weapon: confirmed.weapon,
+                  shield: confirmed.shield,
+                  drone: confirmed.drone,
+                  decals: confirmed.decals,
+                  soundTags: confirmed.soundTags,
+                  loadoutVersionId: loadoutRef.current.confirmedVersionId,
+                  atlasVersion: loadoutRef.current.atlasVersion,
+                },
+                defender: {
+                  chassis: opponent.loadout.chassis,
+                  paint: opponent.loadout.paint,
+                  weapon: opponent.loadout.weapon,
+                  shield: opponent.loadout.shield,
+                  drone: opponent.loadout.drone,
+                  decals: opponent.loadout.decals,
+                  soundTags: opponent.loadout.soundTags,
+                  loadoutVersionId: opponent.loadoutVersionId,
+                  atlasVersion: opponent.atlasVersion ?? 'v1',
+                },
+              },
+            }
+          : result.fight;
+      setLastFight(fightWithBuilds);
+      setSubmit({ status: 'success', fight: fightWithBuilds });
       const currentList = listRef.current;
       if (currentList.status === 'ready') {
-        setList({ ...currentList, allowancesRemaining: result.fight.allowancesRemaining });
+        setList({ ...currentList, allowancesRemaining: fightWithBuilds.allowancesRemaining });
       }
       syncIntent(intentAfterFightResult({ prior: intent, resultOk: true, code: null }));
-      return result.fight;
+      return fightWithBuilds;
     })();
 
     inFlightRef.current = {

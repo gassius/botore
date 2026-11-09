@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   PrimaryButton,
@@ -9,8 +9,12 @@ import {
   garageTag,
 } from '../../garage-tag';
 import { useFightSession } from '../../fight';
-import { CanonicalReplayPlayer } from '../../replay/CanonicalReplayPlayer';
+import {
+  CanonicalReplayPlayer,
+  type CanonicalReplayPlayerHandle,
+} from '../../replay/CanonicalReplayPlayer';
 import { formatOutcomeLine } from '../../replay/confirmedResult';
+import { initialPlaybackUi, type PlaybackUiState } from '../../replay/playbackControl';
 import { resolveSessionConfirmedResult } from '../../replay/resolveSessionResult';
 import { useFirstRun } from '../FirstRunContext';
 import { DomainNote } from './DomainNote';
@@ -18,12 +22,19 @@ import { DomainNote } from './DomainNote';
 /**
  * Shell Replay slot — F10 domain player inside Garage Tag chrome.
  * Prefers F9 `lastFight` sealed replay; falls back to DEV golden fixture.
+ * Shell ReplayAudioControls are the authoritative play/pause/timeline surface.
  */
 export function ReplaySlot(): React.ReactElement {
   const { goBack, goNext, muted, toggleMute, reducedMotion } = useFirstRun();
   const { lastFight } = useFightSession();
+  const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
+  const [playback, setPlayback] = useState<PlaybackUiState>(() => initialPlaybackUi(0));
 
   const confirmed = useMemo(() => resolveSessionConfirmedResult(lastFight), [lastFight]);
+
+  const onPlaybackChange = useCallback((state: PlaybackUiState) => {
+    setPlayback(state);
+  }, []);
 
   return (
     <ScreenChrome
@@ -43,20 +54,24 @@ export function ReplaySlot(): React.ReactElement {
       <ScreenHeader title="Fight Replay" onBack={goBack} />
       <View style={styles.player}>
         <CanonicalReplayPlayer
+          ref={playerRef}
           result={confirmed}
           muted={muted}
+          reducedMotion={reducedMotion}
           autoPlay
+          showLocalControls={false}
+          onPlaybackChange={onPlaybackChange}
           testID="slot-replay-player"
         />
       </View>
       <ReplayAudioControls
-        playing={false}
+        playing={playback.playing}
         muted={muted}
-        progress={0}
+        progress={playback.progress}
         reducedMotion={reducedMotion}
-        onTogglePlay={() => undefined}
+        onTogglePlay={() => playerRef.current?.togglePlay()}
         onToggleMute={toggleMute}
-        onReplay={() => undefined}
+        onReplay={() => playerRef.current?.replay()}
         testID="replay-controls"
       />
       <DomainNote
@@ -73,8 +88,10 @@ export function ReplaySlot(): React.ReactElement {
 const styles = StyleSheet.create({
   player: {
     flex: 1,
-    minHeight: 280,
+    minHeight: 200,
+    minWidth: 0,
     backgroundColor: garageTag.graphite,
+    // Avoid clipping shell-adjacent controls; stage flex-shrinks inside the player.
     overflow: 'hidden',
   },
 });

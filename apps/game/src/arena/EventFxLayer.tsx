@@ -2,14 +2,18 @@
  * Hit / dodge / defeat FX frames. Spawn only from authoritative replay events.
  * Frame progression is PROVISIONAL — not final timing acceptance.
  * Reduced motion: one restrained static accent (middle frame) or skip tween.
+ *
+ * Each cue is a direct arena sibling with its family zIndex (dodge 45 / defeat 55 /
+ * hit 80). Do not wrap all cues under an unranked parent — native zIndex is
+ * sibling-scoped and would leave FX behind the opaque floor.
  */
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, View } from 'react-native';
 import { ENVIRONMENT_FX_META } from './environmentAssets';
 import { ENVIRONMENT_FX_SOURCES } from './environmentMetroAssets';
-import { ENVIRONMENT_LAYER_Z } from './environmentPin';
+import { FX_FAMILY_Z, type ArenaFxFamily } from './environmentPin';
 
-export type FxFamily = 'hit' | 'dodge' | 'defeat';
+export type FxFamily = ArenaFxFamily;
 
 export interface ActiveFxCue {
   readonly id: string;
@@ -28,11 +32,7 @@ export interface EventFxLayerProps {
   readonly frameMs?: number;
 }
 
-const FAMILY_Z: Record<FxFamily, number> = {
-  dodge: ENVIRONMENT_LAYER_Z.dodgeFx,
-  defeat: ENVIRONMENT_LAYER_Z.defeatFx,
-  hit: ENVIRONMENT_LAYER_Z.hitFx,
-};
+export { FX_FAMILY_Z, fxCueSiblingZ, fxRendersAboveFloor } from './environmentPin';
 
 function FxSprite({
   cue,
@@ -84,7 +84,7 @@ function FxSprite({
         top: cue.y,
         width: 0,
         height: 0,
-        zIndex: FAMILY_Z[cue.family],
+        zIndex: FX_FAMILY_Z[cue.family],
       }}
     >
       <Image
@@ -107,17 +107,12 @@ export const EventFxLayer: React.FC<EventFxLayerProps> = ({
   reducedMotion = false,
   frameMs = 90,
 }) => {
+  // Fragment: each cue View is a direct sibling of floor/actors under the arena.
   return (
-    <View style={styles.root} pointerEvents="none" testID="event-fx-layer">
+    <>
       {cues.map((cue) => (
         <FxSprite key={cue.id} cue={cue} reducedMotion={reducedMotion} frameMs={frameMs} />
       ))}
-    </View>
+    </>
   );
 };
-
-const styles = StyleSheet.create({
-  root: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});

@@ -16,7 +16,14 @@ export {
 } from './scenePlacement';
 export type { ArenaSlot, PlacedActor } from './scenePlacement';
 export type { RepairYardArenaProps } from './RepairYardArena';
-export type { ActiveFxCue, EventFxLayerProps, FxFamily } from './EventFxLayer';
+export {
+  FX_FAMILY_Z,
+  fxCueSiblingZ,
+  fxRendersAboveFloor,
+  type ArenaFxFamily,
+} from './environmentPin';
+export type { ArenaFxFamily as FxFamily } from './environmentPin';
 
 // UI modules (Metro PNG requires) — import directly from files in app code:
 // `./RepairYardArena`, `./EventFxLayer`, `./environmentMetroAssets`
+// Do not re-export EventFxLayer from this barrel — it pulls react-native into headless tests.

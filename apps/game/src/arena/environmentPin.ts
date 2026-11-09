@@ -20,3 +20,20 @@ export const ENVIRONMENT_LAYER_Z = {
   defeatFx: 55,
   hitFx: 80,
 } as const;
+
+export type ArenaFxFamily = 'hit' | 'dodge' | 'defeat';
+
+/** FX family z values — arena siblings, not nested under an unranked parent. */
+export const FX_FAMILY_Z: Record<ArenaFxFamily, number> = {
+  dodge: ENVIRONMENT_LAYER_Z.dodgeFx,
+  defeat: ENVIRONMENT_LAYER_Z.defeatFx,
+  hit: ENVIRONMENT_LAYER_Z.hitFx,
+};
+
+export function fxCueSiblingZ(family: ArenaFxFamily): number {
+  return FX_FAMILY_Z[family];
+}
+
+export function fxRendersAboveFloor(family: ArenaFxFamily): boolean {
+  return FX_FAMILY_Z[family] > ENVIRONMENT_LAYER_Z.floor;
+}

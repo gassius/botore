@@ -1,15 +1,24 @@
 /**
  * Canonical phone replay player: layered Repair Yard + F7 BotAssembler + event FX.
  * Outcome / XP never come from art — only from ConfirmedFightResult.
+ * Shell owns Garage Tag chrome; this player drives stage + optional local controls.
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
+  AccessibilityInfo,
   LayoutChangeEvent,
   Pressable,
   StyleSheet,
   Text,
   View,
-  AccessibilityInfo,
 } from 'react-native';
 import { BotAssembler } from '../assembler';
 import {
@@ -21,47 +30,82 @@ import {
 import type { ActiveFxCue } from '../arena/EventFxLayer';
 import { EventFxLayer } from '../arena/EventFxLayer';
 import { RepairYardArena } from '../arena/RepairYardArena';
+import { garageTag } from '../garage-tag';
 import { compileAnimationQueue, commandDuration, PlaybackController } from '../replay-playback';
 import type { ConfirmedFightResult } from './confirmedResult';
 import { formatOutcomeLine, resolvePlaybackMedia } from './confirmedResult';
-import { loadoutFromFighter } from './fighterLoadout';
+import { assemblerLoadoutFromBuild } from './fighterLoadout';
 import {
   applyAnimationCommand,
   initialPresentationState,
   type ReplayPresentationState,
 } from './playbackState';
+import {
+  initialPlaybackUi,
+  pauseState,
+  playbackUiAfterAdvance,
+  progressFromPosition,
+  restartState,
+  resumeState,
+  togglePlayState,
+  type PlaybackUiState,
+} from './playbackControl';
+import { DEFAULT_REPLAY_CHROME, reservedReplayChromeHeight } from './replayLayout';
 
 export interface CanonicalReplayPlayerProps {
   readonly result: ConfirmedFightResult;
   readonly autoPlay?: boolean;
   readonly muted?: boolean;
+  /** Effective reduced-motion preference from shell (force ∪ OS). */
+  readonly reducedMotion?: boolean;
+  /** When false, hide local Play/Replay buttons (shell ReplayAudioControls owns them). */
+  readonly showLocalControls?: boolean;
   readonly onFinished?: () => void;
+  readonly onPlaybackChange?: (state: PlaybackUiState) => void;
   readonly testID?: string;
 }
 
-export const CanonicalReplayPlayer: React.FC<CanonicalReplayPlayerProps> = ({
-  result,
-  autoPlay = true,
-  muted = false,
-  onFinished,
-  testID = 'canonical-replay-player',
-}) => {
+export type CanonicalReplayPlayerHandle = {
+  togglePlay: () => void;
+  play: () => void;
+  pause: () => void;
+  replay: () => void;
+  getPlaybackState: () => PlaybackUiState;
+};
+
+export const CanonicalReplayPlayer = forwardRef<
+  CanonicalReplayPlayerHandle,
+  CanonicalReplayPlayerProps
+>(function CanonicalReplayPlayer(
+  {
+    result,
+    autoPlay = true,
+    muted = false,
+    reducedMotion: reducedMotionProp,
+    showLocalControls = true,
+    onFinished,
+    onPlaybackChange,
+    testID = 'canonical-replay-player',
+  },
+  ref,
+) {
   const placement = useMemo(() => startPlacement(), []);
-  const [viewport, setViewport] = useState({ width: 360, height: 560 });
+  const [stageBox, setStageBox] = useState({ width: 360, height: 320 });
   const fit = useMemo(
-    () => fitSceneToViewport(viewport.width, viewport.height),
-    [viewport.height, viewport.width],
+    () => fitSceneToViewport(stageBox.width, Math.max(stageBox.height, 1)),
+    [stageBox.height, stageBox.width],
   );
 
   const nearFighter = result.replay.fighters[0];
   const farFighter = result.replay.fighters[1];
+  // Stored sealed builds drive assembler — never scene paintAlias.
   const nearLoadout = useMemo(
-    () => loadoutFromFighter(nearFighter, placement.near),
-    [nearFighter, placement.near],
+    () => assemblerLoadoutFromBuild(result.builds.attacker),
+    [result.builds.attacker],
   );
   const farLoadout = useMemo(
-    () => loadoutFromFighter(farFighter, placement.far),
-    [farFighter, placement.far],
+    () => assemblerLoadoutFromBuild(result.builds.defender),
+    [result.builds.defender],
   );
 
   const maxHp = useMemo(
@@ -76,42 +120,60 @@ export const CanonicalReplayPlayer: React.FC<CanonicalReplayPlayerProps> = ({
     initialPresentationState(nearFighter.characterId, farFighter.characterId),
   );
   const [fxCues, setFxCues] = useState<ActiveFxCue[]>([]);
-  const [playing, setPlaying] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const [playbackUi, setPlaybackUi] = useState<PlaybackUiState>(() =>
+    initialPlaybackUi(queue.length),
+  );
+  const [osReducedMotion, setOsReducedMotion] = useState(false);
   const playbackRef = useRef<PlaybackController | null>(null);
   const waitUntilRef = useRef(0);
   const cueSeqRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const playbackUiRef = useRef(playbackUi);
+  playbackUiRef.current = playbackUi;
+
+  const reducedMotion = reducedMotionProp ?? osReducedMotion;
+
+  const emitPlayback = useCallback(
+    (next: PlaybackUiState) => {
+      setPlaybackUi(next);
+      onPlaybackChange?.(next);
+    },
+    [onPlaybackChange],
+  );
 
   useEffect(() => {
+    if (reducedMotionProp !== undefined) return;
     let mounted = true;
     AccessibilityInfo.isReduceMotionEnabled()
       .then((v) => {
-        if (mounted) setReducedMotion(Boolean(v));
+        if (mounted) setOsReducedMotion(Boolean(v));
       })
       .catch(() => undefined);
     const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', (v: boolean) => {
-      setReducedMotion(Boolean(v));
+      setOsReducedMotion(Boolean(v));
     });
     return () => {
       mounted = false;
-      // RN web / older typings
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (sub as any)?.remove?.();
     };
-  }, []);
+  }, [reducedMotionProp]);
 
-  const resetPlayback = useCallback(() => {
-    playbackRef.current = new PlaybackController(queue);
-    cueSeqRef.current = 0;
-    waitUntilRef.current = 0;
-    setPresentation(initialPresentationState(nearFighter.characterId, farFighter.characterId));
-    setFxCues([]);
-  }, [farFighter.characterId, nearFighter.characterId, queue]);
+  const resetPlayback = useCallback(
+    (startPlaying: boolean) => {
+      playbackRef.current = new PlaybackController(queue);
+      cueSeqRef.current = 0;
+      waitUntilRef.current = 0;
+      setPresentation(initialPresentationState(nearFighter.characterId, farFighter.characterId));
+      setFxCues([]);
+      const next = startPlaying ? restartState(queue.length) : initialPlaybackUi(queue.length);
+      emitPlayback(next);
+    },
+    [emitPlayback, farFighter.characterId, nearFighter.characterId, queue],
+  );
 
   useEffect(() => {
-    resetPlayback();
-    if (autoPlay) setPlaying(true);
+    resetPlayback(autoPlay);
   }, [autoPlay, resetPlayback, result.replay.checksum]);
 
   const contact = provisionalContactPoint(placement.near, placement.far);
@@ -140,12 +202,17 @@ export const CanonicalReplayPlayer: React.FC<CanonicalReplayPlayerProps> = ({
   );
 
   useEffect(() => {
-    if (!playing) return;
+    if (!playbackUi.playing || !media.assetsAvailable) return;
 
     const tick = (now: number) => {
       const pb = playbackRef.current;
       if (!pb || pb.finished) {
-        setPlaying(false);
+        emitPlayback(
+          playbackUiAfterAdvance(
+            { ...playbackUiRef.current, playing: false },
+            pb?.total ?? playbackUiRef.current.totalCommands,
+          ),
+        );
         onFinished?.();
         return;
       }
@@ -155,7 +222,9 @@ export const CanonicalReplayPlayer: React.FC<CanonicalReplayPlayerProps> = ({
       }
       const cmd = pb.advance();
       if (!cmd) {
-        setPlaying(false);
+        emitPlayback(
+          playbackUiAfterAdvance({ ...playbackUiRef.current, playing: false }, pb.total),
+        );
         onFinished?.();
         return;
       }
@@ -165,11 +234,14 @@ export const CanonicalReplayPlayer: React.FC<CanonicalReplayPlayerProps> = ({
         pushFxFromState(next);
         return next;
       });
+      emitPlayback(playbackUiAfterAdvance(playbackUiRef.current, pb.position));
       waitUntilRef.current = now + commandDuration(cmd);
       if (!pb.finished) {
         rafRef.current = requestAnimationFrame(tick);
       } else {
-        setPlaying(false);
+        emitPlayback(
+          playbackUiAfterAdvance({ ...playbackUiRef.current, playing: false }, pb.total),
+        );
         onFinished?.();
       }
     };
@@ -178,89 +250,131 @@ export const CanonicalReplayPlayer: React.FC<CanonicalReplayPlayerProps> = ({
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [maxHp, onFinished, playing, pushFxFromState]);
+  }, [emitPlayback, maxHp, media.assetsAvailable, onFinished, playbackUi.playing, pushFxFromState]);
 
-  const onLayout = (e: LayoutChangeEvent) => {
+  useImperativeHandle(
+    ref,
+    () => ({
+      togglePlay: () => {
+        const cur = playbackUiRef.current;
+        if (cur.commandIndex >= cur.totalCommands) {
+          resetPlayback(true);
+          return;
+        }
+        emitPlayback(togglePlayState(cur));
+      },
+      play: () => emitPlayback(resumeState(playbackUiRef.current)),
+      pause: () => emitPlayback(pauseState(playbackUiRef.current)),
+      replay: () => resetPlayback(true),
+      getPlaybackState: () => playbackUiRef.current,
+    }),
+    [emitPlayback, resetPlayback],
+  );
+
+  const onStageLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
-    if (width > 0 && height > 0) setViewport({ width, height });
+    if (width > 0 && height > 0) setStageBox({ width, height });
   };
 
   const sceneScale = fit.scale;
+  const playing = playbackUi.playing;
+
+  if (!media.assetsAvailable) {
+    return (
+      <View testID={testID} style={styles.root}>
+        <View style={styles.unavailable} testID={`${testID}-media-unavailable`}>
+          <Text style={styles.unavailableTitle}>Historical media unavailable</Text>
+          <Text style={styles.unavailableBody}>{media.unavailableReason}</Text>
+          <Text style={styles.metaMuted}>
+            Stored env {media.environmentVersion} · kit {media.kitVersion} — not substituted with
+            active pack.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
-    <View testID={testID} style={styles.root} onLayout={onLayout}>
-      <View style={styles.metaRow}>
+    <View testID={testID} style={styles.root}>
+      <View style={styles.metaRow} onLayout={() => undefined} testID={`${testID}-meta`}>
         <Text style={styles.metaBadge} testID={`${testID}-source`}>
           {result.label === 'DEV' ? 'DEV recorded fixture' : 'Server confirmed'}
         </Text>
-        <Text style={styles.metaMuted}>
+        <Text style={styles.metaMuted} testID={`${testID}-media`}>
           env {media.environmentVersion} · kit {media.kitVersion}
+          {media.usesStoredVersions ? ' · stored refs' : ''}
           {muted ? ' · muted' : ''}
           {reducedMotion ? ' · reduced-motion' : ''}
         </Text>
+        <Text style={styles.metaMuted} testID={`${testID}-builds`}>
+          A {nearLoadout.paint}/{nearLoadout.weapon} · D {farLoadout.paint}/{farLoadout.weapon}
+        </Text>
       </View>
 
-      <View style={[styles.stageFrame, { width: fit.width, height: fit.height }]}>
-        <RepairYardArena
-          near={placement.near}
-          far={placement.far}
-          sceneScale={sceneScale}
-          testID={`${testID}-arena`}
-        >
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              left: placement.far.origin.x,
-              top: placement.far.origin.y,
-              width: placement.far.size,
-              height: placement.far.size,
-              overflow: 'hidden',
-              zIndex: ENVIRONMENT_LAYER_Z.farActor,
-            }}
+      {/* Flexible stage viewport — measured after chrome reservation via flex. */}
+      <View style={styles.stageSlot} onLayout={onStageLayout} testID={`${testID}-stage-slot`}>
+        <View style={[styles.stageFrame, { width: fit.width, height: fit.height }]}>
+          <RepairYardArena
+            near={placement.near}
+            far={placement.far}
+            sceneScale={sceneScale}
+            testID={`${testID}-arena`}
           >
-            <BotAssembler
-              loadout={farLoadout}
-              facing={placement.far.facing}
-              size={placement.far.size}
-              motionPose={presentation.far.motionPose}
-              reducedMotion={reducedMotion}
-              placeholder={false}
-              testID={`${testID}-far`}
-            />
-          </View>
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              left: placement.near.origin.x,
-              top: placement.near.origin.y,
-              width: placement.near.size,
-              height: placement.near.size,
-              overflow: 'hidden',
-              zIndex: ENVIRONMENT_LAYER_Z.nearActor,
-            }}
-          >
-            <BotAssembler
-              loadout={nearLoadout}
-              facing={placement.near.facing}
-              size={placement.near.size}
-              motionPose={presentation.near.motionPose}
-              reducedMotion={reducedMotion}
-              placeholder={false}
-              testID={`${testID}-near`}
-            />
-          </View>
-          <EventFxLayer cues={fxCues} reducedMotion={reducedMotion} />
-          {presentation.banner ? (
-            <Text style={styles.banner} testID={`${testID}-banner`}>
-              {presentation.banner}
-            </Text>
-          ) : null}
-        </RepairYardArena>
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                left: placement.far.origin.x,
+                top: placement.far.origin.y,
+                width: placement.far.size,
+                height: placement.far.size,
+                overflow: 'hidden',
+                zIndex: ENVIRONMENT_LAYER_Z.farActor,
+              }}
+            >
+              <BotAssembler
+                loadout={farLoadout}
+                facing={placement.far.facing}
+                size={placement.far.size}
+                motionPose={presentation.far.motionPose}
+                reducedMotion={reducedMotion}
+                placeholder={false}
+                testID={`${testID}-far`}
+              />
+            </View>
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                left: placement.near.origin.x,
+                top: placement.near.origin.y,
+                width: placement.near.size,
+                height: placement.near.size,
+                overflow: 'hidden',
+                zIndex: ENVIRONMENT_LAYER_Z.nearActor,
+              }}
+            >
+              <BotAssembler
+                loadout={nearLoadout}
+                facing={placement.near.facing}
+                size={placement.near.size}
+                motionPose={presentation.near.motionPose}
+                reducedMotion={reducedMotion}
+                placeholder={false}
+                testID={`${testID}-near`}
+              />
+            </View>
+            <EventFxLayer cues={fxCues} reducedMotion={reducedMotion} />
+            {presentation.banner ? (
+              <Text style={styles.banner} testID={`${testID}-banner`}>
+                {presentation.banner}
+              </Text>
+            ) : null}
+          </RepairYardArena>
+        </View>
       </View>
 
-      <View style={styles.hpRow}>
+      <View style={styles.hpRow} testID={`${testID}-hp`}>
         <View style={styles.hpBlock}>
           <Text style={styles.hpLabel}>{nearFighter.displayName}</Text>
           <View style={styles.hpTrack}>
@@ -275,66 +389,100 @@ export const CanonicalReplayPlayer: React.FC<CanonicalReplayPlayerProps> = ({
         </View>
       </View>
 
-      <View style={styles.controls}>
-        <Pressable
-          testID={`${testID}-replay`}
-          style={styles.btn}
-          onPress={() => {
-            resetPlayback();
-            setPlaying(true);
+      {showLocalControls ? (
+        <View style={styles.controls} testID={`${testID}-controls`}>
+          <Pressable
+            testID={`${testID}-replay`}
+            style={styles.btn}
+            onPress={() => resetPlayback(true)}
+          >
+            <Text style={styles.btnText}>Replay same</Text>
+          </Pressable>
+          <Pressable
+            testID={`${testID}-play`}
+            style={styles.btn}
+            onPress={() => {
+              const cur = playbackUiRef.current;
+              if (cur.commandIndex >= cur.totalCommands) {
+                resetPlayback(true);
+                return;
+              }
+              emitPlayback(togglePlayState(cur));
+            }}
+          >
+            <Text style={styles.btnText}>{playing ? 'Pause' : 'Play'}</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View
+          style={styles.progressOnly}
+          testID={`${testID}-progress`}
+          accessibilityValue={{
+            now: Math.round(playbackUi.progress * 100),
+            min: 0,
+            max: 100,
           }}
         >
-          <Text style={styles.btnText}>Replay same</Text>
-        </Pressable>
-        <Pressable
-          testID={`${testID}-play`}
-          style={[styles.btn, playing && styles.btnDisabled]}
-          disabled={playing}
-          onPress={() => setPlaying(true)}
-        >
-          <Text style={styles.btnText}>{playing ? 'Playing…' : 'Play'}</Text>
-        </Pressable>
-      </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${playbackUi.progress * 100}%` }]} />
+          </View>
+        </View>
+      )}
 
       {presentation.showResult ? (
         <View style={styles.resultStrip} testID={`${testID}-inline-result`}>
           <Text style={styles.resultText}>{formatOutcomeLine(result.outcome)}</Text>
           <Text style={styles.metaMuted}>
-            checksum {result.replayChecksum.slice(0, 12)}… · {queue.length} cmds
+            checksum {result.replayChecksum.slice(0, 12)}… · {queue.length} cmds ·{' '}
+            {Math.round(progressFromPosition(playbackUi.commandIndex, queue.length) * 100)}%
           </Text>
         </View>
       ) : null}
     </View>
   );
-};
+});
+
+/** Exported for layout tests — reserved chrome for a typical player composition. */
+export function canonicalReplayReservedHeight(showResult: boolean): number {
+  return reservedReplayChromeHeight(DEFAULT_REPLAY_CHROME, { showResult });
+}
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#1E2226',
+    backgroundColor: garageTag.graphite,
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingBottom: 12,
+    paddingBottom: 8,
+    minHeight: 0,
   },
   metaRow: {
     width: '100%',
-    paddingVertical: 8,
+    paddingVertical: 6,
     gap: 2,
+    flexShrink: 0,
   },
   metaBadge: {
-    color: '#E3B23C',
+    color: garageTag.mustard,
     fontWeight: '800',
     fontSize: 12,
     letterSpacing: 0.3,
   },
   metaMuted: {
-    color: '#9AA3AB',
+    color: garageTag.steel,
     fontSize: 11,
+  },
+  stageSlot: {
+    flex: 1,
+    width: '100%',
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stageFrame: {
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#2A2E32',
+    borderColor: garageTag.graphite,
   },
   banner: {
     position: 'absolute',
@@ -342,7 +490,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
-    color: '#F3EADF',
+    color: garageTag.cream,
     fontWeight: '800',
     fontSize: 18,
     zIndex: 90,
@@ -351,14 +499,15 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     gap: 12,
-    marginTop: 10,
+    marginTop: 8,
+    flexShrink: 0,
   },
   hpBlock: {
     flex: 1,
     gap: 4,
   },
   hpLabel: {
-    color: '#F3EADF',
+    color: garageTag.cream,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -369,44 +518,84 @@ const styles = StyleSheet.create({
   },
   hpFillNear: {
     height: '100%',
-    backgroundColor: '#C45C26',
+    backgroundColor: garageTag.oxide,
   },
   hpFillFar: {
     height: '100%',
-    backgroundColor: '#3D6B8C',
+    backgroundColor: garageTag.petrol,
   },
   controls: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 12,
+    marginTop: 8,
     width: '100%',
+    flexShrink: 0,
+  },
+  progressOnly: {
+    width: '100%',
+    marginTop: 8,
+    flexShrink: 0,
+    height: 12,
+    justifyContent: 'center',
+  },
+  progressTrack: {
+    height: 8,
+    backgroundColor: '#3A4148',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: garageTag.mustard,
   },
   btn: {
     flex: 1,
     paddingVertical: 10,
-    backgroundColor: '#E3B23C',
+    backgroundColor: garageTag.mustard,
     borderWidth: 2,
-    borderColor: '#2A2E32',
+    borderColor: garageTag.graphite,
     alignItems: 'center',
-  },
-  btnDisabled: {
-    opacity: 0.55,
   },
   btnText: {
     fontWeight: '800',
-    color: '#2A2E32',
+    color: garageTag.graphite,
     fontSize: 13,
   },
   resultStrip: {
-    marginTop: 12,
+    marginTop: 8,
     width: '100%',
-    padding: 12,
-    backgroundColor: '#2A2E32',
+    padding: 10,
+    backgroundColor: garageTag.paper,
+    borderWidth: garageTag.outline,
+    borderColor: garageTag.graphite,
+    borderRadius: garageTag.cutCorner,
     gap: 4,
+    flexShrink: 0,
   },
   resultText: {
-    color: '#F3EADF',
+    color: garageTag.graphite,
     fontWeight: '800',
     fontSize: 16,
+  },
+  unavailable: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    padding: 16,
+    gap: 8,
+    backgroundColor: garageTag.paper,
+    borderWidth: garageTag.outline,
+    borderColor: garageTag.graphite,
+    borderRadius: garageTag.cutCorner,
+  },
+  unavailableTitle: {
+    color: garageTag.error,
+    fontWeight: '900',
+    fontSize: 16,
+  },
+  unavailableBody: {
+    color: garageTag.graphite,
+    fontWeight: '700',
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
