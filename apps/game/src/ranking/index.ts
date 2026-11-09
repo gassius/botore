@@ -5,7 +5,12 @@ export type {
   FixtureRankingReadAdapterOptions,
   FixtureRankingScenario,
 } from './adapters/FixtureRankingReadAdapter';
+export { SupabaseRankingReadAdapter } from './adapters/SupabaseRankingReadAdapter';
 export { UnavailableContractRankingReadAdapter } from './adapters/UnavailableContractRankingReadAdapter';
+export {
+  createRankingReadClient,
+  type CreateRankingReadClientInput,
+} from './createRankingReadClient';
 export {
   DEV_EMPTY_RANKING_ROWS,
   DEV_OVERFLOW_RANKING_ROWS,

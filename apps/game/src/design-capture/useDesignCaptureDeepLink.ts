@@ -2,7 +2,11 @@ import { useEffect } from 'react';
 import { Linking } from 'react-native';
 import { useFirstRun } from '../first-run/FirstRunContext';
 import type { FirstRunRoute } from '../first-run/routes';
-import { isDesignCaptureEnabled, parseDesignCaptureUrl } from './captureEnv';
+import {
+  type DesignCaptureRankingScenario,
+  isDesignCaptureEnabled,
+  parseDesignCaptureUrl,
+} from './captureEnv';
 import {
   armDesignCaptureIntentListener,
   peekCaptureIntent,
@@ -18,7 +22,14 @@ import { loadCaptureIntentFile } from './readCaptureIntentFile';
  * and plants `botore-design-capture-intent.json`.
  */
 export function useDesignCaptureDeepLink(): void {
-  const { goTo, muted, toggleMute, setDemoPaintId, setDemoWeaponId } = useFirstRun();
+  const {
+    goTo,
+    muted,
+    toggleMute,
+    setDemoPaintId,
+    setDemoWeaponId,
+    setRankingCaptureScenario,
+  } = useFirstRun();
 
   useEffect(() => {
     if (!isDesignCaptureEnabled()) return;
@@ -29,7 +40,14 @@ export function useDesignCaptureDeepLink(): void {
       paintId: string | null;
       weaponId: string | null;
       mute: boolean | null;
+      rankingScenario?: DesignCaptureRankingScenario | null;
     }) => {
+      // Ranking scenario before route so RankingSlot mounts the right port.
+      if (parsed.rankingScenario) {
+        setRankingCaptureScenario(parsed.rankingScenario);
+      } else if (parsed.route === 'Ranking') {
+        setRankingCaptureScenario('live');
+      }
       if (parsed.route) goTo(parsed.route as FirstRunRoute);
       if (parsed.paintId) setDemoPaintId(parsed.paintId);
       if (parsed.weaponId) setDemoWeaponId(parsed.weaponId);
@@ -64,5 +82,5 @@ export function useDesignCaptureDeepLink(): void {
       cancelled = true;
       sub.remove();
     };
-  }, [goTo, muted, setDemoPaintId, setDemoWeaponId, toggleMute]);
+  }, [goTo, muted, setDemoPaintId, setDemoWeaponId, setRankingCaptureScenario, toggleMute]);
 }

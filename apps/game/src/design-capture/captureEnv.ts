@@ -21,6 +21,9 @@ export const DESIGN_CAPTURE_DEV_PASSWORD = 'design-capture';
 export const LIVE_FIGHT_CAPTURE_EMAIL = 'dev-player@example.com';
 export const LIVE_FIGHT_CAPTURE_PASSWORD = 'local-only-password';
 
+/** Ranking capture override for empty/error stills (C5). */
+export type DesignCaptureRankingScenario = 'live' | 'empty' | 'error';
+
 export type DesignCaptureConfig = {
   readonly enabled: boolean;
   /** Initial first-run route when capture mode boots. */
@@ -30,6 +33,14 @@ export type DesignCaptureConfig = {
   /** Optional demo weapon id when capture mode boots (e.g. axe). */
   readonly initialWeaponId: string | null;
 };
+
+export function parseDesignCaptureRankingScenario(
+  raw: string | null | undefined,
+): DesignCaptureRankingScenario | null {
+  const v = trimPublic(raw ?? undefined)?.toLowerCase();
+  if (v === 'live' || v === 'empty' || v === 'error') return v;
+  return null;
+}
 
 function trimPublic(value: string | undefined): string | undefined {
   if (typeof value !== 'string') return undefined;
@@ -116,10 +127,17 @@ export function parseDesignCaptureUrl(url: string): {
   mute: boolean | null;
   paintId: string | null;
   weaponId: string | null;
+  rankingScenario: DesignCaptureRankingScenario | null;
 } {
   const trimmed = url.trim();
   if (!trimmed.toLowerCase().startsWith(`${DESIGN_CAPTURE_SCHEME}:`)) {
-    return { route: null, mute: null, paintId: null, weaponId: null };
+    return {
+      route: null,
+      mute: null,
+      paintId: null,
+      weaponId: null,
+      rankingScenario: null,
+    };
   }
 
   // Normalize `botore://capture/Replay?mute=1` → path + query without scheme.
@@ -134,7 +152,13 @@ export function parseDesignCaptureUrl(url: string): {
     .filter(Boolean);
 
   if (segments[0] !== DESIGN_CAPTURE_HOST) {
-    return { route: null, mute: null, paintId: null, weaponId: null };
+    return {
+      route: null,
+      mute: null,
+      paintId: null,
+      weaponId: null,
+      rankingScenario: null,
+    };
   }
 
   const params = new URLSearchParams(queryPart);
@@ -152,18 +176,29 @@ export function parseDesignCaptureUrl(url: string): {
 
   const paintId = trimPublic(params.get('paint') ?? undefined) ?? null;
   const weaponId = trimPublic(params.get('weapon') ?? undefined) ?? null;
+  const rankingScenario = parseDesignCaptureRankingScenario(
+    params.get('ranking') ?? params.get('rankingScenario'),
+  );
 
-  return { route, mute, paintId, weaponId };
+  return { route, mute, paintId, weaponId, rankingScenario };
 }
 
 export function buildDesignCaptureUrl(
   route: FirstRunRoute,
-  opts?: { mute?: boolean; paintId?: string; weaponId?: string },
+  opts?: {
+    mute?: boolean;
+    paintId?: string;
+    weaponId?: string;
+    rankingScenario?: DesignCaptureRankingScenario;
+  },
 ): string {
   const query: string[] = [];
   if (opts?.mute === true) query.push('mute=1');
   if (opts?.paintId) query.push(`paint=${encodeURIComponent(opts.paintId)}`);
   if (opts?.weaponId) query.push(`weapon=${encodeURIComponent(opts.weaponId)}`);
+  if (opts?.rankingScenario) {
+    query.push(`ranking=${encodeURIComponent(opts.rankingScenario)}`);
+  }
   const q = query.length > 0 ? `?${query.join('&')}` : '';
   return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${q}`;
 }

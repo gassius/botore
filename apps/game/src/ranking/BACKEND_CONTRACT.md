@@ -1,46 +1,39 @@
-# Ranking live-read contract — BLOCKED
+# Ranking live-read contract — `list_ranking`
 
-Ticket: [1amjtrey0ex](https://app.clickup.com/t/1amjtrey0ex)
+Ticket: [C5 Ranking screen: real data + design captures](https://app.clickup.com/t/1amjtrey13p)
 
-This scaffolding ships a `RankingReadPort` and DEV fixture adapter only.
-**Live/production ranking integration is blocked** until a verified authoritative
-backend read contract exists. Do not invent an API, RPC, table, RLS policy, or
-client ranking algorithm to unblock this screen.
+## Authoritative surface
 
-## Verified in this repo (2026-11-08)
+| RPC              | Args                | Success body                                                                 |
+| ---------------- | ------------------- | ---------------------------------------------------------------------------- |
+| `list_ranking()` | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }` |
 
-Searched `supabase/`, `docs/`, and client packages for ranking / leaderboard
-endpoints, RPCs, views, and schemas: **none found**.
+- Migration: `supabase/migrations/0022_list_ranking.sql`
+- Seed peers (local/CI board density): `1002_seed_ranking_peers.sql`
+- `SECURITY DEFINER`, `set search_path = public, extensions`
+- `EXECUTE` to **`authenticated` only** (revoked from `public`, `anon`, `service_role`)
+- No table `GRANT SELECT` on `characters` / `progression_ledger` / `profiles`
 
-There is therefore no authorized production ordering, pagination, auth/RLS, or
-score semantics for the client to consume.
+## Ordering semantics (server-owned)
 
-## Missing backend scope (handoff)
+1. Player characters only (`is_opponent = false`).
+2. Order by `sum(progression_ledger.delta_xp)` descending, then `character_id` ascending.
+3. `rank` is `row_number()` in that order (1-based). Characters with no ledger rows have `totalXp = 0`.
+4. Window: top 50 rows. First-run seed + live XP keep the board small.
+5. XP awards remain the existing combat rules (win = 2, loss = 1). This RPC does **not** invent Elo, REF-03 sample ranks, or client-side reordering.
 
-A separate backend ticket should define and implement, with Supabase Infra /
-Carlos approval as required:
+## Client
 
-1. **Authoritative read surface** — Edge Function, Postgres RPC, or secured view
-   that returns ordered ranking rows for the authenticated player.
-2. **Auth / RLS** — who may read which rows; no client write path to invent ranks.
-3. **Ordering semantics** — server-owned order the client must preserve verbatim
-   (no client re-sort). Rank field values come from the server.
-4. **Pagination / windowing** — if the list is large: cursor/limit contract,
-   including how the current bot’s row is included when outside the window.
-5. **Row shape** — at minimum: rank, bot identity (stable id + display name),
-   ownership/current-bot flag (or enough data for the client to label “YOU”
-   without using paint alone). No XP/reward invention from REF-03 samples.
-6. **Idempotency / freshness** — refresh semantics; failure must not fabricate
-   live results.
+- `SupabaseRankingReadAdapter` maps `characterId` → `RankingRow.botId`, `source: 'live'`.
+- UI preserves adapter order; fixtures stay labelled **DEV** when used for empty/error capture states.
+- Factory: `createRankingReadClient({ accessToken, captureScenario })`.
 
-Until that contract is verified with the backend implementer, wire only:
+## Verify
 
-- `FixtureRankingReadAdapter` (DEV-labelled fixtures)
-- `UnavailableContractRankingReadAdapter` (explicit blocked state)
-
-## Client invariants (already enforced in scaffolding)
-
-- `RankingReadPort.list()` returns rows in display order; UI does not sort.
-- Fixtures are labelled **DEV** and never presented as live players.
-- Loading / empty / error+retry / unavailable-contract / populated states are
-  explicit; prior readable rows stay coherent on refresh failure.
+```bash
+pnpm db:reset
+# SQL suite includes TEST-OK C5 list_ranking…
+psql "$DATABASE_URL" -c "select public.list_ranking()
+  from (select set_config('request.jwt.claim.role','authenticated',true),
+               set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true)) s;"
+```

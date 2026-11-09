@@ -6,7 +6,7 @@
  */
 
 /** Provenance of ranking rows — fixtures are never presented as live players. */
-export type RankingDataSource = 'dev-fixture';
+export type RankingDataSource = 'dev-fixture' | 'live';
 
 export type RankingRow = {
   /** Server- or fixture-provided rank position. Do not recompute client-side. */
@@ -15,8 +15,10 @@ export type RankingRow = {
   displayName: string;
   /** Ownership / current-bot cue — use with label/shape, not paint alone. */
   isCurrentBot: boolean;
-  /** Always 'dev-fixture' until a verified live RankingReadPort exists. */
+  /** 'live' from list_ranking; 'dev-fixture' otherwise. */
   source: RankingDataSource;
+  /** Server XP total when source is live (progression_ledger sum). */
+  totalXp?: number;
 };
 
 export type RankingPhase =

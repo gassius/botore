@@ -1936,4 +1936,75 @@ begin
 
   reset role;
   raise notice 'TEST-OK 0021 loadout RLS via SECURITY DEFINER helpers';
+
+  -- =========================================================================
+  -- 0022 / C5: list_ranking — progression XP board, authenticated only
+  -- =========================================================================
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.list_ranking()', 'EXECUTE'),
+    'authenticated EXECUTE list_ranking'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.list_ranking()', 'EXECUTE'),
+    'anon must not EXECUTE list_ranking'
+  );
+  perform tests.assert(
+    not has_function_privilege('service_role', 'public.list_ranking()', 'EXECUTE'),
+    'service_role must not EXECUTE list_ranking'
+  );
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  v_res := public.list_ranking();
+  perform tests.assert((v_res->>'ok')::boolean, 'list_ranking ok');
+  perform tests.assert(jsonb_typeof(v_res->'rows') = 'array', 'list_ranking rows array');
+  select count(*)::int into v_count from jsonb_array_elements(v_res->'rows');
+  perform tests.assert(v_count >= 4, format('expected >=4 ranking rows (hero+peers), got %s', v_count));
+  perform tests.assert(
+    (v_res->'rows'->0->>'characterId') = 'peer-bolt',
+    'rank 1 is peer-bolt (highest seed XP)'
+  );
+  perform tests.assert(
+    (v_res->'rows'->0->>'rank')::integer = 1,
+    'first row rank is 1'
+  );
+  perform tests.assert(
+    (v_res->'rows'->0->>'totalXp')::integer = 6,
+    'peer-bolt totalXp is 6'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'player-hero'
+         and (r->>'isCurrentBot')::boolean = true
+    ),
+    'caller hero marked isCurrentBot'
+  );
+  -- Client must not need characters SELECT for ranking.
+  begin
+    perform 1 from public.characters where character_id = 'player-hero';
+    if found then
+      raise exception 'SEC FAIL: authenticated SELECT on characters succeeded during ranking test';
+    end if;
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+
+  set local role anon;
+  begin
+    perform public.list_ranking();
+    raise exception 'ANON FAIL: list_ranking allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+  raise notice 'TEST-OK C5 list_ranking';
 end $$;

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
-import { FixtureRankingReadAdapter } from '../ranking/adapters/FixtureRankingReadAdapter';
+import type { DesignCaptureRankingScenario } from '../design-capture/captureEnv';
+import { createRankingReadClient } from '../ranking/createRankingReadClient';
 import type { RankingReadPort } from '../ranking/RankingReadPort';
 import { createRankingLoadController } from '../ranking/rankingLoadController';
 import {
@@ -23,8 +24,12 @@ import {
 import { DomainNote } from '../first-run/slots/DomainNote';
 
 export type RankingScreenProps = {
-  /** Injected read port. Defaults to DEV fixture adapter (never live). */
+  /** Injected read port. Defaults to createRankingReadClient. */
   port?: RankingReadPort;
+  /** Access token for live list_ranking when port is not injected. */
+  accessToken?: string | null;
+  /** Design-capture empty/error override. */
+  captureScenario?: DesignCaptureRankingScenario | null;
   onBack?: () => void;
   /** When false, skip auto-load (tests). Default true. */
   autoLoad?: boolean;
@@ -32,18 +37,26 @@ export type RankingScreenProps = {
 
 /**
  * First-run Ranking screen (REF-03). Uses shell Garage Tag exports.
- * Fixture-backed scaffolding only — no client ranking algorithm.
+ * Live rows from `list_ranking`; no client ranking algorithm.
  *
  * Scroll owner: ScreenChrome body ScrollView (`RANKING_SCREEN_CHROME_SCROLL`).
  * Footer Back stays outside the scroll region.
  */
 export const RankingScreen: React.FC<RankingScreenProps> = ({
   port: injectedPort,
+  accessToken = null,
+  captureScenario = null,
   onBack,
   autoLoad = true,
 }) => {
-  const [port] = useState<RankingReadPort>(
-    () => injectedPort ?? new FixtureRankingReadAdapter({ scenario: 'populated' }),
+  const port = useMemo(
+    () =>
+      injectedPort ??
+      createRankingReadClient({
+        accessToken,
+        captureScenario,
+      }),
+    [injectedPort, accessToken, captureScenario],
   );
   const [session, setSession] = useState<RankingSessionState>(createInitialRankingSession);
   const setSessionRef = useRef(setSession);
@@ -58,6 +71,9 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
   );
 
   useEffect(() => {
+    // Reset when the port changes (live ↔ capture empty/error) so stills do not
+    // briefly show the previous board under a new scenario.
+    setSession(createInitialRankingSession());
     if (!autoLoad) {
       return;
     }
@@ -65,6 +81,8 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
   }, [autoLoad, controller]);
 
   const loadBusy = session.phase === 'loading' || session.phase === 'idle' || session.refreshing;
+  const showingLive = session.rows.some((row) => row.source === 'live');
+  const showingDev = session.rows.some((row) => row.source === 'dev-fixture');
 
   const footer = onBack ? (
     <PrimaryButton label="Back to stable" onPress={onBack} testID="ranking-back" />
@@ -77,9 +95,15 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
       {...(footer ? { footer } : {})}
     >
       <ScreenHeader title="Ranking" {...(onBack ? { onBack } : {})} testID="ranking-header" />
-      <DevFixtureBanner />
+      {showingDev ? <DevFixtureBanner /> : null}
       <RankingBody session={session} onRetry={() => void controller.load()} loadBusy={loadBusy} />
-      <DomainNote text="Domain: RankingReadPort.list() + DEV fixtures. Live ranking blocked until verified backend contract." />
+      <DomainNote
+        text={
+          showingLive
+            ? 'Domain: list_ranking (progression XP). Server order preserved.'
+            : 'Domain: RankingReadPort. DEV fixtures when live ranking is unavailable.'
+        }
+      />
     </ScreenChrome>
   );
 };
@@ -153,7 +177,7 @@ function RankingBody({ session, onRetry, loadBusy }: RankingBodyProps): React.Re
             No rankings yet
           </Text>
           <Text style={styles.stateText} allowFontScaling>
-            DEV fixture returned an empty list. Live ranking remains blocked.
+            No player bots are on the board yet. Fight to earn XP and appear here.
           </Text>
         </GaragePanel>
         <SecondaryButton
@@ -221,6 +245,7 @@ function RankingList({ rows, refreshing }: RankingListProps): React.ReactElement
 }
 
 function RankingRowView({ row }: { row: RankingRow }): React.ReactElement {
+  const sourceLabel = row.source === 'live' ? 'Live' : 'DEV fixture';
   return (
     <GaragePanel
       rivets={false}
@@ -246,7 +271,7 @@ function RankingRowView({ row }: { row: RankingRow }): React.ReactElement {
             testID={`ranking-name-${row.botId}`}
           />
           <Text style={styles.sourceLabel} allowFontScaling>
-            DEV fixture
+            {typeof row.totalXp === 'number' ? `${sourceLabel} · ${row.totalXp} XP` : sourceLabel}
           </Text>
         </View>
       </View>

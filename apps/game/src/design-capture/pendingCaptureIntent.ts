@@ -1,7 +1,12 @@
 import { Linking } from 'react-native';
 import type { FirstRunRoute } from '../first-run/routes';
 import { isFirstRunRoute } from '../first-run/routes';
-import { isDesignCaptureEnabled, parseDesignCaptureUrl } from './captureEnv';
+import {
+  type DesignCaptureRankingScenario,
+  isDesignCaptureEnabled,
+  parseDesignCaptureRankingScenario,
+  parseDesignCaptureUrl,
+} from './captureEnv';
 
 /**
  * Capture deep-link / file intent that arrives before FirstRunShell mounts
@@ -14,6 +19,7 @@ export type CaptureIntent = {
   paintId: string | null;
   weaponId: string | null;
   mute: boolean | null;
+  rankingScenario: DesignCaptureRankingScenario | null;
 };
 
 const EMPTY: CaptureIntent = {
@@ -21,6 +27,7 @@ const EMPTY: CaptureIntent = {
   paintId: null,
   weaponId: null,
   mute: null,
+  rankingScenario: null,
 };
 
 let intent: CaptureIntent = { ...EMPTY };
@@ -33,6 +40,7 @@ function mergeIntent(next: CaptureIntent): void {
     paintId: next.paintId ?? intent.paintId,
     weaponId: next.weaponId ?? intent.weaponId,
     mute: next.mute ?? intent.mute,
+    rankingScenario: next.rankingScenario ?? intent.rankingScenario,
   };
 }
 
@@ -44,6 +52,7 @@ function applyUrl(url: string | null): void {
     paintId: parsed.paintId,
     weaponId: parsed.weaponId,
     mute: parsed.mute,
+    rankingScenario: parsed.rankingScenario,
   });
 }
 
@@ -72,6 +81,8 @@ export function mergeCaptureFileIntent(raw: {
   paintId?: string | null;
   weaponId?: string | null;
   mute?: boolean | null;
+  rankingScenario?: string | null;
+  ranking?: string | null;
 }): void {
   const route = typeof raw.route === 'string' && isFirstRunRoute(raw.route) ? raw.route : null;
   mergeIntent({
@@ -79,6 +90,9 @@ export function mergeCaptureFileIntent(raw: {
     paintId: typeof raw.paintId === 'string' && raw.paintId.trim() ? raw.paintId.trim() : null,
     weaponId: typeof raw.weaponId === 'string' && raw.weaponId.trim() ? raw.weaponId.trim() : null,
     mute: typeof raw.mute === 'boolean' ? raw.mute : null,
+    rankingScenario: parseDesignCaptureRankingScenario(
+      raw.rankingScenario ?? raw.ranking ?? undefined,
+    ),
   });
 }
 

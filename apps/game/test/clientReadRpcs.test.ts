@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SupabaseOpponentCandidatesAdapter } from '../src/fight/candidates/SupabaseOpponentCandidatesAdapter';
 import { SupabaseLoadoutSaveAdapter } from '../src/garage/loadout/SupabaseLoadoutSaveAdapter';
+import { createRankingReadClient } from '../src/ranking/createRankingReadClient';
+import { SupabaseRankingReadAdapter } from '../src/ranking/adapters/SupabaseRankingReadAdapter';
 import {
   FIGHT_ALLOWANCE_SUMMARY_RPC,
+  LIST_RANKING_RPC,
   OPPONENT_ROSTER_RPC,
   OWNED_CHARACTER_RPC,
 } from '../src/supabase/clientReadRpcs';
@@ -114,5 +117,62 @@ describe('ticket B client-read RPC adapters', () => {
     expect(fetches.some((u) => u.includes('/current_bot_loadouts'))).toBe(true);
     expect(fetches.some((u) => u.includes('/rest/v1/characters'))).toBe(false);
     expect(fetches.some((u) => u.includes('/rest/v1/fight_allowances'))).toBe(false);
+  });
+
+  it('list_ranking adapter preserves server order and maps live rows', async () => {
+    const fetches: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        fetches.push(url);
+        if (url.includes(`/rpc/${LIST_RANKING_RPC}`)) {
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              rows: [
+                {
+                  rank: 1,
+                  characterId: 'peer-bolt',
+                  displayName: 'Bolt',
+                  isCurrentBot: false,
+                  totalXp: 6,
+                },
+                {
+                  rank: 2,
+                  characterId: 'player-hero',
+                  displayName: 'Hero',
+                  isCurrentBot: true,
+                  totalXp: 2,
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response('{}', { status: 404 });
+      }),
+    );
+
+    const adapter = new SupabaseRankingReadAdapter(
+      { url: 'http://127.0.0.1:54321', anonKey: 'eyJ.anon.fake' },
+      'user-jwt',
+    );
+    const rows = await adapter.list();
+    expect(rows.map((r) => r.botId)).toEqual(['peer-bolt', 'player-hero']);
+    expect(rows.map((r) => r.rank)).toEqual([1, 2]);
+    expect(rows[1]?.isCurrentBot).toBe(true);
+    expect(rows[0]?.source).toBe('live');
+    expect(fetches).toEqual([`http://127.0.0.1:54321/rest/v1/rpc/${LIST_RANKING_RPC}`]);
+    expect(fetches.some((u) => u.includes('/rest/v1/characters'))).toBe(false);
+    expect(fetches.some((u) => u.includes('/rest/v1/progression_ledger'))).toBe(false);
+  });
+
+  it('createRankingReadClient forces empty/error capture fixtures', async () => {
+    const empty = createRankingReadClient({ captureScenario: 'empty' });
+    await expect(empty.list()).resolves.toEqual([]);
+
+    const errored = createRankingReadClient({ captureScenario: 'error' });
+    await expect(errored.list()).rejects.toThrow(/Design-capture ranking error/);
   });
 });

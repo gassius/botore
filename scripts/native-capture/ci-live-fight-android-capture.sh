@@ -182,11 +182,18 @@ capture_named() {
   local route="$1"
   local label="$2"
   local settle="${3:-4}"
+  local ranking="${4:-}"
+  local args=(
+    --out "${OUT_DIR}"
+    --route "${route}"
+    --name "${label}"
+  )
+  if [[ -n "${ranking}" ]]; then
+    args+=(--ranking "${ranking}")
+  fi
   CAPTURE_SETTLE_SEC="${settle}" \
     "${SCRIPT_DIR}/android-screencap.sh" \
-    --out "${OUT_DIR}" \
-    --route "${route}" \
-    --name "${label}" >/dev/null
+    "${args[@]}" >/dev/null
   local matches=( "${OUT_DIR}"/android-*-"${label}".png )
   if [[ ! -e "${matches[0]:-}" ]]; then
     echo "error: missing PNG for ${label}" >&2
@@ -406,9 +413,24 @@ fi
 # 4) Result — backend XP / allowances (after server confirm so UI can show XP)
 capture_named FightResult result 5
 
+# 5) C5 Ranking — live board (list_ranking + seed peers + fight XP), empty, error
+capture_named Ranking ranking-live 6 live
+capture_named Ranking ranking-empty 4 empty
+capture_named Ranking ranking-error 4 error
+
 # Assert required stills exist (if-no-files-found equivalent).
 missing=0
-required_labels=(garage confirm arena-layers replay-fx-hit replay-fx-defeat result)
+required_labels=(
+  garage
+  confirm
+  arena-layers
+  replay-fx-hit
+  replay-fx-defeat
+  result
+  ranking-live
+  ranking-empty
+  ranking-error
+)
 if [[ "${FX_DODGE}" -ge 1 ]]; then
   required_labels+=(replay-fx-dodge)
 fi

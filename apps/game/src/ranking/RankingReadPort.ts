@@ -6,9 +6,8 @@ import type { RankingRow } from './types';
  * Implementations return rows already ordered for display. Callers must
  * preserve that order — no client-side sort, score invent, or rank rewrite.
  *
- * Live/production adapter is BLOCKED until a verified backend ranking
- * endpoint/RPC (auth/RLS, ordering, pagination) exists. See
- * `BACKEND_CONTRACT.md` in this folder.
+ * Live adapter: `SupabaseRankingReadAdapter` → `list_ranking` RPC.
+ * See `BACKEND_CONTRACT.md` in this folder.
  */
 export interface RankingReadPort {
   list(): Promise<readonly RankingRow[]>;

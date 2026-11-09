@@ -61,34 +61,49 @@ describe('C7 design-capture helpers', () => {
       mute: null,
       paintId: null,
       weaponId: null,
+      rankingScenario: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Replay?mute=1')).toEqual({
       route: 'Replay',
       mute: true,
       paintId: null,
       weaponId: null,
+      rankingScenario: null,
     });
     expect(parseDesignCaptureUrl('botore://capture?route=Ranking')).toEqual({
       route: 'Ranking',
       mute: null,
       paintId: null,
       weaponId: null,
+      rankingScenario: null,
+    });
+    expect(parseDesignCaptureUrl('botore://capture/Ranking?ranking=empty')).toEqual({
+      route: 'Ranking',
+      mute: null,
+      paintId: null,
+      weaponId: null,
+      rankingScenario: 'empty',
     });
     expect(parseDesignCaptureUrl('botore://capture/Stable?paint=petrol&weapon=axe')).toEqual({
       route: 'Stable',
       mute: null,
       paintId: 'petrol',
       weaponId: 'axe',
+      rankingScenario: null,
     });
     expect(parseDesignCaptureUrl('https://example.com/capture/Replay')).toEqual({
       route: null,
       mute: null,
       paintId: null,
       weaponId: null,
+      rankingScenario: null,
     });
     expect(
       buildDesignCaptureUrl('Stable', { mute: true, paintId: 'petrol', weaponId: 'dagger' }),
     ).toBe(`${DESIGN_CAPTURE_SCHEME}://capture/Stable?mute=1&paint=petrol&weapon=dagger`);
+    expect(buildDesignCaptureUrl('Ranking', { rankingScenario: 'error' })).toBe(
+      `${DESIGN_CAPTURE_SCHEME}://capture/Ranking?ranking=error`,
+    );
   });
 
   it('lists the same first-run routes the shell owns', () => {
