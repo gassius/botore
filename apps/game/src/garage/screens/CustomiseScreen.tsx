@@ -28,13 +28,16 @@ export function CustomiseScreen(props: {
   onBack: () => void;
   onSaved?: () => void;
 }): React.ReactElement {
-  const { loadout, selectPaint, selectWeapon, discard, save } = useGarageSession();
+  const { loadout, canProgress, selectPaint, selectWeapon, discard, save, retryHydration } =
+    useGarageSession();
   const [tab, setTab] = useState<CustomiseTab>('paint');
   const preview = loadout.pendingLoadout;
-  const previewWeapon = weaponUiAlias(preview.weapon);
-  const previewPaint = paintUiAlias(preview.paint);
+  const editingLocked = loadout.saving || loadout.hydration !== 'ready';
+  const previewWeapon = preview ? weaponUiAlias(preview.weapon) : 'sword';
+  const previewPaint = preview ? paintUiAlias(preview.paint) : 'oxide';
 
   const onBack = () => {
+    if (loadout.saving) return;
     if (loadout.dirty) discard();
     props.onBack();
   };
@@ -44,6 +47,36 @@ export function CustomiseScreen(props: {
     if (ok) props.onSaved?.();
   };
 
+  if (!canProgress || !preview || !loadout.confirmedLoadout) {
+    return (
+      <ScreenChrome
+        testID="slot-customise"
+        footer={
+          <>
+            <SecondaryButton
+              label="Retry load"
+              onPress={() => {
+                void retryHydration();
+              }}
+              testID="customise-retry-hydration"
+            />
+            <SecondaryButton label="Back" onPress={props.onBack} testID="customise-back-blocked" />
+          </>
+        }
+      >
+        <ScreenHeader title="Customise" onBack={props.onBack} />
+        <StatusErrorBanner
+          title="Customisation blocked"
+          detail={
+            loadout.lastError ??
+            'Server-confirmed loadout is unavailable. Edits and save stay blocked until hydration succeeds.'
+          }
+          testID="customise-hydration-error"
+        />
+      </ScreenChrome>
+    );
+  }
+
   return (
     <ScreenChrome
       testID="slot-customise"
@@ -52,7 +85,7 @@ export function CustomiseScreen(props: {
           <SecondaryButton
             label="Discard"
             onPress={discard}
-            disabled={!loadout.dirty || loadout.saving}
+            disabled={!loadout.dirty || editingLocked}
             testID="customise-discard"
           />
           <PrimaryButton
@@ -60,13 +93,13 @@ export function CustomiseScreen(props: {
             onPress={() => {
               void onSave();
             }}
-            disabled={!loadout.dirty || loadout.saving}
+            disabled={!loadout.dirty || editingLocked}
             testID="customise-save"
           />
         </>
       }
     >
-      <ScreenHeader title="Customise" onBack={onBack} />
+      <ScreenHeader title="Customise" {...(editingLocked ? {} : { onBack })} />
 
       {loadout.dirty ? (
         <View style={styles.unsaved} accessibilityRole="text">
@@ -109,7 +142,9 @@ export function CustomiseScreen(props: {
           { id: 'weapon', label: 'Weapon' },
         ]}
         selectedId={tab}
-        onSelect={(id) => setTab(id as CustomiseTab)}
+        onSelect={(id) => {
+          if (!editingLocked) setTab(id as CustomiseTab);
+        }}
         testID="customise-tabs"
       />
 
@@ -120,14 +155,18 @@ export function CustomiseScreen(props: {
             label="Oxide"
             color={garageTag.oxide}
             selected={previewPaint === 'oxide'}
-            onPress={() => selectPaint(paintCatalogueId('oxide'))}
+            onPress={() => {
+              if (!editingLocked) selectPaint(paintCatalogueId('oxide'));
+            }}
           />
           <PaintSwatch
             id="petrol"
             label="Petrol"
             color={garageTag.petrol}
             selected={previewPaint === 'petrol'}
-            onPress={() => selectPaint(paintCatalogueId('petrol'))}
+            onPress={() => {
+              if (!editingLocked) selectPaint(paintCatalogueId('petrol'));
+            }}
           />
         </View>
       ) : (
@@ -138,11 +177,19 @@ export function CustomiseScreen(props: {
               id={id}
               label={id}
               selected={previewWeapon === id}
-              onPress={() => selectWeapon(weaponCatalogueId(id))}
+              onPress={() => {
+                if (!editingLocked) selectWeapon(weaponCatalogueId(id));
+              }}
             />
           ))}
         </View>
       )}
+
+      {loadout.saving ? (
+        <Text style={styles.clean} allowFontScaling testID="customise-saving-lock">
+          Saving… paint and weapon edits are locked until the server responds.
+        </Text>
+      ) : null}
 
       {loadout.lastError ? (
         <StatusErrorBanner

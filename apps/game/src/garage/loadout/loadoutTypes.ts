@@ -18,6 +18,15 @@ export type ConfirmedLoadoutSnapshot = {
   readonly loadout: GarageLoadout;
 };
 
+export type OwnedCharacter = {
+  readonly characterId: string;
+  readonly displayName: string;
+};
+
+export type OwnedCharacterResult =
+  | { readonly ok: true; readonly character: OwnedCharacter }
+  | { readonly ok: false; readonly code: string; readonly message: string };
+
 export type SaveLoadoutInput = {
   readonly characterId: string;
   readonly loadout: GarageLoadout;

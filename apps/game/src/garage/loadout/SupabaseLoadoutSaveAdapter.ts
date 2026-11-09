@@ -3,6 +3,7 @@ import type { LoadoutSavePort } from './LoadoutSavePort';
 import { normalizeGarageLoadout } from './normalizeLoadout';
 import type {
   FetchCurrentLoadoutResult,
+  OwnedCharacterResult,
   SaveLoadoutInput,
   SaveLoadoutResult,
 } from './loadoutTypes';
@@ -22,6 +23,48 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
   readonly kind = 'supabase' as const;
 
   constructor(private readonly config: SupabasePublicConfig) {}
+
+  async resolveOwnedCharacter(accessToken: string): Promise<OwnedCharacterResult> {
+    try {
+      const url = new URL(`${this.config.url}/rest/v1/characters`);
+      url.searchParams.set('select', 'character_id,display_name');
+      url.searchParams.set('is_opponent', 'eq.false');
+      url.searchParams.set('limit', '1');
+      const res = await fetch(url.toString(), {
+        headers: this.headers(accessToken),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
+        return {
+          ok: false,
+          code: err.code ?? `http_${res.status}`,
+          message: err.message ?? `Failed to resolve owned character (${res.status})`,
+        };
+      }
+      const rows = (await res.json()) as Array<{ character_id?: string; display_name?: string }>;
+      const row = rows[0];
+      if (!row?.character_id) {
+        return {
+          ok: false,
+          code: 'no_owned_character',
+          message: 'No player character is linked to this account.',
+        };
+      }
+      return {
+        ok: true,
+        character: {
+          characterId: row.character_id,
+          displayName: row.display_name?.trim() || row.character_id,
+        },
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        code: 'network_error',
+        message: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
 
   async fetchCurrent(input: {
     characterId: string;

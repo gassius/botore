@@ -8,6 +8,7 @@ import {
   SecondaryButton,
   ScreenChrome,
   ScreenHeader,
+  StatusErrorBanner,
   WeaponGlyphSlot,
   garageTag,
 } from '../../garage-tag';
@@ -19,9 +20,10 @@ export function StableScreen(props: {
   onCustomise: () => void;
   onFindOpponent?: () => void;
 }): React.ReactElement {
-  const { loadout, signOut } = useGarageSession();
+  const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
   const confirmed = loadout.confirmedLoadout;
-  const weapon = weaponUiAlias(confirmed.weapon);
+  const weapon = confirmed ? weaponUiAlias(confirmed.weapon) : 'sword';
+  const displayName = loadout.displayName ?? 'Pilot';
 
   return (
     <ScreenChrome
@@ -31,14 +33,24 @@ export function StableScreen(props: {
           <SecondaryButton
             label="Customise"
             onPress={props.onCustomise}
+            disabled={!canProgress}
             testID="stable-customise"
           />
           <PrimaryButton
             label="Find opponent"
             onPress={props.onFindOpponent ?? (() => undefined)}
-            disabled={!props.onFindOpponent}
+            disabled={!canProgress || !props.onFindOpponent}
             testID="stable-find-opponent"
           />
+          {loadout.hydration === 'unavailable' ? (
+            <SecondaryButton
+              label="Retry load"
+              onPress={() => {
+                void retryHydration();
+              }}
+              testID="stable-retry-hydration"
+            />
+          ) : null}
           <SecondaryButton
             label="Sign out"
             onPress={() => {
@@ -51,41 +63,63 @@ export function StableScreen(props: {
     >
       <BrandWordmark width={180} />
       <ScreenHeader title="Stable" />
-      <Nameplate name="Player Hero" badge="You" testID="stable-nameplate" />
-      <Text style={styles.equipped} allowFontScaling>
-        EQUIPPED — last server-confirmed loadout
-      </Text>
-      {/* Single assembler mount: BotAssemblerSlot → F7 apps/game/src/assembler (kit v002 when tip updates). */}
-      <BotAssemblerSlot
-        loadout={{
-          chassisId: confirmed.chassis,
-          paintId: confirmed.paint,
-          weaponId: confirmed.weapon,
-        }}
-        facing="right"
-        paintId={confirmed.paint}
-        weaponId={confirmed.weapon}
-        motionPose="idle"
-        label="Equipped bot"
-        testID="stable-bot"
-      />
-      <View style={styles.row}>
-        <WeaponGlyphSlot
-          id={weapon}
-          label={weapon}
-          selected
-          onPress={() => undefined}
-          testID="stable-weapon"
+      <Nameplate name={displayName} badge="You" testID="stable-nameplate" />
+
+      {loadout.hydration === 'unavailable' ? (
+        <StatusErrorBanner
+          title="Equipped loadout unavailable"
+          detail={
+            loadout.lastError ??
+            'Could not load the server-confirmed loadout. Save and fight stay blocked until this succeeds.'
+          }
+          testID="stable-hydration-error"
         />
-        <View style={styles.paintChip}>
-          <Text style={styles.paintLabel} allowFontScaling>
-            Paint: {paintUiAlias(confirmed.paint)}
-          </Text>
-          <Text style={styles.paintMeta} allowFontScaling>
-            {confirmed.paint}
-          </Text>
-        </View>
-      </View>
+      ) : (
+        <Text style={styles.equipped} allowFontScaling>
+          EQUIPPED — last server-confirmed loadout
+        </Text>
+      )}
+
+      {confirmed ? (
+        <>
+          {/* Single assembler mount: BotAssemblerSlot → F7 apps/game/src/assembler (kit v002). */}
+          <BotAssemblerSlot
+            loadout={{
+              chassisId: confirmed.chassis,
+              paintId: confirmed.paint,
+              weaponId: confirmed.weapon,
+            }}
+            facing="right"
+            paintId={confirmed.paint}
+            weaponId={confirmed.weapon}
+            motionPose="idle"
+            label="Equipped bot"
+            testID="stable-bot"
+          />
+          <View style={styles.row}>
+            <WeaponGlyphSlot
+              id={weapon}
+              label={weapon}
+              selected
+              onPress={() => undefined}
+              testID="stable-weapon"
+            />
+            <View style={styles.paintChip}>
+              <Text style={styles.paintLabel} allowFontScaling>
+                Paint: {paintUiAlias(confirmed.paint)}
+              </Text>
+              <Text style={styles.paintMeta} allowFontScaling>
+                {confirmed.paint}
+              </Text>
+            </View>
+          </View>
+        </>
+      ) : (
+        <Text style={styles.note} allowFontScaling testID="stable-no-confirmed">
+          No confirmed equipment is shown until hydration succeeds.
+        </Text>
+      )}
+
       <Text style={styles.note} allowFontScaling>
         Domain F8 · chrome from shell garage-tag · assembler via BotAssemblerSlot (F7 kit v002)
       </Text>

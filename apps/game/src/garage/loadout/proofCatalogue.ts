@@ -5,7 +5,9 @@ import type { WeaponGlyphId } from '../../garage-tag';
  * Seeded proof catalogue ids from F1 (1001_seed_bots_as_data).
  * No catalogue expansion — Oxide/Petrol UI aliases map onto crimson/cobalt.
  */
+/** Seeded proof character — DEV adapter fixture only; live path resolves ownership. */
 export const PROOF_CHARACTER_ID = 'player-hero';
+export const PROOF_DISPLAY_NAME = 'Hero';
 export const PROOF_ATLAS_VERSION = 'v1';
 
 export const PROOF_PAINTS = [
