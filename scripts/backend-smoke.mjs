@@ -549,7 +549,7 @@ console.log('SMOKE-OK prepare_fight_context');
   }
 
   const allowJson = psql(
-    `select public.get_fight_allowance_summary('${DEV_ACCOUNT_ID}')::text
+    `select public.get_fight_allowance_summary()::text
        from (select set_config('request.jwt.claim.role', 'authenticated', true),
                     set_config('request.jwt.claim.sub', '${DEV_ACCOUNT_ID}', true)) as _jwt;`,
   );

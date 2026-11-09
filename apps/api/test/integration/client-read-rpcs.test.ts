@@ -181,11 +181,9 @@ d('client-read RPCs via PostgREST (local supabase)', () => {
     ]);
   });
 
-  it('get_fight_allowance_summary returns utcDay + remaining for caller', async () => {
+  it('get_fight_allowance_summary returns utcDay + remaining for auth.uid()', async () => {
     expect(ready).toBe(true);
-    const { status, json } = await rpc(anon, accessToken, 'get_fight_allowance_summary', {
-      p_account_id: DEV_ACCOUNT_ID,
-    });
+    const { status, json } = await rpc(anon, accessToken, 'get_fight_allowance_summary');
     expect(status).toBe(200);
     expect(json.ok).toBe(true);
     expect(typeof json.utcDay).toBe('string');
@@ -194,11 +192,9 @@ d('client-read RPCs via PostgREST (local supabase)', () => {
     expect(Number(json.allowancesRemaining)).toBeLessThanOrEqual(3);
   });
 
-  it('get_fight_allowance_summary rejects cross-account p_account_id', async () => {
-    expect(ready).toBe(true);
-    const { status } = await rpc(anon, accessToken, 'get_fight_allowance_summary', {
-      p_account_id: '11111111-1111-4111-8111-111111111111',
-    });
+  it('anon cannot execute get_fight_allowance_summary', async () => {
+    expect(anon.length).toBeGreaterThan(20);
+    const { status } = await rpc(anon, anon, 'get_fight_allowance_summary');
     expect(status).toBeGreaterThanOrEqual(400);
   });
 });

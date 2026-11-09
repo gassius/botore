@@ -64,7 +64,7 @@ psql "$DATABASE_URL" -c \
      from (select set_config('request.jwt.claim.role','authenticated',true),
                   set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true)) s;"
 psql "$DATABASE_URL" -c \
-  "select public.get_fight_allowance_summary('00000000-0000-4000-8000-000000000001')
+  "select public.get_fight_allowance_summary()
      from (select set_config('request.jwt.claim.role','authenticated',true),
                   set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true)) s;"
 ```
@@ -192,36 +192,36 @@ are granted to **`service_role` only** (not `anon` / `authenticated`). Call
 them from the reporting DB credential or Edge Functions that use the service
 role key. Migration `0019_admin_grant_lockdown.sql`.
 
-| View / function                     | Purpose                                        |
-| ----------------------------------- | ---------------------------------------------- |
-| `admin_dashboard_snapshot()`        | One-shot JSON for health + fights + ops panes  |
-| `admin_players_overview`            | Players, allowances, fight/XP totals           |
-| `admin_bots_overview`               | Player + opponent bots (build/loadout/ready)   |
-| `admin_fight_stats`                 | Single-row fight/player aggregates             |
-| `admin_daily_active_accounts`       | Distinct initiators per UTC day (30d)          |
-| `admin_list_cron_job_runs(n)`       | Recent botore pg_cron run history              |
-| `admin_atlas_overview`              | Pack / atlas versions (F5)                     |
-| `admin_catalogue_summary`           | Part counts by slot                            |
-| `admin_inventory_overview`          | Owned parts with account display names         |
-| `admin_loadout_overview`            | Current confirmed loadouts per character       |
-| `admin_fight_readiness`             | Fight eligibility + allowance depth            |
-| `backend_health_snapshot()`         | Aggregated SQL health for ops / smoke / UI     |
-| `GET /functions/v1/health`          | SQL snapshot + `checks.edge_functions` probes  |
-| `get_owned_character()`             | Sanctioned owned character read (auth.uid())   |
-| `list_opponent_roster()`            | Sanctioned system opponent roster              |
-| `get_fight_allowance_summary(uuid)` | Sanctioned allowance summary (auth.uid())      |
-| `prepare_fight_context()`           | Eligibility + immutable fighter snapshots (F2) |
-| `persist_fight_result()`            | Atomic fight persist + idempotency (F3)        |
-| `admin_recent_battles`              | Recent persisted fights + outbox pending       |
-| `admin_outbox_overview`             | Outbox pending / failing / dead-lettered depth |
-| `admin_outbox_failures`             | Visible failed outbox rows                     |
-| `admin_list_cron_jobs()`            | Scheduled botore pg_cron jobs                  |
-| `outbox_status_snapshot()`          | Aggregated outbox + cron status                |
-| `process_analytics_outbox()`        | Idempotent outbox drain (service_role / cron)  |
-| `ensure_fight_allowances()`         | Idempotent allowance horizon refresh           |
-| `retry_outbox_event()`              | Requeue a dead-lettered / failed row           |
-| `current_bot_loadouts`              | Latest immutable loadout per character         |
-| `inventory_balances`                | Reconstructable ownership quantities           |
+| View / function                 | Purpose                                        |
+| ------------------------------- | ---------------------------------------------- |
+| `admin_dashboard_snapshot()`    | One-shot JSON for health + fights + ops panes  |
+| `admin_players_overview`        | Players, allowances, fight/XP totals           |
+| `admin_bots_overview`           | Player + opponent bots (build/loadout/ready)   |
+| `admin_fight_stats`             | Single-row fight/player aggregates             |
+| `admin_daily_active_accounts`   | Distinct initiators per UTC day (30d)          |
+| `admin_list_cron_job_runs(n)`   | Recent botore pg_cron run history              |
+| `admin_atlas_overview`          | Pack / atlas versions (F5)                     |
+| `admin_catalogue_summary`       | Part counts by slot                            |
+| `admin_inventory_overview`      | Owned parts with account display names         |
+| `admin_loadout_overview`        | Current confirmed loadouts per character       |
+| `admin_fight_readiness`         | Fight eligibility + allowance depth            |
+| `backend_health_snapshot()`     | Aggregated SQL health for ops / smoke / UI     |
+| `GET /functions/v1/health`      | SQL snapshot + `checks.edge_functions` probes  |
+| `get_owned_character()`         | Sanctioned owned character read (auth.uid())   |
+| `list_opponent_roster()`        | Sanctioned system opponent roster              |
+| `get_fight_allowance_summary()` | Sanctioned allowance summary (auth.uid())      |
+| `prepare_fight_context()`       | Eligibility + immutable fighter snapshots (F2) |
+| `persist_fight_result()`        | Atomic fight persist + idempotency (F3)        |
+| `admin_recent_battles`          | Recent persisted fights + outbox pending       |
+| `admin_outbox_overview`         | Outbox pending / failing / dead-lettered depth |
+| `admin_outbox_failures`         | Visible failed outbox rows                     |
+| `admin_list_cron_jobs()`        | Scheduled botore pg_cron jobs                  |
+| `outbox_status_snapshot()`      | Aggregated outbox + cron status                |
+| `process_analytics_outbox()`    | Idempotent outbox drain (service_role / cron)  |
+| `ensure_fight_allowances()`     | Idempotent allowance horizon refresh           |
+| `retry_outbox_event()`          | Requeue a dead-lettered / failed row           |
+| `current_bot_loadouts`          | Latest immutable loadout per character         |
+| `inventory_balances`            | Reconstructable ownership quantities           |
 
 ## Full quality gate
 

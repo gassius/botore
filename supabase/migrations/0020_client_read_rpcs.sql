@@ -5,11 +5,10 @@
 -- garage → confirm → fight without table GRANTs:
 --   (a) get_owned_character()                         → {characterId, displayName}
 --   (b) list_opponent_roster()                        → opponents[{characterId, displayName}]
---   (c) get_fight_allowance_summary(p_account_id)     → {utcDay, allowancesRemaining}
+--   (c) get_fight_allowance_summary()                 → {utcDay, allowancesRemaining}
 --
--- PRR (gasnet on #30): SECURITY DEFINER must derive the account from
--- auth.uid(). p_account_id is accepted for the C3 PostgREST contract but
--- MUST equal auth.uid(); the query uses auth.uid() only.
+-- PRR (gasnet on #30) + C3 tip: SECURITY DEFINER derives account from
+-- auth.uid() only — no account-id parameter.
 -- EXECUTE granted to authenticated only (REVOKE public + anon + service_role).
 -- set search_path pinned. No table GRANTs.
 
@@ -115,11 +114,12 @@ comment on function public.list_opponent_roster() is
   'Sanctioned client read: system opponent roster for authenticated auth.uid(). Returns {ok, opponents:[{characterId, displayName}]}. EXECUTE authenticated only. No table GRANT.';
 
 -- ---------------------------------------------------------------------------
--- (c) Fight allowance summary — p_account_id must equal auth.uid(); query uses uid
+-- (c) Fight allowance summary — auth.uid() only (no account-id param)
 -- ---------------------------------------------------------------------------
-create or replace function public.get_fight_allowance_summary(
-    p_account_id uuid
-)
+-- Drop any earlier overload from in-flight PR revisions.
+drop function if exists public.get_fight_allowance_summary(uuid);
+
+create or replace function public.get_fight_allowance_summary()
 returns jsonb
 language plpgsql
 stable
@@ -134,12 +134,6 @@ declare
 begin
     if v_jwt_role is distinct from 'authenticated' or v_caller is null then
         raise exception 'forbidden: get_fight_allowance_summary requires authenticated auth.uid()'
-            using errcode = '42501';
-    end if;
-
-    -- C3 PostgREST contract still sends p_account_id; never trust it for the read.
-    if p_account_id is null or p_account_id is distinct from v_caller then
-        raise exception 'forbidden: get_fight_allowance_summary requires p_account_id = auth.uid()'
             using errcode = '42501';
     end if;
 
@@ -158,10 +152,10 @@ begin
 end;
 $$;
 
-revoke all on function public.get_fight_allowance_summary(uuid) from public;
-revoke all on function public.get_fight_allowance_summary(uuid) from anon;
-revoke all on function public.get_fight_allowance_summary(uuid) from service_role;
-grant execute on function public.get_fight_allowance_summary(uuid) to authenticated;
+revoke all on function public.get_fight_allowance_summary() from public;
+revoke all on function public.get_fight_allowance_summary() from anon;
+revoke all on function public.get_fight_allowance_summary() from service_role;
+grant execute on function public.get_fight_allowance_summary() to authenticated;
 
-comment on function public.get_fight_allowance_summary(uuid) is
-  'Sanctioned client read: allowance summary for auth.uid() only. p_account_id must equal auth.uid(); query ignores the arg. EXECUTE authenticated only. No table GRANT.';
+comment on function public.get_fight_allowance_summary() is
+  'Sanctioned client read: allowance summary {utcDay, allowancesRemaining} for auth.uid() only. EXECUTE authenticated only. No table GRANT.';

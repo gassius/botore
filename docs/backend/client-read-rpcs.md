@@ -9,19 +9,18 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 
 ## Contract
 
-| RPC                                              | Args                                                  | Success body                                              |
-| ------------------------------------------------ | ----------------------------------------------------- | --------------------------------------------------------- |
-| `get_owned_character()`                          | none (`auth.uid()`)                                   | `{ ok: true, characterId, displayName }`                  |
-| `list_opponent_roster()`                         | none                                                  | `{ ok: true, opponents: [{ characterId, displayName }] }` |
-| `get_fight_allowance_summary(p_account_id uuid)` | must equal `auth.uid()`; query uses `auth.uid()` only | `{ ok: true, utcDay, allowancesRemaining }`               |
+| RPC                             | Args                | Success body                                              |
+| ------------------------------- | ------------------- | --------------------------------------------------------- |
+| `get_owned_character()`         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }`                  |
+| `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName }] }` |
+| `get_fight_allowance_summary()` | none (`auth.uid()`) | `{ ok: true, utcDay, allowancesRemaining }`               |
 
 Failures: `{ ok: false, code?, message? }` or PostgREST HTTP error (`42501`).
 
 All three are `SECURITY DEFINER` with `set search_path = public, extensions`.
 `EXECUTE` is granted to **`authenticated` only** (revoked from `public`,
 `anon`, and `service_role`). Account identity always comes from `auth.uid()` —
-`p_account_id` is accepted for the C3 PostgREST body but must match and is
-not trusted for the read. No new table grants to `authenticated`.
+there is no account-id argument. No new table grants to `authenticated`.
 
 ## Already-sanctioned companions
 
@@ -41,7 +40,8 @@ not trusted for the read. No new table grants to `authenticated`.
 
 ## Negative tests (db)
 
-- Cross-account: `get_fight_allowance_summary(other_uid)` → forbidden
+- Cross-account isolation: exhausted caller still sees `allowancesRemaining = 0`
+  even when another account has unused slots
 - Anon / service_role: no `EXECUTE` on any of the three RPCs
 - Missing JWT / empty role: body gate raises `42501`
 

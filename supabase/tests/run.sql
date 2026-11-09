@@ -1658,11 +1658,7 @@ begin
     'authenticated EXECUTE list_opponent_roster'
   );
   perform tests.assert(
-    has_function_privilege(
-      'authenticated',
-      'public.get_fight_allowance_summary(uuid)',
-      'EXECUTE'
-    ),
+    has_function_privilege('authenticated', 'public.get_fight_allowance_summary()', 'EXECUTE'),
     'authenticated EXECUTE get_fight_allowance_summary'
   );
   perform tests.assert(
@@ -1674,7 +1670,7 @@ begin
     'anon must not EXECUTE list_opponent_roster'
   );
   perform tests.assert(
-    not has_function_privilege('anon', 'public.get_fight_allowance_summary(uuid)', 'EXECUTE'),
+    not has_function_privilege('anon', 'public.get_fight_allowance_summary()', 'EXECUTE'),
     'anon must not EXECUTE get_fight_allowance_summary'
   );
   perform tests.assert(
@@ -1686,11 +1682,7 @@ begin
     'service_role must not EXECUTE list_opponent_roster'
   );
   perform tests.assert(
-    not has_function_privilege(
-      'service_role',
-      'public.get_fight_allowance_summary(uuid)',
-      'EXECUTE'
-    ),
+    not has_function_privilege('service_role', 'public.get_fight_allowance_summary()', 'EXECUTE'),
     'service_role must not EXECUTE get_fight_allowance_summary'
   );
   raise notice 'TEST-OK B client-read RPC privileges';
@@ -1721,7 +1713,7 @@ begin
     'opp-sir-bot in roster'
   );
 
-  v_res := public.get_fight_allowance_summary(v_account);
+  v_res := public.get_fight_allowance_summary();
   perform tests.assert((v_res->>'ok')::boolean, 'get_fight_allowance_summary ok');
   v_day := (now() at time zone 'utc')::date::text;
   perform tests.assert(v_res->>'utcDay' = v_day, 'utcDay is server UTC today');
@@ -1732,19 +1724,42 @@ begin
   reset role;
   raise notice 'TEST-OK B client-read RPC happy path (authenticated)';
 
-  -- Negative: cross-account allowance read (p_account_id != auth.uid())
+  -- Negative: cross-account isolation — other account's unused slots are invisible
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_other,
+    'other-player@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+  insert into public.accounts (id) values (v_other) on conflict do nothing;
+  insert into public.fight_allowances (account_id, utc_day, slot_index)
+  select v_other, (now() at time zone 'utc')::date, s
+    from generate_series(1, 3) as s
+  on conflict do nothing;
+  -- Exhaust caller's slots so a leak of v_other's 3 would inflate remaining.
+  update public.fight_allowances
+     set used_at = now()
+   where account_id = v_account
+     and utc_day = (now() at time zone 'utc')::date;
+
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   perform set_config('request.jwt.claim.sub', v_account::text, true);
   set local role authenticated;
-  begin
-    perform public.get_fight_allowance_summary(v_other);
-    raise exception 'AUTHZ FAIL: cross-account get_fight_allowance_summary allowed';
-  exception
-    when insufficient_privilege then null;
-    when others then
-      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
-  end;
+  v_res := public.get_fight_allowance_summary();
+  perform tests.assert((v_res->>'ok')::boolean, 'exhausted caller still ok');
+  perform tests.assert(
+    (v_res->>'allowancesRemaining')::integer = 0,
+    'cross-account: must not see other account allowances'
+  );
   reset role;
+  -- Restore caller allowances for later suites.
+  update public.fight_allowances
+     set used_at = null
+   where account_id = v_account
+     and utc_day = (now() at time zone 'utc')::date;
   raise notice 'TEST-OK B get_fight_allowance_summary denies cross-account';
 
   -- Negative: anon cannot execute any of the three RPCs
@@ -1766,7 +1781,7 @@ begin
       if sqlstate = '42501' then null; else raise; end if;
   end;
   begin
-    perform public.get_fight_allowance_summary(v_account);
+    perform public.get_fight_allowance_summary();
     raise exception 'ANON FAIL: get_fight_allowance_summary allowed';
   exception
     when insufficient_privilege then null;
@@ -1797,7 +1812,7 @@ begin
       if sqlstate = '42501' then null; else raise; end if;
   end;
   begin
-    perform public.get_fight_allowance_summary(v_account);
+    perform public.get_fight_allowance_summary();
     raise exception 'SERVICE FAIL: get_fight_allowance_summary allowed for service_role';
   exception
     when insufficient_privilege then null;
@@ -1827,7 +1842,7 @@ begin
       if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
   end;
   begin
-    perform public.get_fight_allowance_summary(v_account);
+    perform public.get_fight_allowance_summary();
     raise exception 'AUTHZ FAIL: unauthenticated get_fight_allowance_summary allowed';
   exception
     when insufficient_privilege then null;

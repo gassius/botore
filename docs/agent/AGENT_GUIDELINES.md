@@ -101,7 +101,7 @@ shield, drone, decals, plus sound tags) that references a parts catalogue.
   assembly rules**.
 - Sanctioned **authenticated read** paths (no table `GRANT SELECT` on
   `characters` / `fight_allowances`): `get_owned_character()`,
-  `list_opponent_roster()`, `get_fight_allowance_summary(p_account_id)` —
+  `list_opponent_roster()`, `get_fight_allowance_summary()` —
   `SECURITY DEFINER`, `auth.uid()`-scoped, `EXECUTE` to `authenticated`
   only. See `docs/backend/client-read-rpcs.md`. Do not reintroduce
   capture-only table grants.
