@@ -20,6 +20,8 @@ import {
   Text,
   View,
 } from 'react-native';
+import { ACTIVE_TRIAL_AUDIO_ASSET_VERSION } from '../audio';
+import { useTrialReplayAudio } from '../audio/useTrialReplayAudio';
 import { BotAssembler } from '../assembler';
 import {
   ENVIRONMENT_LAYER_Z,
@@ -70,6 +72,7 @@ export type CanonicalReplayPlayerHandle = {
   play: () => void;
   pause: () => void;
   replay: () => void;
+  playUiTap: () => void;
   getPlaybackState: () => PlaybackUiState;
 };
 
@@ -133,6 +136,12 @@ export const CanonicalReplayPlayer = forwardRef<
 
   const reducedMotion = reducedMotionProp ?? osReducedMotion;
 
+  const trialAudio = useTrialReplayAudio({
+    muted,
+    playing: playbackUi.playing,
+    enabled: media.assetsAvailable,
+  });
+
   const emitPlayback = useCallback(
     (next: PlaybackUiState) => {
       setPlaybackUi(next);
@@ -166,10 +175,15 @@ export const CanonicalReplayPlayer = forwardRef<
       waitUntilRef.current = 0;
       setPresentation(initialPresentationState(nearFighter.characterId, farFighter.characterId));
       setFxCues([]);
+      try {
+        trialAudio.reset();
+      } catch {
+        // Audio must never block replay reset.
+      }
       const next = startPlaying ? restartState(queue.length) : initialPlaybackUi(queue.length);
       emitPlayback(next);
     },
-    [emitPlayback, farFighter.characterId, nearFighter.characterId, queue],
+    [emitPlayback, farFighter.characterId, nearFighter.characterId, queue, trialAudio.reset],
   );
 
   useEffect(() => {
@@ -229,6 +243,11 @@ export const CanonicalReplayPlayer = forwardRef<
         return;
       }
       cueSeqRef.current += 1;
+      try {
+        trialAudio.onCommand(cmd);
+      } catch {
+        // Missing/failed audio never desyncs the fight clock.
+      }
       setPresentation((prev) => {
         const next = applyAnimationCommand(prev, cmd, cueSeqRef.current, maxHp);
         pushFxFromState(next);
@@ -250,7 +269,15 @@ export const CanonicalReplayPlayer = forwardRef<
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [emitPlayback, maxHp, media.assetsAvailable, onFinished, playbackUi.playing, pushFxFromState]);
+  }, [
+    emitPlayback,
+    maxHp,
+    media.assetsAvailable,
+    onFinished,
+    playbackUi.playing,
+    pushFxFromState,
+    trialAudio.onCommand,
+  ]);
 
   useImperativeHandle(
     ref,
@@ -266,9 +293,16 @@ export const CanonicalReplayPlayer = forwardRef<
       play: () => emitPlayback(resumeState(playbackUiRef.current)),
       pause: () => emitPlayback(pauseState(playbackUiRef.current)),
       replay: () => resetPlayback(true),
+      playUiTap: () => {
+        try {
+          trialAudio.playUiTap();
+        } catch {
+          // ignore
+        }
+      },
       getPlaybackState: () => playbackUiRef.current,
     }),
-    [emitPlayback, resetPlayback],
+    [emitPlayback, resetPlayback, trialAudio.playUiTap],
   );
 
   const onStageLayout = (e: LayoutChangeEvent) => {
@@ -301,7 +335,8 @@ export const CanonicalReplayPlayer = forwardRef<
           {result.label === 'DEV' ? 'DEV recorded fixture' : 'Server confirmed'}
         </Text>
         <Text style={styles.metaMuted} testID={`${testID}-media`}>
-          env {media.environmentVersion} · kit {media.kitVersion}
+          env {media.environmentVersion} · kit {media.kitVersion} · audio{' '}
+          {ACTIVE_TRIAL_AUDIO_ASSET_VERSION}
           {media.usesStoredVersions ? ' · stored refs' : ''}
           {muted ? ' · muted' : ''}
           {reducedMotion ? ' · reduced-motion' : ''}

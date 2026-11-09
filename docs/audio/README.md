@@ -20,6 +20,18 @@ manifest** as part art.
 | Base pack  | `atlas/vN/base/`           | App bundle | Always present              |
 | Part packs | `atlas/vN/parts/<partId>/` | Storage    | Stable + current fight only |
 
+### Trial pack pin (F11)
+
+Until atlas base-pack download is wired on the F10 replay path, the client also
+ships a **separate versioned trial audio pack** for CanonicalReplayPlayer:
+
+| Pack | Path | Pin |
+| ---- | ---- | --- |
+| Trial base (7 SFX + 1 loop) | `apps/game/assets/trial-audio-v001/` | `ACTIVE_TRIAL_AUDIO_ASSET_VERSION` in `apps/game/src/audio/` |
+
+Placeholders are silent AAC stubs with provenance in `PROVENANCE.md`. Mood is
+provisional. Missing/failed clips never block or desync playback.
+
 Saved fights reference an **immutable asset version** so replays keep original
 sounds. Do not invent a Storage layout beyond this; the first real manifest
 pins exact keys.

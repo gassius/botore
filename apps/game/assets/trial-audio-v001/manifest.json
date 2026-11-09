@@ -1,0 +1,125 @@
+{
+  "schema": "botore.trial-audio.v1",
+  "id": "trial-audio",
+  "version": "trial-audio-v001",
+  "immutable": true,
+  "status": "provisional-placeholder-not-final-accepted",
+  "mood": "Scrapyard arena (provisional — pending Art Direction alignment)",
+  "note": "Silent AAC stubs only. No paid ElevenLabs generation. Finals require Carlos ear-approval and recorded credit cost.",
+  "paid_generation": {
+    "used": false,
+    "credit_cost": null,
+    "product_owner_go": false
+  },
+  "format": {
+    "container": "aac-m4a",
+    "sample_rate_hz": 44100,
+    "effects_channels": "mono",
+    "music_channels": "stereo (finals); placeholder stubs are silent mono AAC"
+  },
+  "loudness_targets_provisional": {
+    "effects_lufs_short_term": -18,
+    "music_lufs_integrated": -23,
+    "true_peak_dbtp_max": -1,
+    "confirmed_on_phone": false
+  },
+  "clips": {
+    "swing": {
+      "file": "clips/swing.m4a",
+      "kind": "oneshot",
+      "role": "effects",
+      "trigger_event": "attack_selected",
+      "animation_command": "attack_anim",
+      "duration_target_s": [0.3, 0.5],
+      "volume": 1,
+      "loop": false,
+      "sound_tags": ["weapon.generic"],
+      "placeholder": true
+    },
+    "hit": {
+      "file": "clips/hit.m4a",
+      "kind": "oneshot",
+      "role": "effects",
+      "trigger_event": "damage_applied",
+      "animation_command": "damage_pop",
+      "duration_target_s": [0.3, 0.6],
+      "volume": 1,
+      "loop": false,
+      "sound_tags": ["chassis.generic", "weapon.generic"],
+      "placeholder": true
+    },
+    "dodge": {
+      "file": "clips/dodge.m4a",
+      "kind": "oneshot",
+      "role": "effects",
+      "trigger_event": "dodged",
+      "animation_command": "dodge_anim",
+      "duration_target_s": [0.3, 0.5],
+      "volume": 1,
+      "loop": false,
+      "sound_tags": ["chassis.generic"],
+      "placeholder": true
+    },
+    "defeat": {
+      "file": "clips/defeat.m4a",
+      "kind": "oneshot",
+      "role": "effects",
+      "trigger_event": "character_defeated",
+      "animation_command": "defeat_anim",
+      "duration_target_s": [1, 2],
+      "volume": 1,
+      "loop": false,
+      "sound_tags": ["chassis.generic"],
+      "placeholder": true
+    },
+    "hush": {
+      "file": "clips/hush.m4a",
+      "kind": "oneshot",
+      "role": "effects",
+      "trigger_event": "before_first_attack",
+      "animation_command": "show_battle",
+      "duration_target_s": [1, 1.5],
+      "volume": 0.8,
+      "loop": false,
+      "sound_tags": ["base.hush"],
+      "placeholder": true
+    },
+    "uiTap": {
+      "file": "clips/ui-tap.m4a",
+      "kind": "oneshot",
+      "role": "effects",
+      "trigger_event": "ui_tap",
+      "animation_command": null,
+      "duration_target_s": [0, 0.15],
+      "volume": 0.7,
+      "loop": false,
+      "sound_tags": ["base.ui"],
+      "placeholder": true
+    },
+    "win": {
+      "file": "clips/win.m4a",
+      "kind": "oneshot",
+      "role": "effects",
+      "trigger_event": "battle_ended_win",
+      "animation_command": "victory_screen",
+      "duration_target_s": [2, 3],
+      "volume": 1,
+      "loop": false,
+      "sound_tags": ["base.win"],
+      "placeholder": true
+    },
+    "musicLoop": {
+      "file": "clips/music-loop.m4a",
+      "kind": "loop",
+      "role": "music",
+      "trigger_event": "fight_screen",
+      "animation_command": "show_battle",
+      "duration_target_s": [30, 30],
+      "volume": 0.55,
+      "loop": true,
+      "loop_points_ms": { "start": 0, "end": null },
+      "sound_tags": ["base.music"],
+      "placeholder": true
+    }
+  }
+}

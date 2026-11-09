@@ -69,9 +69,18 @@ export function ReplaySlot(): React.ReactElement {
         muted={muted}
         progress={playback.progress}
         reducedMotion={reducedMotion}
-        onTogglePlay={() => playerRef.current?.togglePlay()}
-        onToggleMute={toggleMute}
-        onReplay={() => playerRef.current?.replay()}
+        onTogglePlay={() => {
+          playerRef.current?.playUiTap();
+          playerRef.current?.togglePlay();
+        }}
+        onToggleMute={() => {
+          playerRef.current?.playUiTap();
+          toggleMute();
+        }}
+        onReplay={() => {
+          playerRef.current?.playUiTap();
+          playerRef.current?.replay();
+        }}
         testID="replay-controls"
       />
       <DomainNote
