@@ -135,7 +135,8 @@ jobs:
 
   ios-simulator-captures:
     name: iOS Simulator captures
-    runs-on: macos-14
+    # macos-14 retired (macos-14-arm64-us-default unsupported); public repo has free macOS minutes.
+    runs-on: macos-15
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -149,12 +150,34 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
-      - name: Select Xcode
+      - name: Select Xcode + list phone simulators
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer \
-            || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          set -euo pipefail
+          echo "Available Xcode apps:"
+          ls -1d /Applications/Xcode*.app 2>/dev/null || true
+          # Prefer newest Xcode_* then fall back to Xcode.app (macos-15 image).
+          SELECTED=""
+          for candidate in \
+            /Applications/Xcode_16.4.app \
+            /Applications/Xcode_16.3.app \
+            /Applications/Xcode_16.2.app \
+            /Applications/Xcode_16.1.app \
+            /Applications/Xcode_16.0.app \
+            /Applications/Xcode.app; do
+            if [[ -d "${candidate}/Contents/Developer" ]]; then
+              SELECTED="${candidate}"
+              break
+            fi
+          done
+          if [[ -z "${SELECTED}" ]]; then
+            echo "error: no Xcode.app found under /Applications" >&2
+            exit 1
+          fi
+          echo "Selecting ${SELECTED}"
+          sudo xcode-select -s "${SELECTED}/Contents/Developer"
           xcodebuild -version
-          xcrun simctl list devices available | head -n 80
+          echo "Available phone-size simulators:"
+          xcrun simctl list devices available | grep -E 'iPhone' | head -n 80
 
       - name: Install workspace
         run: pnpm install --frozen-lockfile
@@ -169,6 +192,8 @@ jobs:
         env:
           CAPTURE_WELCOME: '1'
           CAPTURE_OUT_DIR: artifacts/native-captures
+          # Prefer devices present on macos-15 / Xcode 16 images; script falls back.
+          CAPTURE_IOS_DEVICE: 'iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14'
         run: bash scripts/native-capture/ci-ios-simulator-capture.sh
 
       - name: Upload capture artifacts

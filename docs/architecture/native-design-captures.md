@@ -127,7 +127,7 @@ Workflow: `.github/workflows/native-design-captures.yml`
   `scripts/native-capture/ci-android-emulator-capture.sh` via
   `reactivecircus/android-emulator-runner` (that action runs each `script:`
   newline in its own shell)
-- **iOS** (`macos-14`): `scripts/native-capture/ci-ios-simulator-capture.sh` —
+- **iOS** (`macos-15`; `macos-14` retired): `scripts/native-capture/ci-ios-simulator-capture.sh` —
   clean Expo prebuild, **Release** iphonesimulator build (bundle embedded),
   phone-size iPhone Simulator, Stable / Customise / Replay PNGs
 - Both jobs build workspace deps first (`pnpm --filter @botore/game^... run build`)
