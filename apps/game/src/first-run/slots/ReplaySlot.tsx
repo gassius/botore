@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
 import {
-  KitArtPlaceholder,
-  Nameplate,
   PrimaryButton,
   ReplayAudioControls,
   ScreenChrome,
@@ -10,25 +8,22 @@ import {
   SecondaryButton,
   garageTag,
 } from '../../garage-tag';
-import { BattleReplayScreen } from '../../screens/BattleReplayScreen';
+import { useFightSession } from '../../fight';
+import { CanonicalReplayPlayer } from '../../replay/CanonicalReplayPlayer';
+import { formatOutcomeLine } from '../../replay/confirmedResult';
+import { resolveSessionConfirmedResult } from '../../replay/resolveSessionResult';
 import { useFirstRun } from '../FirstRunContext';
 import { DomainNote } from './DomainNote';
 
-/** Route slot: Replay — F10 owns recorded replay domain; shell mounts chrome + existing player. */
+/**
+ * Shell Replay slot — F10 domain player inside Garage Tag chrome.
+ * Prefers F9 `lastFight` sealed replay; falls back to DEV golden fixture.
+ */
 export function ReplaySlot(): React.ReactElement {
   const { goBack, goNext, muted, toggleMute, reducedMotion } = useFirstRun();
-  const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [showLegacyPlayer, setShowLegacyPlayer] = useState(false);
+  const { lastFight } = useFightSession();
 
-  if (showLegacyPlayer) {
-    return (
-      <View style={styles.legacy} testID="slot-replay-legacy">
-        <SecondaryButton label="Back to replay shell" onPress={() => setShowLegacyPlayer(false)} />
-        <BattleReplayScreen />
-      </View>
-    );
-  }
+  const confirmed = useMemo(() => resolveSessionConfirmedResult(lastFight), [lastFight]);
 
   return (
     <ScreenChrome
@@ -36,64 +31,50 @@ export function ReplaySlot(): React.ReactElement {
       scroll={false}
       footer={
         <>
-          <SecondaryButton
-            label="Open golden fixture player"
-            onPress={() => setShowLegacyPlayer(true)}
-            testID="replay-legacy"
-          />
           <PrimaryButton label="Continue to result" onPress={goNext} testID="replay-continue" />
+          <SecondaryButton
+            label={muted ? 'Unmute' : 'Mute'}
+            onPress={toggleMute}
+            testID="replay-mute"
+          />
         </>
       }
     >
       <ScreenHeader title="Fight Replay" onBack={goBack} />
-      <View style={styles.hud}>
-        <Nameplate name="Rivet" badge="You" style={styles.plate} />
-        <Nameplate name="Bolt" style={styles.plate} />
-      </View>
-      <View style={styles.arena}>
-        <KitArtPlaceholder
-          label="Arena + bots"
-          detail="PLACEHOLDER — F7/F10 + Game Art"
-          stagger="none"
+      <View style={styles.player}>
+        <CanonicalReplayPlayer
+          result={confirmed}
+          muted={muted}
+          autoPlay
+          testID="slot-replay-player"
         />
       </View>
       <ReplayAudioControls
-        playing={playing}
+        playing={false}
         muted={muted}
-        progress={progress}
+        progress={0}
         reducedMotion={reducedMotion}
-        onTogglePlay={() => {
-          setPlaying((p) => !p);
-          if (!playing) setProgress((v) => Math.min(1, v + 0.15));
-        }}
+        onTogglePlay={() => undefined}
         onToggleMute={toggleMute}
-        onReplay={() => {
-          setPlaying(false);
-          setProgress(0);
-        }}
+        onReplay={() => undefined}
         testID="replay-controls"
       />
-      <DomainNote text="Domain: F10 recorded replay. Shell exposes mute/reduced-motion hooks; fixture player is existing infrastructure." />
+      <DomainNote
+        text={
+          confirmed.serverConfirmed
+            ? `Domain: F10 · server-confirmed replay · ${formatOutcomeLine(confirmed.outcome)}`
+            : 'Domain: F10 · DEV golden fixture until F9 lastFight is available. Mute/reduced-motion from shell.'
+        }
+      />
     </ScreenChrome>
   );
 }
 
 const styles = StyleSheet.create({
-  hud: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  plate: {
+  player: {
     flex: 1,
-  },
-  arena: {
-    flex: 1,
-    minHeight: 200,
-  },
-  legacy: {
-    flex: 1,
-    backgroundColor: garageTag.cream,
-    padding: 8,
-    gap: 8,
+    minHeight: 280,
+    backgroundColor: garageTag.graphite,
+    overflow: 'hidden',
   },
 });

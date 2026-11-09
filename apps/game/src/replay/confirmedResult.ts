@@ -1,11 +1,11 @@
 /**
  * Confirmed fight result / progression — only from server-confirmed data.
- * Until F9 wires the live fight response, DEV fixtures may supply a sealed
- * BattleReplay + optional FightComputeResponse-shaped confirmation.
- * Never invent XP, allowances, or outcomes from art or client combat.
+ * Prefer F9 `FightSuccess` / FightComputeResponse when present; otherwise DEV
+ * golden fixtures. Never invent XP, allowances, or outcomes from art.
  */
 import { validateReplay, type BattleOutcome, type BattleReplay } from '@botore/replay';
 import type { FightComputeResponse } from '@botore/contracts';
+import type { FightSuccess } from '../fight/request/types';
 import { ACTIVE_ENVIRONMENT_ASSET_VERSION } from '../arena/environmentPin';
 import { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from '../assembler/workshopFramePin';
 
@@ -46,7 +46,7 @@ function outcomeFromReplay(replay: BattleReplay): BattleOutcome {
 }
 
 /**
- * Build a confirmed result from a live FightComputeResponse (F9).
+ * Build a confirmed result from a live FightComputeResponse.
  * Presentation must not alter outcome / XP / allowances.
  */
 export function confirmedResultFromFightResponse(
@@ -69,6 +69,48 @@ export function confirmedResultFromFightResponse(
       kitVersion: ACTIVE_WORKSHOP_FRAME_ASSET_VERSION,
       atlasVersions: response.atlasVersions,
       loadoutVersionIds: response.loadoutVersionIds,
+    },
+    replay,
+    label: 'CONFIRMED',
+  };
+}
+
+/**
+ * Map F9 `FightSuccess` (combat-v1 response) → confirmed presentation model.
+ * Outcome comes from the sealed replay; XP/allowances from the server payload only.
+ */
+export function confirmedResultFromFightSuccess(fight: FightSuccess): ConfirmedFightResult {
+  const replay = validateReplay(fight.replay);
+  const loadoutVersionIds =
+    typeof fight.loadoutVersionIds.attacker === 'string' &&
+    typeof fight.loadoutVersionIds.defender === 'string'
+      ? {
+          attacker: fight.loadoutVersionIds.attacker,
+          defender: fight.loadoutVersionIds.defender,
+        }
+      : undefined;
+  const persistence =
+    fight.persistence === 'persisted' || fight.persistence === 'repeated'
+      ? fight.persistence
+      : fight.repeated
+        ? 'repeated'
+        : 'persisted';
+  return {
+    source: 'server',
+    serverConfirmed: true,
+    battleId: fight.battleId,
+    rulesVersion: fight.rulesVersion,
+    replayChecksum: fight.replayChecksum || replay.checksum,
+    outcome: outcomeFromReplay(replay),
+    xpAwarded: fight.xpAwarded,
+    allowancesRemaining: fight.allowancesRemaining,
+    utcDay: fight.utcDay,
+    persistence,
+    media: {
+      environmentVersion: ACTIVE_ENVIRONMENT_ASSET_VERSION,
+      kitVersion: ACTIVE_WORKSHOP_FRAME_ASSET_VERSION,
+      atlasVersions: fight.atlasVersions,
+      ...(loadoutVersionIds ? { loadoutVersionIds } : {}),
     },
     replay,
     label: 'CONFIRMED',

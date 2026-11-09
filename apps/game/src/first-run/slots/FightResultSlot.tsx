@@ -1,5 +1,5 @@
-import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import {
   PrimaryButton,
   SecondaryButton,
@@ -7,13 +7,23 @@ import {
   ScreenHeader,
   garageTag,
 } from '../../garage-tag';
-import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
+import { useFightSession } from '../../fight';
+import { formatOutcomeLine } from '../../replay/confirmedResult';
+import { resolveSessionConfirmedResult } from '../../replay/resolveSessionResult';
 import { useFirstRun } from '../FirstRunContext';
 import { DomainNote } from './DomainNote';
 
-/** Route slot: FightResult — F10 owns result domain; XP is PLACEHOLDER. */
+/**
+ * Shell FightResult slot — progression only from server-confirmed data.
+ * Prefers F9 `lastFight` when replay validates; DEV fixtures withhold XP.
+ */
 export function FightResultSlot(): React.ReactElement {
-  const { goTo, goNext, demoPaintId, demoWeaponId } = useFirstRun();
+  const { goTo, goNext } = useFirstRun();
+  const { lastFight } = useFightSession();
+
+  const confirmed = useMemo(() => resolveSessionConfirmedResult(lastFight), [lastFight]);
+
+  const outcomeLine = formatOutcomeLine(confirmed.outcome);
 
   return (
     <ScreenChrome
@@ -35,30 +45,59 @@ export function FightResultSlot(): React.ReactElement {
       }
     >
       <ScreenHeader title="Fight Result" />
+      <Text style={styles.source} testID="fight-result-source" allowFontScaling>
+        {confirmed.label === 'DEV' ? 'DEV — not server-confirmed' : 'CONFIRMED'}
+      </Text>
       <View style={styles.banner}>
-        <Text style={styles.bannerText} allowFontScaling>
-          Victory
+        <Text style={styles.bannerText} testID="fight-result-outcome" allowFontScaling>
+          {outcomeLine}
         </Text>
       </View>
-      <BotAssemblerSlot
-        loadout={{ paintId: demoPaintId, weaponId: demoWeaponId }}
-        label="Result pose"
-        testID="result-bot"
-      />
-      <View style={styles.info}>
+      <View style={styles.info} testID="fight-result-progression">
         <Text style={styles.line} allowFontScaling>
-          Rivet defeated Bolt
+          Battle {confirmed.battleId}
         </Text>
-        <Text style={styles.xp} allowFontScaling>
-          XP: PLACEHOLDER — bind authoritative backend value (F10)
+        <Text style={styles.meta} allowFontScaling>
+          Rules {confirmed.rulesVersion} · checksum {confirmed.replayChecksum.slice(0, 12)}…
+        </Text>
+        {confirmed.serverConfirmed ? (
+          <>
+            <Text style={styles.xp} allowFontScaling>
+              XP awarded: {confirmed.xpAwarded}
+            </Text>
+            <Text style={styles.meta} allowFontScaling>
+              Allowances remaining: {confirmed.allowancesRemaining}
+            </Text>
+            <Text style={styles.meta} allowFontScaling>
+              UTC day: {confirmed.utcDay} · {confirmed.persistence}
+            </Text>
+          </>
+        ) : (
+          <Text style={styles.meta} allowFontScaling>
+            XP / allowances unavailable until an F9 fight response. Outcome is from the sealed
+            recorded replay only.
+          </Text>
+        )}
+        <Text style={styles.meta} allowFontScaling>
+          Media: env {confirmed.media.environmentVersion} · kit {confirmed.media.kitVersion}
+          {confirmed.media.atlasVersions
+            ? ` · atlas ${confirmed.media.atlasVersions.attacker}/${confirmed.media.atlasVersions.defender}`
+            : ''}
         </Text>
       </View>
-      <DomainNote text="Domain: F10 fight result. Sample +2 XP from REF is not a product rule." />
+      <DomainNote text="Domain: F10 fight result. Never invent XP from REF samples or art." />
     </ScreenChrome>
   );
 }
 
 const styles = StyleSheet.create({
+  source: {
+    color: garageTag.mustard,
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.4,
+    marginBottom: 8,
+  },
   banner: {
     alignSelf: 'center',
     backgroundColor: garageTag.mustard,
@@ -67,13 +106,15 @@ const styles = StyleSheet.create({
     borderRadius: garageTag.cutCorner,
     paddingHorizontal: 28,
     paddingVertical: 12,
+    marginBottom: 12,
   },
   bannerText: {
     fontWeight: '900',
-    fontSize: 22,
-    letterSpacing: 2,
+    fontSize: 18,
+    letterSpacing: 1,
     textTransform: 'uppercase',
     color: garageTag.graphite,
+    textAlign: 'center',
   },
   info: {
     borderWidth: garageTag.outline,
@@ -82,19 +123,21 @@ const styles = StyleSheet.create({
     backgroundColor: garageTag.paper,
     padding: 14,
     gap: 8,
-    alignItems: 'center',
   },
   line: {
     fontWeight: '800',
-    fontSize: 15,
-    textTransform: 'uppercase',
+    fontSize: 14,
     color: garageTag.graphite,
-    textAlign: 'center',
   },
   xp: {
+    fontWeight: '800',
+    fontSize: 15,
+    color: garageTag.graphite,
+  },
+  meta: {
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12,
     color: garageTag.steel,
-    textAlign: 'center',
+    lineHeight: 18,
   },
 });

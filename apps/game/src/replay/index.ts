@@ -2,6 +2,7 @@
 export {
   confirmedResultFromDevReplay,
   confirmedResultFromFightResponse,
+  confirmedResultFromFightSuccess,
   formatOutcomeLine,
   resolvePlaybackMedia,
 } from './confirmedResult';
@@ -14,3 +15,4 @@ export { loadDevGoldenConfirmedResult, replayIdentityFingerprint } from './loadD
 export { applyAnimationCommand, initialPresentationState, normalizeHpAfter } from './playbackState';
 export type { ReplayPresentationState } from './playbackState';
 export { loadoutFromFighter } from './fighterLoadout';
+export { resolveSessionConfirmedResult } from './resolveSessionResult';
