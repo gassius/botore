@@ -4,8 +4,8 @@ Ticket: [C5 Ranking screen: real data + design captures](https://app.clickup.com
 
 ## Authoritative surface
 
-| RPC              | Args                | Success body                                                                 |
-| ---------------- | ------------------- | ---------------------------------------------------------------------------- |
+| RPC              | Args                | Success body                                                                      |
+| ---------------- | ------------------- | --------------------------------------------------------------------------------- |
 | `list_ranking()` | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }` |
 
 - Migration: `supabase/migrations/0022_list_ranking.sql`
