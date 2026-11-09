@@ -1,0 +1,2601 @@
+{
+  "schema": "botore.workshop-frame.provisional.v1",
+  "kit_id": "workshop-frame",
+  "version": "v001",
+  "immutable": true,
+  "status": "integration-prototype-not-accepted",
+  "canvas": [
+    640,
+    640
+  ],
+  "export_scale": 1,
+  "coordinate_system": "top-left XY; +X right,+Y down; clockwise degrees; column-vector affine matrices",
+  "root": {
+    "asset": "torso",
+    "position": [
+      310,
+      276
+    ]
+  },
+  "paint_tokens": {
+    "oxide": "#e8771c",
+    "petrol": "#27877b"
+  },
+  "tokens_status": "provisional measured geometry and proposed colours, not approved budgets",
+  "paint_composite_order": [
+    "material_under",
+    "mask tinted to selected paint",
+    "material_over"
+  ],
+  "alpha": "straight/unassociated RGBA PNG; colour channels sRGB; no baked background",
+  "asset_order": "ascending z; weapon below hand_r",
+  "mirror": "Mirror complete assembled hierarchy about x=320: x_new=640-x; negate screen-space angles implicitly through root reflection. Do not flip each local tile separately. All illustrative details mirror. l/r are view-left/rear and view-right/front, not anatomical sides.",
+  "weapon_grip_rotation_degrees": 180,
+  "audio_ids": [],
+  "atlas": null,
+  "poses": {
+    "idle": {},
+    "quick_attack": {
+      "root_angle": 12,
+      "upper_arm_r": -22,
+      "forearm_r": 45,
+      "upper_arm_l": -12,
+      "root_x": -65,
+      "head": -10
+    },
+    "heavy_windup": {
+      "root_angle": -12,
+      "upper_arm_r": -45,
+      "forearm_r": -23,
+      "upper_arm_l": -20,
+      "head": 12,
+      "root_y": 20
+    },
+    "heavy_attack": {
+      "root_angle": 20,
+      "upper_arm_r": -10,
+      "forearm_r": 70,
+      "upper_arm_l": -15,
+      "thigh_l": -10,
+      "shin_l": 16,
+      "root_x": 10,
+      "head": -15
+    },
+    "dodge": {
+      "root_angle": -17,
+      "root_y": 20,
+      "root_x": -24,
+      "thigh_l": 10,
+      "shin_l": -30,
+      "thigh_r": -15,
+      "shin_r": 36,
+      "upper_arm_r": 12,
+      "head": 12
+    },
+    "hit": {
+      "root_angle": -18,
+      "head": 18,
+      "upper_arm_l": 30,
+      "forearm_l": -20,
+      "upper_arm_r": 25,
+      "forearm_r": 15,
+      "root_x": -15
+    },
+    "defeat": {
+      "root_angle": -65,
+      "root_y": 65,
+      "root_x": -40,
+      "head": 18,
+      "upper_arm_l": 25,
+      "forearm_l": -15,
+      "upper_arm_r": 30,
+      "forearm_r": 20,
+      "thigh_l": -25,
+      "shin_l": -20,
+      "thigh_r": 20,
+      "shin_r": 25
+    }
+  },
+  "extensions": {
+    "shield": {
+      "status": "reserved-not-compatible-or-produced",
+      "suggested_parent": "hand_l"
+    },
+    "drone": {
+      "status": "reserved-not-produced-no-mechanics"
+    },
+    "decals": {
+      "status": "reserved-not-produced",
+      "candidate_asset": "torso",
+      "candidate_local_polygon": [
+        [
+          78,
+          70
+        ],
+        [
+          120,
+          73
+        ],
+        [
+          117,
+          91
+        ],
+        [
+          80,
+          89
+        ]
+      ],
+      "constraints": "masked armour only; avoid vents/rivets; requires integration proof"
+    }
+  },
+  "assets": [
+    {
+      "id": "torso",
+      "width": 220,
+      "height": 180,
+      "pivot": [
+        110,
+        130
+      ],
+      "sockets": {
+        "neck": [
+          110,
+          35
+        ],
+        "shoulder_l": [
+          40,
+          55
+        ],
+        "shoulder_r": [
+          172,
+          65
+        ],
+        "waist": [
+          110,
+          150
+        ]
+      },
+      "slot": "chassis",
+      "parent": null,
+      "parent_socket": null,
+      "angle": 0,
+      "z": 50,
+      "motion_bounds": [
+        -75,
+        25
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "chassis"
+      ],
+      "source_file": "source/torso.svg",
+      "files": {
+        "oxide": "parts/torso-oxide.png",
+        "petrol": "parts/torso-petrol.png"
+      },
+      "material_under": "materials/torso-under.png",
+      "material_over": "materials/torso-over.png",
+      "paint_mask": "masks/torso-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          21,
+          3,
+          190,
+          161
+        ],
+        "petrol": [
+          21,
+          3,
+          190,
+          161
+        ]
+      },
+      "file_integrity": {
+        "parts/torso-oxide.png": {
+          "sha256": "4815cc60637084500f7786c588c38303cdd40ad979507fa553820e2b0e92e508",
+          "bytes": 14851
+        },
+        "parts/torso-petrol.png": {
+          "sha256": "a1b48138a63994573b76cade4c5ce3cd330d6252556f3533041dd93997be0835",
+          "bytes": 14663
+        },
+        "source/torso.svg": {
+          "sha256": "6fc3a23ee74ff200cacf5be64558f8b84e5b6dac2e44c04195b8b026454183dd",
+          "bytes": 4627
+        },
+        "masks/torso-paint.png": {
+          "sha256": "82df495e86299d0b6846d30ba4c99e991316a6079eedc74c3cc1fc08bb4ee434",
+          "bytes": 1666
+        },
+        "materials/torso-under.png": {
+          "sha256": "563f7503d5cce92c86db4fd9fec4134b06ac1beb0a7d8a3af994449fbbbaf0aa",
+          "bytes": 13571
+        },
+        "materials/torso-over.png": {
+          "sha256": "040bedee995ef7529e949a427206c71bc847451712432e5a0bcb57bc27204f19",
+          "bytes": 6969
+        }
+      }
+    },
+    {
+      "id": "head",
+      "width": 210,
+      "height": 180,
+      "pivot": [
+        99,
+        143
+      ],
+      "sockets": {},
+      "slot": "head",
+      "parent": "torso",
+      "parent_socket": "neck",
+      "angle": 0,
+      "z": 60,
+      "motion_bounds": [
+        -20,
+        20
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "head"
+      ],
+      "source_file": "source/head.svg",
+      "files": {
+        "oxide": "parts/head-oxide.png",
+        "petrol": "parts/head-petrol.png"
+      },
+      "material_under": "materials/head-under.png",
+      "material_over": "materials/head-over.png",
+      "paint_mask": "masks/head-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          28,
+          21,
+          177,
+          170
+        ],
+        "petrol": [
+          28,
+          21,
+          177,
+          170
+        ]
+      },
+      "file_integrity": {
+        "parts/head-oxide.png": {
+          "sha256": "e9521f89dccc3d49338e5a35d8d2385864ba58b42f261ba0efcfbe123010699f",
+          "bytes": 15754
+        },
+        "parts/head-petrol.png": {
+          "sha256": "c2f30acddcb26084ac7d618f8307b898f32dd53e46f164c45a5106d0fd4a88dd",
+          "bytes": 15436
+        },
+        "source/head.svg": {
+          "sha256": "a1bc0ec0a3617254449d6b06fa5b44dfb3d54fb5a26126cdef0635b1d9a86dcd",
+          "bytes": 3929
+        },
+        "masks/head-paint.png": {
+          "sha256": "f67a95674681803b6d78ee970bb030f5f163c178d521df82a6630ac627ba64c8",
+          "bytes": 2382
+        },
+        "materials/head-under.png": {
+          "sha256": "67f5302ff5d67d5bbf50a887960025ce970387ffefeb5a0b01454aedff700c3f",
+          "bytes": 5589
+        },
+        "materials/head-over.png": {
+          "sha256": "02f06761e78f932605d9c91f046a2724da170cd19255a7d5723d2dbd861fb599",
+          "bytes": 13792
+        }
+      }
+    },
+    {
+      "id": "pelvis",
+      "width": 160,
+      "height": 90,
+      "pivot": [
+        80,
+        35
+      ],
+      "sockets": {
+        "hip_l": [
+          42,
+          48
+        ],
+        "hip_r": [
+          115,
+          48
+        ]
+      },
+      "slot": "pelvis",
+      "parent": "torso",
+      "parent_socket": "waist",
+      "angle": 0,
+      "z": 40,
+      "motion_bounds": [
+        -15,
+        15
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "pelvis"
+      ],
+      "source_file": "source/pelvis.svg",
+      "files": {
+        "oxide": "parts/pelvis-oxide.png",
+        "petrol": "parts/pelvis-petrol.png"
+      },
+      "material_under": "materials/pelvis-under.png",
+      "material_over": "materials/pelvis-over.png",
+      "paint_mask": "masks/pelvis-paint.png",
+      "has_paint": false,
+      "bounds_by_paint": {
+        "oxide": [
+          23,
+          26,
+          136,
+          67
+        ],
+        "petrol": [
+          23,
+          26,
+          136,
+          67
+        ]
+      },
+      "file_integrity": {
+        "parts/pelvis-oxide.png": {
+          "sha256": "4db1c1581baf525cbe223f7e42e753a5fb4f24d79561241054a73fe0ac6e5235",
+          "bytes": 4505
+        },
+        "parts/pelvis-petrol.png": {
+          "sha256": "4db1c1581baf525cbe223f7e42e753a5fb4f24d79561241054a73fe0ac6e5235",
+          "bytes": 4505
+        },
+        "source/pelvis.svg": {
+          "sha256": "1f5923cc4c512e45f96c9b40a31cce116267385283494a42b96d1a8ccace2e4d",
+          "bytes": 1689
+        },
+        "masks/pelvis-paint.png": {
+          "sha256": "5c582dc4981bf3567c79567c84f087bcaa12b3bb1449ad5255acc6d568b1d3b4",
+          "bytes": 136
+        },
+        "materials/pelvis-under.png": {
+          "sha256": "ed7415236eaae4fcd0df5c75ec4c130a45f7e143ccc494fa515c4771033019d2",
+          "bytes": 4195
+        },
+        "materials/pelvis-over.png": {
+          "sha256": "5045084fa03113f41aa8f1adc576477c5d50bc62b25517bd492b44743dd799fd",
+          "bytes": 540
+        }
+      }
+    },
+    {
+      "id": "upper_arm_l",
+      "width": 155,
+      "height": 150,
+      "pivot": [
+        80,
+        38
+      ],
+      "sockets": {
+        "elbow": [
+          80,
+          126
+        ]
+      },
+      "slot": "upper_arm_l",
+      "parent": "torso",
+      "parent_socket": "shoulder_l",
+      "angle": 30,
+      "z": 15,
+      "motion_bounds": [
+        -80,
+        110
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "upper_arm_l"
+      ],
+      "source_file": "source/upper_arm_l.svg",
+      "files": {
+        "oxide": "parts/upper_arm_l-oxide.png",
+        "petrol": "parts/upper_arm_l-petrol.png"
+      },
+      "material_under": "materials/upper_arm_l-under.png",
+      "material_over": "materials/upper_arm_l-over.png",
+      "paint_mask": "masks/upper_arm_l-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          34,
+          12,
+          114,
+          145
+        ],
+        "petrol": [
+          34,
+          12,
+          114,
+          145
+        ]
+      },
+      "file_integrity": {
+        "parts/upper_arm_l-oxide.png": {
+          "sha256": "226dfc6940c839710a249aa0833c7fd372d706c1d1e07e5a6530906f1fea4549",
+          "bytes": 8303
+        },
+        "parts/upper_arm_l-petrol.png": {
+          "sha256": "7ef0e0c9cfff3aad0fd34b7e88cbf3a6864e669693e32eb73003148047fb1c37",
+          "bytes": 8172
+        },
+        "source/upper_arm_l.svg": {
+          "sha256": "0185aba3161faae8d900ac93da37437c19d0f6ab54efd188aaecc31b69515231",
+          "bytes": 2853
+        },
+        "masks/upper_arm_l-paint.png": {
+          "sha256": "e6c039f5c5dd43bf4506b6dcf4d9795600ae76e628a74fdcc19168ddf163ccb5",
+          "bytes": 1258
+        },
+        "materials/upper_arm_l-under.png": {
+          "sha256": "ac75b73468d615bda690928708727e4dc9acc0c017d6ad70495f75a9a72cc780",
+          "bytes": 7962
+        },
+        "materials/upper_arm_l-over.png": {
+          "sha256": "00a2d47fc000126501aab5ebedf6269c197f47069cbf38f82a29a3c196d8d159",
+          "bytes": 4142
+        }
+      }
+    },
+    {
+      "id": "forearm_l",
+      "width": 145,
+      "height": 140,
+      "pivot": [
+        80,
+        35
+      ],
+      "sockets": {
+        "wrist": [
+          80,
+          110
+        ]
+      },
+      "slot": "forearm_l",
+      "parent": "upper_arm_l",
+      "parent_socket": "elbow",
+      "angle": -57,
+      "z": 20,
+      "motion_bounds": [
+        -145,
+        20
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "forearm_l"
+      ],
+      "source_file": "source/forearm_l.svg",
+      "files": {
+        "oxide": "parts/forearm_l-oxide.png",
+        "petrol": "parts/forearm_l-petrol.png"
+      },
+      "material_under": "materials/forearm_l-under.png",
+      "material_over": "materials/forearm_l-over.png",
+      "paint_mask": "masks/forearm_l-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          41,
+          16,
+          114,
+          125
+        ],
+        "petrol": [
+          41,
+          16,
+          114,
+          125
+        ]
+      },
+      "file_integrity": {
+        "parts/forearm_l-oxide.png": {
+          "sha256": "c6a6bd7aca5b37d9668ed1254dbbb1b60e8798a4bf0b1449ad9eb6ae3681ea28",
+          "bytes": 6235
+        },
+        "parts/forearm_l-petrol.png": {
+          "sha256": "8dabad2004a95f59e02464441a46e321060574cefbef34a81372daaf0b7275fe",
+          "bytes": 6126
+        },
+        "source/forearm_l.svg": {
+          "sha256": "e91c0673f52f98e833bb6ffed7d603ecd890243840690726fba7671671b03e48",
+          "bytes": 2430
+        },
+        "masks/forearm_l-paint.png": {
+          "sha256": "5eed4d3b5e3056ca440ad8edc212fa6522068b23237193e44ae5d424b5c8d8fe",
+          "bytes": 1097
+        },
+        "materials/forearm_l-under.png": {
+          "sha256": "0db1de1901902e9bd22a319088134cf739ef2731a2aca1c9c2cc4b62bad26a35",
+          "bytes": 5889
+        },
+        "materials/forearm_l-over.png": {
+          "sha256": "f998750093950b493f07174bc559744ef6b297acc202ee6722fb51ec32b91a5f",
+          "bytes": 3817
+        }
+      }
+    },
+    {
+      "id": "hand_l",
+      "width": 120,
+      "height": 100,
+      "pivot": [
+        60,
+        25
+      ],
+      "sockets": {
+        "grip": [
+          60,
+          55
+        ]
+      },
+      "slot": "hand_l",
+      "parent": "forearm_l",
+      "parent_socket": "wrist",
+      "angle": 0,
+      "z": 65,
+      "motion_bounds": [
+        -25,
+        25
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "hand_l"
+      ],
+      "source_file": "source/hand_l.svg",
+      "files": {
+        "oxide": "parts/hand_l-oxide.png",
+        "petrol": "parts/hand_l-petrol.png"
+      },
+      "material_under": "materials/hand_l-under.png",
+      "material_over": "materials/hand_l-over.png",
+      "paint_mask": "masks/hand_l-paint.png",
+      "has_paint": false,
+      "bounds_by_paint": {
+        "oxide": [
+          32,
+          11,
+          88,
+          84
+        ],
+        "petrol": [
+          32,
+          11,
+          88,
+          84
+        ]
+      },
+      "file_integrity": {
+        "parts/hand_l-oxide.png": {
+          "sha256": "bde513c9e01a2bfed5987d8d64bbf3f80ca5d5aedcf64fcda00e34bf17592500",
+          "bytes": 4838
+        },
+        "parts/hand_l-petrol.png": {
+          "sha256": "bde513c9e01a2bfed5987d8d64bbf3f80ca5d5aedcf64fcda00e34bf17592500",
+          "bytes": 4838
+        },
+        "source/hand_l.svg": {
+          "sha256": "c8f1ae6006c1e4cf43c331d80b7455d11135acee00c6c06ea2ce7738d62252aa",
+          "bytes": 1432
+        },
+        "masks/hand_l-paint.png": {
+          "sha256": "7992ccc8a66d245da6b38a69babf83644c5dbf57eaad3ff282eb934df71e9291",
+          "bytes": 126
+        },
+        "materials/hand_l-under.png": {
+          "sha256": "55a6d97f9ce194dd0ad1e0978a3a4951951bd7957673414fcc654063101a7efe",
+          "bytes": 3068
+        },
+        "materials/hand_l-over.png": {
+          "sha256": "55f0fa7c62d9f704147889d10133179ec6d5845e1fd73561f8e5dbf566747100",
+          "bytes": 2481
+        }
+      }
+    },
+    {
+      "id": "thigh_l",
+      "width": 120,
+      "height": 150,
+      "pivot": [
+        60,
+        30
+      ],
+      "sockets": {
+        "knee": [
+          60,
+          112
+        ]
+      },
+      "slot": "thigh_l",
+      "parent": "pelvis",
+      "parent_socket": "hip_l",
+      "angle": 24,
+      "z": 30,
+      "motion_bounds": [
+        -65,
+        65
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "thigh_l"
+      ],
+      "source_file": "source/thigh_l.svg",
+      "files": {
+        "oxide": "parts/thigh_l-oxide.png",
+        "petrol": "parts/thigh_l-petrol.png"
+      },
+      "material_under": "materials/thigh_l-under.png",
+      "material_over": "materials/thigh_l-over.png",
+      "paint_mask": "masks/thigh_l-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          30,
+          12,
+          87,
+          131
+        ],
+        "petrol": [
+          30,
+          12,
+          87,
+          131
+        ]
+      },
+      "file_integrity": {
+        "parts/thigh_l-oxide.png": {
+          "sha256": "c3fedfd707e453137c18dbf1a4188ab8d90cf02a5fa5f0976f9769e0940af5bc",
+          "bytes": 5850
+        },
+        "parts/thigh_l-petrol.png": {
+          "sha256": "c7f98d6e5d63b4ec62811f9a615692f68164a3d668b415b861f8d9629975c1c4",
+          "bytes": 5757
+        },
+        "source/thigh_l.svg": {
+          "sha256": "c23f4da21f273d361417fc5eaddf5b963bfde5b3723f07f627ee246202164fa7",
+          "bytes": 2642
+        },
+        "masks/thigh_l-paint.png": {
+          "sha256": "423855285827f334b3d81f1af7408e6d917c61db930d3abdeac87d775a5dfe30",
+          "bytes": 973
+        },
+        "materials/thigh_l-under.png": {
+          "sha256": "b45596e4b07f0ac1141e4649de36a4ba5715ae6f389932da16c52b319021c189",
+          "bytes": 5895
+        },
+        "materials/thigh_l-over.png": {
+          "sha256": "413e72f460c60d0f5e8b1afe842d6c251a7b4f027010d01e5f8cf62bd572bb89",
+          "bytes": 3296
+        }
+      }
+    },
+    {
+      "id": "shin_l",
+      "width": 120,
+      "height": 150,
+      "pivot": [
+        60,
+        30
+      ],
+      "sockets": {
+        "ankle": [
+          60,
+          125
+        ]
+      },
+      "slot": "shin_l",
+      "parent": "thigh_l",
+      "parent_socket": "knee",
+      "angle": -13,
+      "z": 35,
+      "motion_bounds": [
+        -65,
+        65
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "shin_l"
+      ],
+      "source_file": "source/shin_l.svg",
+      "files": {
+        "oxide": "parts/shin_l-oxide.png",
+        "petrol": "parts/shin_l-petrol.png"
+      },
+      "material_under": "materials/shin_l-under.png",
+      "material_over": "materials/shin_l-over.png",
+      "paint_mask": "masks/shin_l-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          35,
+          12,
+          84,
+          142
+        ],
+        "petrol": [
+          35,
+          12,
+          84,
+          142
+        ]
+      },
+      "file_integrity": {
+        "parts/shin_l-oxide.png": {
+          "sha256": "57dd34d27ee60c0471254441dc3eab571144ca5f3346f560c789c515d8531fc9",
+          "bytes": 7691
+        },
+        "parts/shin_l-petrol.png": {
+          "sha256": "e13c64d8e0a3af6e254614ad9d7027d8169abbf993ff11e4c54c6da87550f724",
+          "bytes": 7672
+        },
+        "source/shin_l.svg": {
+          "sha256": "5d13c55b62c573d7a83f9fa15cb126f1bb1ddf94b1d1e3076265111c8da221a9",
+          "bytes": 2631
+        },
+        "masks/shin_l-paint.png": {
+          "sha256": "d2b347490d3fd3908544f8678dcad2fff81c2eec0d11d4fc3317af3c5fde0933",
+          "bytes": 848
+        },
+        "materials/shin_l-under.png": {
+          "sha256": "335f72f2a6bbd4b99e31dec85dc033208778aedd3c5e366e631e45d9361e1227",
+          "bytes": 6675
+        },
+        "materials/shin_l-over.png": {
+          "sha256": "c087ced894eb6f3fd1c307d357c9b7ba9c23cf5b746f0e17cfd3298ee25cd92f",
+          "bytes": 2744
+        }
+      }
+    },
+    {
+      "id": "foot_l",
+      "width": 130,
+      "height": 100,
+      "pivot": [
+        60,
+        30
+      ],
+      "sockets": {},
+      "slot": "foot_l",
+      "parent": "shin_l",
+      "parent_socket": "ankle",
+      "angle": -11,
+      "z": 36,
+      "motion_bounds": [
+        -30,
+        30
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "foot_l"
+      ],
+      "source_file": "source/foot_l.svg",
+      "files": {
+        "oxide": "parts/foot_l-oxide.png",
+        "petrol": "parts/foot_l-petrol.png"
+      },
+      "material_under": "materials/foot_l-under.png",
+      "material_over": "materials/foot_l-over.png",
+      "paint_mask": "masks/foot_l-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          19,
+          13,
+          112,
+          78
+        ],
+        "petrol": [
+          19,
+          13,
+          112,
+          78
+        ]
+      },
+      "file_integrity": {
+        "parts/foot_l-oxide.png": {
+          "sha256": "f2c5dabaf675fcb91adc544faa9908a240bf8e8a88c9c3655046b0aa8e458aba",
+          "bytes": 3985
+        },
+        "parts/foot_l-petrol.png": {
+          "sha256": "aa38803c20971038ef7b0bd421b5f6bf68c2d99ac905575984faa4047e0e1e09",
+          "bytes": 3950
+        },
+        "source/foot_l.svg": {
+          "sha256": "c7cf3a2fc650e951df24c92991a48e4574d95c0e095a520bc3d3acd4551006f8",
+          "bytes": 1785
+        },
+        "masks/foot_l-paint.png": {
+          "sha256": "55caee26bae7b276d499654d76accbf7ac6253d053a90a1ed0e7aab59cf8f362",
+          "bytes": 919
+        },
+        "materials/foot_l-under.png": {
+          "sha256": "a950021298c58f502f0baf87f8b0b76b21c6099a834f84aa2079b7b28c06acf2",
+          "bytes": 2858
+        },
+        "materials/foot_l-over.png": {
+          "sha256": "a1473d0b804b0cf1869599dea46dcfe3f618fceac9dcc47950819ed71ccfa448",
+          "bytes": 3687
+        }
+      }
+    },
+    {
+      "id": "upper_arm_r",
+      "width": 155,
+      "height": 150,
+      "pivot": [
+        80,
+        38
+      ],
+      "sockets": {
+        "elbow": [
+          80,
+          126
+        ]
+      },
+      "slot": "upper_arm_r",
+      "parent": "torso",
+      "parent_socket": "shoulder_r",
+      "angle": -24,
+      "z": 70,
+      "motion_bounds": [
+        -80,
+        110
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "upper_arm_r"
+      ],
+      "source_file": "source/upper_arm_r.svg",
+      "files": {
+        "oxide": "parts/upper_arm_r-oxide.png",
+        "petrol": "parts/upper_arm_r-petrol.png"
+      },
+      "material_under": "materials/upper_arm_r-under.png",
+      "material_over": "materials/upper_arm_r-over.png",
+      "paint_mask": "masks/upper_arm_r-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          34,
+          12,
+          114,
+          145
+        ],
+        "petrol": [
+          34,
+          12,
+          114,
+          145
+        ]
+      },
+      "file_integrity": {
+        "parts/upper_arm_r-oxide.png": {
+          "sha256": "226dfc6940c839710a249aa0833c7fd372d706c1d1e07e5a6530906f1fea4549",
+          "bytes": 8303
+        },
+        "parts/upper_arm_r-petrol.png": {
+          "sha256": "7ef0e0c9cfff3aad0fd34b7e88cbf3a6864e669693e32eb73003148047fb1c37",
+          "bytes": 8172
+        },
+        "source/upper_arm_r.svg": {
+          "sha256": "0185aba3161faae8d900ac93da37437c19d0f6ab54efd188aaecc31b69515231",
+          "bytes": 2853
+        },
+        "masks/upper_arm_r-paint.png": {
+          "sha256": "e6c039f5c5dd43bf4506b6dcf4d9795600ae76e628a74fdcc19168ddf163ccb5",
+          "bytes": 1258
+        },
+        "materials/upper_arm_r-under.png": {
+          "sha256": "ac75b73468d615bda690928708727e4dc9acc0c017d6ad70495f75a9a72cc780",
+          "bytes": 7962
+        },
+        "materials/upper_arm_r-over.png": {
+          "sha256": "00a2d47fc000126501aab5ebedf6269c197f47069cbf38f82a29a3c196d8d159",
+          "bytes": 4142
+        }
+      }
+    },
+    {
+      "id": "forearm_r",
+      "width": 145,
+      "height": 140,
+      "pivot": [
+        80,
+        35
+      ],
+      "sockets": {
+        "wrist": [
+          80,
+          110
+        ]
+      },
+      "slot": "forearm_r",
+      "parent": "upper_arm_r",
+      "parent_socket": "elbow",
+      "angle": -112,
+      "z": 75,
+      "motion_bounds": [
+        -145,
+        20
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "forearm_r"
+      ],
+      "source_file": "source/forearm_r.svg",
+      "files": {
+        "oxide": "parts/forearm_r-oxide.png",
+        "petrol": "parts/forearm_r-petrol.png"
+      },
+      "material_under": "materials/forearm_r-under.png",
+      "material_over": "materials/forearm_r-over.png",
+      "paint_mask": "masks/forearm_r-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          41,
+          16,
+          114,
+          125
+        ],
+        "petrol": [
+          41,
+          16,
+          114,
+          125
+        ]
+      },
+      "file_integrity": {
+        "parts/forearm_r-oxide.png": {
+          "sha256": "c6a6bd7aca5b37d9668ed1254dbbb1b60e8798a4bf0b1449ad9eb6ae3681ea28",
+          "bytes": 6235
+        },
+        "parts/forearm_r-petrol.png": {
+          "sha256": "8dabad2004a95f59e02464441a46e321060574cefbef34a81372daaf0b7275fe",
+          "bytes": 6126
+        },
+        "source/forearm_r.svg": {
+          "sha256": "e91c0673f52f98e833bb6ffed7d603ecd890243840690726fba7671671b03e48",
+          "bytes": 2430
+        },
+        "masks/forearm_r-paint.png": {
+          "sha256": "5eed4d3b5e3056ca440ad8edc212fa6522068b23237193e44ae5d424b5c8d8fe",
+          "bytes": 1097
+        },
+        "materials/forearm_r-under.png": {
+          "sha256": "0db1de1901902e9bd22a319088134cf739ef2731a2aca1c9c2cc4b62bad26a35",
+          "bytes": 5889
+        },
+        "materials/forearm_r-over.png": {
+          "sha256": "f998750093950b493f07174bc559744ef6b297acc202ee6722fb51ec32b91a5f",
+          "bytes": 3817
+        }
+      }
+    },
+    {
+      "id": "hand_r",
+      "width": 120,
+      "height": 100,
+      "pivot": [
+        60,
+        25
+      ],
+      "sockets": {
+        "grip": [
+          60,
+          55
+        ]
+      },
+      "slot": "hand_r",
+      "parent": "forearm_r",
+      "parent_socket": "wrist",
+      "angle": 0,
+      "z": 90,
+      "motion_bounds": [
+        -25,
+        25
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "hand_r"
+      ],
+      "source_file": "source/hand_r.svg",
+      "files": {
+        "oxide": "parts/hand_r-oxide.png",
+        "petrol": "parts/hand_r-petrol.png"
+      },
+      "material_under": "materials/hand_r-under.png",
+      "material_over": "materials/hand_r-over.png",
+      "paint_mask": "masks/hand_r-paint.png",
+      "has_paint": false,
+      "bounds_by_paint": {
+        "oxide": [
+          32,
+          11,
+          88,
+          84
+        ],
+        "petrol": [
+          32,
+          11,
+          88,
+          84
+        ]
+      },
+      "file_integrity": {
+        "parts/hand_r-oxide.png": {
+          "sha256": "bde513c9e01a2bfed5987d8d64bbf3f80ca5d5aedcf64fcda00e34bf17592500",
+          "bytes": 4838
+        },
+        "parts/hand_r-petrol.png": {
+          "sha256": "bde513c9e01a2bfed5987d8d64bbf3f80ca5d5aedcf64fcda00e34bf17592500",
+          "bytes": 4838
+        },
+        "source/hand_r.svg": {
+          "sha256": "c8f1ae6006c1e4cf43c331d80b7455d11135acee00c6c06ea2ce7738d62252aa",
+          "bytes": 1432
+        },
+        "masks/hand_r-paint.png": {
+          "sha256": "7992ccc8a66d245da6b38a69babf83644c5dbf57eaad3ff282eb934df71e9291",
+          "bytes": 126
+        },
+        "materials/hand_r-under.png": {
+          "sha256": "55a6d97f9ce194dd0ad1e0978a3a4951951bd7957673414fcc654063101a7efe",
+          "bytes": 3068
+        },
+        "materials/hand_r-over.png": {
+          "sha256": "55f0fa7c62d9f704147889d10133179ec6d5845e1fd73561f8e5dbf566747100",
+          "bytes": 2481
+        }
+      }
+    },
+    {
+      "id": "thigh_r",
+      "width": 120,
+      "height": 150,
+      "pivot": [
+        60,
+        30
+      ],
+      "sockets": {
+        "knee": [
+          60,
+          112
+        ]
+      },
+      "slot": "thigh_r",
+      "parent": "pelvis",
+      "parent_socket": "hip_r",
+      "angle": -27,
+      "z": 55,
+      "motion_bounds": [
+        -65,
+        65
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "thigh_r"
+      ],
+      "source_file": "source/thigh_r.svg",
+      "files": {
+        "oxide": "parts/thigh_r-oxide.png",
+        "petrol": "parts/thigh_r-petrol.png"
+      },
+      "material_under": "materials/thigh_r-under.png",
+      "material_over": "materials/thigh_r-over.png",
+      "paint_mask": "masks/thigh_r-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          30,
+          12,
+          87,
+          131
+        ],
+        "petrol": [
+          30,
+          12,
+          87,
+          131
+        ]
+      },
+      "file_integrity": {
+        "parts/thigh_r-oxide.png": {
+          "sha256": "c3fedfd707e453137c18dbf1a4188ab8d90cf02a5fa5f0976f9769e0940af5bc",
+          "bytes": 5850
+        },
+        "parts/thigh_r-petrol.png": {
+          "sha256": "c7f98d6e5d63b4ec62811f9a615692f68164a3d668b415b861f8d9629975c1c4",
+          "bytes": 5757
+        },
+        "source/thigh_r.svg": {
+          "sha256": "c23f4da21f273d361417fc5eaddf5b963bfde5b3723f07f627ee246202164fa7",
+          "bytes": 2642
+        },
+        "masks/thigh_r-paint.png": {
+          "sha256": "423855285827f334b3d81f1af7408e6d917c61db930d3abdeac87d775a5dfe30",
+          "bytes": 973
+        },
+        "materials/thigh_r-under.png": {
+          "sha256": "b45596e4b07f0ac1141e4649de36a4ba5715ae6f389932da16c52b319021c189",
+          "bytes": 5895
+        },
+        "materials/thigh_r-over.png": {
+          "sha256": "413e72f460c60d0f5e8b1afe842d6c251a7b4f027010d01e5f8cf62bd572bb89",
+          "bytes": 3296
+        }
+      }
+    },
+    {
+      "id": "shin_r",
+      "width": 120,
+      "height": 150,
+      "pivot": [
+        60,
+        30
+      ],
+      "sockets": {
+        "ankle": [
+          60,
+          125
+        ]
+      },
+      "slot": "shin_r",
+      "parent": "thigh_r",
+      "parent_socket": "knee",
+      "angle": 15,
+      "z": 56,
+      "motion_bounds": [
+        -65,
+        65
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "shin_r"
+      ],
+      "source_file": "source/shin_r.svg",
+      "files": {
+        "oxide": "parts/shin_r-oxide.png",
+        "petrol": "parts/shin_r-petrol.png"
+      },
+      "material_under": "materials/shin_r-under.png",
+      "material_over": "materials/shin_r-over.png",
+      "paint_mask": "masks/shin_r-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          35,
+          12,
+          84,
+          142
+        ],
+        "petrol": [
+          35,
+          12,
+          84,
+          142
+        ]
+      },
+      "file_integrity": {
+        "parts/shin_r-oxide.png": {
+          "sha256": "57dd34d27ee60c0471254441dc3eab571144ca5f3346f560c789c515d8531fc9",
+          "bytes": 7691
+        },
+        "parts/shin_r-petrol.png": {
+          "sha256": "e13c64d8e0a3af6e254614ad9d7027d8169abbf993ff11e4c54c6da87550f724",
+          "bytes": 7672
+        },
+        "source/shin_r.svg": {
+          "sha256": "5d13c55b62c573d7a83f9fa15cb126f1bb1ddf94b1d1e3076265111c8da221a9",
+          "bytes": 2631
+        },
+        "masks/shin_r-paint.png": {
+          "sha256": "d2b347490d3fd3908544f8678dcad2fff81c2eec0d11d4fc3317af3c5fde0933",
+          "bytes": 848
+        },
+        "materials/shin_r-under.png": {
+          "sha256": "335f72f2a6bbd4b99e31dec85dc033208778aedd3c5e366e631e45d9361e1227",
+          "bytes": 6675
+        },
+        "materials/shin_r-over.png": {
+          "sha256": "c087ced894eb6f3fd1c307d357c9b7ba9c23cf5b746f0e17cfd3298ee25cd92f",
+          "bytes": 2744
+        }
+      }
+    },
+    {
+      "id": "foot_r",
+      "width": 130,
+      "height": 100,
+      "pivot": [
+        60,
+        30
+      ],
+      "sockets": {},
+      "slot": "foot_r",
+      "parent": "shin_r",
+      "parent_socket": "ankle",
+      "angle": 12,
+      "z": 57,
+      "motion_bounds": [
+        -30,
+        30
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "foot_r"
+      ],
+      "source_file": "source/foot_r.svg",
+      "files": {
+        "oxide": "parts/foot_r-oxide.png",
+        "petrol": "parts/foot_r-petrol.png"
+      },
+      "material_under": "materials/foot_r-under.png",
+      "material_over": "materials/foot_r-over.png",
+      "paint_mask": "masks/foot_r-paint.png",
+      "has_paint": true,
+      "bounds_by_paint": {
+        "oxide": [
+          19,
+          13,
+          112,
+          78
+        ],
+        "petrol": [
+          19,
+          13,
+          112,
+          78
+        ]
+      },
+      "file_integrity": {
+        "parts/foot_r-oxide.png": {
+          "sha256": "f2c5dabaf675fcb91adc544faa9908a240bf8e8a88c9c3655046b0aa8e458aba",
+          "bytes": 3985
+        },
+        "parts/foot_r-petrol.png": {
+          "sha256": "aa38803c20971038ef7b0bd421b5f6bf68c2d99ac905575984faa4047e0e1e09",
+          "bytes": 3950
+        },
+        "source/foot_r.svg": {
+          "sha256": "c7cf3a2fc650e951df24c92991a48e4574d95c0e095a520bc3d3acd4551006f8",
+          "bytes": 1785
+        },
+        "masks/foot_r-paint.png": {
+          "sha256": "55caee26bae7b276d499654d76accbf7ac6253d053a90a1ed0e7aab59cf8f362",
+          "bytes": 919
+        },
+        "materials/foot_r-under.png": {
+          "sha256": "a950021298c58f502f0baf87f8b0b76b21c6099a834f84aa2079b7b28c06acf2",
+          "bytes": 2858
+        },
+        "materials/foot_r-over.png": {
+          "sha256": "a1473d0b804b0cf1869599dea46dcfe3f618fceac9dcc47950819ed71ccfa448",
+          "bytes": 3687
+        }
+      }
+    },
+    {
+      "id": "weapon_sword",
+      "width": 140,
+      "height": 200,
+      "pivot": [
+        60,
+        155
+      ],
+      "sockets": {
+        "grip": [
+          60,
+          155
+        ]
+      },
+      "slot": "sword",
+      "parent": null,
+      "parent_socket": null,
+      "angle": 0,
+      "z": 85,
+      "motion_bounds": [
+        -180,
+        180
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "hand_r.grip"
+      ],
+      "source_file": "source/weapon_sword.svg",
+      "files": {
+        "oxide": "parts/weapon_sword-oxide.png",
+        "petrol": "parts/weapon_sword-petrol.png"
+      },
+      "material_under": "materials/weapon_sword-under.png",
+      "material_over": "materials/weapon_sword-over.png",
+      "paint_mask": "masks/weapon_sword-paint.png",
+      "has_paint": false,
+      "bounds_by_paint": {
+        "oxide": [
+          30,
+          6,
+          89,
+          185
+        ],
+        "petrol": [
+          30,
+          6,
+          89,
+          185
+        ]
+      },
+      "file_integrity": {
+        "parts/weapon_sword-oxide.png": {
+          "sha256": "4c7a5f3aeb2861bdeeb6ab81b53cbfe0c14ce428140f7f04e071cc6062e966bb",
+          "bytes": 4787
+        },
+        "parts/weapon_sword-petrol.png": {
+          "sha256": "4c7a5f3aeb2861bdeeb6ab81b53cbfe0c14ce428140f7f04e071cc6062e966bb",
+          "bytes": 4787
+        },
+        "source/weapon_sword.svg": {
+          "sha256": "663bab4ed8006f52de13d3a2aba67b5c3f80aa33acaae2af2a3fdd8e568e9e3e",
+          "bytes": 1794
+        },
+        "masks/weapon_sword-paint.png": {
+          "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+          "bytes": 188
+        },
+        "materials/weapon_sword-under.png": {
+          "sha256": "4c7a5f3aeb2861bdeeb6ab81b53cbfe0c14ce428140f7f04e071cc6062e966bb",
+          "bytes": 4787
+        },
+        "materials/weapon_sword-over.png": {
+          "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+          "bytes": 188
+        }
+      }
+    },
+    {
+      "id": "weapon_axe",
+      "width": 140,
+      "height": 200,
+      "pivot": [
+        60,
+        155
+      ],
+      "sockets": {
+        "grip": [
+          60,
+          155
+        ]
+      },
+      "slot": "axe",
+      "parent": null,
+      "parent_socket": null,
+      "angle": 0,
+      "z": 85,
+      "motion_bounds": [
+        -180,
+        180
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "hand_r.grip"
+      ],
+      "source_file": "source/weapon_axe.svg",
+      "files": {
+        "oxide": "parts/weapon_axe-oxide.png",
+        "petrol": "parts/weapon_axe-petrol.png"
+      },
+      "material_under": "materials/weapon_axe-under.png",
+      "material_over": "materials/weapon_axe-over.png",
+      "paint_mask": "masks/weapon_axe-paint.png",
+      "has_paint": false,
+      "bounds_by_paint": {
+        "oxide": [
+          20,
+          25,
+          121,
+          185
+        ],
+        "petrol": [
+          20,
+          25,
+          121,
+          185
+        ]
+      },
+      "file_integrity": {
+        "parts/weapon_axe-oxide.png": {
+          "sha256": "a6504a9917e900ce994ab49ea5a32c26daf0bfd23e6fbf16b048eaf74de5cac9",
+          "bytes": 7186
+        },
+        "parts/weapon_axe-petrol.png": {
+          "sha256": "a6504a9917e900ce994ab49ea5a32c26daf0bfd23e6fbf16b048eaf74de5cac9",
+          "bytes": 7186
+        },
+        "source/weapon_axe.svg": {
+          "sha256": "8af06488a2b6930aaf2252f651b9594109d7d0396175feee309cbee484c93287",
+          "bytes": 1920
+        },
+        "masks/weapon_axe-paint.png": {
+          "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+          "bytes": 188
+        },
+        "materials/weapon_axe-under.png": {
+          "sha256": "a6504a9917e900ce994ab49ea5a32c26daf0bfd23e6fbf16b048eaf74de5cac9",
+          "bytes": 7186
+        },
+        "materials/weapon_axe-over.png": {
+          "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+          "bytes": 188
+        }
+      }
+    },
+    {
+      "id": "weapon_dagger",
+      "width": 140,
+      "height": 200,
+      "pivot": [
+        60,
+        155
+      ],
+      "sockets": {
+        "grip": [
+          60,
+          155
+        ]
+      },
+      "slot": "dagger",
+      "parent": null,
+      "parent_socket": null,
+      "angle": 0,
+      "z": 85,
+      "motion_bounds": [
+        -180,
+        180
+      ],
+      "compatible_family": "workshop-frame-v001",
+      "compatible_slots": [
+        "hand_r.grip"
+      ],
+      "source_file": "source/weapon_dagger.svg",
+      "files": {
+        "oxide": "parts/weapon_dagger-oxide.png",
+        "petrol": "parts/weapon_dagger-petrol.png"
+      },
+      "material_under": "materials/weapon_dagger-under.png",
+      "material_over": "materials/weapon_dagger-over.png",
+      "paint_mask": "masks/weapon_dagger-paint.png",
+      "has_paint": false,
+      "bounds_by_paint": {
+        "oxide": [
+          30,
+          57,
+          89,
+          185
+        ],
+        "petrol": [
+          30,
+          57,
+          89,
+          185
+        ]
+      },
+      "file_integrity": {
+        "parts/weapon_dagger-oxide.png": {
+          "sha256": "8f9e9d2518e2c48962c3ea31cc7161c853f5ea0e4e385670441bfba5291cfa4e",
+          "bytes": 3617
+        },
+        "parts/weapon_dagger-petrol.png": {
+          "sha256": "8f9e9d2518e2c48962c3ea31cc7161c853f5ea0e4e385670441bfba5291cfa4e",
+          "bytes": 3617
+        },
+        "source/weapon_dagger.svg": {
+          "sha256": "46e5c9aa3a85d54f04e0920f9639dad9e405bf178867d803639046619be58a53",
+          "bytes": 1496
+        },
+        "masks/weapon_dagger-paint.png": {
+          "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+          "bytes": 188
+        },
+        "materials/weapon_dagger-under.png": {
+          "sha256": "8f9e9d2518e2c48962c3ea31cc7161c853f5ea0e4e385670441bfba5291cfa4e",
+          "bytes": 3617
+        },
+        "materials/weapon_dagger-over.png": {
+          "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+          "bytes": 188
+        }
+      }
+    }
+  ],
+  "references": [
+    {
+      "reference_id": "2kxv30qk-332-verified.md",
+      "authoring_path": "/workspace/botore-art-production-guide/2kxv30qk-332-verified.md",
+      "bytes": 29772,
+      "sha256": "21225198955fb67586d5e47ef9d4916d2aaa264e8e9aea858ed02ada89c3f094"
+    },
+    {
+      "reference_id": "REF-02-preparation-flow.png",
+      "authoring_path": "/workspace/botore-art-production-guide/references/REF-02-preparation-flow.png",
+      "bytes": 2368488,
+      "sha256": "3c69a9f9ffc9282265fb6955f2a5d1c07be52cf7f340fd680240cd435cfca456"
+    },
+    {
+      "reference_id": "REF-03-gameplay-results-ranking.png",
+      "authoring_path": "/workspace/botore-art-production-guide/references/REF-03-gameplay-results-ranking.png",
+      "bytes": 2449469,
+      "sha256": "0612b7881e7e456bc2a8145f51efdaec588e2cad8b441b64e0f9333104ea2da7"
+    },
+    {
+      "reference_id": "02-workshop-frame.png",
+      "authoring_path": "/workspace/botore-art-decisions-2026-11-08/botore-art-direction-handoff/images/02-workshop-frame.png",
+      "bytes": 1722699,
+      "sha256": "173337a2f78355e64dfcdb39bf6333c4d2bb7c87a95317b9944864c30d06f8c6"
+    },
+    {
+      "reference_id": "shared-ui-rig-contract.md",
+      "authoring_path": "/cursor/stores/bc-5a7e5278-ae46-41fa-b832-db846a325e85/docs/art-direction/2026-11-09-first-run/shared-ui-rig-contract.md",
+      "bytes": 2423,
+      "sha256": "bdecfd68260cae4aa818ababa19910a1d998a722ef0b94076e9128a3e1283b69"
+    }
+  ],
+  "integration": {
+    "component": "BotAssembler",
+    "existing_props": [
+      "loadout",
+      "facing",
+      "paintId",
+      "weaponId",
+      "motionPose?",
+      "reducedMotion?",
+      "placeholder?"
+    ],
+    "status": "adapter-needed-exact-F7-types-and-F6-schema-not-verified",
+    "paint_ids": [
+      "oxide",
+      "petrol"
+    ],
+    "weapon_ids": [
+      "sword",
+      "axe",
+      "dagger"
+    ],
+    "weapon_assets": {
+      "sword": "weapon_sword",
+      "axe": "weapon_axe",
+      "dagger": "weapon_dagger"
+    }
+  },
+  "validation_summary": {
+    "passed": true,
+    "checks": 1047,
+    "failures": [],
+    "rig_asset_count": 15,
+    "weapon_count": 3,
+    "ready_composited_pngs": 36,
+    "paint_masks": 18,
+    "material_layers": 36,
+    "pose_weapon_cases": 21,
+    "minimum_joint_overlap_pixels_in_radius8": 195,
+    "maximum_attachment_error_px": 6.355287432313019e-14,
+    "max_layer_recomposition_channel_error": 2,
+    "meaning": "Local geometry, files and raster proof only. Not phone/native performance, art acceptance, full collision clearance, replay integration or planted-foot animation proof."
+  },
+  "file_inventory": [
+    {
+      "path": "PROVENANCE.md",
+      "bytes": 2702,
+      "sha256": "0f9e4f71ff3aed22f9f5e62708e0e508a22184d9a56862b6bc6c9270044cf1d9"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8878,
+      "sha256": "4bb458aeddc9ccb8d9d67e450f299b636760de13b5b80ee38986e63720e0e3af"
+    },
+    {
+      "path": "masks/foot_l-paint.png",
+      "bytes": 919,
+      "sha256": "55caee26bae7b276d499654d76accbf7ac6253d053a90a1ed0e7aab59cf8f362",
+      "width": 130,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/foot_r-paint.png",
+      "bytes": 919,
+      "sha256": "55caee26bae7b276d499654d76accbf7ac6253d053a90a1ed0e7aab59cf8f362",
+      "width": 130,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/forearm_l-paint.png",
+      "bytes": 1097,
+      "sha256": "5eed4d3b5e3056ca440ad8edc212fa6522068b23237193e44ae5d424b5c8d8fe",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/forearm_r-paint.png",
+      "bytes": 1097,
+      "sha256": "5eed4d3b5e3056ca440ad8edc212fa6522068b23237193e44ae5d424b5c8d8fe",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/hand_l-paint.png",
+      "bytes": 126,
+      "sha256": "7992ccc8a66d245da6b38a69babf83644c5dbf57eaad3ff282eb934df71e9291",
+      "width": 120,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/hand_r-paint.png",
+      "bytes": 126,
+      "sha256": "7992ccc8a66d245da6b38a69babf83644c5dbf57eaad3ff282eb934df71e9291",
+      "width": 120,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/head-paint.png",
+      "bytes": 2382,
+      "sha256": "f67a95674681803b6d78ee970bb030f5f163c178d521df82a6630ac627ba64c8",
+      "width": 210,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/pelvis-paint.png",
+      "bytes": 136,
+      "sha256": "5c582dc4981bf3567c79567c84f087bcaa12b3bb1449ad5255acc6d568b1d3b4",
+      "width": 160,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/shin_l-paint.png",
+      "bytes": 848,
+      "sha256": "d2b347490d3fd3908544f8678dcad2fff81c2eec0d11d4fc3317af3c5fde0933",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/shin_r-paint.png",
+      "bytes": 848,
+      "sha256": "d2b347490d3fd3908544f8678dcad2fff81c2eec0d11d4fc3317af3c5fde0933",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/thigh_l-paint.png",
+      "bytes": 973,
+      "sha256": "423855285827f334b3d81f1af7408e6d917c61db930d3abdeac87d775a5dfe30",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/thigh_r-paint.png",
+      "bytes": 973,
+      "sha256": "423855285827f334b3d81f1af7408e6d917c61db930d3abdeac87d775a5dfe30",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/torso-paint.png",
+      "bytes": 1666,
+      "sha256": "82df495e86299d0b6846d30ba4c99e991316a6079eedc74c3cc1fc08bb4ee434",
+      "width": 220,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/upper_arm_l-paint.png",
+      "bytes": 1258,
+      "sha256": "e6c039f5c5dd43bf4506b6dcf4d9795600ae76e628a74fdcc19168ddf163ccb5",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/upper_arm_r-paint.png",
+      "bytes": 1258,
+      "sha256": "e6c039f5c5dd43bf4506b6dcf4d9795600ae76e628a74fdcc19168ddf163ccb5",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/weapon_axe-paint.png",
+      "bytes": 188,
+      "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/weapon_dagger-paint.png",
+      "bytes": 188,
+      "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/weapon_sword-paint.png",
+      "bytes": 188,
+      "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/foot_l-over.png",
+      "bytes": 3687,
+      "sha256": "a1473d0b804b0cf1869599dea46dcfe3f618fceac9dcc47950819ed71ccfa448",
+      "width": 130,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/foot_l-under.png",
+      "bytes": 2858,
+      "sha256": "a950021298c58f502f0baf87f8b0b76b21c6099a834f84aa2079b7b28c06acf2",
+      "width": 130,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/foot_r-over.png",
+      "bytes": 3687,
+      "sha256": "a1473d0b804b0cf1869599dea46dcfe3f618fceac9dcc47950819ed71ccfa448",
+      "width": 130,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/foot_r-under.png",
+      "bytes": 2858,
+      "sha256": "a950021298c58f502f0baf87f8b0b76b21c6099a834f84aa2079b7b28c06acf2",
+      "width": 130,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/forearm_l-over.png",
+      "bytes": 3817,
+      "sha256": "f998750093950b493f07174bc559744ef6b297acc202ee6722fb51ec32b91a5f",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/forearm_l-under.png",
+      "bytes": 5889,
+      "sha256": "0db1de1901902e9bd22a319088134cf739ef2731a2aca1c9c2cc4b62bad26a35",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/forearm_r-over.png",
+      "bytes": 3817,
+      "sha256": "f998750093950b493f07174bc559744ef6b297acc202ee6722fb51ec32b91a5f",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/forearm_r-under.png",
+      "bytes": 5889,
+      "sha256": "0db1de1901902e9bd22a319088134cf739ef2731a2aca1c9c2cc4b62bad26a35",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_l-over.png",
+      "bytes": 2481,
+      "sha256": "55f0fa7c62d9f704147889d10133179ec6d5845e1fd73561f8e5dbf566747100",
+      "width": 120,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_l-under.png",
+      "bytes": 3068,
+      "sha256": "55a6d97f9ce194dd0ad1e0978a3a4951951bd7957673414fcc654063101a7efe",
+      "width": 120,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_r-over.png",
+      "bytes": 2481,
+      "sha256": "55f0fa7c62d9f704147889d10133179ec6d5845e1fd73561f8e5dbf566747100",
+      "width": 120,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_r-under.png",
+      "bytes": 3068,
+      "sha256": "55a6d97f9ce194dd0ad1e0978a3a4951951bd7957673414fcc654063101a7efe",
+      "width": 120,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/head-over.png",
+      "bytes": 13792,
+      "sha256": "02f06761e78f932605d9c91f046a2724da170cd19255a7d5723d2dbd861fb599",
+      "width": 210,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/head-under.png",
+      "bytes": 5589,
+      "sha256": "67f5302ff5d67d5bbf50a887960025ce970387ffefeb5a0b01454aedff700c3f",
+      "width": 210,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/pelvis-over.png",
+      "bytes": 540,
+      "sha256": "5045084fa03113f41aa8f1adc576477c5d50bc62b25517bd492b44743dd799fd",
+      "width": 160,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/pelvis-under.png",
+      "bytes": 4195,
+      "sha256": "ed7415236eaae4fcd0df5c75ec4c130a45f7e143ccc494fa515c4771033019d2",
+      "width": 160,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/shin_l-over.png",
+      "bytes": 2744,
+      "sha256": "c087ced894eb6f3fd1c307d357c9b7ba9c23cf5b746f0e17cfd3298ee25cd92f",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/shin_l-under.png",
+      "bytes": 6675,
+      "sha256": "335f72f2a6bbd4b99e31dec85dc033208778aedd3c5e366e631e45d9361e1227",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/shin_r-over.png",
+      "bytes": 2744,
+      "sha256": "c087ced894eb6f3fd1c307d357c9b7ba9c23cf5b746f0e17cfd3298ee25cd92f",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/shin_r-under.png",
+      "bytes": 6675,
+      "sha256": "335f72f2a6bbd4b99e31dec85dc033208778aedd3c5e366e631e45d9361e1227",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/thigh_l-over.png",
+      "bytes": 3296,
+      "sha256": "413e72f460c60d0f5e8b1afe842d6c251a7b4f027010d01e5f8cf62bd572bb89",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/thigh_l-under.png",
+      "bytes": 5895,
+      "sha256": "b45596e4b07f0ac1141e4649de36a4ba5715ae6f389932da16c52b319021c189",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/thigh_r-over.png",
+      "bytes": 3296,
+      "sha256": "413e72f460c60d0f5e8b1afe842d6c251a7b4f027010d01e5f8cf62bd572bb89",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/thigh_r-under.png",
+      "bytes": 5895,
+      "sha256": "b45596e4b07f0ac1141e4649de36a4ba5715ae6f389932da16c52b319021c189",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/torso-over.png",
+      "bytes": 6969,
+      "sha256": "040bedee995ef7529e949a427206c71bc847451712432e5a0bcb57bc27204f19",
+      "width": 220,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/torso-under.png",
+      "bytes": 13571,
+      "sha256": "563f7503d5cce92c86db4fd9fec4134b06ac1beb0a7d8a3af994449fbbbaf0aa",
+      "width": 220,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/upper_arm_l-over.png",
+      "bytes": 4142,
+      "sha256": "00a2d47fc000126501aab5ebedf6269c197f47069cbf38f82a29a3c196d8d159",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/upper_arm_l-under.png",
+      "bytes": 7962,
+      "sha256": "ac75b73468d615bda690928708727e4dc9acc0c017d6ad70495f75a9a72cc780",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/upper_arm_r-over.png",
+      "bytes": 4142,
+      "sha256": "00a2d47fc000126501aab5ebedf6269c197f47069cbf38f82a29a3c196d8d159",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/upper_arm_r-under.png",
+      "bytes": 7962,
+      "sha256": "ac75b73468d615bda690928708727e4dc9acc0c017d6ad70495f75a9a72cc780",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_axe-over.png",
+      "bytes": 188,
+      "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_axe-under.png",
+      "bytes": 7186,
+      "sha256": "a6504a9917e900ce994ab49ea5a32c26daf0bfd23e6fbf16b048eaf74de5cac9",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_dagger-over.png",
+      "bytes": 188,
+      "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_dagger-under.png",
+      "bytes": 3617,
+      "sha256": "8f9e9d2518e2c48962c3ea31cc7161c853f5ea0e4e385670441bfba5291cfa4e",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_sword-over.png",
+      "bytes": 188,
+      "sha256": "788578fe7e74c6dce477ca45a2ea665f642a2cea20e40cbcddc16184f6c6ef8a",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_sword-under.png",
+      "bytes": 4787,
+      "sha256": "4c7a5f3aeb2861bdeeb6ab81b53cbfe0c14ce428140f7f04e071cc6062e966bb",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/foot_l-oxide.png",
+      "bytes": 3985,
+      "sha256": "f2c5dabaf675fcb91adc544faa9908a240bf8e8a88c9c3655046b0aa8e458aba",
+      "width": 130,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/foot_l-petrol.png",
+      "bytes": 3950,
+      "sha256": "aa38803c20971038ef7b0bd421b5f6bf68c2d99ac905575984faa4047e0e1e09",
+      "width": 130,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/foot_r-oxide.png",
+      "bytes": 3985,
+      "sha256": "f2c5dabaf675fcb91adc544faa9908a240bf8e8a88c9c3655046b0aa8e458aba",
+      "width": 130,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/foot_r-petrol.png",
+      "bytes": 3950,
+      "sha256": "aa38803c20971038ef7b0bd421b5f6bf68c2d99ac905575984faa4047e0e1e09",
+      "width": 130,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/forearm_l-oxide.png",
+      "bytes": 6235,
+      "sha256": "c6a6bd7aca5b37d9668ed1254dbbb1b60e8798a4bf0b1449ad9eb6ae3681ea28",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/forearm_l-petrol.png",
+      "bytes": 6126,
+      "sha256": "8dabad2004a95f59e02464441a46e321060574cefbef34a81372daaf0b7275fe",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/forearm_r-oxide.png",
+      "bytes": 6235,
+      "sha256": "c6a6bd7aca5b37d9668ed1254dbbb1b60e8798a4bf0b1449ad9eb6ae3681ea28",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/forearm_r-petrol.png",
+      "bytes": 6126,
+      "sha256": "8dabad2004a95f59e02464441a46e321060574cefbef34a81372daaf0b7275fe",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_l-oxide.png",
+      "bytes": 4838,
+      "sha256": "bde513c9e01a2bfed5987d8d64bbf3f80ca5d5aedcf64fcda00e34bf17592500",
+      "width": 120,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_l-petrol.png",
+      "bytes": 4838,
+      "sha256": "bde513c9e01a2bfed5987d8d64bbf3f80ca5d5aedcf64fcda00e34bf17592500",
+      "width": 120,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_r-oxide.png",
+      "bytes": 4838,
+      "sha256": "bde513c9e01a2bfed5987d8d64bbf3f80ca5d5aedcf64fcda00e34bf17592500",
+      "width": 120,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_r-petrol.png",
+      "bytes": 4838,
+      "sha256": "bde513c9e01a2bfed5987d8d64bbf3f80ca5d5aedcf64fcda00e34bf17592500",
+      "width": 120,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/head-oxide.png",
+      "bytes": 15754,
+      "sha256": "e9521f89dccc3d49338e5a35d8d2385864ba58b42f261ba0efcfbe123010699f",
+      "width": 210,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/head-petrol.png",
+      "bytes": 15436,
+      "sha256": "c2f30acddcb26084ac7d618f8307b898f32dd53e46f164c45a5106d0fd4a88dd",
+      "width": 210,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/pelvis-oxide.png",
+      "bytes": 4505,
+      "sha256": "4db1c1581baf525cbe223f7e42e753a5fb4f24d79561241054a73fe0ac6e5235",
+      "width": 160,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/pelvis-petrol.png",
+      "bytes": 4505,
+      "sha256": "4db1c1581baf525cbe223f7e42e753a5fb4f24d79561241054a73fe0ac6e5235",
+      "width": 160,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/shin_l-oxide.png",
+      "bytes": 7691,
+      "sha256": "57dd34d27ee60c0471254441dc3eab571144ca5f3346f560c789c515d8531fc9",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/shin_l-petrol.png",
+      "bytes": 7672,
+      "sha256": "e13c64d8e0a3af6e254614ad9d7027d8169abbf993ff11e4c54c6da87550f724",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/shin_r-oxide.png",
+      "bytes": 7691,
+      "sha256": "57dd34d27ee60c0471254441dc3eab571144ca5f3346f560c789c515d8531fc9",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/shin_r-petrol.png",
+      "bytes": 7672,
+      "sha256": "e13c64d8e0a3af6e254614ad9d7027d8169abbf993ff11e4c54c6da87550f724",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/thigh_l-oxide.png",
+      "bytes": 5850,
+      "sha256": "c3fedfd707e453137c18dbf1a4188ab8d90cf02a5fa5f0976f9769e0940af5bc",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/thigh_l-petrol.png",
+      "bytes": 5757,
+      "sha256": "c7f98d6e5d63b4ec62811f9a615692f68164a3d668b415b861f8d9629975c1c4",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/thigh_r-oxide.png",
+      "bytes": 5850,
+      "sha256": "c3fedfd707e453137c18dbf1a4188ab8d90cf02a5fa5f0976f9769e0940af5bc",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/thigh_r-petrol.png",
+      "bytes": 5757,
+      "sha256": "c7f98d6e5d63b4ec62811f9a615692f68164a3d668b415b861f8d9629975c1c4",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/torso-oxide.png",
+      "bytes": 14851,
+      "sha256": "4815cc60637084500f7786c588c38303cdd40ad979507fa553820e2b0e92e508",
+      "width": 220,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/torso-petrol.png",
+      "bytes": 14663,
+      "sha256": "a1b48138a63994573b76cade4c5ce3cd330d6252556f3533041dd93997be0835",
+      "width": 220,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/upper_arm_l-oxide.png",
+      "bytes": 8303,
+      "sha256": "226dfc6940c839710a249aa0833c7fd372d706c1d1e07e5a6530906f1fea4549",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/upper_arm_l-petrol.png",
+      "bytes": 8172,
+      "sha256": "7ef0e0c9cfff3aad0fd34b7e88cbf3a6864e669693e32eb73003148047fb1c37",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/upper_arm_r-oxide.png",
+      "bytes": 8303,
+      "sha256": "226dfc6940c839710a249aa0833c7fd372d706c1d1e07e5a6530906f1fea4549",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/upper_arm_r-petrol.png",
+      "bytes": 8172,
+      "sha256": "7ef0e0c9cfff3aad0fd34b7e88cbf3a6864e669693e32eb73003148047fb1c37",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_axe-oxide.png",
+      "bytes": 7186,
+      "sha256": "a6504a9917e900ce994ab49ea5a32c26daf0bfd23e6fbf16b048eaf74de5cac9",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_axe-petrol.png",
+      "bytes": 7186,
+      "sha256": "a6504a9917e900ce994ab49ea5a32c26daf0bfd23e6fbf16b048eaf74de5cac9",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_dagger-oxide.png",
+      "bytes": 3617,
+      "sha256": "8f9e9d2518e2c48962c3ea31cc7161c853f5ea0e4e385670441bfba5291cfa4e",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_dagger-petrol.png",
+      "bytes": 3617,
+      "sha256": "8f9e9d2518e2c48962c3ea31cc7161c853f5ea0e4e385670441bfba5291cfa4e",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_sword-oxide.png",
+      "bytes": 4787,
+      "sha256": "4c7a5f3aeb2861bdeeb6ab81b53cbfe0c14ce428140f7f04e071cc6062e966bb",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_sword-petrol.png",
+      "bytes": 4787,
+      "sha256": "4c7a5f3aeb2861bdeeb6ab81b53cbfe0c14ce428140f7f04e071cc6062e966bb",
+      "width": 140,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/assembled-oxide.png",
+      "bytes": 99667,
+      "sha256": "29f26071191d2d2b3e22c383f06336efe0229eedbabeeb1027dc2d17e3309c5d",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/assembled-petrol-mirrored.png",
+      "bytes": 97895,
+      "sha256": "4d4c549ae36c653734f5ebdff8857d67f62455b5bca01074b5b4048abee74ae5",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/assembled-petrol.png",
+      "bytes": 98550,
+      "sha256": "738a8aa3d9bf28d168053d8590ee958b7f32046e7bb21b85d23fa67379092e70",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/kit-overview.png",
+      "bytes": 166692,
+      "sha256": "37a04962c31ed3e3c90d4b673fc5d9aaab7016393862fef2d2690d255b308686",
+      "width": 960,
+      "height": 775,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/local-reassembly-proof.gif",
+      "bytes": 2010150,
+      "sha256": "14ddf3940541739a6217ad5091452fe55223584b3aa6e6b79ce210723182b4ea",
+      "width": 480,
+      "height": 480,
+      "mode": "P",
+      "frames": 42
+    },
+    {
+      "path": "previews/pose-contact-sheet.png",
+      "bytes": 321936,
+      "sha256": "782edc2e652c2afb90ab1af00d45af06ab3e57b1cd4f3c58d53abe86be6e3722",
+      "width": 1280,
+      "height": 775,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/pose-defeat.png",
+      "bytes": 107077,
+      "sha256": "9f4624218d30a5f5167cd0ed28c45290921ce549375628a3c3ddb820124ced6b",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/pose-dodge.png",
+      "bytes": 101265,
+      "sha256": "ff06076edfeb3c35917f83b0f5c62a305d3cabc43431ef426fc6e2b85517e6b7",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/pose-heavy_attack.png",
+      "bytes": 109575,
+      "sha256": "7afc2343b6aa011035bbb6ab0c405020822908bc23d2c162e96877b512e59d53",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/pose-heavy_windup.png",
+      "bytes": 102289,
+      "sha256": "eedf8691a902b9b481d3f70f4a842c4ee16190c96a8f20b014336713f30859c2",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/pose-hit.png",
+      "bytes": 105466,
+      "sha256": "0f05fc87c31c495fafcd6d157c85aba1748988ec6560cf43d0befe1107c0a546",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/pose-idle.png",
+      "bytes": 99667,
+      "sha256": "29f26071191d2d2b3e22c383f06336efe0229eedbabeeb1027dc2d17e3309c5d",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/pose-quick_attack.png",
+      "bytes": 103705,
+      "sha256": "79094b1fa328e54f557df04e33b7710bc5de6abed9870c1d097f8a702e2a61a0",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/swap-axe.png",
+      "bytes": 101766,
+      "sha256": "6285329482e4f3f7a5578e05835d6c6df4c7cfbd731709b38cf48d18582b8c70",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/swap-dagger.png",
+      "bytes": 97460,
+      "sha256": "4ae5352f2b1c78acb90a9103fc9d2475f0e413d0d98b572c7baa0593f69cca24",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/swap-sword.png",
+      "bytes": 99667,
+      "sha256": "29f26071191d2d2b3e22c383f06336efe0229eedbabeeb1027dc2d17e3309c5d",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "source/build_kit.py",
+      "bytes": 18337,
+      "sha256": "315542a130462fe1a400eb0ce14e8b34a6b4b6988dd0e8c3c7ac13dfd03b3d47"
+    },
+    {
+      "path": "source/foot_l.svg",
+      "bytes": 1785,
+      "sha256": "c7cf3a2fc650e951df24c92991a48e4574d95c0e095a520bc3d3acd4551006f8"
+    },
+    {
+      "path": "source/foot_r.svg",
+      "bytes": 1785,
+      "sha256": "c7cf3a2fc650e951df24c92991a48e4574d95c0e095a520bc3d3acd4551006f8"
+    },
+    {
+      "path": "source/forearm_l.svg",
+      "bytes": 2430,
+      "sha256": "e91c0673f52f98e833bb6ffed7d603ecd890243840690726fba7671671b03e48"
+    },
+    {
+      "path": "source/forearm_r.svg",
+      "bytes": 2430,
+      "sha256": "e91c0673f52f98e833bb6ffed7d603ecd890243840690726fba7671671b03e48"
+    },
+    {
+      "path": "source/hand_l.svg",
+      "bytes": 1432,
+      "sha256": "c8f1ae6006c1e4cf43c331d80b7455d11135acee00c6c06ea2ce7738d62252aa"
+    },
+    {
+      "path": "source/hand_r.svg",
+      "bytes": 1432,
+      "sha256": "c8f1ae6006c1e4cf43c331d80b7455d11135acee00c6c06ea2ce7738d62252aa"
+    },
+    {
+      "path": "source/head.svg",
+      "bytes": 3929,
+      "sha256": "a1bc0ec0a3617254449d6b06fa5b44dfb3d54fb5a26126cdef0635b1d9a86dcd"
+    },
+    {
+      "path": "source/pelvis.svg",
+      "bytes": 1689,
+      "sha256": "1f5923cc4c512e45f96c9b40a31cce116267385283494a42b96d1a8ccace2e4d"
+    },
+    {
+      "path": "source/poses.json",
+      "bytes": 1119,
+      "sha256": "a7ae332db0ce4f578675a5a280ec7e24570a8ecec45126307d6b5e177f5a5e1f"
+    },
+    {
+      "path": "source/reference-inventory.json",
+      "bytes": 1384,
+      "sha256": "283b127a168c77914c28ea744f4d02bc4de66cb9b012daa69d9f075eb9bf5a8d"
+    },
+    {
+      "path": "source/seal_kit.py",
+      "bytes": 2558,
+      "sha256": "a4b826dbc3620db2c5d894700ec728a92e68172e2611aafdfd52ac9752e34172"
+    },
+    {
+      "path": "source/shin_l.svg",
+      "bytes": 2631,
+      "sha256": "5d13c55b62c573d7a83f9fa15cb126f1bb1ddf94b1d1e3076265111c8da221a9"
+    },
+    {
+      "path": "source/shin_r.svg",
+      "bytes": 2631,
+      "sha256": "5d13c55b62c573d7a83f9fa15cb126f1bb1ddf94b1d1e3076265111c8da221a9"
+    },
+    {
+      "path": "source/thigh_l.svg",
+      "bytes": 2642,
+      "sha256": "c23f4da21f273d361417fc5eaddf5b963bfde5b3723f07f627ee246202164fa7"
+    },
+    {
+      "path": "source/thigh_r.svg",
+      "bytes": 2642,
+      "sha256": "c23f4da21f273d361417fc5eaddf5b963bfde5b3723f07f627ee246202164fa7"
+    },
+    {
+      "path": "source/torso.svg",
+      "bytes": 4627,
+      "sha256": "6fc3a23ee74ff200cacf5be64558f8b84e5b6dac2e44c04195b8b026454183dd"
+    },
+    {
+      "path": "source/upper_arm_l.svg",
+      "bytes": 2853,
+      "sha256": "0185aba3161faae8d900ac93da37437c19d0f6ab54efd188aaecc31b69515231"
+    },
+    {
+      "path": "source/upper_arm_r.svg",
+      "bytes": 2853,
+      "sha256": "0185aba3161faae8d900ac93da37437c19d0f6ab54efd188aaecc31b69515231"
+    },
+    {
+      "path": "source/validate_kit.py",
+      "bytes": 7060,
+      "sha256": "d66d5c6b90b027263044342bc34b0036fbaf29ce1e55e6e8dcbd8a3d9456167a"
+    },
+    {
+      "path": "source/weapon_axe.svg",
+      "bytes": 1920,
+      "sha256": "8af06488a2b6930aaf2252f651b9594109d7d0396175feee309cbee484c93287"
+    },
+    {
+      "path": "source/weapon_dagger.svg",
+      "bytes": 1496,
+      "sha256": "46e5c9aa3a85d54f04e0920f9639dad9e405bf178867d803639046619be58a53"
+    },
+    {
+      "path": "source/weapon_sword.svg",
+      "bytes": 1794,
+      "sha256": "663bab4ed8006f52de13d3a2aba67b5c3f80aa33acaae2af2a3fdd8e568e9e3e"
+    },
+    {
+      "path": "source/workshop-frame-master.svg",
+      "bytes": 40378,
+      "sha256": "4a5133d456947059da92dd53415b80392c29347a1af9ed59c28dfa27afc01890"
+    },
+    {
+      "path": "validation/independent-mirrored-assembly.png",
+      "bytes": 128415,
+      "sha256": "ff23479160760e17ff1aa8f54eddeac251f4832176c0e82b18de2f6cc1fff0fc",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "validation/independent-png-assembly.png",
+      "bytes": 128747,
+      "sha256": "b3bb2260afda5efbbb71ebef3ffe22bc754b19640d76276d4ddb37c5290782e7",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "validation/report.json",
+      "bytes": 143115,
+      "sha256": "648108f350d0344fe4a85032e26b2e361e6ba664dd6628e48cae13e46b38576a"
+    },
+    {
+      "path": "validation/visual-review.md",
+      "bytes": 1630,
+      "sha256": "87ec3099843f82c5b9ea8a3551e784513335c8831ab5ec30d81e1a27973eab04"
+    }
+  ]
+}

@@ -1,0 +1,964 @@
+{
+  "schema": "botore.environment.provisional.v1",
+  "id": "repair-yard",
+  "version": "environment-v001",
+  "immutable": true,
+  "status": "provisional-integration-candidate-not-approved",
+  "canvas": [
+    720,
+    1120
+  ],
+  "orientation": "portrait artwork candidate; not a final phone screen or UI layout",
+  "coordinates": "top-left XY pixels; +X right,+Y down; straight RGBA PNG; proposed dimensions, not approved budgets",
+  "alpha": "straight/unassociated RGBA; sRGB; no baked checkerboard; background wall/floor contain intentional opaque regions",
+  "layers": {
+    "wall": 0,
+    "floor": 10,
+    "markings": 20,
+    "contact_shadows": 30,
+    "far_actor": 40,
+    "dodge_fx": 45,
+    "near_actor": 50,
+    "defeat_fx": 55,
+    "hit_fx": 80
+  },
+  "assets": [
+    {
+      "id": "repair-yard-wall",
+      "width": 720,
+      "height": 1120,
+      "pivot": [
+        0,
+        0
+      ],
+      "source": "source/repair-yard-wall.svg",
+      "file": "background/repair-yard-wall.png",
+      "kind": "background",
+      "layer": 0,
+      "alpha_bounds": [
+        0,
+        0,
+        720,
+        384
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "placement": [
+        0,
+        0
+      ],
+      "coverage": "Opaque top wall through y384; transparent below. No robots/UI.",
+      "file_integrity": {
+        "background/repair-yard-wall.png": {
+          "sha256": "fc444669b689791cb4f227c0624656bb7be32db2d0a1647a474c0b479bed4b05",
+          "bytes": 9782
+        },
+        "source/repair-yard-wall.svg": {
+          "sha256": "d7c85c37e29cfaf9f28ab6f0f027a2842030cdd2bf2e1bf5d95ccb1ed476bcf1",
+          "bytes": 7231
+        }
+      }
+    },
+    {
+      "id": "repair-yard-floor",
+      "width": 720,
+      "height": 1120,
+      "pivot": [
+        0,
+        0
+      ],
+      "source": "source/repair-yard-floor.svg",
+      "file": "background/repair-yard-floor.png",
+      "kind": "background",
+      "layer": 10,
+      "alpha_bounds": [
+        0,
+        365,
+        720,
+        1120
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "placement": [
+        0,
+        0
+      ],
+      "horizon_y": 366,
+      "coverage": "Transparent above y365; opaque through bottom. Perspective is illustrative, not a calibrated camera.",
+      "file_integrity": {
+        "background/repair-yard-floor.png": {
+          "sha256": "b4a25de33cdca8d7fa2404bc1ef4fa4b07a56b47ca5702d2495c80d8766cd3d1",
+          "bytes": 17852
+        },
+        "source/repair-yard-floor.svg": {
+          "sha256": "5a684ee58d07944ce3fbc4e4375d61899bb8c8d79374bd5e5c35b75ec40027ef",
+          "bytes": 1512
+        }
+      }
+    },
+    {
+      "id": "repair-yard-floor-markings",
+      "width": 720,
+      "height": 1120,
+      "pivot": [
+        0,
+        0
+      ],
+      "source": "source/repair-yard-floor-markings.svg",
+      "file": "background/repair-yard-floor-markings.png",
+      "kind": "background",
+      "layer": 20,
+      "alpha_bounds": [
+        20,
+        412,
+        699,
+        1090
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "placement": [
+        0,
+        0
+      ],
+      "optional": true,
+      "meaning": "Decorative boundary only; not gameplay movement/collision rules.",
+      "file_integrity": {
+        "background/repair-yard-floor-markings.png": {
+          "sha256": "e593fc65e790f63bce319e74ca27a2a0ab62bfe5b436ae1c71799a2b8b7cf7ef",
+          "bytes": 22879
+        },
+        "source/repair-yard-floor-markings.svg": {
+          "sha256": "9c672db277b9e8795ea03bd991e402e51870d31f34784a86e8a3a6974e4405a3",
+          "bytes": 443
+        }
+      }
+    },
+    {
+      "id": "contact-shadow",
+      "width": 256,
+      "height": 96,
+      "pivot": [
+        128,
+        48
+      ],
+      "source": "source/contact-shadow.svg",
+      "file": "background/contact-shadow.png",
+      "kind": "background",
+      "layer": 30,
+      "alpha_bounds": [
+        8,
+        14,
+        248,
+        82
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "attachment": "Ground between the feet; scale X/Y independently. Not a light-physics or collision shadow.",
+      "file_integrity": {
+        "background/contact-shadow.png": {
+          "sha256": "314f66a3e4fa03c7949c3513a9bc5d45db38dd487b7e7a8c6ddea39cf293d09c",
+          "bytes": 5795
+        },
+        "source/contact-shadow.svg": {
+          "sha256": "77b50ad0f80a2c1ef68a5a0ddd476daae061d815d67bd44f3909700000170a91",
+          "bytes": 459
+        }
+      }
+    },
+    {
+      "id": "hit-spark-00",
+      "width": 192,
+      "height": 192,
+      "pivot": [
+        96,
+        96
+      ],
+      "source": "source/hit-spark-00.svg",
+      "file": "fx/hit-spark-00.png",
+      "kind": "fx",
+      "layer": 80,
+      "alpha_bounds": [
+        51,
+        52,
+        146,
+        138
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "event_family": "hit",
+      "sequence_index": 0,
+      "anchor": "Contact point supplied by authoritative replay/renderer; never choose outcome here.",
+      "file_integrity": {
+        "fx/hit-spark-00.png": {
+          "sha256": "16d44de900ffdba183f9e9a030519d1d8adaf4e90ff2f53a1540743e36d1d988",
+          "bytes": 6780
+        },
+        "source/hit-spark-00.svg": {
+          "sha256": "6b36815265003ab522d61c459122b9d3f8574248fe3923f3d8cb792949db6ca4",
+          "bytes": 803
+        }
+      }
+    },
+    {
+      "id": "hit-spark-01",
+      "width": 192,
+      "height": 192,
+      "pivot": [
+        96,
+        96
+      ],
+      "source": "source/hit-spark-01.svg",
+      "file": "fx/hit-spark-01.png",
+      "kind": "fx",
+      "layer": 80,
+      "alpha_bounds": [
+        18,
+        21,
+        181,
+        168
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "event_family": "hit",
+      "sequence_index": 1,
+      "anchor": "Contact point supplied by authoritative replay/renderer; never choose outcome here.",
+      "file_integrity": {
+        "fx/hit-spark-01.png": {
+          "sha256": "f2b4baa9c78790e802b96a310163e7f2e77d1b6f485eba8cb9492847bcda7dca",
+          "bytes": 10929
+        },
+        "source/hit-spark-01.svg": {
+          "sha256": "aa3fec3286120bc273cdfb87eb0de4a3eb0f5544ffa77d47d61e70c3fb2840da",
+          "bytes": 791
+        }
+      }
+    },
+    {
+      "id": "hit-spark-02",
+      "width": 192,
+      "height": 192,
+      "pivot": [
+        96,
+        96
+      ],
+      "source": "source/hit-spark-02.svg",
+      "file": "fx/hit-spark-02.png",
+      "kind": "fx",
+      "layer": 80,
+      "alpha_bounds": [
+        36,
+        38,
+        162,
+        151
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "event_family": "hit",
+      "sequence_index": 2,
+      "anchor": "Contact point supplied by authoritative replay/renderer; never choose outcome here.",
+      "file_integrity": {
+        "fx/hit-spark-02.png": {
+          "sha256": "e34caf6f2763f0fe03e8d60e670a83bf6ad1c690f89d09bb862a78b0a7c95257",
+          "bytes": 9932
+        },
+        "source/hit-spark-02.svg": {
+          "sha256": "d329f10882a0828ebeb80845d3a6bc0ef80c5df9c71a68278e91baccbd15a8d8",
+          "bytes": 803
+        }
+      }
+    },
+    {
+      "id": "dodge-dust-00",
+      "width": 224,
+      "height": 112,
+      "pivot": [
+        112,
+        80
+      ],
+      "source": "source/dodge-dust-00.svg",
+      "file": "fx/dodge-dust-00.png",
+      "kind": "fx",
+      "layer": 45,
+      "alpha_bounds": [
+        51,
+        33,
+        172,
+        85
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "event_family": "dodge",
+      "sequence_index": 0,
+      "anchor": "Ground behind moving actor; local tail left. Spawn only for recorded dodge; mirror tail for movement direction.",
+      "file_integrity": {
+        "fx/dodge-dust-00.png": {
+          "sha256": "14fe77067c300d82d34e3b867c5ae8c47a14598e2131ab3738417f354ac5ba8c",
+          "bytes": 4118
+        },
+        "source/dodge-dust-00.svg": {
+          "sha256": "97d782a75f06d66abed686d7daa79d5455b372e455ac2be0b0c602acb4c0484c",
+          "bytes": 894
+        }
+      }
+    },
+    {
+      "id": "dodge-dust-01",
+      "width": 224,
+      "height": 112,
+      "pivot": [
+        112,
+        80
+      ],
+      "source": "source/dodge-dust-01.svg",
+      "file": "fx/dodge-dust-01.png",
+      "kind": "fx",
+      "layer": 45,
+      "alpha_bounds": [
+        21,
+        20,
+        176,
+        86
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "event_family": "dodge",
+      "sequence_index": 1,
+      "anchor": "Ground behind moving actor; local tail left. Spawn only for recorded dodge; mirror tail for movement direction.",
+      "file_integrity": {
+        "fx/dodge-dust-01.png": {
+          "sha256": "8c6ba9ab2da8ae900d26631360890d022afa5892c039ce573ba919897b8f9193",
+          "bytes": 5222
+        },
+        "source/dodge-dust-01.svg": {
+          "sha256": "ec6ce54069b74f7620de9b20a7aec5ca1102197adab53f56802a4f4806e74f41",
+          "bytes": 877
+        }
+      }
+    },
+    {
+      "id": "dodge-dust-02",
+      "width": 224,
+      "height": 112,
+      "pivot": [
+        112,
+        80
+      ],
+      "source": "source/dodge-dust-02.svg",
+      "file": "fx/dodge-dust-02.png",
+      "kind": "fx",
+      "layer": 45,
+      "alpha_bounds": [
+        1,
+        12,
+        177,
+        87
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "event_family": "dodge",
+      "sequence_index": 2,
+      "anchor": "Ground behind moving actor; local tail left. Spawn only for recorded dodge; mirror tail for movement direction.",
+      "file_integrity": {
+        "fx/dodge-dust-02.png": {
+          "sha256": "9466d68e38c35eecbb2efedffd777248dfd00821966074cdecf29a97168a1eee",
+          "bytes": 6153
+        },
+        "source/dodge-dust-02.svg": {
+          "sha256": "91f98fe9906c6d0a3ea26f919fcf9c7e45b411fecf15f5f07e443d682e2e6829",
+          "bytes": 894
+        }
+      }
+    },
+    {
+      "id": "defeat-dust-00",
+      "width": 256,
+      "height": 128,
+      "pivot": [
+        128,
+        96
+      ],
+      "source": "source/defeat-dust-00.svg",
+      "file": "fx/defeat-dust-00.png",
+      "kind": "fx",
+      "layer": 55,
+      "alpha_bounds": [
+        50,
+        45,
+        202,
+        99
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "event_family": "defeat",
+      "sequence_index": 0,
+      "anchor": "Ground at fallen actor; event driven. Do not imply damage, rewards or death not in replay.",
+      "file_integrity": {
+        "fx/defeat-dust-00.png": {
+          "sha256": "50ab6e31ff308e80dedd5d81229e136cee78a030202ddfdabd130a9bdc229926",
+          "bytes": 4964
+        },
+        "source/defeat-dust-00.svg": {
+          "sha256": "ede5b8285799587d0aa0fe0628438e2769d1b178853a60def55303156209a258",
+          "bytes": 844
+        }
+      }
+    },
+    {
+      "id": "defeat-dust-01",
+      "width": 256,
+      "height": 128,
+      "pivot": [
+        128,
+        96
+      ],
+      "source": "source/defeat-dust-01.svg",
+      "file": "fx/defeat-dust-01.png",
+      "kind": "fx",
+      "layer": 55,
+      "alpha_bounds": [
+        15,
+        22,
+        235,
+        100
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "event_family": "defeat",
+      "sequence_index": 1,
+      "anchor": "Ground at fallen actor; event driven. Do not imply damage, rewards or death not in replay.",
+      "file_integrity": {
+        "fx/defeat-dust-01.png": {
+          "sha256": "135e27d72beffcf97dd326e880bf3bf9a204030c7842166d20ed6acc239cb47a",
+          "bytes": 7540
+        },
+        "source/defeat-dust-01.svg": {
+          "sha256": "20495a71896ef4dcab004e108513efed53d6d2cde95a5787131abf93caf4a3ad",
+          "bytes": 841
+        }
+      }
+    },
+    {
+      "id": "defeat-dust-02",
+      "width": 256,
+      "height": 128,
+      "pivot": [
+        128,
+        96
+      ],
+      "source": "source/defeat-dust-02.svg",
+      "file": "fx/defeat-dust-02.png",
+      "kind": "fx",
+      "layer": 55,
+      "alpha_bounds": [
+        3,
+        14,
+        247,
+        101
+      ],
+      "status": "provisional-integration-art-not-final-accepted",
+      "event_family": "defeat",
+      "sequence_index": 2,
+      "anchor": "Ground at fallen actor; event driven. Do not imply damage, rewards or death not in replay.",
+      "file_integrity": {
+        "fx/defeat-dust-02.png": {
+          "sha256": "f86ff076c8cab65626c74a2184c5958b79a466369f3c23078f122135c29e29e2",
+          "bytes": 8360
+        },
+        "source/defeat-dust-02.svg": {
+          "sha256": "e2684f47fb0ffc9f5649528292b1ea8adb807b22a66b1fdfb462a8e8eaa3d169",
+          "bytes": 844
+        }
+      }
+    }
+  ],
+  "illustrative_start_actors": [
+    {
+      "id": "near-left",
+      "paintId": "oxide",
+      "weaponId": "sword",
+      "facing": "canonical-right",
+      "scale": 0.78,
+      "ground_anchor": [
+        224,
+        990
+      ],
+      "local_ground_anchor": [
+        317.5,
+        495
+      ],
+      "layer": 50,
+      "contact_shadow": {
+        "asset_id": "contact-shadow",
+        "position": [
+          224,
+          987
+        ],
+        "scale": [
+          0.9,
+          0.7
+        ],
+        "pivot": [
+          128,
+          48
+        ]
+      },
+      "measured_screen_alpha_bounds": [
+        100,
+        643,
+        450,
+        991
+      ],
+      "origin_of_kit_canvas": [
+        -23.650000000000006,
+        603.9
+      ]
+    },
+    {
+      "id": "far-right",
+      "paintId": "petrol",
+      "weaponId": "axe",
+      "facing": "whole-hierarchy-mirrored-left",
+      "scale": 0.7,
+      "ground_anchor": [
+        516,
+        815
+      ],
+      "local_ground_anchor": [
+        322.5,
+        495
+      ],
+      "layer": 40,
+      "contact_shadow": {
+        "asset_id": "contact-shadow",
+        "position": [
+          516,
+          812
+        ],
+        "scale": [
+          0.8,
+          0.62
+        ],
+        "pivot": [
+          128,
+          48
+        ]
+      },
+      "measured_screen_alpha_bounds": [
+        313,
+        503,
+        628,
+        816
+      ],
+      "origin_of_kit_canvas": [
+        290.25,
+        468.5
+      ]
+    }
+  ],
+  "illustrative_approach_actors": [
+    {
+      "id": "near-left",
+      "paintId": "oxide",
+      "weaponId": "sword",
+      "facing": "canonical-right",
+      "scale": 0.78,
+      "ground_anchor": [
+        270,
+        990
+      ],
+      "local_ground_anchor": [
+        317.5,
+        495
+      ],
+      "layer": 50,
+      "contact_shadow": {
+        "asset_id": "contact-shadow",
+        "position": [
+          270,
+          987
+        ],
+        "scale": [
+          0.9,
+          0.7
+        ],
+        "pivot": [
+          128,
+          48
+        ]
+      },
+      "measured_screen_alpha_bounds": [
+        146,
+        643,
+        496,
+        991
+      ],
+      "origin_of_kit_canvas": [
+        22.349999999999994,
+        603.9
+      ]
+    },
+    {
+      "id": "far-right",
+      "paintId": "petrol",
+      "weaponId": "axe",
+      "facing": "whole-hierarchy-mirrored-left",
+      "scale": 0.7,
+      "ground_anchor": [
+        508,
+        875
+      ],
+      "local_ground_anchor": [
+        322.5,
+        495
+      ],
+      "layer": 40,
+      "contact_shadow": {
+        "asset_id": "contact-shadow",
+        "position": [
+          508,
+          872
+        ],
+        "scale": [
+          0.8,
+          0.62
+        ],
+        "pivot": [
+          128,
+          48
+        ]
+      },
+      "measured_screen_alpha_bounds": [
+        305,
+        563,
+        620,
+        876
+      ],
+      "origin_of_kit_canvas": [
+        282.25,
+        528.5
+      ]
+    }
+  ],
+  "art_play_envelope": [
+    16,
+    402,
+    704,
+    1098
+  ],
+  "contact_volume_proposal": {
+    "centre": [
+      436,
+      773
+    ],
+    "radii": [
+      111,
+      111
+    ]
+  },
+  "floor_horizon_y": 366,
+  "fx": {
+    "frame_order": "indices show editable expansion/fade alternatives; no approved durations or animation timing",
+    "spawn": "Only from corresponding authoritative recorded event. FX do not compute or imply outcomes.",
+    "attachment": "Hit pivot at renderer-provided contact. Dodge/defeat pivots at ground; orient dodge tail opposite recorded movement.",
+    "reduced_motion": "One restrained event accent or static event cue; do not repeat/tween clouds. Retain existing accessible outcome UI.",
+    "paint_independence": true,
+    "clips_required": "Keep FX inside replay art viewport and do not cover controls/UI."
+  },
+  "kit_dependency": {
+    "id": "workshop-frame",
+    "version": "v002",
+    "manifest_authoring_path": "/workspace/botore-art/2026-11-09-first-kit/kit-v002/manifest.json",
+    "manifest_sha256": "4a0c8fda1a1214d09f62f1a1efa8ee8c61178dbd2c4320d3fdab0ea2282507bc",
+    "bundled": false,
+    "role": "Only documentation scene previews contain actual robots; background/fx assets contain none."
+  },
+  "source_method": "Original direct SVG illustration; CairoSVG rasterisation; Pillow documentation composites; no paid generation.",
+  "references": [
+    {
+      "reference_id": "REF-03-gameplay-results-ranking.png",
+      "authoring_path": "/workspace/botore-art-production-guide/references/REF-03-gameplay-results-ranking.png",
+      "sha256": "0612b7881e7e456bc2a8145f51efdaec588e2cad8b441b64e0f9333104ea2da7",
+      "bytes": 2449469
+    },
+    {
+      "reference_id": "2kxv30qk-332-verified.md",
+      "authoring_path": "/workspace/botore-art-production-guide/2kxv30qk-332-verified.md",
+      "sha256": "21225198955fb67586d5e47ef9d4916d2aaa264e8e9aea858ed02ada89c3f094",
+      "bytes": 29772
+    },
+    {
+      "reference_id": "manifest.json",
+      "authoring_path": "/workspace/botore-art/2026-11-09-first-kit/kit-v002/manifest.json",
+      "sha256": "4a0c8fda1a1214d09f62f1a1efa8ee8c61178dbd2c4320d3fdab0ea2282507bc",
+      "bytes": 72763
+    }
+  ],
+  "validation_summary": {
+    "passed": true,
+    "checks": 439,
+    "failures": [],
+    "environment_asset_count": 4,
+    "fx_frame_count": 9,
+    "pose_framing_cases": 28,
+    "previous_sealed_hashes_verified": {
+      "kit-v001": 137,
+      "kit-v002": 142
+    },
+    "meaning": "Local file/transparency/scene coverage and illustrative pose-bounds/phone-preview visibility only. Not final UI safe insets, calibrated camera, real replay, hit detection, readability accessibility standard, collision proof or native performance."
+  },
+  "file_inventory": [
+    {
+      "path": "PROVENANCE.md",
+      "bytes": 2389,
+      "sha256": "08e9796739241dd69ab0aa5887b12a431276ad80007ae557adb728946beaa76d"
+    },
+    {
+      "path": "README.md",
+      "bytes": 7985,
+      "sha256": "d9ac9093eb09b0fbda1f9aad02441a645b747a0c0292c93fab7111b76bbe1e44"
+    },
+    {
+      "path": "background/contact-shadow.png",
+      "bytes": 5795,
+      "sha256": "314f66a3e4fa03c7949c3513a9bc5d45db38dd487b7e7a8c6ddea39cf293d09c",
+      "width": 256,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "background/repair-yard-floor-markings.png",
+      "bytes": 22879,
+      "sha256": "e593fc65e790f63bce319e74ca27a2a0ab62bfe5b436ae1c71799a2b8b7cf7ef",
+      "width": 720,
+      "height": 1120,
+      "mode": "RGBA"
+    },
+    {
+      "path": "background/repair-yard-floor.png",
+      "bytes": 17852,
+      "sha256": "b4a25de33cdca8d7fa2404bc1ef4fa4b07a56b47ca5702d2495c80d8766cd3d1",
+      "width": 720,
+      "height": 1120,
+      "mode": "RGBA"
+    },
+    {
+      "path": "background/repair-yard-wall.png",
+      "bytes": 9782,
+      "sha256": "fc444669b689791cb4f227c0624656bb7be32db2d0a1647a474c0b479bed4b05",
+      "width": 720,
+      "height": 1120,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/defeat-dust-00.png",
+      "bytes": 4964,
+      "sha256": "50ab6e31ff308e80dedd5d81229e136cee78a030202ddfdabd130a9bdc229926",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/defeat-dust-01.png",
+      "bytes": 7540,
+      "sha256": "135e27d72beffcf97dd326e880bf3bf9a204030c7842166d20ed6acc239cb47a",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/defeat-dust-02.png",
+      "bytes": 8360,
+      "sha256": "f86ff076c8cab65626c74a2184c5958b79a466369f3c23078f122135c29e29e2",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/dodge-dust-00.png",
+      "bytes": 4118,
+      "sha256": "14fe77067c300d82d34e3b867c5ae8c47a14598e2131ab3738417f354ac5ba8c",
+      "width": 224,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/dodge-dust-01.png",
+      "bytes": 5222,
+      "sha256": "8c6ba9ab2da8ae900d26631360890d022afa5892c039ce573ba919897b8f9193",
+      "width": 224,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/dodge-dust-02.png",
+      "bytes": 6153,
+      "sha256": "9466d68e38c35eecbb2efedffd777248dfd00821966074cdecf29a97168a1eee",
+      "width": 224,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/hit-spark-00.png",
+      "bytes": 6780,
+      "sha256": "16d44de900ffdba183f9e9a030519d1d8adaf4e90ff2f53a1540743e36d1d988",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/hit-spark-01.png",
+      "bytes": 10929,
+      "sha256": "f2b4baa9c78790e802b96a310163e7f2e77d1b6f485eba8cb9492847bcda7dca",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/hit-spark-02.png",
+      "bytes": 9932,
+      "sha256": "e34caf6f2763f0fe03e8d60e670a83bf6ad1c690f89d09bb862a78b0a7c95257",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/environment-composite.png",
+      "bytes": 37954,
+      "sha256": "270904789b89cfb316fa7315a58a164785c03c441d49c067ce9bffc539811632",
+      "width": 720,
+      "height": 1120,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/fx-frame-contact-sheet.png",
+      "bytes": 53042,
+      "sha256": "48a7458f97eb33eea6986e9c83242280f8f81a7aae4b59aac9c4688fa0232a37",
+      "width": 864,
+      "height": 600,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fx-phone-visibility.png",
+      "bytes": 30374,
+      "sha256": "73010dc63c9164cbf8fb5d9061c7a1a307dc6b10d5e0527ad84894d52ead085d",
+      "width": 432,
+      "height": 300,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/scene-approach-framing.png",
+      "bytes": 204352,
+      "sha256": "623ba5c239e71143d8739db861d68755b9deaf1aadad02198a2ac2b1a8cb77d1",
+      "width": 720,
+      "height": 1120,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/scene-phone-360x560.png",
+      "bytes": 85163,
+      "sha256": "f0414a117dcc0fe7c9d8d777e31c9c6f270e85914f6372889d8bd6f65f761b40",
+      "width": 360,
+      "height": 560,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/scene-play-region-notes.png",
+      "bytes": 215240,
+      "sha256": "06321d2a5c1974b98200e3ef7033d30d61e0f1a1bb3c501871462299cc3dd6c2",
+      "width": 720,
+      "height": 1120,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/scene-staggered-start.png",
+      "bytes": 208978,
+      "sha256": "b101220ea0fb801317fb583fcd84ef364026a9cbff0e0d71a4a6d10c835485ca",
+      "width": 720,
+      "height": 1120,
+      "mode": "RGB"
+    },
+    {
+      "path": "source/build_environment.py",
+      "bytes": 14929,
+      "sha256": "ced39102c24c1e409c8f5ba3639fa6fd42a529011b185e3ebd50accd5342c244"
+    },
+    {
+      "path": "source/contact-shadow.svg",
+      "bytes": 459,
+      "sha256": "77b50ad0f80a2c1ef68a5a0ddd476daae061d815d67bd44f3909700000170a91"
+    },
+    {
+      "path": "source/defeat-dust-00.svg",
+      "bytes": 844,
+      "sha256": "ede5b8285799587d0aa0fe0628438e2769d1b178853a60def55303156209a258"
+    },
+    {
+      "path": "source/defeat-dust-01.svg",
+      "bytes": 841,
+      "sha256": "20495a71896ef4dcab004e108513efed53d6d2cde95a5787131abf93caf4a3ad"
+    },
+    {
+      "path": "source/defeat-dust-02.svg",
+      "bytes": 844,
+      "sha256": "e2684f47fb0ffc9f5649528292b1ea8adb807b22a66b1fdfb462a8e8eaa3d169"
+    },
+    {
+      "path": "source/dodge-dust-00.svg",
+      "bytes": 894,
+      "sha256": "97d782a75f06d66abed686d7daa79d5455b372e455ac2be0b0c602acb4c0484c"
+    },
+    {
+      "path": "source/dodge-dust-01.svg",
+      "bytes": 877,
+      "sha256": "ec6ce54069b74f7620de9b20a7aec5ca1102197adab53f56802a4f4806e74f41"
+    },
+    {
+      "path": "source/dodge-dust-02.svg",
+      "bytes": 894,
+      "sha256": "91f98fe9906c6d0a3ea26f919fcf9c7e45b411fecf15f5f07e443d682e2e6829"
+    },
+    {
+      "path": "source/hit-spark-00.svg",
+      "bytes": 803,
+      "sha256": "6b36815265003ab522d61c459122b9d3f8574248fe3923f3d8cb792949db6ca4"
+    },
+    {
+      "path": "source/hit-spark-01.svg",
+      "bytes": 791,
+      "sha256": "aa3fec3286120bc273cdfb87eb0de4a3eb0f5544ffa77d47d61e70c3fb2840da"
+    },
+    {
+      "path": "source/hit-spark-02.svg",
+      "bytes": 803,
+      "sha256": "d329f10882a0828ebeb80845d3a6bc0ef80c5df9c71a68278e91baccbd15a8d8"
+    },
+    {
+      "path": "source/reference-inventory.json",
+      "bytes": 769,
+      "sha256": "ccea60ba360699e4cca07034131f0d1d2d689a4c9baa7cd3f9cc0b5c8f0d3209"
+    },
+    {
+      "path": "source/repair-yard-floor-markings.svg",
+      "bytes": 443,
+      "sha256": "9c672db277b9e8795ea03bd991e402e51870d31f34784a86e8a3a6974e4405a3"
+    },
+    {
+      "path": "source/repair-yard-floor.svg",
+      "bytes": 1512,
+      "sha256": "5a684ee58d07944ce3fbc4e4375d61899bb8c8d79374bd5e5c35b75ec40027ef"
+    },
+    {
+      "path": "source/repair-yard-wall.svg",
+      "bytes": 7231,
+      "sha256": "d7c85c37e29cfaf9f28ab6f0f027a2842030cdd2bf2e1bf5d95ccb1ed476bcf1"
+    },
+    {
+      "path": "source/seal_environment.py",
+      "bytes": 2091,
+      "sha256": "dbe8af73c8fe678c8211229ee420b38af58c261924eeb7a9fd905ee17b07b55a"
+    },
+    {
+      "path": "source/validate_environment.py",
+      "bytes": 7008,
+      "sha256": "3e877afcb80cbd45a9ecc1c61640da1dc3dba8fca6926a06961e9c7d26b57d9a"
+    },
+    {
+      "path": "validation/report.json",
+      "bytes": 62052,
+      "sha256": "0e38c128e41c847e90f90d3705f1a3ec224acb0a76514146bd9eb1579aa9f72a"
+    },
+    {
+      "path": "validation/visual-review.md",
+      "bytes": 1923,
+      "sha256": "3bb90362ef0079d2a56505d55a4989dfcb7d15aaa87f598f1282459837df6e95"
+    }
+  ]
+}

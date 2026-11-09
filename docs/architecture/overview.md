@@ -22,9 +22,10 @@ Backend health / smoke / coverage: `docs/backend/verify.md`.
 
 Bots-as-data tables (F1): `parts_catalogue`, `inventory_ledger`,
 `bot_loadout_versions`, plus `save_bot_loadout()` for ownership and slot
-checks. Admin-oriented read views (`admin_*`), `backend_health_snapshot()`,
-and Edge `/functions/v1/health` (SQL snapshot + live Edge probes) are ready
-for a future dashboard (B2) — not built here.
+checks. Admin read APIs (`admin_*` views, `admin_dashboard_snapshot()`,
+`backend_health_snapshot()`, and Edge `/functions/v1/health`) are ready for
+a future dashboard UI — see `docs/backend/admin-dashboard.md`. Dashboard
+pages are not built here.
 
 Edge combat (F2/F3): `supabase/functions/combat-v1` runs deterministic
 `combat-v1` with a server CSPRNG seed after `prepare_fight_context()`
@@ -37,6 +38,15 @@ Outbox drain and allowance refresh run on **pg_cron** (`botore-outbox-drain`,
 `botore-allowance-refresh`) via `process_analytics_outbox()` and
 `ensure_fight_allowances()`. Failed outbox rows stay visible
 (`last_error` / `dead_lettered_at`); no Fastify worker.
+
+Media packs (F5): versioned `atlas/vN/` in Supabase Storage with an immutable
+published manifest (`atlas_versions` / `atlas_manifest_entries`). Fights pin
+`battle_participants.atlas_version`. See `docs/architecture/atlas.md`.
+
+Android release-build phone perf (F12): proposed thresholds, measurement
+protocol, parked native acceptance checks, and cost ledger —
+`docs/architecture/android-release-perf.md`. Agree limits on ClickUp before
+treating device numbers as acceptance; Expo web is not a substitute.
 
 This checkout still contains leftover Fastify `apps/api` and `apps/worker`.
 Do not extend them. Target path: client → Edge Function → Postgres function

@@ -1,0 +1,684 @@
+{
+  "kit": "botore-ui-kit",
+  "version": "0.1.0",
+  "status": "production candidate; native integration untested",
+  "assets": [
+    {
+      "id": "botore.ui.wordmark-dark",
+      "version": "0.1.0",
+      "svg": "svg/wordmark-dark.svg",
+      "png": {
+        "1x": "png/1x/wordmark-dark.png",
+        "2x": "png/2x/wordmark-dark.png"
+      },
+      "width": 516,
+      "height": 142,
+      "role": "brand",
+      "stretch": "uniform only",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.wordmark-light",
+      "version": "0.1.0",
+      "svg": "svg/wordmark-light.svg",
+      "png": {
+        "1x": "png/1x/wordmark-light.png",
+        "2x": "png/2x/wordmark-light.png"
+      },
+      "width": 516,
+      "height": 142,
+      "role": "brand",
+      "stretch": "uniform only",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.wordmark-small",
+      "version": "0.1.0",
+      "svg": "svg/wordmark-small.svg",
+      "png": {
+        "1x": "png/1x/wordmark-small.png",
+        "2x": "png/2x/wordmark-small.png"
+      },
+      "width": 516,
+      "height": 142,
+      "role": "brand",
+      "stretch": "uniform only",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.robot-head",
+      "version": "0.1.0",
+      "svg": "svg/robot-head.svg",
+      "png": {
+        "1x": "png/1x/robot-head.png",
+        "2x": "png/2x/robot-head.png"
+      },
+      "width": 128,
+      "height": 128,
+      "role": "brand",
+      "stretch": "uniform only",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.robot-head-small",
+      "version": "0.1.0",
+      "svg": "svg/robot-head-small.svg",
+      "png": {
+        "1x": "png/1x/robot-head-small.png",
+        "2x": "png/2x/robot-head-small.png"
+      },
+      "width": 128,
+      "height": 128,
+      "role": "brand",
+      "stretch": "uniform only",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.robot-head-mono",
+      "version": "0.1.0",
+      "svg": "svg/robot-head-mono.svg",
+      "png": {
+        "1x": "png/1x/robot-head-mono.png",
+        "2x": "png/2x/robot-head-mono.png"
+      },
+      "width": 128,
+      "height": 128,
+      "role": "brand",
+      "stretch": "uniform only",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.app-icon",
+      "version": "0.1.0",
+      "svg": "svg/app-icon.svg",
+      "png": {
+        "1x": "png/1x/app-icon.png",
+        "2x": "png/2x/app-icon.png"
+      },
+      "width": 1024,
+      "height": 1024,
+      "role": "brand",
+      "stretch": "uniform; native platform masks applied by engineering",
+      "contentInsets": null,
+      "alpha": "opaque composition",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.launch-static",
+      "version": "0.1.0",
+      "svg": "svg/launch-static.svg",
+      "png": {
+        "1x": "png/1x/launch-static.png",
+        "2x": "png/2x/launch-static.png"
+      },
+      "width": 390,
+      "height": 844,
+      "role": "brand",
+      "stretch": "uniform contain on graphite, do not crop wordmark",
+      "contentInsets": null,
+      "alpha": "opaque composition",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.panel",
+      "version": "0.1.0",
+      "svg": "svg/panel.svg",
+      "png": {
+        "1x": "png/1x/panel.png",
+        "2x": "png/2x/panel.png"
+      },
+      "width": 344,
+      "height": 208,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 28,
+        "bottom": 16,
+        "left": 28
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.name-tag",
+      "version": "0.1.0",
+      "svg": "svg/name-tag.svg",
+      "png": {
+        "1x": "png/1x/name-tag.png",
+        "2x": "png/2x/name-tag.png"
+      },
+      "width": 240,
+      "height": 56,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 28,
+        "bottom": 16,
+        "left": 28
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.button-primary",
+      "version": "0.1.0",
+      "svg": "svg/button-primary.svg",
+      "png": {
+        "1x": "png/1x/button-primary.png",
+        "2x": "png/2x/button-primary.png"
+      },
+      "width": 344,
+      "height": 56,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.button-primary-pressed",
+      "version": "0.1.0",
+      "svg": "svg/button-primary-pressed.svg",
+      "png": {
+        "1x": "png/1x/button-primary-pressed.png",
+        "2x": "png/2x/button-primary-pressed.png"
+      },
+      "width": 344,
+      "height": 56,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.button-secondary",
+      "version": "0.1.0",
+      "svg": "svg/button-secondary.svg",
+      "png": {
+        "1x": "png/1x/button-secondary.png",
+        "2x": "png/2x/button-secondary.png"
+      },
+      "width": 344,
+      "height": 56,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.button-disabled",
+      "version": "0.1.0",
+      "svg": "svg/button-disabled.svg",
+      "png": {
+        "1x": "png/1x/button-disabled.png",
+        "2x": "png/2x/button-disabled.png"
+      },
+      "width": 344,
+      "height": 56,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.button-focus",
+      "version": "0.1.0",
+      "svg": "svg/button-focus.svg",
+      "png": {
+        "1x": "png/1x/button-focus.png",
+        "2x": "png/2x/button-focus.png"
+      },
+      "width": 344,
+      "height": 56,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.tab-idle",
+      "version": "0.1.0",
+      "svg": "svg/tab-idle.svg",
+      "png": {
+        "1x": "png/1x/tab-idle.png",
+        "2x": "png/2x/tab-idle.png"
+      },
+      "width": 160,
+      "height": 48,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.tab-selected",
+      "version": "0.1.0",
+      "svg": "svg/tab-selected.svg",
+      "png": {
+        "1x": "png/1x/tab-selected.png",
+        "2x": "png/2x/tab-selected.png"
+      },
+      "width": 160,
+      "height": 48,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.swatch-oxide",
+      "version": "0.1.0",
+      "svg": "svg/swatch-oxide.svg",
+      "png": {
+        "1x": "png/1x/swatch-oxide.png",
+        "2x": "png/2x/swatch-oxide.png"
+      },
+      "width": 144,
+      "height": 88,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.swatch-petrol",
+      "version": "0.1.0",
+      "svg": "svg/swatch-petrol.svg",
+      "png": {
+        "1x": "png/1x/swatch-petrol.png",
+        "2x": "png/2x/swatch-petrol.png"
+      },
+      "width": 144,
+      "height": 88,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.selection-frame",
+      "version": "0.1.0",
+      "svg": "svg/selection-frame.svg",
+      "png": {
+        "1x": "png/1x/selection-frame.png",
+        "2x": "png/2x/selection-frame.png"
+      },
+      "width": 344,
+      "height": 112,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.status-error",
+      "version": "0.1.0",
+      "svg": "svg/status-error.svg",
+      "png": {
+        "1x": "png/1x/status-error.png",
+        "2x": "png/2x/status-error.png"
+      },
+      "width": 344,
+      "height": 64,
+      "role": "ui",
+      "stretch": "native parametric rebuild preferred; PNG nine-slice only using declared insets, never stretch corners",
+      "contentInsets": {
+        "top": 16,
+        "right": 16,
+        "bottom": 16,
+        "left": 16
+      },
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-check",
+      "version": "0.1.0",
+      "svg": "svg/glyph-check.svg",
+      "png": {
+        "1x": "png/1x/glyph-check.png",
+        "2x": "png/2x/glyph-check.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-back",
+      "version": "0.1.0",
+      "svg": "svg/glyph-back.svg",
+      "png": {
+        "1x": "png/1x/glyph-back.png",
+        "2x": "png/2x/glyph-back.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-play",
+      "version": "0.1.0",
+      "svg": "svg/glyph-play.svg",
+      "png": {
+        "1x": "png/1x/glyph-play.png",
+        "2x": "png/2x/glyph-play.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-pause",
+      "version": "0.1.0",
+      "svg": "svg/glyph-pause.svg",
+      "png": {
+        "1x": "png/1x/glyph-pause.png",
+        "2x": "png/2x/glyph-pause.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-replay",
+      "version": "0.1.0",
+      "svg": "svg/glyph-replay.svg",
+      "png": {
+        "1x": "png/1x/glyph-replay.png",
+        "2x": "png/2x/glyph-replay.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-sound",
+      "version": "0.1.0",
+      "svg": "svg/glyph-sound.svg",
+      "png": {
+        "1x": "png/1x/glyph-sound.png",
+        "2x": "png/2x/glyph-sound.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-mute",
+      "version": "0.1.0",
+      "svg": "svg/glyph-mute.svg",
+      "png": {
+        "1x": "png/1x/glyph-mute.png",
+        "2x": "png/2x/glyph-mute.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-close",
+      "version": "0.1.0",
+      "svg": "svg/glyph-close.svg",
+      "png": {
+        "1x": "png/1x/glyph-close.png",
+        "2x": "png/2x/glyph-close.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-sword",
+      "version": "0.1.0",
+      "svg": "svg/glyph-sword.svg",
+      "png": {
+        "1x": "png/1x/glyph-sword.png",
+        "2x": "png/2x/glyph-sword.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-axe",
+      "version": "0.1.0",
+      "svg": "svg/glyph-axe.svg",
+      "png": {
+        "1x": "png/1x/glyph-axe.png",
+        "2x": "png/2x/glyph-axe.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-dagger",
+      "version": "0.1.0",
+      "svg": "svg/glyph-dagger.svg",
+      "png": {
+        "1x": "png/1x/glyph-dagger.png",
+        "2x": "png/2x/glyph-dagger.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform only; stroke scales; 24dp visual inside minimum 48dp press target",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-check-light",
+      "version": "0.1.0",
+      "svg": "svg/glyph-check-light.svg",
+      "png": {
+        "1x": "png/1x/glyph-check-light.png",
+        "2x": "png/2x/glyph-check-light.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform; visual only, 48dp touch container",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.glyph-check-selected",
+      "version": "0.1.0",
+      "svg": "svg/glyph-check-selected.svg",
+      "png": {
+        "1x": "png/1x/glyph-check-selected.png",
+        "2x": "png/2x/glyph-check-selected.png"
+      },
+      "width": 64,
+      "height": 64,
+      "role": "glyph",
+      "stretch": "uniform; explicit selected mark, not colour alone",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.timeline-track",
+      "version": "0.1.0",
+      "svg": "svg/timeline-track.svg",
+      "png": {
+        "1x": "png/1x/timeline-track.png",
+        "2x": "png/2x/timeline-track.png"
+      },
+      "width": 280,
+      "height": 12,
+      "role": "ui",
+      "stretch": "horizontal track only; thumb stays separate",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    },
+    {
+      "id": "botore.ui.timeline-thumb",
+      "version": "0.1.0",
+      "svg": "svg/timeline-thumb.svg",
+      "png": {
+        "1x": "png/1x/timeline-thumb.png",
+        "2x": "png/2x/timeline-thumb.png"
+      },
+      "width": 28,
+      "height": 28,
+      "role": "ui",
+      "stretch": "uniform only",
+      "contentInsets": null,
+      "alpha": "transparent outside shape",
+      "orientation": "LTR; directional glyphs must mirror explicitly for RTL",
+      "provenance": "original hand-constructed SVG geometry; selected REF-01/02/03 visual-language reference; no external fonts in asset"
+    }
+  ]
+}

@@ -1,0 +1,772 @@
+{
+  "status": "provisional-F7-adapter-delta-not-final-acceptance",
+  "from": "workshop-frame/v001",
+  "to": "workshop-frame/v002",
+  "schema_changed": false,
+  "schema": "botore.workshop-frame.provisional.v1",
+  "part_ids_changed": false,
+  "slot_hierarchy_changed": false,
+  "paint_ids_changed": false,
+  "weapon_ids_changed": false,
+  "mirror_and_layer_conventions_changed": false,
+  "root_canvas_changed": false,
+  "root_position_changed": false,
+  "same_geometry_as_reviewed_candidate_except": "local transparent padding does not move global geometry; material planes/shadows only",
+  "pose_changes": {
+    "heavy_windup": {
+      "v001": {
+        "root_angle": -12,
+        "upper_arm_r": -45,
+        "forearm_r": -23,
+        "upper_arm_l": -20,
+        "head": 12,
+        "root_y": 20
+      },
+      "v002": {
+        "root_angle": -12,
+        "upper_arm_r": -45,
+        "forearm_r": -23,
+        "upper_arm_l": -20,
+        "head": 12,
+        "root_y": 45
+      }
+    }
+  },
+  "assets": [
+    {
+      "asset_id": "torso",
+      "changes": {
+        "width": {
+          "v001": 220,
+          "v002": 228
+        },
+        "height": {
+          "v001": 180,
+          "v002": 196
+        },
+        "pivot": {
+          "v001": [
+            110,
+            130
+          ],
+          "v002": [
+            118,
+            146
+          ]
+        },
+        "sockets": {
+          "v001": {
+            "neck": [
+              110,
+              35
+            ],
+            "shoulder_l": [
+              40,
+              55
+            ],
+            "shoulder_r": [
+              172,
+              65
+            ],
+            "waist": [
+              110,
+              150
+            ]
+          },
+          "v002": {
+            "neck": [
+              118.0,
+              51.39999999999999
+            ],
+            "shoulder_l": [
+              31.200000000000003,
+              65.0
+            ],
+            "shoulder_r": [
+              194.88,
+              75.8
+            ],
+            "waist": [
+              118.0,
+              167.6
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          21,
+          3,
+          190,
+          161
+        ],
+        "v002": [
+          8,
+          9,
+          217,
+          179
+        ]
+      }
+    },
+    {
+      "asset_id": "head",
+      "changes": {
+        "pivot": {
+          "v001": [
+            99,
+            143
+          ],
+          "v002": [
+            99,
+            154
+          ]
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          28,
+          21,
+          177,
+          170
+        ],
+        "v002": [
+          24,
+          23,
+          183,
+          175
+        ]
+      }
+    },
+    {
+      "asset_id": "pelvis",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "hip_l": [
+              42,
+              48
+            ],
+            "hip_r": [
+              115,
+              48
+            ]
+          },
+          "v002": {
+            "hip_l": [
+              37.44,
+              48
+            ],
+            "hip_r": [
+              119.2,
+              48
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          23,
+          26,
+          136,
+          67
+        ],
+        "v002": [
+          16,
+          26,
+          143,
+          67
+        ]
+      }
+    },
+    {
+      "asset_id": "upper_arm_l",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "elbow": [
+              80,
+              126
+            ]
+          },
+          "v002": {
+            "elbow": [
+              80.0,
+              100.48
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          34,
+          12,
+          114,
+          145
+        ],
+        "v002": [
+          27,
+          12,
+          119,
+          121
+        ]
+      }
+    },
+    {
+      "asset_id": "forearm_l",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "wrist": [
+              80,
+              110
+            ]
+          },
+          "v002": {
+            "wrist": [
+              80.0,
+              98.0
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          41,
+          16,
+          114,
+          125
+        ],
+        "v002": [
+          31,
+          19,
+          122,
+          111
+        ]
+      }
+    },
+    {
+      "asset_id": "hand_l",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "grip": [
+              60,
+              55
+            ]
+          },
+          "v002": {
+            "grip": [
+              60.0,
+              61.6
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          32,
+          11,
+          88,
+          84
+        ],
+        "v002": [
+          24,
+          8,
+          96,
+          97
+        ]
+      }
+    },
+    {
+      "asset_id": "thigh_l",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "knee": [
+              60,
+              112
+            ]
+          },
+          "v002": {
+            "knee": [
+              60.0,
+              92.32
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          30,
+          12,
+          87,
+          131
+        ],
+        "v002": [
+          25,
+          16,
+          91,
+          107
+        ]
+      }
+    },
+    {
+      "asset_id": "shin_l",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "ankle": [
+              60,
+              125
+            ]
+          },
+          "v002": {
+            "ankle": [
+              60.0,
+              104.10000000000001
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          35,
+          12,
+          84,
+          142
+        ],
+        "v002": [
+          30,
+          16,
+          88,
+          117
+        ]
+      }
+    },
+    {
+      "asset_id": "foot_l",
+      "changes": {
+        "width": {
+          "v001": 130,
+          "v002": 150
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          19,
+          13,
+          112,
+          78
+        ],
+        "v002": [
+          6,
+          11,
+          129,
+          85
+        ]
+      }
+    },
+    {
+      "asset_id": "upper_arm_r",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "elbow": [
+              80,
+              126
+            ]
+          },
+          "v002": {
+            "elbow": [
+              80.0,
+              100.48
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          34,
+          12,
+          114,
+          145
+        ],
+        "v002": [
+          27,
+          12,
+          119,
+          121
+        ]
+      }
+    },
+    {
+      "asset_id": "forearm_r",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "wrist": [
+              80,
+              110
+            ]
+          },
+          "v002": {
+            "wrist": [
+              80.0,
+              98.0
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          41,
+          16,
+          114,
+          125
+        ],
+        "v002": [
+          31,
+          19,
+          122,
+          111
+        ]
+      }
+    },
+    {
+      "asset_id": "hand_r",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "grip": [
+              60,
+              55
+            ]
+          },
+          "v002": {
+            "grip": [
+              60.0,
+              61.6
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          32,
+          11,
+          88,
+          84
+        ],
+        "v002": [
+          24,
+          8,
+          96,
+          97
+        ]
+      }
+    },
+    {
+      "asset_id": "thigh_r",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "knee": [
+              60,
+              112
+            ]
+          },
+          "v002": {
+            "knee": [
+              60.0,
+              92.32
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          30,
+          12,
+          87,
+          131
+        ],
+        "v002": [
+          25,
+          16,
+          91,
+          107
+        ]
+      }
+    },
+    {
+      "asset_id": "shin_r",
+      "changes": {
+        "sockets": {
+          "v001": {
+            "ankle": [
+              60,
+              125
+            ]
+          },
+          "v002": {
+            "ankle": [
+              60.0,
+              104.10000000000001
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          35,
+          12,
+          84,
+          142
+        ],
+        "v002": [
+          30,
+          16,
+          88,
+          117
+        ]
+      }
+    },
+    {
+      "asset_id": "foot_r",
+      "changes": {
+        "width": {
+          "v001": 130,
+          "v002": 150
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          19,
+          13,
+          112,
+          78
+        ],
+        "v002": [
+          6,
+          11,
+          129,
+          85
+        ]
+      }
+    },
+    {
+      "asset_id": "weapon_sword",
+      "changes": {
+        "height": {
+          "v001": 200,
+          "v002": 208
+        },
+        "pivot": {
+          "v001": [
+            60,
+            155
+          ],
+          "v002": [
+            60,
+            163
+          ]
+        },
+        "sockets": {
+          "v001": {
+            "grip": [
+              60,
+              155
+            ]
+          },
+          "v002": {
+            "grip": [
+              60.0,
+              163.0
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          30,
+          6,
+          89,
+          185
+        ],
+        "v002": [
+          19,
+          8,
+          100,
+          194
+        ]
+      }
+    },
+    {
+      "asset_id": "weapon_axe",
+      "changes": {
+        "height": {
+          "v001": 200,
+          "v002": 208
+        },
+        "pivot": {
+          "v001": [
+            60,
+            155
+          ],
+          "v002": [
+            60,
+            163
+          ]
+        },
+        "sockets": {
+          "v001": {
+            "grip": [
+              60,
+              155
+            ]
+          },
+          "v002": {
+            "grip": [
+              60,
+              163
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          20,
+          25,
+          121,
+          185
+        ],
+        "v002": [
+          20,
+          33,
+          121,
+          193
+        ]
+      }
+    },
+    {
+      "asset_id": "weapon_dagger",
+      "changes": {
+        "height": {
+          "v001": 200,
+          "v002": 208
+        },
+        "pivot": {
+          "v001": [
+            60,
+            155
+          ],
+          "v002": [
+            60,
+            163
+          ]
+        },
+        "sockets": {
+          "v001": {
+            "grip": [
+              60,
+              155
+            ]
+          },
+          "v002": {
+            "grip": [
+              60,
+              163
+            ]
+          }
+        },
+        "compatible_family": {
+          "v001": "workshop-frame-v001",
+          "v002": "workshop-frame-v002"
+        }
+      },
+      "bounds": {
+        "v001": [
+          30,
+          57,
+          89,
+          185
+        ],
+        "v002": [
+          30,
+          65,
+          89,
+          193
+        ]
+      }
+    }
+  ],
+  "must_not_mix_versions": true
+}

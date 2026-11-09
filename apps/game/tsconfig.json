@@ -13,8 +13,8 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "verbatimModuleSyntax": false,
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals", "node"]
   },
-  "include": ["src", "test", "App.tsx", "*.ts", "*.tsx"],
+  "include": ["src", "test", "App.tsx", "*.ts", "*.tsx", "src/types/**/*.d.ts", "assets/**/*.json"],
   "exclude": ["node_modules", "babel.config.js", "metro.config.js"]
 }

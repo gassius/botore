@@ -1076,11 +1076,443 @@ begin
     v_health->'checks'->'analytics_outbox'->>'processor' = 'process_analytics_outbox',
     'health outbox processor flag'
   );
-  -- Overall status=ok when proof seed + loadouts are present (full db:reset).
+  -- Overall status=ok when proof seed + loadouts + atlas pack are present (full db:reset).
   if (v_health->'checks'->'parts_catalogue'->>'proof_seed_ok')::boolean
      and coalesce((v_health->'checks'->'bot_loadouts'->>'current_count')::int, 0) >= 1
-     and coalesce((v_health->'checks'->'fight'->>'ready_as_opponent')::int, 0) >= 1 then
-    perform tests.assert(v_health->>'status' = 'ok', 'health status ok after F4');
+     and coalesce((v_health->'checks'->'fight'->>'ready_as_opponent')::int, 0) >= 1
+     and coalesce((v_health->'checks'->'storage'->>'proof_pack_ok')::boolean, false) then
+    perform tests.assert(v_health->>'status' = 'ok', 'health status ok after F4+F5');
   end if;
   raise notice 'TEST-OK F4 admin APIs + backend_health_snapshot';
+end $$;
+
+-- =========================================================================
+-- Atlas media packs (F5)
+-- Requires scripts/seed-atlas-storage.mjs to have published v1 with real
+-- Storage payloads before this suite runs (see infra/db-reset.sh / CI).
+-- =========================================================================
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_count int;
+  v_manifest jsonb;
+  v_health jsonb;
+  v_version_id uuid;
+  v_battle uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1';
+  v_atlas text;
+  v_obj_name text;
+  v_draft text := 'v77';
+  v_draft_b text := 'v78';
+begin
+  -- Published v1 proof pack (bootstrap must have uploaded + published) ------
+  select count(*) into v_count from public.atlas_versions where version = 'v1' and status = 'published';
+  perform tests.assert(v_count = 1, 'expected published atlas v1 (run seed-atlas-storage.mjs)');
+
+  select count(*) into v_count from public.atlas_manifest_entries where version = 'v1';
+  perform tests.assert(v_count >= 20, format('expected >=20 manifest entries, got %s', v_count));
+
+  perform tests.assert(
+    coalesce(array_length(public.atlas_missing_storage_paths('v1'), 1), 0) = 0,
+    'v1 has no missing Storage paths'
+  );
+
+  select count(*) into v_count
+    from storage.objects
+   where bucket_id = 'atlas' and name like 'v1/%';
+  perform tests.assert(v_count >= 20, format('expected >=20 storage objects for v1, got %s', v_count));
+
+  select count(distinct part_id) into v_count
+    from public.atlas_manifest_entries
+   where version = 'v1'
+     and part_id in (
+       'chassis-basic','paint-crimson','paint-cobalt',
+       'weapon-sword','weapon-axe','weapon-dagger'
+     );
+  perform tests.assert(v_count = 6, 'manifest maps all 6 proof catalogue parts');
+
+  perform tests.assert(
+    exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v1' and role = 'arena' and path like 'arenas/quiet/%'
+    ),
+    'quiet arena present'
+  );
+  perform tests.assert(
+    (
+      select count(*) from public.atlas_manifest_entries
+       where version = 'v1' and role = 'fx'
+         and path in ('fx/hit.png','fx/dodge.png','fx/defeat.png')
+    ) = 3,
+    'hit/dodge/defeat FX present'
+  );
+  perform tests.assert(
+    exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v1' and kind = 'audio' and role = 'hit' and path like 'base/%'
+    ),
+    'base pack hit fallback present'
+  );
+
+  perform tests.assert(
+    (select budgets_final from public.atlas_versions where version = 'v1') = false,
+    'budgets_final must stay false (not approved)'
+  );
+
+  select public.get_atlas_manifest('v1') into v_manifest;
+  perform tests.assert((v_manifest->>'ok')::boolean, 'get_atlas_manifest ok');
+  perform tests.assert(v_manifest->>'version' = 'v1', 'manifest version v1');
+  perform tests.assert(v_manifest->>'bucket' = 'atlas', 'manifest bucket atlas');
+  perform tests.assert(
+    jsonb_typeof(v_manifest->'entries') = 'array'
+      and jsonb_array_length(v_manifest->'entries') >= 20,
+    'manifest entries array populated'
+  );
+  raise notice 'TEST-OK atlas v1 proof pack + get_atlas_manifest';
+
+  -- Publish rejects missing Storage objects --------------------------------
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
+  values (v_draft, 'draft', null, jsonb_build_object('version', v_draft), false, 'missing-objects fixture');
+  insert into public.atlas_manifest_entries (version, asset_key, kind, part_id, role, path)
+  values (v_draft, 'missing.root', 'manifest', null, 'manifest', 'manifest.json');
+  begin
+    perform public.publish_atlas_version(v_draft);
+    raise exception 'PUBLISH FAIL: published draft with missing Storage objects';
+  exception
+    when others then
+      if sqlstate = '22023' and sqlerrm like 'atlas_publish_missing_objects%' then null;
+      else raise;
+      end if;
+  end;
+  raise notice 'TEST-OK publish rejects missing Storage objects';
+
+  -- Immutability: published version cannot change (strict SQLSTATE) --------
+  begin
+    update public.atlas_versions set notes = 'hacked' where version = 'v1';
+    raise exception 'IMMUTABILITY FAIL: updated published atlas_versions';
+  exception
+    when others then
+      if sqlstate = '55000' and sqlerrm like 'atlas_version_immutable%' then null;
+      else raise;
+      end if;
+  end;
+
+  begin
+    insert into public.atlas_manifest_entries (
+      version, asset_key, kind, part_id, role, path
+    ) values ('v1', 'hack.entry', 'image', null, 'fx', 'fx/hack.png');
+    raise exception 'IMMUTABILITY FAIL: inserted into published manifest';
+  exception
+    when others then
+      if sqlstate = '55000' and sqlerrm like 'atlas_manifest_immutable%' then null;
+      else raise;
+      end if;
+  end;
+
+  -- Source-side reparent from published → draft must fail
+  insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
+  values (v_draft_b, 'draft', null, jsonb_build_object('version', v_draft_b), false, 'reparent dest')
+  on conflict do nothing;
+  begin
+    update public.atlas_manifest_entries
+       set version = v_draft_b, asset_key = 'hack.moved', path = 'fx/moved.png'
+     where version = 'v1' and asset_key = 'manifest.root';
+    raise exception 'IMMUTABILITY FAIL: reparented published manifest entry';
+  exception
+    when others then
+      if sqlstate = '55000' and sqlerrm like 'atlas_manifest_immutable%' then null;
+      else raise;
+      end if;
+  end;
+
+  select o.name into v_obj_name
+    from storage.objects o
+   where o.bucket_id = 'atlas' and o.name like 'v1/%'
+   order by o.name
+   limit 1;
+  perform tests.assert(v_obj_name is not null, 'expected at least one v1 storage object fixture');
+
+  begin
+    update storage.objects
+       set metadata = coalesce(metadata, '{}'::jsonb) || '{"hacked":true}'::jsonb
+     where bucket_id = 'atlas' and name = v_obj_name;
+    raise exception 'IMMUTABILITY FAIL: updated published storage object';
+  exception
+    when others then
+      if sqlstate = '55000' and sqlerrm like 'atlas_storage_immutable%' then null;
+      else raise;
+      end if;
+  end;
+
+  begin
+    update storage.objects
+       set name = replace(v_obj_name, 'v1/', v_draft_b || '/')
+     where bucket_id = 'atlas' and name = v_obj_name;
+    raise exception 'IMMUTABILITY FAIL: renamed published storage object off v1';
+  exception
+    when others then
+      if sqlstate = '55000' and sqlerrm like 'atlas_storage_immutable%' then null;
+      else raise;
+      end if;
+  end;
+
+  begin
+    delete from storage.objects where bucket_id = 'atlas' and name = v_obj_name;
+    raise exception 'IMMUTABILITY FAIL: deleted published storage object';
+  exception
+    when others then
+      -- Prefer our published-prefix guard; Storage also installs
+      -- storage.protect_delete() which blocks ALL SQL deletes platform-wide.
+      if (sqlstate = '55000' and sqlerrm like 'atlas_storage_immutable%')
+         or sqlerrm like 'Direct deletion from storage tables is not allowed%'
+      then null;
+      else raise;
+      end if;
+  end;
+  raise notice 'TEST-OK published atlas immutability (incl. source reparent/rename)';
+
+  -- RLS: clients cannot write atlas tables --------------------------------
+  set local role authenticated;
+  begin
+    insert into public.atlas_versions (version, status, published_at, manifest, budgets_final)
+    values ('v9', 'draft', null, '{}'::jsonb, false);
+    raise exception 'RLS FAIL: insert into atlas_versions allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.publish_atlas_version('v1');
+    raise exception 'AUTH FAIL: authenticated publish_atlas_version allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+  raise notice 'TEST-OK atlas RLS + publish authz';
+
+  -- Fights pin atlas_version on participants ------------------------------
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  select loadout_version_id into v_version_id
+    from public.current_bot_loadouts where character_id = 'player-hero';
+
+  insert into public.battles (
+    battle_id, rules_version, seed, end_reason, initiator_account_id,
+    initiator_account_character, winner_id, utc_day
+  ) values (
+    v_battle, 'combat-v1', 'f5seedf5seedf5seedf5seedf5seedf5se', 'defeat',
+    v_account, 'player-hero', 'player-hero', (now() at time zone 'utc')::date
+  );
+
+  insert into public.battle_participants (
+    battle_id, character_id, side, hp_before, hp_after,
+    weapon_kind, weapon_power, loadout_version_id
+  ) values (
+    v_battle, 'player-hero', 'attacker', 10, 10, 'sword', 3, v_version_id
+  );
+
+  select atlas_version into v_atlas
+    from public.battle_participants
+   where battle_id = v_battle and character_id = 'player-hero';
+  perform tests.assert(v_atlas = 'v1', format('fight pinned atlas_version=v1, got %s', v_atlas));
+
+  perform tests.assert(
+    exists (
+      select 1 from public.admin_recent_battles
+       where battle_id = v_battle and attacker_atlas_version = 'v1'
+    ),
+    'admin_recent_battles exposes attacker_atlas_version'
+  );
+
+  delete from public.battle_participants where battle_id = v_battle;
+  delete from public.battles where battle_id = v_battle;
+
+  -- A later non-proof publish must not clear proof_pack_ok / status=ok.
+  -- (CI race fixture also leaves a later publish; this covers local runs.)
+  -- Version must match ^v[0-9]+$ (atlas_versions_version_check).
+  insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
+  values (
+    'v900001', 'draft', null,
+    jsonb_build_object('version', 'v900001'), false, 'health isolation fixture'
+  );
+  insert into public.atlas_manifest_entries (version, asset_key, kind, part_id, role, path)
+  values ('v900001', 'fixture.root', 'manifest', null, 'manifest', 'manifest.json');
+  insert into storage.objects (bucket_id, name, metadata)
+  values ('atlas', 'v900001/manifest.json', '{"fixture":true}'::jsonb);
+  perform public.publish_atlas_version('v900001');
+
+  select public.backend_health_snapshot() into v_health;
+  perform tests.assert(
+    (v_health->'checks'->'storage'->>'atlas_bucket')::boolean,
+    'health atlas_bucket'
+  );
+  perform tests.assert(
+    (v_health->'checks'->'storage'->>'proof_pack_ok')::boolean,
+    'health proof_pack_ok after later publish'
+  );
+  perform tests.assert(
+    v_health->>'status' = 'ok',
+    'health status ok after later non-proof publish'
+  );
+  perform tests.assert(
+    v_health->'checks'->'storage'->>'proof_version' = 'v1',
+    'health proof_version pinned to v1'
+  );
+  perform tests.assert(
+    v_health->'checks'->'storage'->>'latest_version' = 'v900001',
+    'health latest_version reflects newest publish'
+  );
+  perform tests.assert(
+    (v_health->'checks'->'storage'->>'budgets_final')::boolean = false,
+    'health budgets_final false'
+  );
+  perform tests.assert(
+    exists (select 1 from public.admin_atlas_overview where version = 'v1' and status = 'published'),
+    'admin_atlas_overview lists v1'
+  );
+  raise notice 'TEST-OK F5 fight media refs + health atlas flags';
+end $$;
+
+-- =========================================================================
+-- B2: admin dashboard read APIs (views + snapshot) — no UI
+-- =========================================================================
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_snap jsonb;
+  v_stats record;
+  v_count int;
+begin
+  perform tests.assert(
+    exists (
+      select 1 from public.admin_players_overview
+       where account_id = v_account
+         and character_id = 'player-hero'
+    ),
+    'admin_players_overview lists seed player'
+  );
+
+  select count(*) into v_count from public.admin_bots_overview;
+  perform tests.assert(v_count >= 4, 'admin_bots_overview has player + opponents');
+
+  perform tests.assert(
+    exists (
+      select 1 from public.admin_bots_overview
+       where character_id = 'player-hero'
+         and readiness is not null
+         and loadout_version_id is not null
+    ),
+    'admin_bots_overview exposes readiness + loadout'
+  );
+
+  select * into v_stats from public.admin_fight_stats;
+  perform tests.assert(v_stats.player_count >= 1, 'admin_fight_stats player_count');
+  perform tests.assert(v_stats.opponent_bot_count = 3, 'admin_fight_stats opponent_bot_count');
+  perform tests.assert(v_stats.total_battles >= 0, 'admin_fight_stats total_battles');
+
+  select count(*) into v_count from public.admin_daily_active_accounts;
+  perform tests.assert(v_count = 30, 'admin_daily_active_accounts is 30-day window');
+
+  perform tests.assert(
+    exists (select 1 from public.admin_atlas_overview where version = 'v1'),
+    'admin_atlas_overview readable for pack versions'
+  );
+
+  perform tests.assert(
+    exists (select 1 from public.admin_list_cron_jobs() where jobname = 'botore-outbox-drain'),
+    'admin_list_cron_jobs still lists outbox drain'
+  );
+
+  -- Runs may be empty before cron fires; RPC must still succeed.
+  perform tests.assert(
+    (select count(*) >= 0 from public.admin_list_cron_job_runs(10)),
+    'admin_list_cron_job_runs callable'
+  );
+
+  select public.admin_dashboard_snapshot() into v_snap;
+  perform tests.assert((v_snap->>'ok')::boolean, 'admin_dashboard_snapshot ok');
+  perform tests.assert(v_snap->>'service' = 'admin-dashboard', 'snapshot service tag');
+  perform tests.assert(jsonb_typeof(v_snap->'health') = 'object', 'snapshot health object');
+  perform tests.assert(jsonb_typeof(v_snap->'outbox') = 'object', 'snapshot outbox object');
+  perform tests.assert(jsonb_typeof(v_snap->'fightStats') = 'object', 'snapshot fightStats object');
+  perform tests.assert(jsonb_typeof(v_snap->'players') = 'array', 'snapshot players array');
+  perform tests.assert(jsonb_typeof(v_snap->'bots') = 'array', 'snapshot bots array');
+  perform tests.assert(jsonb_typeof(v_snap->'atlasVersions') = 'array', 'snapshot atlasVersions array');
+  perform tests.assert(jsonb_typeof(v_snap->'cronJobs') = 'array', 'snapshot cronJobs array');
+  perform tests.assert(jsonb_typeof(v_snap->'cronJobRuns') = 'array', 'snapshot cronJobRuns array');
+  perform tests.assert(jsonb_typeof(v_snap->'dailyActiveAccounts') = 'array', 'snapshot dailyActiveAccounts array');
+  perform tests.assert(jsonb_typeof(v_snap->'recentBattles') = 'array', 'snapshot recentBattles array');
+  perform tests.assert(
+    jsonb_array_length(v_snap->'players') >= 1,
+    'snapshot includes seed player'
+  );
+  perform tests.assert(
+    jsonb_array_length(v_snap->'bots') >= 4,
+    'snapshot includes bots'
+  );
+  perform tests.assert(
+    jsonb_array_length(v_snap->'cronJobs') = 2,
+    'snapshot lists 2 cron jobs'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_snap->'atlasVersions') a
+       where a->>'version' = 'v1'
+    ),
+    'snapshot includes atlas v1'
+  );
+
+  -- Authz: client JWT roles must not execute SECURITY DEFINER admin RPCs.
+  -- (Grant-only gate; these functions bypass RLS when callable.)
+  begin
+    perform set_config('request.jwt.claim.role', 'anon', true);
+    set local role anon;
+    begin
+      perform public.admin_dashboard_snapshot();
+      raise exception 'AUTH FAIL: anon admin_dashboard_snapshot allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    begin
+      perform public.admin_list_cron_job_runs(5);
+      raise exception 'AUTH FAIL: anon admin_list_cron_job_runs allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+  end;
+
+  begin
+    perform set_config('request.jwt.claim.sub', v_account::text, true);
+    perform set_config('request.jwt.claim.role', 'authenticated', true);
+    set local role authenticated;
+    begin
+      perform public.admin_dashboard_snapshot();
+      raise exception 'AUTH FAIL: authenticated admin_dashboard_snapshot allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    begin
+      perform public.admin_list_cron_job_runs(5);
+      raise exception 'AUTH FAIL: authenticated admin_list_cron_job_runs allowed';
+    exception
+      when insufficient_privilege then null;
+      when others then
+        if sqlstate = '42501' then null; else raise; end if;
+    end;
+    reset role;
+    perform set_config('request.jwt.claim.role', 'service_role', true);
+    perform set_config('request.jwt.claim.sub', '', true);
+  end;
+
+  raise notice 'TEST-OK B2 admin dashboard APIs';
 end $$;

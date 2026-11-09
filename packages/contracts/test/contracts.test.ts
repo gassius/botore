@@ -10,6 +10,7 @@ import {
   SaveBotLoadoutRequestSchema,
   BackendHealthSchema,
   CataloguePartSchema,
+  AtlasManifestResponseSchema,
 } from '../src/index.js';
 
 describe('API contracts', () => {
@@ -163,5 +164,32 @@ describe('API contracts', () => {
       }),
     ).toBe(true);
     expect(Value.Check(BackendHealthSchema, { status: 'nope', checks: {} })).toBe(false);
+  });
+
+  it('accepts published atlas manifest response and rejects final budgets', () => {
+    const ok = {
+      ok: true as const,
+      version: 'v1',
+      status: 'published' as const,
+      publishedAt: '2026-11-08T00:00:00.000Z',
+      budgetsFinal: false as const,
+      manifest: { version: 'v1' },
+      entries: [
+        {
+          assetKey: 'parts.chassis-basic.body',
+          kind: 'image' as const,
+          partId: 'chassis-basic',
+          role: 'body',
+          path: 'parts/chassis-basic/body.png',
+          storagePath: 'v1/parts/chassis-basic/body.png',
+          soundTags: ['chassis.light'],
+        },
+      ],
+      bucket: 'atlas' as const,
+      prefix: 'v1/',
+    };
+    expect(Value.Check(AtlasManifestResponseSchema, ok)).toBe(true);
+    expect(Value.Check(AtlasManifestResponseSchema, { ...ok, budgetsFinal: true })).toBe(false);
+    expect(Value.Check(AtlasManifestResponseSchema, { ...ok, status: 'draft' })).toBe(false);
   });
 });
