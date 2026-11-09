@@ -8,6 +8,7 @@
  *   - Postgres backend_health_snapshot() reports proof seed OK
  *   - Catalogue / loadout / inventory counts
  *   - prepare_fight_context eligibility (F2)
+ *   - sanctioned client-read RPCs (owned / roster / allowance)
  *   - persist_fight_result idempotent consume + XP (F3)
  *   - process_analytics_outbox + pg_cron jobs (F4)
  *   - Edge Functions /health and /combat-v1 (required when REQUIRE_EDGE_FUNCTIONS=1)
@@ -514,6 +515,59 @@ if (!['sword', 'axe', 'dagger'].includes(fightCtx.defender?.weaponKind)) {
   fail(`defender weaponKind invalid: ${fightCtx.defender?.weaponKind}`);
 }
 console.log('SMOKE-OK prepare_fight_context');
+
+// B: sanctioned client-read RPCs (auth.uid()-scoped; smoke uses JWT claims via SQL).
+{
+  const ownedJson = psql(
+    `select public.get_owned_character()::text
+       from (select set_config('request.jwt.claim.role', 'authenticated', true),
+                    set_config('request.jwt.claim.sub', '${DEV_ACCOUNT_ID}', true)) as _jwt;`,
+  );
+  let owned;
+  try {
+    owned = JSON.parse(ownedJson);
+  } catch {
+    fail(`get_owned_character did not return JSON: ${ownedJson}`);
+  }
+  if (!owned.ok || owned.characterId !== 'player-hero') {
+    fail(`get_owned_character unexpected: ${ownedJson}`);
+  }
+
+  const rosterJson = psql(
+    `select public.list_opponent_roster()::text
+       from (select set_config('request.jwt.claim.role', 'authenticated', true),
+                    set_config('request.jwt.claim.sub', '${DEV_ACCOUNT_ID}', true)) as _jwt;`,
+  );
+  let roster;
+  try {
+    roster = JSON.parse(rosterJson);
+  } catch {
+    fail(`list_opponent_roster did not return JSON: ${rosterJson}`);
+  }
+  if (!roster.ok || !Array.isArray(roster.opponents) || roster.opponents.length !== 3) {
+    fail(`list_opponent_roster unexpected: ${rosterJson}`);
+  }
+
+  const allowJson = psql(
+    `select public.get_fight_allowance_summary()::text
+       from (select set_config('request.jwt.claim.role', 'authenticated', true),
+                    set_config('request.jwt.claim.sub', '${DEV_ACCOUNT_ID}', true)) as _jwt;`,
+  );
+  let allow;
+  try {
+    allow = JSON.parse(allowJson);
+  } catch {
+    fail(`get_fight_allowance_summary did not return JSON: ${allowJson}`);
+  }
+  if (
+    !allow.ok ||
+    typeof allow.utcDay !== 'string' ||
+    typeof allow.allowancesRemaining !== 'number'
+  ) {
+    fail(`get_fight_allowance_summary unexpected: ${allowJson}`);
+  }
+  console.log('SMOKE-OK client-read RPCs (owned / roster / allowance)');
+}
 
 // F3: persist one fight, retry same key, assert no double consume / XP.
 {

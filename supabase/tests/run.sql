@@ -1636,3 +1636,218 @@ begin
 
   raise notice 'TEST-OK SEC admin grant lockdown (catalog privileges)';
 end $$;
+
+-- =========================================================================
+-- B: sanctioned authenticated client read RPCs (0020)
+-- =========================================================================
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_other uuid := '11111111-1111-4111-8111-111111111111';
+  v_res jsonb;
+  v_count int;
+  v_day text;
+begin
+  -- Privileges: authenticated EXECUTE only; anon + service_role denied
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.get_owned_character()', 'EXECUTE'),
+    'authenticated EXECUTE get_owned_character'
+  );
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.list_opponent_roster()', 'EXECUTE'),
+    'authenticated EXECUTE list_opponent_roster'
+  );
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.get_fight_allowance_summary()', 'EXECUTE'),
+    'authenticated EXECUTE get_fight_allowance_summary'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.get_owned_character()', 'EXECUTE'),
+    'anon must not EXECUTE get_owned_character'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.list_opponent_roster()', 'EXECUTE'),
+    'anon must not EXECUTE list_opponent_roster'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.get_fight_allowance_summary()', 'EXECUTE'),
+    'anon must not EXECUTE get_fight_allowance_summary'
+  );
+  perform tests.assert(
+    not has_function_privilege('service_role', 'public.get_owned_character()', 'EXECUTE'),
+    'service_role must not EXECUTE get_owned_character'
+  );
+  perform tests.assert(
+    not has_function_privilege('service_role', 'public.list_opponent_roster()', 'EXECUTE'),
+    'service_role must not EXECUTE list_opponent_roster'
+  );
+  perform tests.assert(
+    not has_function_privilege('service_role', 'public.get_fight_allowance_summary()', 'EXECUTE'),
+    'service_role must not EXECUTE get_fight_allowance_summary'
+  );
+  raise notice 'TEST-OK B client-read RPC privileges';
+
+  -- Happy path as owning authenticated
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'get_owned_character ok');
+  perform tests.assert(v_res->>'characterId' = 'player-hero', 'owned characterId');
+  perform tests.assert(v_res->>'displayName' = 'Hero', 'owned displayName');
+
+  v_res := public.list_opponent_roster();
+  perform tests.assert((v_res->>'ok')::boolean, 'list_opponent_roster ok');
+  perform tests.assert(jsonb_typeof(v_res->'opponents') = 'array', 'opponents array');
+  select count(*)::int into v_count
+    from jsonb_array_elements(v_res->'opponents') o;
+  perform tests.assert(v_count = 3, format('expected 3 opponents, got %s', v_count));
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'opponents') o
+       where o->>'characterId' = 'opp-sir-bot'
+         and o->>'displayName' = 'Sir Bot'
+    ),
+    'opp-sir-bot in roster'
+  );
+
+  v_res := public.get_fight_allowance_summary();
+  perform tests.assert((v_res->>'ok')::boolean, 'get_fight_allowance_summary ok');
+  v_day := (now() at time zone 'utc')::date::text;
+  perform tests.assert(v_res->>'utcDay' = v_day, 'utcDay is server UTC today');
+  perform tests.assert(
+    (v_res->>'allowancesRemaining')::integer between 0 and 3,
+    'allowancesRemaining in 0..3'
+  );
+  reset role;
+  raise notice 'TEST-OK B client-read RPC happy path (authenticated)';
+
+  -- Negative: cross-account isolation — other account's unused slots are invisible
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_other,
+    'other-player@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+  insert into public.accounts (id) values (v_other) on conflict do nothing;
+  insert into public.fight_allowances (account_id, utc_day, slot_index)
+  select v_other, (now() at time zone 'utc')::date, s
+    from generate_series(1, 3) as s
+  on conflict do nothing;
+  -- Exhaust caller's slots so a leak of v_other's 3 would inflate remaining.
+  update public.fight_allowances
+     set used_at = now()
+   where account_id = v_account
+     and utc_day = (now() at time zone 'utc')::date;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_fight_allowance_summary();
+  perform tests.assert((v_res->>'ok')::boolean, 'exhausted caller still ok');
+  perform tests.assert(
+    (v_res->>'allowancesRemaining')::integer = 0,
+    'cross-account: must not see other account allowances'
+  );
+  reset role;
+  -- Restore caller allowances for later suites.
+  update public.fight_allowances
+     set used_at = null
+   where account_id = v_account
+     and utc_day = (now() at time zone 'utc')::date;
+  raise notice 'TEST-OK B get_fight_allowance_summary denies cross-account';
+
+  -- Negative: anon cannot execute any of the three RPCs
+  set local role anon;
+  begin
+    perform public.get_owned_character();
+    raise exception 'ANON FAIL: get_owned_character allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.list_opponent_roster();
+    raise exception 'ANON FAIL: list_opponent_roster allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.get_fight_allowance_summary();
+    raise exception 'ANON FAIL: get_fight_allowance_summary allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+  raise notice 'TEST-OK B client-read RPCs deny anon';
+
+  -- Negative: service_role cannot EXECUTE (authenticated-only grants)
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role service_role;
+  begin
+    perform public.get_owned_character();
+    raise exception 'SERVICE FAIL: get_owned_character allowed for service_role';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.list_opponent_roster();
+    raise exception 'SERVICE FAIL: list_opponent_roster allowed for service_role';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.get_fight_allowance_summary();
+    raise exception 'SERVICE FAIL: get_fight_allowance_summary allowed for service_role';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+  raise notice 'TEST-OK B client-read RPCs deny service_role EXECUTE';
+
+  -- Negative: unauthenticated JWT role denied (body gate even if EXECUTE present)
+  perform set_config('request.jwt.claim.role', '', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+  begin
+    perform public.get_owned_character();
+    raise exception 'AUTHZ FAIL: unauthenticated get_owned_character allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.list_opponent_roster();
+    raise exception 'AUTHZ FAIL: unauthenticated list_opponent_roster allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.get_fight_allowance_summary();
+    raise exception 'AUTHZ FAIL: unauthenticated get_fight_allowance_summary allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
+  end;
+  raise notice 'TEST-OK B client-read RPC authz gates';
+end $$;
