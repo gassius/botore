@@ -2090,6 +2090,44 @@ begin
   end;
   reset role;
 
+  -- Cross-account: seeded peer caller sees only their own isCurrentBot flag.
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config(
+    'request.jwt.claim.sub',
+    '00000000-0000-4000-8000-000000000011',
+    true
+  );
+  set local role authenticated;
+  v_res := public.list_ranking();
+  perform tests.assert((v_res->>'ok')::boolean, 'list_ranking ok as peer');
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'peer-bolt'
+         and (r->>'isCurrentBot')::boolean = true
+    ),
+    'peer caller: peer-bolt isCurrentBot'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'player-hero'
+         and (r->>'isCurrentBot')::boolean = false
+    ),
+    'peer caller: player-hero is not YOU'
+  );
+  perform tests.assert(
+    (
+      select count(*)::int
+        from jsonb_array_elements(v_res->'rows') r
+       where (r->>'isCurrentBot')::boolean = true
+    ) = 1,
+    'peer caller: exactly one isCurrentBot row'
+  );
+  reset role;
+
   set local role anon;
   begin
     perform public.list_ranking();

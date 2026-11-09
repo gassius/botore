@@ -6,6 +6,12 @@
 --
 -- SECURITY DEFINER + auth.uid() only. No table GRANTs on characters /
 -- progression_ledger / profiles. EXECUTE to authenticated only.
+--
+-- Index supports the per-call sum(delta_xp) group-by on character_id.
+-- Window is top 50 only — callers outside that window get no "YOU" row.
+
+create index if not exists progression_ledger_character_id_idx
+    on public.progression_ledger (character_id);
 
 create or replace function public.list_ranking()
 returns jsonb

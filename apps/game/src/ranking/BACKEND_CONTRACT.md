@@ -20,7 +20,10 @@ Ticket: [C5 Ranking screen: real data + design captures](https://app.clickup.com
 2. Order by `sum(progression_ledger.delta_xp)` descending, then `character_id` ascending.
 3. `rank` is `row_number()` in that order (1-based). Characters with no ledger rows have `totalXp = 0`.
 4. Window: top 50 rows. First-run seed + live XP keep the board small.
-5. XP awards remain the existing combat rules (win = 2, loss = 1). This RPC does **not** invent Elo, REF-03 sample ranks, or client-side reordering.
+5. **Outside the top 50:** the caller’s bot is **not** injected as a “YOU” row. If the authenticated player’s character ranks below 50, `isCurrentBot` will not appear in the payload.
+6. XP awards remain the existing combat rules (win = 2, loss = 1). This RPC does **not** invent Elo, REF-03 sample ranks, or client-side reordering.
+
+Index: `progression_ledger_character_id_idx` on `progression_ledger(character_id)` (same migration).
 
 ## Client
 

@@ -75,9 +75,16 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
     // briefly show the previous board under a new scenario.
     setSession(createInitialRankingSession());
     if (!autoLoad) {
-      return;
+      return () => {
+        controller.dispose();
+      };
     }
     void controller.load();
+    // Dispose the previous controller when token/scenario/port changes so a
+    // slow live load cannot overwrite empty/error (or a refreshed token).
+    return () => {
+      controller.dispose();
+    };
   }, [autoLoad, controller]);
 
   const loadBusy = session.phase === 'loading' || session.phase === 'idle' || session.refreshing;
