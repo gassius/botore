@@ -34,6 +34,11 @@ eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/'
 export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
 export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
 
+# Health (and combat loadout/atlas pin) require a published proof pack in Storage.
+# Migrations only register draft rows — same bootstrap as .github/workflows/pr.yml.
+echo "atlas storage bootstrap…" >&2
+node scripts/seed-atlas-storage.mjs
+
 {
   echo "SUPABASE_URL=${SUPABASE_URL}"
   echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
@@ -48,6 +53,11 @@ echo $! >/tmp/botore-functions-serve.pid
 if ! WAIT_EDGE_TIMEOUT_SEC=90 node scripts/wait-edge-health.mjs; then
   echo "functions serve log:" >&2
   cat /tmp/botore-functions-serve.log >&2 || true
+  echo "health probe body:" >&2
+  curl -sS "${SUPABASE_URL}/functions/v1/health" \
+    -H "apikey: ${SUPABASE_ANON_KEY}" \
+    -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" >&2 || true
+  echo >&2
   exit 1
 fi
 
