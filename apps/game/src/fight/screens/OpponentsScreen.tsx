@@ -1,5 +1,13 @@
 import React, { useEffect } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import {
   PrimaryButton,
@@ -8,9 +16,10 @@ import {
   SelectionCheck,
   StatusErrorBanner,
   garageTag,
+  weaponGlyphSource,
 } from '../../garage-tag';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
-import { weaponUiAlias } from '../../garage/loadout/proofCatalogue';
+import { paintUiAlias, weaponUiAlias } from '../../garage/loadout/proofCatalogue';
 import { canContinueToConfirm } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
 
@@ -150,6 +159,7 @@ export function OpponentsScreen(props: {
             {list.candidates.map((c) => {
               const isSelected = selected?.characterId === c.characterId;
               const weapon = weaponUiAlias(c.loadout.weapon);
+              const paint = paintUiAlias(c.loadout.paint);
               return (
                 <Pressable
                   key={c.characterId}
@@ -162,7 +172,7 @@ export function OpponentsScreen(props: {
                   style={[styles.card, isSelected ? styles.cardSelected : null]}
                   testID={`opponent-${c.characterId}`}
                 >
-                  <View style={styles.preview}>
+                  <View style={styles.preview} testID={`opponent-preview-wrap-${c.characterId}`}>
                     <BotAssemblerSlot
                       loadout={{
                         chassisId: c.loadout.chassis,
@@ -170,8 +180,11 @@ export function OpponentsScreen(props: {
                         weaponId: c.loadout.weapon,
                       }}
                       facing="left"
-                      size={64}
+                      paintId={c.loadout.paint}
+                      weaponId={c.loadout.weapon}
+                      size={96}
                       reducedMotion
+                      motionPose="idle"
                       testID={`opponent-preview-${c.characterId}`}
                     />
                   </View>
@@ -179,9 +192,20 @@ export function OpponentsScreen(props: {
                     <Text style={styles.name} numberOfLines={2} allowFontScaling>
                       {c.displayName}
                     </Text>
-                    <Text style={styles.weapon} allowFontScaling>
-                      {weapon}
+                    <Text style={styles.paint} allowFontScaling>
+                      Paint · {paint}
                     </Text>
+                    <View style={styles.weaponChip} testID={`opponent-weapon-${c.characterId}`}>
+                      <Image
+                        source={weaponGlyphSource(weapon)}
+                        style={styles.weaponGlyph}
+                        resizeMode="contain"
+                        accessibilityIgnoresInvertColors
+                      />
+                      <Text style={styles.weaponLabel} allowFontScaling>
+                        {weapon}
+                      </Text>
+                    </View>
                   </View>
                   <SelectionCheck selected={isSelected} />
                 </Pressable>
@@ -217,7 +241,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flexGrow: 0,
-    maxHeight: 420,
+    maxHeight: 460,
   },
   list: {
     gap: 12,
@@ -227,7 +251,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    minHeight: 96,
+    minHeight: 128,
     padding: 12,
     backgroundColor: garageTag.cream,
     borderWidth: garageTag.outline,
@@ -239,15 +263,15 @@ const styles = StyleSheet.create({
     borderColor: garageTag.mustard,
   },
   preview: {
-    width: 64,
-    height: 72,
+    width: 104,
+    minHeight: 120,
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
+    justifyContent: 'center',
   },
   metaCol: {
     flex: 1,
-    gap: 2,
+    gap: 6,
+    minWidth: 0,
   },
   name: {
     fontWeight: '800',
@@ -256,10 +280,33 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: garageTag.graphite,
   },
-  weapon: {
+  paint: {
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: 11,
     color: garageTag.steel,
     textTransform: 'uppercase',
+  },
+  weaponChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderWidth: garageTag.outline,
+    borderColor: garageTag.graphite,
+    borderRadius: garageTag.cutCorner,
+    backgroundColor: garageTag.paper,
+  },
+  weaponGlyph: {
+    width: 22,
+    height: 22,
+  },
+  weaponLabel: {
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: garageTag.graphite,
   },
 });

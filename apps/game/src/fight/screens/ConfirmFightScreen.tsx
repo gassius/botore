@@ -3,7 +3,6 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import {
-  KitArtPlaceholder,
   Nameplate,
   PrimaryButton,
   ScreenChrome,
@@ -167,13 +166,6 @@ export function ConfirmFightScreen(props: {
     >
       <ScreenHeader title="Confirm Fight" onBack={onBack} />
 
-      <KitArtPlaceholder
-        label="Repair Yard (static)"
-        detail="PLACEHOLDER — F10 owns layered arena + FX. Static preview only."
-        style={styles.arena}
-        testID="confirm-arena"
-      />
-
       {!confirmed || !canProgress ? (
         <StatusErrorBanner
           title="Equipped loadout unavailable"
@@ -184,43 +176,50 @@ export function ConfirmFightScreen(props: {
           testID="confirm-hydration-blocked"
         />
       ) : (
-        <View style={styles.fighters}>
-          <View style={styles.fighter}>
-            <View style={styles.botFrame}>
-              <BotAssemblerSlot
-                loadout={{
-                  chassisId: confirmed.chassis,
-                  paintId: confirmed.paint,
-                  weaponId: confirmed.weapon,
-                }}
-                facing="right"
-                size={132}
-                reducedMotion
-                label="You"
-                testID="confirm-you"
-              />
-            </View>
+        <View style={styles.fighters} testID="confirm-fighters">
+          {/* Both fighters are live kit-v002 BotAssemblers — not Repair Yard placeholders. */}
+          <View style={styles.fighter} testID="confirm-fighter-you">
+            <BotAssemblerSlot
+              loadout={{
+                chassisId: confirmed.chassis,
+                paintId: confirmed.paint,
+                weaponId: confirmed.weapon,
+              }}
+              facing="right"
+              paintId={confirmed.paint}
+              weaponId={confirmed.weapon}
+              size={148}
+              reducedMotion
+              motionPose="idle"
+              label="You"
+              testID="confirm-you"
+            />
             <Nameplate name={playerName} badge="You" />
           </View>
-          <View style={styles.fighter}>
-            <View style={[styles.botFrame, styles.botFar]}>
-              <BotAssemblerSlot
-                loadout={{
-                  chassisId: selected.loadout.chassis,
-                  paintId: selected.loadout.paint,
-                  weaponId: selected.loadout.weapon,
-                }}
-                facing="left"
-                size={118}
-                reducedMotion
-                label={selected.displayName}
-                testID="confirm-opponent"
-              />
-            </View>
+          <View style={styles.fighter} testID="confirm-fighter-opponent">
+            <BotAssemblerSlot
+              loadout={{
+                chassisId: selected.loadout.chassis,
+                paintId: selected.loadout.paint,
+                weaponId: selected.loadout.weapon,
+              }}
+              facing="left"
+              paintId={selected.loadout.paint}
+              weaponId={selected.loadout.weapon}
+              size={136}
+              reducedMotion
+              motionPose="idle"
+              label={selected.displayName}
+              testID="confirm-opponent"
+            />
             <Nameplate name={selected.displayName} />
           </View>
         </View>
       )}
+
+      <Text style={styles.arenaNote} allowFontScaling testID="confirm-arena-note">
+        Arena / FX land with F10 replay — Confirm shows both assembled bots only.
+      </Text>
 
       {eligLoading ? (
         <View style={styles.eligRow}>
@@ -284,30 +283,27 @@ export function ConfirmFightScreen(props: {
 }
 
 const styles = StyleSheet.create({
-  arena: {
-    minHeight: 96,
-  },
   fighters: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 8,
+    justifyContent: 'space-between',
+    gap: 12,
+    minHeight: 220,
+    paddingVertical: 4,
   },
   fighter: {
     flex: 1,
     gap: 8,
     alignItems: 'center',
+    minWidth: 0,
   },
-  botFrame: {
-    width: 132,
-    height: 150,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-  },
-  botFar: {
-    width: 118,
-    height: 136,
-    opacity: 0.96,
+  arenaNote: {
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: garageTag.steel,
   },
   cost: {
     textAlign: 'center',

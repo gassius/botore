@@ -64,6 +64,8 @@ export function BotAssemblerSlot(props: BotAssemblerSlotProps): React.ReactEleme
 
 const styles = StyleSheet.create({
   wrap: {
-    width: '100%',
+    // Do not force width:100% — fight cards / dual Confirm mounts size from
+    // BotAssembler `size`. Stretching to parent clipped kit-v002 under overflow.
+    alignItems: 'center',
   },
 });
