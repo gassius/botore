@@ -133,10 +133,12 @@ Workflow: `.github/workflows/native-design-captures.yml`
   clean Expo prebuild, **Release** iphonesimulator build (bundle embedded),
   `BotoreGameClient` scheme, `-derivedDataPath` under `ios/DerivedData` (not
   `ios/build`), phone-size iPhone Simulator, Stable / Customise / Replay PNGs.
-  Each route cold-starts via `simctl openurl` (then a warm re-open) so
-  `getInitialURL` reaches FirstRunShell after DEV auth; CI asserts route PNGs
-  are byte-distinct. Runs on path-gated `pull_request` and `workflow_dispatch`
-  (**C7b**).
+  Each route cold-starts via `simctl openurl` + a Documents intent file so
+  FirstRunShell receives the route after DEV auth; CI asserts route PNGs are
+  meaningfully distinct (≥0.5% pixel diff, not status-bar clock ticks).
+  **Non-gating UI/UX:** `ios-cold-start-capture.sh` records a short splash→title
+  frame sequence + MP4 before route stills (failures warn only). Runs on
+  path-gated `pull_request` and `workflow_dispatch` (**C7b**).
 - Both jobs build workspace deps first (`pnpm --filter @botore/game^... run build`)
   so Metro can resolve `@botore/*/dist`
 - Pins Android Kotlin **1.9.25** via `expo-build-properties` (Compose 1.5.15)

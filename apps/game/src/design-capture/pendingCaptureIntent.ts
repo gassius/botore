@@ -73,13 +73,11 @@ export function mergeCaptureFileIntent(raw: {
   weaponId?: string | null;
   mute?: boolean | null;
 }): void {
-  const route =
-    typeof raw.route === 'string' && isFirstRunRoute(raw.route) ? raw.route : null;
+  const route = typeof raw.route === 'string' && isFirstRunRoute(raw.route) ? raw.route : null;
   mergeIntent({
     route,
     paintId: typeof raw.paintId === 'string' && raw.paintId.trim() ? raw.paintId.trim() : null,
-    weaponId:
-      typeof raw.weaponId === 'string' && raw.weaponId.trim() ? raw.weaponId.trim() : null,
+    weaponId: typeof raw.weaponId === 'string' && raw.weaponId.trim() ? raw.weaponId.trim() : null,
     mute: typeof raw.mute === 'boolean' ? raw.mute : null,
   });
 }

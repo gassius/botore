@@ -201,6 +201,9 @@ jobs:
           CAPTURE_SETTLE_SEC: '5'
           CAPTURE_BOOT_SEC: '12'
           CAPTURE_MIN_DIFF_PCT: '0.5'
+          # UI/UX non-gating: splash→title frames + short video (must not fail the job).
+          CAPTURE_COLD_START: '1'
+          CAPTURE_COLD_START_SEC: '8'
         run: bash scripts/native-capture/ci-ios-simulator-capture.sh
 
       - name: Upload capture artifacts

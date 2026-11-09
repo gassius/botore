@@ -227,6 +227,18 @@ echo "installing ${APP}" >&2
 xcrun simctl uninstall "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
 xcrun simctl install "${UDID}" "${APP}"
 
+# UI/UX non-gating: native splash → first in-app paint (frames + short video).
+# Failure here must not fail the job — Stable/Customise/Replay stills remain the gate.
+if [[ "${CAPTURE_COLD_START:-1}" == "1" || "${CAPTURE_COLD_START:-1}" == "true" ]]; then
+  echo "cold-start splash→title capture (non-gating)…" >&2
+  if ! "${SCRIPT_DIR}/ios-cold-start-capture.sh" \
+    --out "${OUT_DIR}" \
+    --udid "${UDID}" \
+    --seconds "${CAPTURE_COLD_START_SEC:-8}"; then
+    echo "warn: cold-start capture failed (non-gating; continuing)" >&2
+  fi
+fi
+
 echo "smoke-launch ${BUNDLE_ID}…" >&2
 LAUNCH_OUT="$(xcrun simctl launch "${UDID}" "${BUNDLE_ID}" 2>&1 || true)"
 echo "${LAUNCH_OUT}" >&2

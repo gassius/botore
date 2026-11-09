@@ -70,6 +70,16 @@ write_manifest_line "${MANIFEST}" web_preview "not-accepted"
 if [[ "${CAPTURE_WELCOME:-0}" == "1" || "${CAPTURE_WELCOME:-0}" == "true" ]]; then
   write_manifest_line "${MANIFEST}" welcome "petrol+axe/dagger-on-Stable-Customise"
 fi
+# Non-gating cold-start media (written earlier by ios-cold-start-capture.sh).
+if compgen -G "${OUT_DIR}/ios-*-ColdStart*.png" >/dev/null 2>&1 \
+  || compgen -G "${OUT_DIR}/ios-*-ColdStart*.mp4" >/dev/null 2>&1; then
+  write_manifest_line "${MANIFEST}" cold_start "splash-to-title-non-gating"
+  for f in "${OUT_DIR}"/ios-*-ColdStart*.mp4 "${OUT_DIR}"/ios-*-ColdStart-frame*.png; do
+    [[ -e "${f}" ]] || continue
+    base="$(basename "${f}")"
+    write_manifest_line "${MANIFEST}" "cold_start.${base}" "${f}"
+  done
+fi
 
 ROUTES=()
 if [[ -n "${ROUTES_CSV}" ]]; then
