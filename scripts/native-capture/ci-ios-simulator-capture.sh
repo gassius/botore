@@ -57,23 +57,45 @@ if [[ ! -d "${IOS_DIR}" ]]; then
   exit 1
 fi
 
-WORKSPACE="$(find "${IOS_DIR}" -maxdepth 1 -name '*.xcworkspace' | head -n 1 || true)"
+WORKSPACE="$(find "${IOS_DIR}" -maxdepth 1 -name '*.xcworkspace' ! -name 'Pods.xcworkspace' | head -n 1 || true)"
 if [[ -z "${WORKSPACE}" || ! -d "${WORKSPACE}" ]]; then
-  echo "error: no *.xcworkspace under apps/game/ios" >&2
+  echo "error: no app *.xcworkspace under apps/game/ios" >&2
   ls -la "${IOS_DIR}" >&2 || true
   exit 1
 fi
 
-# Scheme usually matches sanitized Expo name (Botore Game Client → BotoreGameClient).
+WORKSPACE_BASE="$(basename "${WORKSPACE}" .xcworkspace)"
+# Prefer the app scheme (Expo: Botore Game Client → BotoreGameClient). Never take the
+# first xcodebuild -list entry — CocoaPods lists boost/hermes/etc. first.
 SCHEME="${CAPTURE_IOS_SCHEME:-}"
+SCHEME_LIST="$(
+  xcodebuild -list -workspace "${WORKSPACE}" 2>/dev/null \
+    | awk '/Schemes:/{f=1;next} /^$/{f=0} f&&NF{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}'
+)"
+echo "available schemes:" >&2
+echo "${SCHEME_LIST}" | sed 's/^/  /' >&2 || true
+
 if [[ -z "${SCHEME}" ]]; then
-  SCHEME="$(
-    xcodebuild -list -workspace "${WORKSPACE}" 2>/dev/null \
-      | awk '/Schemes:/{f=1;next} f&&NF{print $1; exit}'
-  )"
+  if echo "${SCHEME_LIST}" | grep -qx "${WORKSPACE_BASE}"; then
+    SCHEME="${WORKSPACE_BASE}"
+  elif echo "${SCHEME_LIST}" | grep -qx 'BotoreGameClient'; then
+    SCHEME='BotoreGameClient'
+  else
+    # First non-Pods-looking scheme (skip common pod library schemes).
+    SCHEME="$(
+      echo "${SCHEME_LIST}" \
+        | grep -Eiv '^(Pods-|boost|hermes|React|Yoga|fmt|glog|SocketRocket|FBLazyVector|RCT|DoubleConversion)' \
+        | head -n 1 || true
+    )"
+  fi
 fi
 if [[ -z "${SCHEME}" ]]; then
-  SCHEME="BotoreGameClient"
+  echo "error: could not resolve app scheme for ${WORKSPACE_BASE}" >&2
+  exit 1
+fi
+if ! echo "${SCHEME_LIST}" | grep -qx "${SCHEME}"; then
+  echo "error: scheme '${SCHEME}' not in workspace scheme list" >&2
+  exit 1
 fi
 echo "using workspace=$(basename "${WORKSPACE}") scheme=${SCHEME}" >&2
 
@@ -145,8 +167,9 @@ echo "booted udid=${UDID}" >&2
 export CAPTURE_IOS_UDID="${UDID}"
 
 DERIVED="${IOS_DIR}/build"
+PRODUCTS_DIR="${DERIVED}/Build/Products/Release-iphonesimulator"
 rm -rf "${DERIVED}"
-echo "xcodebuild Release (iphonesimulator, bundle-embedded)…" >&2
+echo "xcodebuild Release (iphonesimulator, scheme=${SCHEME}, bundle-embedded)…" >&2
 (
   cd "${IOS_DIR}"
   EXPO_PUBLIC_DESIGN_CAPTURE="${EXPO_PUBLIC_DESIGN_CAPTURE}" \
@@ -162,15 +185,25 @@ echo "xcodebuild Release (iphonesimulator, bundle-embedded)…" >&2
     -destination "platform=iOS Simulator,id=${UDID}" \
     -derivedDataPath "${DERIVED}" \
     CODE_SIGNING_ALLOWED=NO \
+    ONLY_ACTIVE_ARCH=YES \
     build
 )
 
-APP="$(find "${DERIVED}/Build/Products" -path '*/Release-iphonesimulator/*.app' -maxdepth 3 | head -n 1 || true)"
+# Explicit product path first; then search DerivedData for the app .app.
+APP="${PRODUCTS_DIR}/${SCHEME}.app"
+if [[ ! -d "${APP}" ]]; then
+  APP="$(find "${PRODUCTS_DIR}" -maxdepth 1 -name '*.app' -type d 2>/dev/null | head -n 1 || true)"
+fi
 if [[ -z "${APP}" || ! -d "${APP}" ]]; then
-  echo "error: Release-iphonesimulator .app not found under ${DERIVED}" >&2
-  find "${DERIVED}/Build/Products" -maxdepth 4 -type d 2>/dev/null | head -n 40 >&2 || true
+  APP="$(find "${DERIVED}" -path '*/Release-iphonesimulator/*.app' -type d 2>/dev/null | head -n 1 || true)"
+fi
+if [[ -z "${APP}" || ! -d "${APP}" ]]; then
+  echo "error: Release-iphonesimulator .app not found (scheme=${SCHEME})" >&2
+  echo "expected: ${PRODUCTS_DIR}/${SCHEME}.app" >&2
+  find "${DERIVED}/Build/Products" -maxdepth 4 \( -type d -o -name '*.app' \) 2>/dev/null | head -n 80 >&2 || true
   exit 1
 fi
+echo "built app: ${APP}" >&2
 echo "installing ${APP}" >&2
 xcrun simctl uninstall "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
 xcrun simctl install "${UDID}" "${APP}"
