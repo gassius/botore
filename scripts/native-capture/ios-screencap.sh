@@ -71,13 +71,25 @@ write_capture_intent_file() {
   fi
   mkdir -p "${data_dir}/Documents"
   # Matches apps/game/src/design-capture/readCaptureIntentFile.ts
-  local paint_json="null" weapon_json="null" mute_json="null"
-  if [[ -n "${paint}" ]]; then paint_json="\"${paint}\""; fi
-  if [[ -n "${weapon}" ]]; then weapon_json="\"${weapon}\""; fi
-  if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then mute_json="true"; fi
-  printf '{"route":"%s","paintId":%s,"weaponId":%s,"mute":%s}\n' \
-    "${route}" "${paint_json}" "${weapon_json}" "${mute_json}" \
-    >"${data_dir}/Documents/botore-design-capture-intent.json"
+  # Escape with JSON.stringify so workflow_dispatch route/paint/weapon cannot break JSON.
+  local mute_flag="false"
+  if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then mute_flag="true"; fi
+  CAPTURE_INTENT_ROUTE="${route}" \
+    CAPTURE_INTENT_PAINT="${paint}" \
+    CAPTURE_INTENT_WEAPON="${weapon}" \
+    CAPTURE_INTENT_MUTE="${mute_flag}" \
+    node -e '
+      const o = {
+        route: process.env.CAPTURE_INTENT_ROUTE || null,
+        paintId: process.env.CAPTURE_INTENT_PAINT || null,
+        weaponId: process.env.CAPTURE_INTENT_WEAPON || null,
+        mute: process.env.CAPTURE_INTENT_MUTE === "true",
+      };
+      if (!o.paintId) o.paintId = null;
+      if (!o.weaponId) o.weaponId = null;
+      if (!o.mute) o.mute = null;
+      process.stdout.write(JSON.stringify(o) + "\n");
+    ' >"${data_dir}/Documents/botore-design-capture-intent.json"
   echo "wrote capture intent → ${data_dir}/Documents/botore-design-capture-intent.json" >&2
   return 0
 }

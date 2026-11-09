@@ -109,11 +109,13 @@ if (existsSync(manifestPath)) {
       process.exit(1);
     }
     manifest = manifest.replace(/<application\b([^>]*)>/, (_m, attrs) => {
-      const cleaned = String(attrs).replace(/\s+android:usesCleartextTraffic="[^"]*"/g, '');
-      return `<application${cleaned} android:networkSecurityConfig="@xml/network_security_config" android:usesCleartextTraffic="true">`;
+      let cleaned = String(attrs).replace(/\s+android:usesCleartextTraffic="[^"]*"/g, '');
+      cleaned = cleaned.replace(/\s+android:debuggable="[^"]*"/g, '');
+      // Debuggable so cold-start can plant Documents markers via run-as (CI only).
+      return `<application${cleaned} android:networkSecurityConfig="@xml/network_security_config" android:usesCleartextTraffic="true" android:debuggable="true">`;
     });
     writeFileSync(manifestPath, manifest);
-    console.log(`patched ${manifestPath} (cleartext → 10.0.2.2 / localhost)`);
+    console.log(`patched ${manifestPath} (cleartext → 10.0.2.2 / localhost; debuggable)`);
   } else {
     console.log('ci cleartext networkSecurityConfig already present');
   }

@@ -1,4 +1,4 @@
-# C7 — native design-review captures (NOT part of required PR quality gate).
+# C7 / C7c — native design-review + live-fight captures (NOT part of required PR quality gate).
 # Produces Android emulator + iOS Simulator stills for human design review.
 # No pixel-exact layout assertions.
 #
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       routes:
-        description: Comma-separated first-run routes
+        description: Comma-separated first-run routes (design stills path only)
         required: false
         default: 'Stable,Customise,Replay'
       clips:
@@ -21,6 +21,10 @@ on:
         description: Android emulator API level
         required: false
         default: '34'
+      cold_start:
+        description: Record splash→title cold-start (expensive)
+        required: false
+        default: 'true'
   pull_request:
     paths:
       - 'apps/game/**'
@@ -41,6 +45,9 @@ env:
   CAPTURE_ROUTES: ${{ github.event.inputs.routes || 'Stable,Customise,Replay' }}
   CAPTURE_CLIPS: ${{ github.event.inputs.clips || 'false' }}
   CAPTURE_API_LEVEL: ${{ github.event.inputs.api_level || '34' }}
+  # P2: expensive cold-start off on typical PRs; on for workflow_dispatch / explicit input.
+  # C7c AC still needs splash→title evidence — live-fight jobs force CAPTURE_COLD_START=1.
+  CAPTURE_COLD_START: ${{ github.event.inputs.cold_start || '0' }}
   EXPO_PUBLIC_DESIGN_CAPTURE: '1'
   EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
   CAPTURE_SETTLE_SEC: '3'
@@ -112,8 +119,11 @@ jobs:
 
       - name: Build + live first-run fight captures on emulator
         # Pin to v2.38.0 commit (do not float on @v2).
-        # C3: garage → confirm → server replay → result against local Supabase/combat-v1.
+        # C3/C7c: garage → confirm → server replay → result + cold-start splash→title.
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        env:
+          # C7c AC: real cold-start on the live-fight path (workflow PR default stays 0).
+          CAPTURE_COLD_START: '1'
         with:
           api-level: ${{ env.CAPTURE_API_LEVEL }}
           arch: x86_64
@@ -135,10 +145,10 @@ jobs:
 
   ios-simulator-captures:
     name: iOS Simulator captures
-    # C7b: run on pull_request (path-gated) and workflow_dispatch.
+    # C7b/C7c: run on pull_request (path-gated) and workflow_dispatch.
     # macos-14 retired; public repo has free macOS minutes on macos-15.
     runs-on: macos-15
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -189,22 +199,58 @@ jobs:
       - name: Capture tooling check (scripts + eas.json)
         run: node scripts/native-capture/check-capture-env.mjs --platform ios --tools-only
 
-      - name: Build + run captures on iOS Simulator
+      - name: Install postgresql client (auth repair)
+        run: |
+          set -euo pipefail
+          brew install libpq || true
+          echo "$(brew --prefix libpq)/bin" >> "${GITHUB_PATH}"
+
+      - name: Expo prebuild (ios)
+        run: |
+          set -euo pipefail
+          cd apps/game
+          CI=1 pnpm exec expo prebuild --platform ios --clean
+          cd ../..
+          node scripts/native-capture/patch-ios-ci-ats.mjs
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/game/ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-pods-${{ hashFiles('apps/game/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: apps/game/ios/DerivedData
+          key: ${{ runner.os }}-dd-${{ hashFiles('apps/game/ios/Podfile.lock', 'apps/game/package.json', 'apps/game/app.json') }}-${{ hashFiles('apps/game/src/**/*.ts', 'apps/game/src/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-dd-${{ hashFiles('apps/game/ios/Podfile.lock', 'apps/game/package.json', 'apps/game/app.json') }}-
+
+      - name: pod install
+        run: |
+          set -euo pipefail
+          cd apps/game/ios
+          pod install --deployment 2>/dev/null || pod install
+
+      - name: Build + live first-run fight captures on iOS Simulator
         env:
-          CAPTURE_WELCOME: '1'
           CAPTURE_OUT_DIR: artifacts/native-captures
           CAPTURE_IOS_SCHEME: BotoreGameClient
-          # Prefer devices present on macos-15 / Xcode 16 images; script falls back.
           CAPTURE_IOS_DEVICE: 'iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14'
-          # Cold-start + Documents intent file; warm openurl alone left every still on Stable.
           CAPTURE_IOS_COLD_SEC: '16'
           CAPTURE_SETTLE_SEC: '5'
           CAPTURE_BOOT_SEC: '12'
-          CAPTURE_MIN_DIFF_PCT: '0.5'
-          # UI/UX non-gating: splash→title frames + short video (must not fail the job).
+          CAPTURE_IOS_SKIP_PREBUILD: '1'
+          # C7c AC: splash→title + live fight (workflow PR default stays 0 for design path).
           CAPTURE_COLD_START: '1'
           CAPTURE_COLD_START_SEC: '8'
-        run: bash scripts/native-capture/ci-ios-simulator-capture.sh
+          CAPTURE_COLD_START_BUDGET_SEC: '120'
+        run: bash scripts/native-capture/ci-live-fight-ios-capture.sh
 
       - name: Upload capture artifacts
         if: always()

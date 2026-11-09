@@ -49,6 +49,7 @@ jobs:
           node scripts/edge-combat-runtime-check.mjs
           node --test scripts/smoke-combat-assert.test.mjs
           node --test scripts/wait-edge-health.test.mjs scripts/pipefail-db-log.test.mjs
+          node --test scripts/native-capture/png-diff.test.mjs
 
       - name: Architecture boundary check
         run: node scripts/check-boundaries.mjs

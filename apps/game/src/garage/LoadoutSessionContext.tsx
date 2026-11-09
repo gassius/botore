@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { designCaptureCredentials, isDesignCaptureEnabled } from '../design-capture';
+import { isColdStartHoldTitle } from '../design-capture/readCaptureIntentFile';
 import { createAuthClient } from './auth/createAuthClient';
 import type { AuthPort, AuthSession } from './auth/AuthPort';
 import { createLoadoutSaveClient } from './loadout/createLoadoutSaveClient';
@@ -134,6 +135,8 @@ export function GarageSessionProvider(props: {
    * C7 design-capture builds auto-enter the DEV garage so capture scripts can
    * deep-link into first-run routes without tapping the auth form.
    * Opt-in only (`EXPO_PUBLIC_DESIGN_CAPTURE=1`); never for store builds.
+   * Cold-start hold-title intent skips auto sign-in so splash→AuthEntry title
+   * is visible (C7c).
    */
   useEffect(() => {
     if (!isDesignCaptureEnabled()) return;
@@ -141,6 +144,10 @@ export function GarageSessionProvider(props: {
     if (booting || session) return;
     captureAutoSignInStarted.current = true;
     void (async () => {
+      if (await isColdStartHoldTitle()) {
+        console.log('BOTORE_CAPTURE_COLD_START_HOLD_TITLE:1');
+        return;
+      }
       const creds = designCaptureCredentials();
       const result = await auth.signInWithPassword({
         email: creds.email,

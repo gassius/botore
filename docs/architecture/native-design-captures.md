@@ -138,9 +138,16 @@ Workflow: `.github/workflows/native-design-captures.yml`
   for custom schemes on iOS 18 Simulator — SpringBoard shows “Open in …?” and
   stills capture that dialog instead of the app. CI asserts route PNGs are
   meaningfully distinct (≥0.5% pixel diff, not status-bar clock ticks).
-  **Non-gating UI/UX:** `ios-cold-start-capture.sh` records a short splash→title
-  frame sequence + MP4 before route stills (failures warn only). Runs on
-  path-gated `pull_request` and `workflow_dispatch` (**C7b**).
+  **C7c:** iOS job runs `ci-live-fight-ios-capture.sh` (Colima + local Supabase
+  combat-v1) for garage / confirm / replay-impact / result stills with server
+  fight proof in Documents — no faked markers, no table grants. CocoaPods +
+  DerivedData are cached; `CAPTURE_COLD_START` defaults off on `pull_request`
+  for the design path and is forced on for live-fight AC. Cold-start is
+  wall-clock budgeted (`timeout` + `trap` on `recordVideo`) and asserts
+  `#302D27` splash → distinct title frames via
+  `assert-cold-start-transition.mjs`.
+- Android live-fight (`ci-live-fight-android-capture.sh`) also records cold-start
+  splash→title when `CAPTURE_COLD_START=1`.
 - Both jobs build workspace deps first (`pnpm --filter @botore/game^... run build`)
   so Metro can resolve `@botore/*/dist`
 - Pins Android Kotlin **1.9.25** via `expo-build-properties` (Compose 1.5.15)

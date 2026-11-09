@@ -45,16 +45,40 @@ EXPO_PUBLIC_DESIGN_CAPTURE_PAINT=${EXPO_PUBLIC_DESIGN_CAPTURE_PAINT:-}
 EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON=${EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON:-}
 EOF
 
-echo "expo prebuild --clean (ios)…" >&2
-(
-  cd "${REPO_ROOT}/apps/game"
-  CI=1 pnpm exec expo prebuild --platform ios --clean
-)
-
 IOS_DIR="${REPO_ROOT}/apps/game/ios"
+if [[ "${CAPTURE_IOS_SKIP_PREBUILD:-0}" == "1" || "${CAPTURE_IOS_SKIP_PREBUILD:-0}" == "true" ]]; then
+  echo "skipping expo prebuild (CAPTURE_IOS_SKIP_PREBUILD=1; workflow cached Pods/DerivedData)" >&2
+  if [[ ! -d "${IOS_DIR}" ]]; then
+    echo "error: apps/game/ios missing — prebuild step did not run" >&2
+    exit 1
+  fi
+else
+  echo "expo prebuild --clean (ios)…" >&2
+  (
+    cd "${REPO_ROOT}/apps/game"
+    CI=1 pnpm exec expo prebuild --platform ios --clean
+  )
+fi
+
 if [[ ! -d "${IOS_DIR}" ]]; then
   echo "error: apps/game/ios missing after prebuild" >&2
   exit 1
+fi
+
+# CI cleartext ATS for local Supabase (no-op when already patched).
+node "${SCRIPT_DIR}/patch-ios-ci-ats.mjs" || true
+
+# Prefer cached Pods; always run pod install so the lockfile is respected.
+if [[ -f "${IOS_DIR}/Podfile" ]]; then
+  echo "pod install…" >&2
+  (
+    cd "${IOS_DIR}"
+    if command -v pod >/dev/null 2>&1; then
+      pod install --deployment 2>/dev/null || pod install
+    else
+      echo "warn: CocoaPods gem missing; relying on Expo prebuild pod install" >&2
+    fi
+  )
 fi
 
 WORKSPACE="$(find "${IOS_DIR}" -maxdepth 1 -name '*.xcworkspace' ! -name 'Pods.xcworkspace' | head -n 1 || true)"
@@ -227,16 +251,36 @@ echo "installing ${APP}" >&2
 xcrun simctl uninstall "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
 xcrun simctl install "${UDID}" "${APP}"
 
-# UI/UX non-gating: native splash → first in-app paint (frames + short video).
-# Failure here must not fail the job — Stable/Customise/Replay stills remain the gate.
-if [[ "${CAPTURE_COLD_START:-1}" == "1" || "${CAPTURE_COLD_START:-1}" == "true" ]]; then
-  echo "cold-start splash→title capture (non-gating)…" >&2
-  if ! "${SCRIPT_DIR}/ios-cold-start-capture.sh" \
-    --out "${OUT_DIR}" \
-    --udid "${UDID}" \
-    --seconds "${CAPTURE_COLD_START_SEC:-8}"; then
-    echo "warn: cold-start capture failed (non-gating; continuing)" >&2
+# Expensive splash→title capture. Default off on pull_request (C7b PRR P2);
+# enable with CAPTURE_COLD_START=1 (workflow_dispatch / C7c AC).
+# Hard wall-clock budget so a hung simctl cannot burn the 90-minute job.
+if [[ "${CAPTURE_COLD_START:-0}" == "1" || "${CAPTURE_COLD_START:-0}" == "true" ]]; then
+  echo "cold-start splash→title capture (budget ${CAPTURE_COLD_START_BUDGET_SEC:-120}s)…" >&2
+  COLD_BUDGET="${CAPTURE_COLD_START_BUDGET_SEC:-120}"
+  set +e
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "${COLD_BUDGET}" "${SCRIPT_DIR}/ios-cold-start-capture.sh" \
+      --out "${OUT_DIR}" \
+      --udid "${UDID}" \
+      --seconds "${CAPTURE_COLD_START_SEC:-8}"
+    cold_rc=$?
+  else
+    "${SCRIPT_DIR}/ios-cold-start-capture.sh" \
+      --out "${OUT_DIR}" \
+      --udid "${UDID}" \
+      --seconds "${CAPTURE_COLD_START_SEC:-8}"
+    cold_rc=$?
   fi
+  set -e
+  if [[ "${cold_rc}" -ne 0 ]]; then
+    echo "warn: cold-start capture exited ${cold_rc} (continuing; stills remain the gate)" >&2
+  elif ! node "${SCRIPT_DIR}/assert-cold-start-transition.mjs" \
+    --platform ios \
+    --out "${OUT_DIR}"; then
+    echo "warn: cold-start transition assert failed (continuing)" >&2
+  fi
+else
+  echo "cold-start skipped (CAPTURE_COLD_START=${CAPTURE_COLD_START:-0})" >&2
 fi
 
 echo "smoke-launch ${BUNDLE_ID}…" >&2
