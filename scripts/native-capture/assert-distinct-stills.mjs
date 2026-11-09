@@ -134,9 +134,10 @@ function looksLikeSpringBoardOpenDialog(decoded) {
   };
   // Center band of an "Open in" sheet sits over blue wallpaper; garage is cream.
   const [r, g, b] = sample(Math.floor(w / 2), Math.floor(h * 0.35));
-  const tealWallpaper = b > 140 && g > 140 && r < 160 && b >= r;
+  // Stock iOS wallpaper / alert chrome: blue-leaning, not Garage Tag cream.
+  const blueLean = b > 160 && b > r + 20 && r < 180;
   const creamGarage = r > 200 && g > 180 && b > 150 && r >= g && g >= b;
-  return tealWallpaper && !creamGarage;
+  return blueLean && !creamGarage;
 }
 
 const { platform, outDir, routes, minPct } = parseArgs(process.argv.slice(2));
