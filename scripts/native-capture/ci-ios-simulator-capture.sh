@@ -222,13 +222,6 @@ if [[ -z "${JSBUNDLE}" || ! -s "${JSBUNDLE}" ]]; then
   exit 1
 fi
 echo "embedded bundle: ${JSBUNDLE} ($(wc -c <"${JSBUNDLE}" | xargs) bytes)" >&2
-# Metro inlines EXPO_PUBLIC_* as string literals — present even in Hermes bytecode.
-if ! strings "${JSBUNDLE}" | grep -q 'EXPO_PUBLIC_DESIGN_CAPTURE\|design-capture\|capture@botore'; then
-  # Soft check: at least ensure the capture route token survived minify.
-  if ! strings "${JSBUNDLE}" | grep -q 'botore'; then
-    echo "warn: could not find capture markers in jsbundle via strings" >&2
-  fi
-fi
 
 echo "installing ${APP}" >&2
 xcrun simctl uninstall "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
@@ -277,7 +270,12 @@ for raw in "${ROUTE_LIST[@]}"; do
   [[ -z "${route}" ]] && continue
   TRIMMED_ROUTES+=("${route}")
 done
-if ! assert_distinct_route_pngs "${OUT_DIR}" ios "${TRIMMED_ROUTES[@]}"; then
+# Pixel-diff assert (SHA-only lets status-bar clock ticks false-pass).
+if ! node "${SCRIPT_DIR}/assert-distinct-stills.mjs" \
+  --platform ios \
+  --out "${OUT_DIR}" \
+  --routes "$(IFS=','; echo "${TRIMMED_ROUTES[*]}")" \
+  --min-pct "${CAPTURE_MIN_DIFF_PCT:-0.5}"; then
   ls -la "${OUT_DIR}" >&2 || true
   xcrun simctl spawn "${UDID}" log show --last 3m --style compact 2>/dev/null | tail -n 120 >&2 || true
   exit 1

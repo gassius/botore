@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { readDesignCaptureConfig } from '../design-capture';
+import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
 import { useMute } from '../hooks/useMute';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { nextRoute, prevRoute, type FirstRunRoute } from './routes';
@@ -29,16 +30,22 @@ export type FirstRunContextValue = {
 const FirstRunContext = createContext<FirstRunContextValue | null>(null);
 
 function initialCaptureRoute(): FirstRunRoute {
-  return readDesignCaptureConfig().initialRoute ?? 'Stable';
+  // Prefer deep-link / CI intent captured during auth over the baked env default.
+  return peekCaptureIntent().route ?? readDesignCaptureConfig().initialRoute ?? 'Stable';
 }
 
 export function FirstRunProvider({ children }: { children: React.ReactNode }): React.ReactElement {
+  const captureBoot = readDesignCaptureConfig();
+  const pending = peekCaptureIntent();
   const [route, setRoute] = useState<FirstRunRoute>(initialCaptureRoute);
   const { muted, toggleMute } = useMute(false);
   const { reducedMotion, forceReducedMotion, setForceReducedMotion } = useReducedMotion();
-  const captureBoot = readDesignCaptureConfig();
-  const [demoPaintId, setDemoPaintId] = useState(captureBoot.initialPaintId ?? 'oxide');
-  const [demoWeaponId, setDemoWeaponId] = useState(captureBoot.initialWeaponId ?? 'sword');
+  const [demoPaintId, setDemoPaintId] = useState(
+    pending.paintId ?? captureBoot.initialPaintId ?? 'oxide',
+  );
+  const [demoWeaponId, setDemoWeaponId] = useState(
+    pending.weaponId ?? captureBoot.initialWeaponId ?? 'sword',
+  );
   const [demoOpponentId, setDemoOpponentId] = useState<string | null>(null);
 
   const value = useMemo<FirstRunContextValue>(
