@@ -38,7 +38,8 @@ export function ScreenChrome({
       edges={['top', 'left', 'right', 'bottom']}
       testID={testID}
     >
-      <GaragePanel style={styles.frame} rivets>
+      {/* fill carries flex:1 through GaragePanel's inner wrapper so ScrollView is bounded */}
+      <GaragePanel style={styles.frame} rivets fill>
         {body}
         {footer ? <View style={styles.footer}>{footer}</View> : null}
       </GaragePanel>

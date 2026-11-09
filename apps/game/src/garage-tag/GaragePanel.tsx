@@ -7,6 +7,12 @@ export type GaragePanelProps = {
   style?: StyleProp<ViewStyle>;
   /** Decorative corner rivets (non-interactive). */
   rivets?: boolean;
+  /**
+   * When true, panel + content wrapper participate in a flex:1 height chain
+   * so a child ScrollView gets a bounded viewport (ScreenChrome frame).
+   * Leave false for content-sized panels so they do not stretch.
+   */
+  fill?: boolean;
   testID?: string;
 };
 
@@ -28,10 +34,11 @@ export function GaragePanel({
   children,
   style,
   rivets = true,
+  fill = false,
   testID,
 }: GaragePanelProps): React.ReactElement {
   return (
-    <View style={[styles.panel, style]} testID={testID}>
+    <View style={[styles.panel, fill ? styles.panelFill : null, style]} testID={testID}>
       {rivets ? (
         <>
           <Rivet style={styles.rivetTL} />
@@ -40,7 +47,7 @@ export function GaragePanel({
           <Rivet style={styles.rivetBR} />
         </>
       ) : null}
-      <View style={styles.inner}>{children}</View>
+      <View style={[styles.inner, fill ? styles.innerFill : null]}>{children}</View>
     </View>
   );
 }
@@ -53,8 +60,16 @@ const styles = StyleSheet.create({
     borderRadius: garageTag.cutCorner,
     overflow: 'hidden',
   },
+  panelFill: {
+    flex: 1,
+    flexDirection: 'column',
+  },
   inner: {
     padding: 16,
+  },
+  innerFill: {
+    flex: 1,
+    flexDirection: 'column',
   },
   rivet: {
     position: 'absolute',

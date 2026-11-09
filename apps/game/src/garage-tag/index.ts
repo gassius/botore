@@ -2,6 +2,12 @@
 export { garageTag, type GarageTagTokens } from './tokens';
 export { uiKitAssets, weaponGlyphSource, type WeaponGlyphId } from './assets';
 export { GaragePanel, type GaragePanelProps } from './GaragePanel';
+export {
+  measureScreenChromeLayout,
+  type ScreenChromeLayoutOptions,
+  type ScreenChromeLayoutResult,
+} from './screenChromeLayout';
+
 export { PrimaryButton, type PrimaryButtonProps } from './PrimaryButton';
 export { SecondaryButton, type SecondaryButtonProps } from './SecondaryButton';
 export { TabBar, type TabBarProps, type TabItem } from './TabBar';
