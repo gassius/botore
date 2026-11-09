@@ -135,9 +135,7 @@ jobs:
 
   ios-simulator-captures:
     name: iOS Simulator captures
-    # C7b follow-up: do not run on pull_request (saves macOS minutes; must not block #28).
-    # Manual: Actions → Native design captures → Run workflow.
-    if: github.event_name == 'workflow_dispatch'
+    # C7b: run on pull_request (path-gated) and workflow_dispatch.
     # macos-14 retired; public repo has free macOS minutes on macos-15.
     runs-on: macos-15
     timeout-minutes: 90
@@ -198,6 +196,14 @@ jobs:
           CAPTURE_IOS_SCHEME: BotoreGameClient
           # Prefer devices present on macos-15 / Xcode 16 images; script falls back.
           CAPTURE_IOS_DEVICE: 'iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14'
+          # Cold-start + Documents intent file; warm openurl alone left every still on Stable.
+          CAPTURE_IOS_COLD_SEC: '16'
+          CAPTURE_SETTLE_SEC: '5'
+          CAPTURE_BOOT_SEC: '12'
+          CAPTURE_MIN_DIFF_PCT: '0.5'
+          # UI/UX non-gating: splash→title frames + short video (must not fail the job).
+          CAPTURE_COLD_START: '1'
+          CAPTURE_COLD_START_SEC: '8'
         run: bash scripts/native-capture/ci-ios-simulator-capture.sh
 
       - name: Upload capture artifacts

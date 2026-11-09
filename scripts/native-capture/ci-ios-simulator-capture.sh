@@ -65,8 +65,8 @@ if [[ -z "${WORKSPACE}" || ! -d "${WORKSPACE}" ]]; then
 fi
 
 WORKSPACE_BASE="$(basename "${WORKSPACE}" .xcworkspace)"
-# Prefer the app scheme (Expo: Botore Game Client → BotoreGameClient). Never take the
-# first xcodebuild -list entry — CocoaPods lists boost/hermes/etc. first.
+# Prefer BotoreGameClient (Expo: Botore Game Client). Never take the first
+# xcodebuild -list entry — CocoaPods lists boost/hermes/etc. first.
 SCHEME="${CAPTURE_IOS_SCHEME:-}"
 SCHEME_LIST="$(
   xcodebuild -list -workspace "${WORKSPACE}" 2>/dev/null \
@@ -76,10 +76,10 @@ echo "available schemes:" >&2
 echo "${SCHEME_LIST}" | sed 's/^/  /' >&2 || true
 
 if [[ -z "${SCHEME}" ]]; then
-  if echo "${SCHEME_LIST}" | grep -qx "${WORKSPACE_BASE}"; then
-    SCHEME="${WORKSPACE_BASE}"
-  elif echo "${SCHEME_LIST}" | grep -qx 'BotoreGameClient'; then
+  if echo "${SCHEME_LIST}" | grep -qx 'BotoreGameClient'; then
     SCHEME='BotoreGameClient'
+  elif echo "${SCHEME_LIST}" | grep -qx "${WORKSPACE_BASE}"; then
+    SCHEME="${WORKSPACE_BASE}"
   else
     # First non-Pods-looking scheme (skip common pod library schemes).
     SCHEME="$(
@@ -164,6 +164,9 @@ if [[ -z "${UDID}" ]]; then
   exit 1
 fi
 echo "booted udid=${UDID}" >&2
+# Wait for SpringBoard (not just Booted) so screenshots are not a blank framebuffer.
+xcrun simctl bootstatus "${UDID}" -b >/dev/null 2>&1 || true
+osascript -e 'tell application "Simulator" to activate' >/dev/null 2>&1 || true
 export CAPTURE_IOS_UDID="${UDID}"
 
 # RN/Expo codegen writes to ios/build/generated — do NOT use ios/build as
@@ -211,32 +214,50 @@ if [[ -z "${APP}" || ! -d "${APP}" ]]; then
   exit 1
 fi
 echo "built app: ${APP}" >&2
+# Confirm Release embedded the JS bundle (Hermes bytecode or plain).
+JSBUNDLE="$(find "${APP}" -name '*.jsbundle' | head -n 1 || true)"
+if [[ -z "${JSBUNDLE}" || ! -s "${JSBUNDLE}" ]]; then
+  echo "error: no embedded *.jsbundle inside ${APP}" >&2
+  find "${APP}" -maxdepth 3 -type f | head -n 80 >&2 || true
+  exit 1
+fi
+echo "embedded bundle: ${JSBUNDLE} ($(wc -c <"${JSBUNDLE}" | xargs) bytes)" >&2
+
 echo "installing ${APP}" >&2
 xcrun simctl uninstall "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
 xcrun simctl install "${UDID}" "${APP}"
-xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >/dev/null
 
-echo "waiting for ${BUNDLE_ID}…" >&2
-ready=0
-for _ in $(seq 1 45); do
-  # simctl spawn launches briefly; check installed + process list best-effort.
-  if xcrun simctl get_app_container "${UDID}" "${BUNDLE_ID}" data >/dev/null 2>&1; then
-    ready=1
-    # Give RN/Expo a moment after cold launch.
-    sleep "${CAPTURE_BOOT_SEC:-8}"
-    break
+# UI/UX non-gating: native splash → first in-app paint (frames + short video).
+# Failure here must not fail the job — Stable/Customise/Replay stills remain the gate.
+if [[ "${CAPTURE_COLD_START:-1}" == "1" || "${CAPTURE_COLD_START:-1}" == "true" ]]; then
+  echo "cold-start splash→title capture (non-gating)…" >&2
+  if ! "${SCRIPT_DIR}/ios-cold-start-capture.sh" \
+    --out "${OUT_DIR}" \
+    --udid "${UDID}" \
+    --seconds "${CAPTURE_COLD_START_SEC:-8}"; then
+    echo "warn: cold-start capture failed (non-gating; continuing)" >&2
   fi
-  sleep 1
-done
-if [[ "${ready}" != "1" ]]; then
-  echo "error: ${BUNDLE_ID} not installed/launchable on simulator" >&2
-  exit 1
 fi
 
-# Re-launch to foreground in case install raced.
-xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
-xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >/dev/null
-sleep "${CAPTURE_BOOT_SEC:-6}"
+echo "smoke-launch ${BUNDLE_ID}…" >&2
+LAUNCH_OUT="$(xcrun simctl launch "${UDID}" "${BUNDLE_ID}" 2>&1 || true)"
+echo "${LAUNCH_OUT}" >&2
+APP_PID="$(echo "${LAUNCH_OUT}" | sed -nE 's/.*: ([0-9]+)$/\1/p' | tail -n 1)"
+if [[ -z "${APP_PID}" ]]; then
+  echo "error: simctl launch did not return a PID for ${BUNDLE_ID}" >&2
+  xcrun simctl spawn "${UDID}" log show --last 2m --style compact 2>/dev/null | tail -n 80 >&2 || true
+  exit 1
+fi
+echo "launched pid=${APP_PID}; waiting for first paint…" >&2
+sleep "${CAPTURE_BOOT_SEC:-12}"
+# Confirm process still alive (crashes yield black/identical stills).
+if ! xcrun simctl spawn "${UDID}" launchctl print "system/${BUNDLE_ID}" >/dev/null 2>&1 \
+  && ! xcrun simctl spawn "${UDID}" launchctl list 2>/dev/null | grep -F "${BUNDLE_ID}" >/dev/null; then
+  # launchctl print paths differ across runtimes; fall back to host-side ps via simctl.
+  if ! xcrun simctl spawn "${UDID}" sh -c "ps -A | grep -F '${BUNDLE_ID}' | grep -v grep" >/dev/null 2>&1; then
+    echo "warn: could not confirm ${BUNDLE_ID} still running after boot wait (continuing; route stills assert uniqueness)" >&2
+  fi
+fi
 
 node "${SCRIPT_DIR}/check-capture-env.mjs" --platform ios
 
@@ -255,20 +276,20 @@ export CAPTURE_WELCOME="${WELCOME}"
   ${CLIP_ARGS[@]+"${CLIP_ARGS[@]}"}
 
 IFS=',' read -r -a ROUTE_LIST <<<"${ROUTES}"
-missing=0
+TRIMMED_ROUTES=()
 for raw in "${ROUTE_LIST[@]}"; do
   route="$(echo "${raw}" | xargs)"
   [[ -z "${route}" ]] && continue
-  matches=( "${OUT_DIR}"/ios-*-"${route}".png )
-  if [[ ! -e "${matches[0]:-}" ]]; then
-    echo "error: missing capture PNG for route ${route} under ${OUT_DIR}" >&2
-    missing=1
-  else
-    echo "ok: ${matches[0]}" >&2
-  fi
+  TRIMMED_ROUTES+=("${route}")
 done
-if [[ "${missing}" != "0" ]]; then
+# Pixel-diff assert (SHA-only lets status-bar clock ticks false-pass).
+if ! node "${SCRIPT_DIR}/assert-distinct-stills.mjs" \
+  --platform ios \
+  --out "${OUT_DIR}" \
+  --routes "$(IFS=','; echo "${TRIMMED_ROUTES[*]}")" \
+  --min-pct "${CAPTURE_MIN_DIFF_PCT:-0.5}"; then
   ls -la "${OUT_DIR}" >&2 || true
+  xcrun simctl spawn "${UDID}" log show --last 3m --style compact 2>/dev/null | tail -n 120 >&2 || true
   exit 1
 fi
 

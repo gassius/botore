@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { armDesignCaptureIntentListener } from '../design-capture/pendingCaptureIntent';
+import { loadCaptureIntentFile } from '../design-capture/readCaptureIntentFile';
 import { FightSessionProvider } from '../fight/FightSessionContext';
 import { FirstRunShell } from '../first-run/FirstRunShell';
 import { garageTag } from '../garage-tag';
@@ -13,6 +15,12 @@ import { GarageSessionProvider, useGarageSession } from './LoadoutSessionContext
  */
 function GarageRootInner(): React.ReactElement {
   const { booting, session } = useGarageSession();
+
+  // Arm deep-link capture before FirstRunShell exists so iOS getInitialURL is not missed.
+  useEffect(() => {
+    armDesignCaptureIntentListener();
+    void loadCaptureIntentFile();
+  }, []);
 
   if (booting) {
     return (

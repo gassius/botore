@@ -56,15 +56,102 @@ done
 
 require_cmd xcrun
 OUT_DIR="$(ensure_out_dir "${OUT_DIR}")"
+BUNDLE_ID="${CAPTURE_IOS_BUNDLE:-${BUNDLE_IOS}}"
+
+write_capture_intent_file() {
+  local route="$1"
+  local paint="$2"
+  local weapon="$3"
+  local mute="$4"
+  local data_dir
+  data_dir="$(xcrun simctl get_app_container "${UDID}" "${BUNDLE_ID}" data 2>/dev/null || true)"
+  if [[ -z "${data_dir}" || ! -d "${data_dir}" ]]; then
+    echo "warn: app data container not ready for intent file" >&2
+    return 1
+  fi
+  mkdir -p "${data_dir}/Documents"
+  # Matches apps/game/src/design-capture/readCaptureIntentFile.ts
+  local paint_json="null" weapon_json="null" mute_json="null"
+  if [[ -n "${paint}" ]]; then paint_json="\"${paint}\""; fi
+  if [[ -n "${weapon}" ]]; then weapon_json="\"${weapon}\""; fi
+  if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then mute_json="true"; fi
+  printf '{"route":"%s","paintId":%s,"weaponId":%s,"mute":%s}\n' \
+    "${route}" "${paint_json}" "${weapon_json}" "${mute_json}" \
+    >"${data_dir}/Documents/botore-design-capture-intent.json"
+  echo "wrote capture intent → ${data_dir}/Documents/botore-design-capture-intent.json" >&2
+  return 0
+}
+
+# iOS 18 Simulator shows SpringBoard "Open in …?" for custom-scheme
+# `simctl openurl` when the app is not already foreground — our stills were
+# that dialog, not Stable/Customise/Replay. Prefer Documents intent + launch.
+ensure_app_data_container() {
+  if xcrun simctl get_app_container "${UDID}" "${BUNDLE_ID}" data >/dev/null 2>&1; then
+    return 0
+  fi
+  xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
+  sleep 2
+  xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
+  sleep 1
+}
+
+dismiss_open_in_alert_if_any() {
+  # Best-effort: if a prior openurl left the confirmation sheet up, dismiss it.
+  osascript >/dev/null 2>&1 <<'APPLESCRIPT' || true
+tell application "Simulator" to activate
+delay 0.2
+tell application "System Events"
+  if exists process "Simulator" then
+    tell process "Simulator"
+      try
+        if exists button "Open" of window 1 then
+          click button "Open" of window 1
+        end if
+      end try
+      try
+        if exists button "Cancel" of window 1 then
+          click button "Cancel" of window 1
+        end if
+      end try
+    end tell
+  end if
+end tell
+APPLESCRIPT
+}
 
 if [[ -n "${ROUTE}" ]]; then
-  URL="$(capture_url_for_route "${ROUTE}" "${MUTE}" "${PAINT}" "${WEAPON}")"
-  echo "opening ${URL}" >&2
-  xcrun simctl openurl "${UDID}" "${URL}"
-  sleep "${CAPTURE_SETTLE_SEC:-2}"
+  echo "launching ${BUNDLE_ID} for route=${ROUTE} (intent file; no openurl)" >&2
+  xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
+  dismiss_open_in_alert_if_any
+  ensure_app_data_container
+  if ! write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}"; then
+    echo "error: could not write capture intent file for ${ROUTE}" >&2
+    exit 1
+  fi
+  LAUNCH_OUT="$(xcrun simctl launch "${UDID}" "${BUNDLE_ID}" 2>&1 || true)"
+  echo "${LAUNCH_OUT}" >&2
+  APP_PID="$(echo "${LAUNCH_OUT}" | sed -nE 's/.*: ([0-9]+)$/\1/p' | tail -n 1)"
+  if [[ -z "${APP_PID}" ]]; then
+    echo "error: simctl launch did not return a PID for ${BUNDLE_ID}" >&2
+    exit 1
+  fi
+  # Auth auto-sign-in + intent file poll + FirstRunShell route paint.
+  sleep "${CAPTURE_IOS_COLD_SEC:-${CAPTURE_SETTLE_SEC:-16}}"
+  # Re-write intent in case Documents was recreated, then bring app forward.
+  write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" || true
+  xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
+  sleep "${CAPTURE_SETTLE_SEC:-5}"
+  dismiss_open_in_alert_if_any
 fi
 
 LABEL="${NAME:-${ROUTE:-screen}}"
 FILE="${OUT_DIR}/ios-$(stamp)-${LABEL}.png"
+# Bring Simulator forward so the framebuffer is composited on GHA.
+osascript -e 'tell application "Simulator" to activate' >/dev/null 2>&1 || true
+dismiss_open_in_alert_if_any
 xcrun simctl io "${UDID}" screenshot "${FILE}"
+if [[ ! -s "${FILE}" ]]; then
+  echo "error: empty screenshot ${FILE}" >&2
+  exit 1
+fi
 printf '%s\n' "${FILE}"
