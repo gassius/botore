@@ -1528,7 +1528,6 @@ declare
   v_count int := 0;
   v_fn_count int := 0;
   v_json jsonb;
-  v_sql text;
 begin
   -- Catalog: every public.admin_% *view* must deny client SELECT ----------
   -- (tables like admin_audit_log are ledgers, not reporting views)
@@ -1588,23 +1587,14 @@ begin
     format('expected >=3 admin/health functions, got %s', v_fn_count)
   );
 
-  -- service_role positive: actually read each admin view + call RPCs -------
+  -- service_role positive: live-execute DEFINER RPCs only -----------------
+  -- Do NOT SELECT security_invoker admin views as service_role — that would
+  -- require SELECT on player base tables (e.g. parts_catalogue). View grants
+  -- are already asserted via has_table_privilege above. Dashboard uses the
+  -- owner/reporting DB URL for invoker views.
   perform set_config('request.jwt.claim.role', 'service_role', true);
   perform set_config('request.jwt.claim.sub', '', true);
   set local role service_role;
-
-  for r in
-    select c.relname
-      from pg_class c
-      join pg_namespace n on n.oid = c.relnamespace
-     where n.nspname = 'public'
-       and c.relkind = 'v'
-       and c.relname like 'admin_%'
-     order by c.relname
-  loop
-    v_sql := format('select count(*) from public.%I', r.relname);
-    execute v_sql into v_count;
-  end loop;
 
   select public.backend_health_snapshot() into v_json;
   perform tests.assert(v_json ? 'status', 'service_role backend_health_snapshot');
@@ -1614,7 +1604,7 @@ begin
 
   perform 1 from public.admin_list_cron_jobs() limit 1;
 
-  -- Optional F5/B2 objects when present on this database.
+  -- Optional F5/B2 DEFINER RPCs when present on this database.
   if to_regprocedure('public.admin_dashboard_snapshot()') is not null then
     select public.admin_dashboard_snapshot() into v_json;
     perform tests.assert((v_json->>'ok')::boolean, 'service_role admin_dashboard_snapshot');
