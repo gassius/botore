@@ -1528,6 +1528,13 @@ declare
   v_count int := 0;
   v_fn_count int := 0;
   v_json jsonb;
+  v_health jsonb;
+  v_outbox jsonb;
+  v_dash jsonb;
+  v_cron_ok boolean := false;
+  v_runs_ok boolean := false;
+  v_dash_present boolean := false;
+  v_runs_present boolean := false;
 begin
   -- Catalog: every public.admin_% *view* must deny client SELECT ----------
   -- (tables like admin_audit_log are ledgers, not reporting views)
@@ -1592,29 +1599,39 @@ begin
   -- require SELECT on player base tables (e.g. parts_catalogue). View grants
   -- are already asserted via has_table_privilege above. Dashboard uses the
   -- owner/reporting DB URL for invoker views.
+  -- Capture results under service_role, then assert as owner (tests schema
+  -- is not granted to service_role).
+  v_dash_present := to_regprocedure('public.admin_dashboard_snapshot()') is not null;
+  v_runs_present := to_regprocedure('public.admin_list_cron_job_runs(integer)') is not null;
+
   perform set_config('request.jwt.claim.role', 'service_role', true);
   perform set_config('request.jwt.claim.sub', '', true);
   set local role service_role;
 
-  select public.backend_health_snapshot() into v_json;
-  perform tests.assert(v_json ? 'status', 'service_role backend_health_snapshot');
+  select public.backend_health_snapshot() into v_health;
+  select public.outbox_status_snapshot() into v_outbox;
+  select exists (select 1 from public.admin_list_cron_jobs() limit 1) into v_cron_ok;
 
-  select public.outbox_status_snapshot() into v_json;
-  perform tests.assert((v_json->>'ok')::boolean, 'service_role outbox_status_snapshot');
-
-  perform 1 from public.admin_list_cron_jobs() limit 1;
-
-  -- Optional F5/B2 DEFINER RPCs when present on this database.
-  if to_regprocedure('public.admin_dashboard_snapshot()') is not null then
-    select public.admin_dashboard_snapshot() into v_json;
-    perform tests.assert((v_json->>'ok')::boolean, 'service_role admin_dashboard_snapshot');
+  if v_dash_present then
+    select public.admin_dashboard_snapshot() into v_dash;
   end if;
-  if to_regprocedure('public.admin_list_cron_job_runs(integer)') is not null then
-    perform 1 from public.admin_list_cron_job_runs(5) limit 1;
+  if v_runs_present then
+    select exists (select 1 from public.admin_list_cron_job_runs(5) limit 1)
+      into v_runs_ok;
+  else
+    v_runs_ok := true;
   end if;
 
   reset role;
   perform set_config('request.jwt.claim.role', 'service_role', true);
+
+  perform tests.assert(v_health ? 'status', 'service_role backend_health_snapshot');
+  perform tests.assert((v_outbox->>'ok')::boolean, 'service_role outbox_status_snapshot');
+  perform tests.assert(v_cron_ok, 'service_role admin_list_cron_jobs');
+  if v_dash_present then
+    perform tests.assert((v_dash->>'ok')::boolean, 'service_role admin_dashboard_snapshot');
+  end if;
+  perform tests.assert(v_runs_ok, 'service_role admin_list_cron_job_runs (optional)');
 
   raise notice 'TEST-OK SEC admin grant lockdown (catalog privileges)';
 end $$;
