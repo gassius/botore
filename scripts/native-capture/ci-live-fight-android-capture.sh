@@ -253,6 +253,20 @@ logcat_dump() {
   adb logcat -d 2>/dev/null | tr -d '\r' || true
 }
 
+# Pipe logcat → grep (never printf a multi-MB DUMP into argv — ARG_MAX false-negatives).
+logcat_has() {
+  logcat_dump | grep -aFq "$1"
+}
+
+ensure_arena_layers_still() {
+  if [[ "${GOT_ARENA}" -eq 1 ]]; then
+    return 0
+  fi
+  echo "capturing arena-layers…" >&2
+  capture_current arena-layers
+  GOT_ARENA=1
+}
+
 # Prefer capturing before RESUME while the player is paused on the FX cue.
 capture_fx_while_held() {
   local family="$1"
@@ -261,11 +275,14 @@ capture_fx_while_held() {
   local resume_marker="BOTORE_CAPTURE_FX_RESUME:family=${family}"
   echo "capturing ${label} during FX hold…" >&2
   # Soft fail if the hold window already closed (late still is still evidence).
-  if logcat_dump | grep -Fq "${resume_marker}"; then
+  if logcat_has "${resume_marker}"; then
     echo "note: ${family} resume already logged — capturing late frame" >&2
   fi
   sleep 0.2
   capture_current "${label}"
+  # Repair Yard is on-screen during FX holds — grab arena here so we do not
+  # depend solely on a separate ARENA_READY poll (missed on tip 564718f).
+  ensure_arena_layers_still
   if [[ "${family}" == "hit" ]]; then
     local hits=( "${OUT_DIR}"/android-*-"${label}".png )
     if [[ -e "${hits[0]:-}" ]]; then
@@ -275,17 +292,15 @@ capture_fx_while_held() {
     fi
   fi
   # Nudge past the hold so the next family can fire (hold is ~8s; don't busy-wait adb).
-  if ! logcat_dump | grep -Fq "${resume_marker}"; then
+  if ! logcat_has "${resume_marker}"; then
     echo "waiting briefly for ${hold_marker} resume…" >&2
     sleep 1
   fi
 }
 
 while (( SECONDS < FX_DEADLINE )); do
-  DUMP="$(logcat_dump)"
-
   if [[ -z "${FIGHT_JSON}" ]]; then
-    FIGHT_LINE="$(printf '%s\n' "${DUMP}" | grep -F 'BOTORE_CAPTURE_FIGHT_JSON:' | tail -n 1 || true)"
+    FIGHT_LINE="$(logcat_dump | grep -aF 'BOTORE_CAPTURE_FIGHT_JSON:' | tail -n 1 || true)"
     if [[ -n "${FIGHT_LINE}" ]]; then
       FIGHT_JSON="${FIGHT_LINE#*BOTORE_CAPTURE_FIGHT_JSON:}"
       write_manifest_line "${MANIFEST}" fight_proof_json "${FIGHT_JSON}"
@@ -310,27 +325,26 @@ while (( SECONDS < FX_DEADLINE )); do
     fi
   fi
 
-  if printf '%s\n' "${DUMP}" | grep -Fq 'BOTORE_CAPTURE_HYDRATE_ERROR:'; then
+  if logcat_has 'BOTORE_CAPTURE_HYDRATE_ERROR:'; then
     echo "error: loadout hydrate failed — see BOTORE_CAPTURE_HYDRATE_ERROR in logcat" >&2
-    printf '%s\n' "${DUMP}" | grep -E 'BOTORE_CAPTURE_' >&2 || true
+    logcat_dump | grep -aE 'BOTORE_CAPTURE_' >&2 || true
     exit 1
   fi
 
   # Stills only during FX holds — never concurrent adb screenrecord (deadlocks screencap).
-  if [[ "${GOT_ARENA}" -eq 0 ]] && printf '%s\n' "${DUMP}" | grep -Fq 'BOTORE_CAPTURE_ARENA_READY:'; then
-    capture_current arena-layers
-    GOT_ARENA=1
+  if [[ "${GOT_ARENA}" -eq 0 ]] && logcat_has 'BOTORE_CAPTURE_ARENA_READY:'; then
+    ensure_arena_layers_still
   fi
 
-  if [[ "${GOT_HIT}" -eq 0 ]] && printf '%s\n' "${DUMP}" | grep -Fq 'BOTORE_CAPTURE_FX_HOLD:family=hit'; then
+  if [[ "${GOT_HIT}" -eq 0 ]] && logcat_has 'BOTORE_CAPTURE_FX_HOLD:family=hit'; then
     capture_fx_while_held hit replay-fx-hit
     GOT_HIT=1
   fi
-  if [[ "${GOT_DODGE}" -eq 0 ]] && printf '%s\n' "${DUMP}" | grep -Fq 'BOTORE_CAPTURE_FX_HOLD:family=dodge'; then
+  if [[ "${GOT_DODGE}" -eq 0 ]] && logcat_has 'BOTORE_CAPTURE_FX_HOLD:family=dodge'; then
     capture_fx_while_held dodge replay-fx-dodge
     GOT_DODGE=1
   fi
-  if [[ "${GOT_DEFEAT}" -eq 0 ]] && printf '%s\n' "${DUMP}" | grep -Fq 'BOTORE_CAPTURE_FX_HOLD:family=defeat'; then
+  if [[ "${GOT_DEFEAT}" -eq 0 ]] && logcat_has 'BOTORE_CAPTURE_FX_HOLD:family=defeat'; then
     capture_fx_while_held defeat replay-fx-defeat
     GOT_DEFEAT=1
   fi
@@ -346,9 +360,15 @@ done
 
 if [[ -z "${FIGHT_JSON}" ]]; then
   echo "error: no BOTORE_CAPTURE_FIGHT_JSON in logcat after ${FIGHT_WAIT_SEC}s — live fight did not confirm" >&2
-  logcat_dump | grep -E 'BOTORE_CAPTURE_|combat|Fight|permission denied|ERROR' >&2 || true
+  logcat_dump | grep -aE 'BOTORE_CAPTURE_|combat|Fight|permission denied|ERROR' >&2 || true
   ls -la "${OUT_DIR}" >&2 || true
   exit 1
+fi
+
+# Last-chance arena still (replay stage still up before Result deep-link).
+if [[ "${GOT_ARENA}" -eq 0 ]]; then
+  echo "note: arena-layers not captured during holds — taking late still" >&2
+  ensure_arena_layers_still
 fi
 
 if [[ "${FX_DODGE}" -eq 0 ]]; then
