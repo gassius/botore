@@ -75,7 +75,15 @@ export function useDesignCaptureLiveFight(): void {
     if (candidatesRequested.current) return;
     candidatesRequested.current = true;
     void refreshCandidates();
-  }, [enabled, session, canProgress, route, refreshCandidates, loadout.hydration, loadout.lastError]);
+  }, [
+    enabled,
+    session,
+    canProgress,
+    route,
+    refreshCandidates,
+    loadout.hydration,
+    loadout.lastError,
+  ]);
 
   useEffect(() => {
     if (!enabled || !canProgress) return;

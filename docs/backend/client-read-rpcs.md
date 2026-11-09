@@ -24,12 +24,12 @@ there is no account-id argument. No new table grants to `authenticated`.
 
 ## Already-sanctioned companions
 
-| Surface                                          | Use                                                 |
-| ------------------------------------------------ | --------------------------------------------------- |
+| Surface                                          | Use                                                                                                                                                                                                                         |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `current_bot_loadouts`                           | Confirmed loadout once `characterId` is known. RLS uses `0021` SECURITY DEFINER helpers (`bot_character_owned_by_caller` / `bot_character_is_system_opponent`) so loadout reads do not need `GRANT SELECT` on `characters`. |
-| `save_bot_loadout`                               | Persist loadout                                     |
-| `prepare_fight_context(account_id, opponent_id)` | Eligibility + sealed builds (after opponent chosen) |
-| `combat-v1` Edge                                 | Fight compute + persist                             |
+| `save_bot_loadout`                               | Persist loadout                                                                                                                                                                                                             |
+| `prepare_fight_context(account_id, opponent_id)` | Eligibility + sealed builds (after opponent chosen)                                                                                                                                                                         |
+| `combat-v1` Edge                                 | Fight compute + persist                                                                                                                                                                                                     |
 
 ## Client call sites
 
