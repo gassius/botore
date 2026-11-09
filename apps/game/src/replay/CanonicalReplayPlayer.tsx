@@ -53,6 +53,13 @@ import {
   type PlaybackUiState,
 } from './playbackControl';
 import { DEFAULT_REPLAY_CHROME, reservedReplayChromeHeight } from './replayLayout';
+import {
+  createFrameTimeSampler,
+  formatPerfSummaryLog,
+  isPerfSampleEnabled,
+  summarizeFrameSample,
+  type FrameSampleSummary,
+} from '../perf';
 
 export interface CanonicalReplayPlayerProps {
   readonly result: ConfirmedFightResult;
@@ -74,6 +81,8 @@ export type CanonicalReplayPlayerHandle = {
   replay: () => void;
   playUiTap: () => void;
   getPlaybackState: () => PlaybackUiState;
+  /** Present only when `EXPO_PUBLIC_PERF_SAMPLE=1`; otherwise returns null. */
+  getPerfSummary: () => FrameSampleSummary | null;
 };
 
 export const CanonicalReplayPlayer = forwardRef<
@@ -133,8 +142,29 @@ export const CanonicalReplayPlayer = forwardRef<
   const rafRef = useRef<number | null>(null);
   const playbackUiRef = useRef(playbackUi);
   playbackUiRef.current = playbackUi;
+  const perfEnabled = isPerfSampleEnabled();
+  const perfSamplerRef = useRef(perfEnabled ? createFrameTimeSampler() : null);
+  const perfSummaryRef = useRef<FrameSampleSummary | null>(null);
+  const perfPlayReadyMarkedRef = useRef(false);
 
   const reducedMotion = reducedMotionProp ?? osReducedMotion;
+
+  useEffect(() => {
+    if (!perfEnabled || !perfSamplerRef.current) return;
+    perfSamplerRef.current.markLoadStart(
+      typeof performance !== 'undefined' ? performance.now() : Date.now(),
+    );
+    perfPlayReadyMarkedRef.current = false;
+  }, [perfEnabled, result.replay.checksum]);
+
+  useEffect(() => {
+    if (!perfEnabled || !perfSamplerRef.current || perfPlayReadyMarkedRef.current) return;
+    if (!media.assetsAvailable || stageBox.width <= 0 || stageBox.height <= 0) return;
+    perfSamplerRef.current.markPlayReady(
+      typeof performance !== 'undefined' ? performance.now() : Date.now(),
+    );
+    perfPlayReadyMarkedRef.current = true;
+  }, [perfEnabled, media.assetsAvailable, stageBox.height, stageBox.width]);
 
   const trialAudio = useTrialReplayAudio({
     muted,
@@ -215,10 +245,34 @@ export const CanonicalReplayPlayer = forwardRef<
     [contact.x, contact.y, placement.far, placement.near],
   );
 
+  const finishPerfSample = useCallback(
+    (now: number) => {
+      const sampler = perfSamplerRef.current;
+      if (!sampler) return;
+      sampler.markPlaybackEnd(now);
+      const summary = summarizeFrameSample(sampler.snapshot(), undefined, { loadKind: 'warm' });
+      perfSummaryRef.current = summary;
+      console.log(formatPerfSummaryLog(summary));
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!playbackUi.playing || !media.assetsAvailable) return;
 
+    const sampler = perfSamplerRef.current;
+    if (sampler) {
+      const snap = sampler.snapshot();
+      // Resume mid-effect remounts without wiping an in-flight sample.
+      if (snap.startedAtMs === null || snap.endedAtMs !== null) {
+        sampler.markPlaybackStart(
+          typeof performance !== 'undefined' ? performance.now() : Date.now(),
+        );
+      }
+    }
+
     const tick = (now: number) => {
+      sampler?.recordFrame(now);
       const pb = playbackRef.current;
       if (!pb || pb.finished) {
         emitPlayback(
@@ -227,6 +281,7 @@ export const CanonicalReplayPlayer = forwardRef<
             pb?.total ?? playbackUiRef.current.totalCommands,
           ),
         );
+        finishPerfSample(now);
         onFinished?.();
         return;
       }
@@ -239,6 +294,7 @@ export const CanonicalReplayPlayer = forwardRef<
         emitPlayback(
           playbackUiAfterAdvance({ ...playbackUiRef.current, playing: false }, pb.total),
         );
+        finishPerfSample(now);
         onFinished?.();
         return;
       }
@@ -261,6 +317,7 @@ export const CanonicalReplayPlayer = forwardRef<
         emitPlayback(
           playbackUiAfterAdvance({ ...playbackUiRef.current, playing: false }, pb.total),
         );
+        finishPerfSample(now);
         onFinished?.();
       }
     };
@@ -271,6 +328,7 @@ export const CanonicalReplayPlayer = forwardRef<
     };
   }, [
     emitPlayback,
+    finishPerfSample,
     maxHp,
     media.assetsAvailable,
     onFinished,
@@ -301,6 +359,15 @@ export const CanonicalReplayPlayer = forwardRef<
         }
       },
       getPlaybackState: () => playbackUiRef.current,
+      getPerfSummary: () => {
+        if (!perfSamplerRef.current) return null;
+        return (
+          perfSummaryRef.current ??
+          summarizeFrameSample(perfSamplerRef.current.snapshot(), undefined, {
+            loadKind: 'warm',
+          })
+        );
+      },
     }),
     [emitPlayback, resetPlayback, trialAudio.playUiTap],
   );

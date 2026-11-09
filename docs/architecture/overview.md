@@ -42,6 +42,11 @@ Media packs (F5): versioned `atlas/vN/` in Supabase Storage with an immutable
 published manifest (`atlas_versions` / `atlas_manifest_entries`). Fights pin
 `battle_participants.atlas_version`. See `docs/architecture/atlas.md`.
 
+Android release-build phone perf (F12): proposed thresholds, measurement
+protocol, parked native acceptance checks, and cost ledger —
+`docs/architecture/android-release-perf.md`. Agree limits on ClickUp before
+treating device numbers as acceptance; Expo web is not a substitute.
+
 This checkout still contains leftover Fastify `apps/api` and `apps/worker`.
 Do not extend them. Target path: client → Edge Function → Postgres function
 → pg_cron.
