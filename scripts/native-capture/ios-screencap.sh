@@ -56,15 +56,35 @@ done
 
 require_cmd xcrun
 OUT_DIR="$(ensure_out_dir "${OUT_DIR}")"
+BUNDLE_ID="${CAPTURE_IOS_BUNDLE:-${BUNDLE_IOS}}"
 
+# Cold-start each route via openurl so getInitialURL() delivers the deep link
+# after Garage auth mounts FirstRunShell. Warm openurl alone was a no-op on
+# GHA (identical Stable/Customise/Replay stills).
 if [[ -n "${ROUTE}" ]]; then
   URL="$(capture_url_for_route "${ROUTE}" "${MUTE}" "${PAINT}" "${WEAPON}")"
-  echo "opening ${URL}" >&2
-  xcrun simctl openurl "${UDID}" "${URL}"
-  sleep "${CAPTURE_SETTLE_SEC:-2}"
+  echo "opening ${URL} (cold-start)" >&2
+  xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
+  # openurl launches the app when the scheme is registered.
+  if ! xcrun simctl openurl "${UDID}" "${URL}"; then
+    echo "error: simctl openurl failed for ${URL}" >&2
+    exit 1
+  fi
+  # Auth auto-sign-in + FirstRunShell mount + route paint.
+  sleep "${CAPTURE_IOS_COLD_SEC:-${CAPTURE_SETTLE_SEC:-10}}"
+  # Re-deliver once the shell is mounted (Linking 'url' event).
+  echo "re-opening ${URL} (warm)" >&2
+  xcrun simctl openurl "${UDID}" "${URL}" >/dev/null || true
+  sleep "${CAPTURE_SETTLE_SEC:-3}"
 fi
 
 LABEL="${NAME:-${ROUTE:-screen}}"
 FILE="${OUT_DIR}/ios-$(stamp)-${LABEL}.png"
+# Bring Simulator forward so the framebuffer is composited on GHA.
+osascript -e 'tell application "Simulator" to activate' >/dev/null 2>&1 || true
 xcrun simctl io "${UDID}" screenshot "${FILE}"
+if [[ ! -s "${FILE}" ]]; then
+  echo "error: empty screenshot ${FILE}" >&2
+  exit 1
+fi
 printf '%s\n' "${FILE}"

@@ -196,6 +196,10 @@ jobs:
           CAPTURE_IOS_SCHEME: BotoreGameClient
           # Prefer devices present on macos-15 / Xcode 16 images; script falls back.
           CAPTURE_IOS_DEVICE: 'iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14'
+          # Cold-start per route (auth + FirstRunShell + paint); warm openurl alone was a no-op.
+          CAPTURE_IOS_COLD_SEC: '12'
+          CAPTURE_SETTLE_SEC: '4'
+          CAPTURE_BOOT_SEC: '12'
         run: bash scripts/native-capture/ci-ios-simulator-capture.sh
 
       - name: Upload capture artifacts

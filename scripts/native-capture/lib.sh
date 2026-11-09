@@ -88,6 +88,40 @@ write_manifest_line() {
   printf '%s=%s\n' "${key}" "${value}" >>"${manifest}"
 }
 
+# Fail when route stills are missing or byte-identical (deep link did not switch UI).
+assert_distinct_route_pngs() {
+  local out_dir="$1"
+  local platform="$2"
+  shift 2
+  local -a routes=("$@")
+  local -a files=()
+  local -a digests=()
+  local route matches digest
+  for route in "${routes[@]}"; do
+    [[ -z "${route}" ]] && continue
+    matches=( "${out_dir}/${platform}"*-"${route}".png )
+    if [[ ! -e "${matches[0]:-}" ]]; then
+      echo "error: missing capture PNG for route ${route} under ${out_dir}" >&2
+      return 1
+    fi
+    files+=("${matches[0]}")
+    digest="$(shasum -a 256 "${matches[0]}" | awk '{print $1}')"
+    digests+=("${digest}")
+    echo "ok: ${matches[0]} sha256=${digest:0:12}…" >&2
+  done
+  local i j
+  for i in "${!digests[@]}"; do
+    for j in "${!digests[@]}"; do
+      if [[ "${i}" -lt "${j}" && "${digests[$i]}" == "${digests[$j]}" ]]; then
+        echo "error: identical stills for ${routes[$i]} and ${routes[$j]} (${files[$i]})" >&2
+        echo "deep link likely did not change the visible route" >&2
+        return 1
+      fi
+    done
+  done
+  return 0
+}
+
 # Assert the Android package is running and resumed in the foreground.
 # Status noise must go to stderr so $(screencap) only captures the file path.
 android_assert_app_foreground() {
