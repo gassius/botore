@@ -3,10 +3,11 @@
 Repeatable **Android / iOS phone** screenshots and short clips for UI supervisor
 design review. Web / Expo web preview is **not** acceptance evidence.
 
-Ticket: [C7 · Native build captures for design review](https://app.clickup.com/t/1amjtrey13t).
+Tickets: [C7 · Native build captures for design review](https://app.clickup.com/t/1amjtrey13t)
+(Android + pipeline), [C7b · iOS Simulator captures in CI](https://app.clickup.com/t/1amjtrey2y0).
 
 **Done when:** each client PR that touches visible screens can attach native
-phone captures of those screens.
+phone captures of those screens (Android emulator and iOS Simulator).
 
 This is **not** a pixel-exact E2E layout test suite. Captures are human-reviewed
 evidence; tooling failures mean device/build problems, not UI diffs.
@@ -14,7 +15,8 @@ evidence; tooling failures mean device/build problems, not UI diffs.
 ## What to attach on a client PR
 
 1. Stills (PNG) and/or short clips (MP4/GIF) from a **native** Android emulator
-   or device. Add iOS Simulator captures when a Mac is available.
+   or device, and from the iOS Simulator CI job when the PR touches capture
+   paths (`apps/game/**`, scripts, workflow, docs, `eas.json`).
 2. Label each file with tip SHA, platform, and route (Stable / Customise / …).
 3. Say explicitly when a clip is DEV fixture / sound-off — never claim live
    fight or web preview as native.
@@ -129,12 +131,11 @@ Workflow: `.github/workflows/native-design-captures.yml`
   newline in its own shell)
 - **iOS** (`macos-15`; `macos-14` retired): `scripts/native-capture/ci-ios-simulator-capture.sh` —
   clean Expo prebuild, **Release** iphonesimulator build (bundle embedded),
-  phone-size iPhone Simulator, Stable / Customise / Replay PNGs.
-  **PR path skips iOS** (`workflow_dispatch` only) — follow-up **C7b**; Android
-  remains the PR capture gate for C7.
-- Android (and iOS on dispatch) build workspace deps first
-  (`pnpm --filter @botore/game^... run build`) so Metro can resolve
-  `@botore/*/dist`
+  `BotoreGameClient` scheme, `-derivedDataPath` under `ios/DerivedData` (not
+  `ios/build`), phone-size iPhone Simulator, Stable / Customise / Replay PNGs.
+  Runs on path-gated `pull_request` and `workflow_dispatch` (**C7b**).
+- Both jobs build workspace deps first (`pnpm --filter @botore/game^... run build`)
+  so Metro can resolve `@botore/*/dist`
 - Pins Android Kotlin **1.9.25** via `expo-build-properties` (Compose 1.5.15)
 - Hoists `expo-modules-core` / `expo-modules-autolinking` for pnpm so Gradle
   resolves Expo packages; `expo prebuild --clean` keeps `useExpoModules()`

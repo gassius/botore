@@ -65,8 +65,8 @@ if [[ -z "${WORKSPACE}" || ! -d "${WORKSPACE}" ]]; then
 fi
 
 WORKSPACE_BASE="$(basename "${WORKSPACE}" .xcworkspace)"
-# Prefer the app scheme (Expo: Botore Game Client → BotoreGameClient). Never take the
-# first xcodebuild -list entry — CocoaPods lists boost/hermes/etc. first.
+# Prefer BotoreGameClient (Expo: Botore Game Client). Never take the first
+# xcodebuild -list entry — CocoaPods lists boost/hermes/etc. first.
 SCHEME="${CAPTURE_IOS_SCHEME:-}"
 SCHEME_LIST="$(
   xcodebuild -list -workspace "${WORKSPACE}" 2>/dev/null \
@@ -76,10 +76,10 @@ echo "available schemes:" >&2
 echo "${SCHEME_LIST}" | sed 's/^/  /' >&2 || true
 
 if [[ -z "${SCHEME}" ]]; then
-  if echo "${SCHEME_LIST}" | grep -qx "${WORKSPACE_BASE}"; then
-    SCHEME="${WORKSPACE_BASE}"
-  elif echo "${SCHEME_LIST}" | grep -qx 'BotoreGameClient'; then
+  if echo "${SCHEME_LIST}" | grep -qx 'BotoreGameClient'; then
     SCHEME='BotoreGameClient'
+  elif echo "${SCHEME_LIST}" | grep -qx "${WORKSPACE_BASE}"; then
+    SCHEME="${WORKSPACE_BASE}"
   else
     # First non-Pods-looking scheme (skip common pod library schemes).
     SCHEME="$(

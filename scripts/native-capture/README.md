@@ -1,7 +1,7 @@
 # Native design captures
 
 Scripts for Android / iOS phone stills and short clips used in UI supervisor
-design review (ClickUp C7).
+design review (ClickUp C7 / C7b).
 
 Full guide: [`docs/architecture/native-design-captures.md`](../../docs/architecture/native-design-captures.md)
 
