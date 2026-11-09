@@ -55,9 +55,9 @@ describe('F11 cue mapping from replay commands', () => {
     expect(sfxClipFromCommand({ kind: 'show_battle', attacker: 'a', defender: 'b' })).toBe('hush');
     expect(sfxClipFromCommand({ kind: 'attack_anim', actor: 'a', attack: 'basic' })).toBe('swing');
     expect(sfxClipFromCommand({ kind: 'dodge_anim', actor: 'a' })).toBe('dodge');
-    expect(
-      sfxClipFromCommand({ kind: 'damage_pop', target: 'b', amount: 3, hpAfter: 7 }),
-    ).toBe('hit');
+    expect(sfxClipFromCommand({ kind: 'damage_pop', target: 'b', amount: 3, hpAfter: 7 })).toBe(
+      'hit',
+    );
     expect(sfxClipFromCommand({ kind: 'defeat_anim', characterId: 'b' })).toBe('defeat');
     expect(sfxClipFromCommand({ kind: 'victory_screen', winner: 'a' })).toBe('win');
     expect(sfxClipFromCommand({ kind: 'victory_screen', winner: null })).toBeNull();
@@ -173,9 +173,7 @@ describe('F11 TrialAudioSession never blocks / desyncs', () => {
     expect(() =>
       session.notifyCommand({ kind: 'show_battle', attacker: 'a', defender: 'b' }),
     ).not.toThrow();
-    expect(() =>
-      session.notifyCommand({ kind: 'victory_screen', winner: 'a' }),
-    ).not.toThrow();
+    expect(() => session.notifyCommand({ kind: 'victory_screen', winner: 'a' })).not.toThrow();
     // Allow microtasks from rejected promises to settle.
     await new Promise((r) => setTimeout(r, 0));
     expect(session.stats.failures).toBeGreaterThan(0);

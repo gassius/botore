@@ -7,14 +7,7 @@ export type ActiveTrialAudioAssetVersion = typeof ACTIVE_TRIAL_AUDIO_ASSET_VERSI
 
 /** Clip ids matching trial-audio-v001 manifest. */
 export type TrialAudioClipId =
-  | 'swing'
-  | 'hit'
-  | 'dodge'
-  | 'defeat'
-  | 'hush'
-  | 'uiTap'
-  | 'win'
-  | 'musicLoop';
+  'swing' | 'hit' | 'dodge' | 'defeat' | 'hush' | 'uiTap' | 'win' | 'musicLoop';
 
 export const TRIAL_AUDIO_CLIP_IDS: readonly TrialAudioClipId[] = [
   'swing',

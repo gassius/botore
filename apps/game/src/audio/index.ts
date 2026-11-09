@@ -13,11 +13,7 @@ export {
   type TrialAudioClipSpec,
   type TrialAudioManifest,
 } from './trialAudioManifest';
-export {
-  sfxClipFromCommand,
-  shouldStartMusicLoop,
-  shouldStopMusicLoop,
-} from './cueFromCommand';
+export { sfxClipFromCommand, shouldStartMusicLoop, shouldStopMusicLoop } from './cueFromCommand';
 export {
   createTrialAudioSession,
   type TrialAudioSession,

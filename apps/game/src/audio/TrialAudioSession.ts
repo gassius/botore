@@ -3,11 +3,7 @@
  * Never throws; never awaits on the fight clock.
  */
 import type { AnimationCommand } from '../replay-playback';
-import {
-  sfxClipFromCommand,
-  shouldStartMusicLoop,
-  shouldStopMusicLoop,
-} from './cueFromCommand';
+import { sfxClipFromCommand, shouldStartMusicLoop, shouldStopMusicLoop } from './cueFromCommand';
 import type { AudioSource, LoopHandle, TrialAudioBackend } from './audioBackend';
 import { createNoopAudioBackend } from './audioBackend';
 import { trialAudioClipVolume } from './trialAudioManifest';
