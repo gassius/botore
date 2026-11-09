@@ -140,8 +140,26 @@ if [[ "${booted}" != "1" ]]; then
   adb logcat -d -t 160 '*:E' >&2 || true
   exit 1
 fi
-# Auth hydrate + loadout against live Supabase.
-sleep "${CAPTURE_BOOT_SEC:-12}"
+# Auth hydrate + loadout against live Supabase (cleartext to 10.0.2.2).
+echo "waiting for design-capture auto sign-in…" >&2
+auth_ok=0
+for _ in $(seq 1 "${CAPTURE_AUTH_WAIT_SEC:-45}"); do
+  if adb logcat -d 2>/dev/null | tr -d '\r' | grep -Fq 'BOTORE_CAPTURE_AUTH_OK:'; then
+    auth_ok=1
+    break
+  fi
+  if adb logcat -d 2>/dev/null | tr -d '\r' | grep -Fq 'BOTORE_CAPTURE_AUTH_ERROR:'; then
+    break
+  fi
+  sleep 1
+done
+if [[ "${auth_ok}" != "1" ]]; then
+  echo "error: design-capture auto sign-in did not succeed" >&2
+  adb logcat -d -t 250 '*:I' | grep -E 'BOTORE_CAPTURE|Supabase|Auth|ReactNativeJS|ERROR' >&2 || true
+  exit 1
+fi
+# Extra settle for loadout hydrate after password grant.
+sleep "${CAPTURE_BOOT_SEC:-8}"
 android_assert_app_foreground "${PACKAGE}"
 
 TIP_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"

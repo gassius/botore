@@ -133,8 +133,12 @@ export function GarageSessionProvider(props: {
       });
       if (!result.ok) {
         captureAutoSignInStarted.current = false;
+        console.warn(
+          `BOTORE_CAPTURE_AUTH_ERROR:sign_in_failed email=${creds.email} message=${result.message}`,
+        );
         return;
       }
+      console.log(`BOTORE_CAPTURE_AUTH_OK:email=${creds.email}`);
       setBooting(true);
       setSession(result.session);
       await hydrate();
