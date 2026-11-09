@@ -192,6 +192,7 @@ jobs:
         env:
           CAPTURE_WELCOME: '1'
           CAPTURE_OUT_DIR: artifacts/native-captures
+          CAPTURE_IOS_SCHEME: BotoreGameClient
           # Prefer devices present on macos-15 / Xcode 16 images; script falls back.
           CAPTURE_IOS_DEVICE: 'iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14'
         run: bash scripts/native-capture/ci-ios-simulator-capture.sh

@@ -166,18 +166,25 @@ fi
 echo "booted udid=${UDID}" >&2
 export CAPTURE_IOS_UDID="${UDID}"
 
-DERIVED="${IOS_DIR}/build"
+# RN/Expo codegen writes to ios/build/generated — do NOT use ios/build as
+# -derivedDataPath or ReactCodegen looks for files that land under DerivedSources.
+DERIVED="${IOS_DIR}/DerivedData"
 PRODUCTS_DIR="${DERIVED}/Build/Products/Release-iphonesimulator"
 rm -rf "${DERIVED}"
-echo "xcodebuild Release (iphonesimulator, scheme=${SCHEME}, bundle-embedded)…" >&2
+# Keep ios/build/generated if a prior step produced it; only clear stale DD.
+mkdir -p "${IOS_DIR}/build"
+echo "xcodebuild Release (iphonesimulator, scheme=${SCHEME}, derivedData=${DERIVED})…" >&2
 (
   cd "${IOS_DIR}"
-  EXPO_PUBLIC_DESIGN_CAPTURE="${EXPO_PUBLIC_DESIGN_CAPTURE}" \
-    EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE="${EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE}" \
-    EXPO_PUBLIC_DESIGN_CAPTURE_PAINT="${EXPO_PUBLIC_DESIGN_CAPTURE_PAINT:-}" \
-    EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON="${EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON:-}" \
-    EXPO_USE_COMMUNITY_AUTOLINKING=0 \
-    xcodebuild \
+  export RCT_NO_LAUNCH_PACKAGER=1
+  export EXPO_PUBLIC_DESIGN_CAPTURE="${EXPO_PUBLIC_DESIGN_CAPTURE}"
+  export EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE="${EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE}"
+  export EXPO_PUBLIC_DESIGN_CAPTURE_PAINT="${EXPO_PUBLIC_DESIGN_CAPTURE_PAINT:-}"
+  export EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON="${EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON:-}"
+  export EXPO_USE_COMMUNITY_AUTOLINKING=0
+  # Ensure React Native script phases find node in GHA PATH.
+  export NODE_BINARY="${NODE_BINARY:-$(command -v node)}"
+  xcodebuild \
     -workspace "$(basename "${WORKSPACE}")" \
     -scheme "${SCHEME}" \
     -configuration Release \
