@@ -323,10 +323,28 @@ async function requireDevAccessToken(anon, service) {
   );
 }
 
+/**
+ * RLS policies already allow authenticated SELECT on characters / allowances,
+ * but migrations never GRANTed table privileges — PostgREST returns
+ * "permission denied for table characters". Local/CI repair only (same class
+ * as GoTrue fixture repair); a real migration still needs Carlos's yes.
+ */
+function repairClientReadGrants() {
+  psql(`
+    grant select on public.characters to authenticated;
+    grant select on public.fight_allowances to authenticated;
+    grant select on public.profiles to authenticated;
+  `);
+  console.log(
+    'prepare-live-fight-backend: granted SELECT on characters/fight_allowances/profiles to authenticated',
+  );
+}
+
 async function main() {
   const { anon, service } = loadSupabaseKeys();
   console.log(`prepare-live-fight-backend: ${SUPABASE_URL}`);
 
+  repairClientReadGrants();
   await requireDevAccessToken(anon, service);
 
   const envBody = [
