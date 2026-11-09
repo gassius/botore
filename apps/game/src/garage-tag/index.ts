@@ -21,4 +21,6 @@ export { ScreenHeader, type ScreenHeaderProps } from './ScreenHeader';
 export { ScreenChrome, type ScreenChromeProps } from './ScreenChrome';
 export { StatusErrorBanner, type StatusErrorBannerProps } from './StatusErrorBanner';
 export { BrandWordmark, type BrandWordmarkProps } from './BrandWordmark';
+export { InAppTitleSplash, type InAppTitleSplashProps } from './InAppTitleSplash';
+export { BRAND_WORDMARK_ASPECT, TITLE_SILHOUETTE_ASPECT } from './assets';
 export { KitArtPlaceholder, type KitArtPlaceholderProps } from './KitArtPlaceholder';
