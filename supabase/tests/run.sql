@@ -1962,17 +1962,58 @@ begin
   perform tests.assert(jsonb_typeof(v_res->'rows') = 'array', 'list_ranking rows array');
   select count(*)::int into v_count from jsonb_array_elements(v_res->'rows');
   perform tests.assert(v_count >= 4, format('expected >=4 ranking rows (hero+peers), got %s', v_count));
-  perform tests.assert(
-    (v_res->'rows'->0->>'characterId') = 'peer-bolt',
-    'rank 1 is peer-bolt (highest seed XP)'
-  );
+  -- Do not assume peer-bolt is rank 1: earlier suite steps award XP to player-hero.
   perform tests.assert(
     (v_res->'rows'->0->>'rank')::integer = 1,
     'first row rank is 1'
   );
   perform tests.assert(
-    (v_res->'rows'->0->>'totalXp')::integer = 6,
-    'peer-bolt totalXp is 6'
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'peer-bolt'
+         and (r->>'totalXp')::integer = 6
+    ),
+    'peer-bolt seed totalXp is 6'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'peer-clank'
+         and (r->>'totalXp')::integer = 3
+    ),
+    'peer-clank seed totalXp is 3'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'peer-rivet'
+         and (r->>'totalXp')::integer = 1
+    ),
+    'peer-rivet seed totalXp is 1'
+  );
+  -- Server order: totalXp desc, then characterId asc. Adjacent rows must obey.
+  -- (Earlier suite steps may award XP to player-hero, so absolute ranks vary.)
+  perform tests.assert(
+    coalesce(
+      (
+        select bool_and(
+          (a.elem->>'totalXp')::integer > (b.elem->>'totalXp')::integer
+          or (
+            (a.elem->>'totalXp')::integer = (b.elem->>'totalXp')::integer
+            and (a.elem->>'characterId') <= (b.elem->>'characterId')
+          )
+        )
+          and bool_and((a.elem->>'rank')::integer + 1 = (b.elem->>'rank')::integer)
+        from jsonb_array_elements(v_res->'rows') with ordinality as a(elem, idx)
+        join jsonb_array_elements(v_res->'rows') with ordinality as b(elem, idx)
+          on b.idx = a.idx + 1
+      ),
+      false
+    ),
+    'list_ranking preserves XP desc / characterId asc with dense ranks'
   );
   perform tests.assert(
     exists (
@@ -1982,6 +2023,14 @@ begin
          and (r->>'isCurrentBot')::boolean = true
     ),
     'caller hero marked isCurrentBot'
+  );
+  perform tests.assert(
+    (
+      select count(*)::int
+        from jsonb_array_elements(v_res->'rows') r
+       where (r->>'isCurrentBot')::boolean = true
+    ) = 1,
+    'exactly one isCurrentBot row'
   );
   -- Client must not need characters SELECT for ranking.
   begin
