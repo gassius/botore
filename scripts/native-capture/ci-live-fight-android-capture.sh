@@ -246,7 +246,6 @@ GOT_ARENA=0
 GOT_HIT=0
 GOT_DODGE=0
 GOT_DEFEAT=0
-CLIP_STARTED=0
 FIGHT_WAIT_SEC="${CAPTURE_FIGHT_WAIT_SEC:-120}"
 FX_DEADLINE=$((SECONDS + FIGHT_WAIT_SEC))
 
@@ -254,11 +253,18 @@ logcat_dump() {
   adb logcat -d 2>/dev/null | tr -d '\r' || true
 }
 
+# Prefer capturing before RESUME while the player is paused on the FX cue.
 capture_fx_while_held() {
   local family="$1"
   local label="$2"
+  local hold_marker="BOTORE_CAPTURE_FX_HOLD:family=${family}"
+  local resume_marker="BOTORE_CAPTURE_FX_RESUME:family=${family}"
   echo "capturing ${label} during FX hold…" >&2
-  sleep 0.25
+  # Soft fail if the hold window already closed (late still is still evidence).
+  if logcat_dump | grep -Fq "${resume_marker}"; then
+    echo "note: ${family} resume already logged — capturing late frame" >&2
+  fi
+  sleep 0.2
   capture_current "${label}"
   if [[ "${family}" == "hit" ]]; then
     local hits=( "${OUT_DIR}"/android-*-"${label}".png )
@@ -267,6 +273,11 @@ capture_fx_while_held() {
       cp "${hits[0]}" "${impact_copy}"
       write_manifest_line "${MANIFEST}" "still.android.replay-impact" "${impact_copy}"
     fi
+  fi
+  # Nudge past the hold so the next family can fire (hold is ~8s; don't busy-wait adb).
+  if ! logcat_dump | grep -Fq "${resume_marker}"; then
+    echo "waiting briefly for ${hold_marker} resume…" >&2
+    sleep 1
   fi
 }
 
@@ -305,21 +316,12 @@ while (( SECONDS < FX_DEADLINE )); do
     exit 1
   fi
 
+  # Stills only during FX holds — never concurrent adb screenrecord (deadlocks screencap).
   if [[ "${GOT_ARENA}" -eq 0 ]] && printf '%s\n' "${DUMP}" | grep -Fq 'BOTORE_CAPTURE_ARENA_READY:'; then
     capture_current arena-layers
     GOT_ARENA=1
-    if [[ "${CLIP_STARTED}" -eq 0 && ( "${CAPTURE_CLIPS:-false}" == "true" || "${CAPTURE_CLIPS:-0}" == "1" ) ]]; then
-      CLIP_STARTED=1
-      (
-        CAPTURE_SECONDS="${CAPTURE_FX_CLIP_SEC:-20}" \
-          "${SCRIPT_DIR}/android-screenrecord.sh" \
-          --out "${OUT_DIR}" \
-          --name "replay-fx" >/dev/null || true
-      ) &
-    fi
   fi
 
-  # Capture while paused when possible; if RESUME already landed, take a late still.
   if [[ "${GOT_HIT}" -eq 0 ]] && printf '%s\n' "${DUMP}" | grep -Fq 'BOTORE_CAPTURE_FX_HOLD:family=hit'; then
     capture_fx_while_held hit replay-fx-hit
     GOT_HIT=1
@@ -354,12 +356,29 @@ if [[ "${FX_DODGE}" -eq 0 ]]; then
   echo "note: no dodge in sealed replay — dodge FX correctly not invented" >&2
 fi
 
-# Wait for background clip if started.
-wait || true
-clip_matches=( "${OUT_DIR}"/android-*-replay-fx.mp4 )
-if [[ -e "${clip_matches[0]:-}" ]]; then
-  write_manifest_line "${MANIFEST}" "clip.android.replay-fx" "${clip_matches[0]}"
-  echo "ok: ${clip_matches[0]}" >&2
+# Optional clip AFTER stills only (serial adb). Bound with timeout so a wedged
+# screenrecord cannot hang the job past the hold/stills phase.
+if [[ "${CAPTURE_CLIPS:-false}" == "true" || "${CAPTURE_CLIPS:-0}" == "1" ]]; then
+  echo "recording post-stills replay FX clip…" >&2
+  CLIP_SEC="${CAPTURE_FX_CLIP_SEC:-8}"
+  CLIP_TIMEOUT=$((CLIP_SEC + 15))
+  set +e
+  timeout "${CLIP_TIMEOUT}" env CAPTURE_SECONDS="${CLIP_SEC}" \
+    "${SCRIPT_DIR}/android-screenrecord.sh" \
+    --out "${OUT_DIR}" \
+    --name "replay-fx" >/tmp/botore-replay-fx-clip.path 2>/tmp/botore-replay-fx-clip.err
+  clip_rc=$?
+  set -e
+  if [[ "${clip_rc}" -eq 0 ]]; then
+    clip_matches=( "${OUT_DIR}"/android-*-replay-fx.mp4 )
+    if [[ -e "${clip_matches[0]:-}" ]]; then
+      write_manifest_line "${MANIFEST}" "clip.android.replay-fx" "${clip_matches[0]}"
+      echo "ok: ${clip_matches[0]}" >&2
+    fi
+  else
+    echo "note: replay-fx clip skipped (rc=${clip_rc}); stills remain required" >&2
+    cat /tmp/botore-replay-fx-clip.err >&2 || true
+  fi
 fi
 
 # 4) Result — backend XP / allowances (after server confirm so UI can show XP)
