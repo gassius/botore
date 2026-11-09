@@ -209,4 +209,9 @@ jobs:
       - name: API integration tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-        run: pnpm --filter @botore/api test:integration
+          SUPABASE_URL: http://127.0.0.1:54321
+        run: |
+          eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
+          export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
+          pnpm --filter @botore/api test:integration

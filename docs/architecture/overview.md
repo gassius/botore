@@ -22,10 +22,13 @@ Backend health / smoke / coverage: `docs/backend/verify.md`.
 
 Bots-as-data tables (F1): `parts_catalogue`, `inventory_ledger`,
 `bot_loadout_versions`, plus `save_bot_loadout()` for ownership and slot
-checks. Admin read APIs (`admin_*` views, `admin_dashboard_snapshot()`,
-`backend_health_snapshot()`, and Edge `/functions/v1/health`) are ready for
-a future dashboard UI — see `docs/backend/admin-dashboard.md`. Dashboard
-pages are not built here.
+checks. Sanctioned authenticated client reads (no table GRANTs on
+`characters` / `fight_allowances`): `get_owned_character()`,
+`list_opponent_roster()`, `get_fight_allowance_summary(p_account_id)` —
+see `docs/backend/client-read-rpcs.md`. Admin read APIs (`admin_*` views,
+`admin_dashboard_snapshot()`, `backend_health_snapshot()`, and Edge
+`/functions/v1/health`) are ready for a future dashboard UI — see
+`docs/backend/admin-dashboard.md`. Dashboard pages are not built here.
 
 Edge combat (F2/F3): `supabase/functions/combat-v1` runs deterministic
 `combat-v1` with a server CSPRNG seed after `prepare_fight_context()`
