@@ -80,6 +80,7 @@ describe('C9 Settings route', () => {
       weaponId: null,
       rankingScenario: null,
       failClosed: null,
+      poseCompare: null,
     });
   });
 });
