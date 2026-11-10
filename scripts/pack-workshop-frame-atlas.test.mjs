@@ -38,9 +38,12 @@ test('weapon ids: kit underscore → atlas hyphen', () => {
 });
 
 test('rejects kit-v001 prefixes', () => {
-  assert.throws(() => atlasPathForWorkshopKitFile('kits/workshop-frame/v001/parts/torso-oxide.png'), {
-    message: /v001/,
-  });
+  assert.throws(
+    () => atlasPathForWorkshopKitFile('kits/workshop-frame/v001/parts/torso-oxide.png'),
+    {
+      message: /v001/,
+    },
+  );
 });
 
 test('pack pairs cover body+weapon oxide/petrol/materials/mask', () => {
@@ -57,20 +60,16 @@ test('pack script materializes hyphenated atlas tree from kit-v002', () => {
   assert.ok(existsSync(join(kitDir, 'parts/torso-oxide.png')), 'kit asset present');
   const out = mkdtempSync(join(tmpdir(), 'botore-atlas-v2-'));
   try {
-    const r = spawnSync(
-      process.execPath,
-      [join(ROOT, 'scripts/pack-workshop-frame-atlas.mjs')],
-      {
-        cwd: ROOT,
-        env: {
-          ...process.env,
-          ATLAS_VERSION: WORKSHOP_FRAME_ATLAS_VERSION,
-          ATLAS_SEED_DIR: out,
-          KIT_DIR: kitDir,
-        },
-        encoding: 'utf8',
+    const r = spawnSync(process.execPath, [join(ROOT, 'scripts/pack-workshop-frame-atlas.mjs')], {
+      cwd: ROOT,
+      env: {
+        ...process.env,
+        ATLAS_VERSION: WORKSHOP_FRAME_ATLAS_VERSION,
+        ATLAS_SEED_DIR: out,
+        KIT_DIR: kitDir,
       },
-    );
+      encoding: 'utf8',
+    });
     assert.equal(r.status, 0, r.stderr || r.stdout);
     assert.match(r.stdout, /ATLAS-PACK-OK/);
     assert.ok(existsSync(join(out, 'parts/torso/oxide.png')));

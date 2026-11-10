@@ -61,9 +61,7 @@ export async function ensureStableFightPacks(
   return input.loader.ensurePacks(request);
 }
 
-export function defaultAtlasVersionForWorkshopFrame(
-  pinned: string | null | undefined,
-): string {
+export function defaultAtlasVersionForWorkshopFrame(pinned: string | null | undefined): string {
   const v = (pinned ?? '').trim();
   return v.length > 0 ? v : WORKSHOP_FRAME_ATLAS_VERSION;
 }

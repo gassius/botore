@@ -1192,10 +1192,19 @@ begin
     ),
     'v2 weapon id is hyphenated (weapon-sword)'
   );
+  -- LIKE '_' is a single-char wildcard — escape so we reject literal weapon_sword
+  -- folders, not hyphenated weapon-sword paths.
   perform tests.assert(
     not exists (
       select 1 from public.atlas_manifest_entries
-       where version = 'v2' and (path like '%weapon_sword%' or path like '%/v001/%')
+       where version = 'v2'
+         and (
+           path like '%weapon\_sword%' escape '\'
+           or path like '%weapon\_axe%' escape '\'
+           or path like '%weapon\_dagger%' escape '\'
+           or path like '%/v001/%'
+           or part_id in ('weapon_sword', 'weapon_axe', 'weapon_dagger')
+         )
     ),
     'v2 must not register underscore weapon folders or kit-v001 paths'
   );

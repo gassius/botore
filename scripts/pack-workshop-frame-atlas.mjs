@@ -44,9 +44,7 @@ function resolveKitDir() {
   }
   if (existsSync(join(DEFAULT_KIT_DIR, 'parts'))) return DEFAULT_KIT_DIR;
   if (existsSync(join(STORE_KIT_DIR, 'parts'))) return STORE_KIT_DIR;
-  fail(
-    `kit-v002 not found under ${DEFAULT_KIT_DIR} or Project store path; set KIT_DIR=…`,
-  );
+  fail(`kit-v002 not found under ${DEFAULT_KIT_DIR} or Project store path; set KIT_DIR=…`);
 }
 
 function ensureParent(filePath) {
@@ -185,9 +183,7 @@ function main() {
     }
   }
 
-  console.log(
-    `ATLAS-PACK-OK ${VERSION} kit=${kitDir} pairs=${pairs.length} out=${OUT_DIR}`,
-  );
+  console.log(`ATLAS-PACK-OK ${VERSION} kit=${kitDir} pairs=${pairs.length} out=${OUT_DIR}`);
 }
 
 main();
