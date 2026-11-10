@@ -124,7 +124,11 @@ jobs:
 
       # sdkmanager intermittently downloads a truncated system image ("Error on
       # ZipFile unknown archive") and android-emulator-runner has no retry.
+      # continue-on-error: preinstall must not block the runner if it still flakes;
+      # success is verified by on-disk image markers (not `yes |` pipe status).
       - name: Preinstall Android system image (retry ZipFile flakes)
+        id: android-system-image
+        continue-on-error: true
         run: bash scripts/native-capture/preinstall-android-system-image.sh
 
       - name: Build + live first-run fight captures on emulator

@@ -2,10 +2,14 @@
 # Pre-install the Android emulator system image with retries.
 #
 # reactivecircus/android-emulator-runner has no retry around sdkmanager, so a
-# truncated Google CDN package fails the job with:
-#   Error on ZipFile unknown archive
+# truncated Google CDN package can fail with "Error on ZipFile unknown archive"
 # before the capture script runs. Installing here (with wipe + backoff) makes
 # the action's own install a no-op / quick success.
+#
+# IMPORTANT: never judge success from `yes | sdkmanager` exit status alone.
+# With `pipefail`, `yes` exits non-zero (SIGPIPE / "Broken pipe") after
+# sdkmanager closes stdin — even when the image install completed at 100%.
+# Always read PIPESTATUS[1] (sdkmanager) and verify image markers on disk.
 set -euo pipefail
 
 API_LEVEL="${CAPTURE_API_LEVEL:-34}"
@@ -44,7 +48,6 @@ find_sdkmanager() {
       return 0
     fi
   done
-  # Prefer a versioned cmdline-tools dir if present.
   local found
   found="$(find "${SDKROOT}/cmdline-tools" -type f -name sdkmanager 2>/dev/null | head -n 1 || true)"
   if [[ -n "${found}" && -x "${found}" ]]; then
@@ -78,19 +81,37 @@ if image_complete; then
   exit 0
 fi
 
+# Accept licenses once up front (ignore yes SIGPIPE).
+set +e
+set +o pipefail
+yes 2>/dev/null | "${SDKMANAGER}" --licenses >/dev/null 2>&1
+set -o pipefail
+set -e
+
 echo "preinstalling ${PKG} via ${SDKMANAGER} (up to ${MAX_ATTEMPTS} attempts)" >&2
 attempt=1
 while (( attempt <= MAX_ATTEMPTS )); do
-  wipe_image
-  set +e
-  yes | "${SDKMANAGER}" --install "${PKG}" --channel=0
-  status=$?
-  set -e
-  if (( status == 0 )) && image_complete; then
-    echo "system image install ok on attempt ${attempt}: ${PKG}" >&2
+  if image_complete; then
+    echo "system image already complete before attempt ${attempt}: ${PKG}" >&2
     exit 0
   fi
-  echo "warn: system image install attempt ${attempt}/${MAX_ATTEMPTS} failed (exit=${status})" >&2
+  wipe_image
+
+  set +e
+  set +o pipefail
+  # Keep pipefail off so `yes` SIGPIPE cannot mask sdkmanager's real status.
+  yes 2>/dev/null | "${SDKMANAGER}" --install "${PKG}" --channel=0
+  # PIPESTATUS[0]=yes, PIPESTATUS[1]=sdkmanager
+  sdk_status=${PIPESTATUS[1]:-1}
+  set -o pipefail
+  set -e
+
+  if image_complete; then
+    echo "system image install ok on attempt ${attempt}: ${PKG} (sdkmanager exit=${sdk_status})" >&2
+    exit 0
+  fi
+
+  echo "warn: system image install attempt ${attempt}/${MAX_ATTEMPTS} incomplete (sdkmanager exit=${sdk_status})" >&2
   wipe_image
   if (( attempt == MAX_ATTEMPTS )); then
     break
