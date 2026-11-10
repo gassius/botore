@@ -12,6 +12,9 @@ import {
   WeaponGlyphSlot,
   garageTag,
 } from '../../garage-tag';
+import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
+import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
+import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import { paintUiAlias, weaponUiAlias } from '../loadout/proofCatalogue';
 import { useGarageSession } from '../LoadoutSessionContext';
 
@@ -21,9 +24,21 @@ export function StableScreen(props: {
   onFindOpponent?: () => void;
 }): React.ReactElement {
   const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
+  const forced = useForcedSessionFailure();
   const confirmed = loadout.confirmedLoadout;
   const weapon = confirmed ? weaponUiAlias(confirmed.weapon) : 'sword';
   const displayName = loadout.displayName ?? 'Pilot';
+
+  const hydrationKind =
+    loadout.hydration === 'unavailable'
+      ? classifySessionFailure({
+          code: loadout.lastErrorCode,
+          message: loadout.lastError,
+        })
+      : null;
+  const failureKind =
+    forced ??
+    (hydrationKind === 'offline' || hydrationKind === 'auth_expired' ? hydrationKind : null);
 
   return (
     <ScreenChrome
@@ -42,10 +57,20 @@ export function StableScreen(props: {
             disabled={!canProgress || !props.onFindOpponent}
             testID="stable-find-opponent"
           />
-          {loadout.hydration === 'unavailable' ? (
+          {failureKind === 'offline' || loadout.hydration === 'unavailable' ? (
             <SecondaryButton
-              label="Retry load"
+              label={
+                failureKind === 'offline'
+                  ? sessionFailureCopy('offline').actionLabel
+                  : failureKind === 'auth_expired'
+                    ? sessionFailureCopy('auth_expired').actionLabel
+                    : 'Retry load'
+              }
               onPress={() => {
+                if (failureKind === 'auth_expired') {
+                  void signOut();
+                  return;
+                }
                 void retryHydration();
               }}
               testID="stable-retry-hydration"
@@ -65,7 +90,13 @@ export function StableScreen(props: {
       <ScreenHeader title="Stable" />
       <Nameplate name={displayName} badge="You" testID="stable-nameplate" />
 
-      {loadout.hydration === 'unavailable' ? (
+      {failureKind ? (
+        <SessionFailureBanner
+          kind={failureKind}
+          {...(loadout.lastError ? { detail: loadout.lastError } : {})}
+          testID={`stable-session-${failureKind}`}
+        />
+      ) : loadout.hydration === 'unavailable' ? (
         <StatusErrorBanner
           title="Equipped loadout unavailable"
           detail={

@@ -1,4 +1,8 @@
-import { RankingContractUnavailableError, type RankingReadPort } from './RankingReadPort';
+import {
+  RankingContractUnavailableError,
+  RankingTransportError,
+  type RankingReadPort,
+} from './RankingReadPort';
 import type { RankingLoadResult, RankingRow, RankingSessionState } from './types';
 
 export function createInitialRankingSession(): RankingSessionState {
@@ -6,6 +10,7 @@ export function createInitialRankingSession(): RankingSessionState {
     phase: 'idle',
     rows: [],
     errorMessage: null,
+    errorCode: null,
     refreshing: false,
   };
 }
@@ -17,6 +22,7 @@ export function beginRankingLoad(state: RankingSessionState): RankingSessionStat
     phase: hasRows ? state.phase : 'loading',
     refreshing: hasRows,
     errorMessage: hasRows ? state.errorMessage : null,
+    errorCode: hasRows ? state.errorCode : null,
   };
 }
 
@@ -30,6 +36,7 @@ export function applyRankingLoadResult(
         phase: 'empty',
         rows: [],
         errorMessage: null,
+        errorCode: null,
         refreshing: false,
       };
     }
@@ -37,6 +44,7 @@ export function applyRankingLoadResult(
       phase: 'populated',
       rows: result.rows,
       errorMessage: null,
+      errorCode: null,
       refreshing: false,
     };
   }
@@ -47,15 +55,17 @@ export function applyRankingLoadResult(
       // Keep any previously readable rows coherent.
       rows: state.rows,
       errorMessage: result.message,
+      errorCode: null,
       refreshing: false,
     };
   }
 
-  // error — preserve prior rows when present
+  // error — preserve prior rows when present; never look like an empty board.
   return {
     phase: state.rows.length > 0 ? 'populated' : 'error',
     rows: state.rows,
     errorMessage: result.message,
+    errorCode: result.code ?? null,
     refreshing: false,
   };
 }
@@ -68,6 +78,9 @@ export async function loadRankingFromPort(port: RankingReadPort): Promise<Rankin
   } catch (err) {
     if (err instanceof RankingContractUnavailableError) {
       return { kind: 'unavailable_contract', message: err.message };
+    }
+    if (err instanceof RankingTransportError) {
+      return { kind: 'error', message: err.message, code: err.code };
     }
     const message = err instanceof Error ? err.message : String(err);
     return { kind: 'error', message };

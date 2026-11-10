@@ -54,8 +54,16 @@ export function parseCombatError(
   status: number,
   body: ErrBody,
 ): Extract<FightRequestResult, { ok: false }> {
-  const code = body.code ?? `http_${status}`;
   const message = body.error ?? body.message ?? `Fight request failed (${status})`;
+  // Lazy import avoided — keep combat parse free of RN; resolve locally for 401.
+  const rawCode = body.code ?? `http_${status}`;
+  const code =
+    status === 401 ||
+    rawCode === 'unauthenticated' ||
+    rawCode === 'PGRST301' ||
+    /jwt.*expir/i.test(message)
+      ? 'unauthenticated'
+      : rawCode;
   return {
     ok: false,
     code,

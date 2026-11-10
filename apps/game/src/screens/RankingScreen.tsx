@@ -22,15 +22,20 @@ import {
   uiKitAssets,
 } from '../garage-tag';
 import { DomainNote } from '../first-run/slots/DomainNote';
+import { classifySessionFailure, sessionFailureCopy } from '../session-failure';
+import { SessionFailureBanner } from '../session-failure/SessionFailureBanner';
+import { useForcedSessionFailure } from '../session-failure/useForcedSessionFailure';
 
 export type RankingScreenProps = {
   /** Injected read port. Defaults to createRankingReadClient. */
   port?: RankingReadPort;
   /** Access token for live list_ranking when port is not injected. */
   accessToken?: string | null;
-  /** Design-capture empty/error override. */
+  /** Design-capture empty/error/offline/auth-expired override. */
   captureScenario?: DesignCaptureRankingScenario | null;
   onBack?: () => void;
+  /** Auth-expired action — typically sign out + silent re-auth (C10/C12). */
+  onSignInAgain?: () => void;
   /** When false, skip auto-load (tests). Default true. */
   autoLoad?: boolean;
 };
@@ -47,16 +52,20 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
   accessToken = null,
   captureScenario = null,
   onBack,
+  onSignInAgain,
   autoLoad = true,
 }) => {
+  const forced = useForcedSessionFailure();
+  const effectiveScenario =
+    captureScenario ?? (forced === 'offline' || forced === 'auth_expired' ? forced : null);
   const port = useMemo(
     () =>
       injectedPort ??
       createRankingReadClient({
         accessToken,
-        captureScenario,
+        captureScenario: effectiveScenario,
       }),
-    [injectedPort, accessToken, captureScenario],
+    [injectedPort, accessToken, effectiveScenario],
   );
   const [session, setSession] = useState<RankingSessionState>(createInitialRankingSession);
   const setSessionRef = useRef(setSession);
@@ -103,7 +112,15 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
     >
       <ScreenHeader title="Ranking" {...(onBack ? { onBack } : {})} testID="ranking-header" />
       {showingDev ? <DevFixtureBanner /> : null}
-      <RankingBody session={session} onRetry={() => void controller.load()} loadBusy={loadBusy} />
+      <RankingBody
+        session={session}
+        onRetry={() => void controller.load()}
+        onSignInAgain={() => {
+          onSignInAgain?.();
+        }}
+        loadBusy={loadBusy}
+        forcedFailure={forced}
+      />
       <DomainNote
         text={
           showingLive
@@ -133,10 +150,34 @@ function DevFixtureBanner(): React.ReactElement {
 type RankingBodyProps = {
   session: RankingSessionState;
   onRetry: () => void;
+  onSignInAgain: () => void;
   loadBusy: boolean;
+  forcedFailure: 'offline' | 'auth_expired' | null;
 };
 
-function RankingBody({ session, onRetry, loadBusy }: RankingBodyProps): React.ReactElement {
+function RankingBody({
+  session,
+  onRetry,
+  onSignInAgain,
+  loadBusy,
+  forcedFailure,
+}: RankingBodyProps): React.ReactElement {
+  const classified = classifySessionFailure({
+    code: session.errorCode,
+    message: session.errorMessage,
+  });
+  const failureKind =
+    forcedFailure ??
+    (classified === 'offline' || classified === 'auth_expired' ? classified : null);
+
+  const runFailureAction = () => {
+    if (failureKind === 'auth_expired') {
+      onSignInAgain();
+      return;
+    }
+    onRetry();
+  };
+
   if (session.phase === 'loading' || session.phase === 'idle') {
     return (
       <View style={styles.centerState} accessibilityLabel="Loading ranking">
@@ -159,6 +200,25 @@ function RankingBody({ session, onRetry, loadBusy }: RankingBodyProps): React.Re
           testID="ranking-unavailable"
         />
         {session.rows.length > 0 ? <RankingList rows={session.rows} refreshing={false} /> : null}
+      </View>
+    );
+  }
+
+  // Network / auth failures never look like an empty "no rankings" board.
+  if (failureKind && (forcedFailure || (session.phase === 'error' && session.rows.length === 0))) {
+    return (
+      <View style={styles.centerState} accessibilityLabel="Ranking session failure">
+        <SessionFailureBanner
+          kind={failureKind}
+          {...(session.errorMessage ? { detail: session.errorMessage } : {})}
+          testID={`ranking-session-${failureKind}`}
+        />
+        <PrimaryButton
+          label={sessionFailureCopy(failureKind).actionLabel}
+          onPress={runFailureAction}
+          disabled={loadBusy && failureKind !== 'auth_expired'}
+          testID="ranking-retry"
+        />
       </View>
     );
   }
@@ -201,14 +261,22 @@ function RankingBody({ session, onRetry, loadBusy }: RankingBodyProps): React.Re
     <View style={styles.listWrap} testID="ranking-body-populated">
       {session.errorMessage ? (
         <View style={styles.refreshError} testID="ranking-refresh-failed">
-          <StatusErrorBanner title="Refresh failed" detail={session.errorMessage} />
+          {failureKind ? (
+            <SessionFailureBanner
+              kind={failureKind}
+              detail={session.errorMessage}
+              testID={`ranking-session-${failureKind}`}
+            />
+          ) : (
+            <StatusErrorBanner title="Refresh failed" detail={session.errorMessage} />
+          )}
           <Text style={styles.stateHint} allowFontScaling>
             Showing last readable rows.
           </Text>
           <PrimaryButton
-            label="Retry"
-            onPress={onRetry}
-            disabled={loadBusy}
+            label={failureKind ? sessionFailureCopy(failureKind).actionLabel : 'Retry'}
+            onPress={runFailureAction}
+            disabled={loadBusy && failureKind !== 'auth_expired'}
             testID="ranking-refresh-retry"
           />
         </View>

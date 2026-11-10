@@ -56,6 +56,8 @@ export async function loadCaptureIntentFile(): Promise<CaptureIntent> {
       rankingScenario?: string | null;
       ranking?: string | null;
       failClosed?: boolean | null;
+      poseCompare?: string | null;
+      sessionFailure?: string | null;
     };
     mergeCaptureFileIntent(raw);
   } catch {

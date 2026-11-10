@@ -1,5 +1,6 @@
 import type { SupabasePublicConfig } from '../../garage/auth/supabasePublicConfig';
 import { normalizeGarageLoadout } from '../../garage/loadout/normalizeLoadout';
+import { resolveTransportFailureCode } from '../../session-failure';
 import {
   FIGHT_ALLOWANCE_SUMMARY_RPC,
   OPPONENT_ROSTER_RPC,
@@ -56,7 +57,11 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         const err = (await rosterRes.json().catch(() => ({}))) as ErrBody;
         return {
           ok: false,
-          code: err.code ?? `http_${rosterRes.status}`,
+          code: resolveTransportFailureCode({
+            code: err.code ?? `http_${rosterRes.status}`,
+            message: err.message,
+            httpStatus: rosterRes.status,
+          }),
           message: err.message ?? `Failed to load opponents (${rosterRes.status})`,
         };
       }
@@ -64,7 +69,11 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         const err = (await allowRes.json().catch(() => ({}))) as ErrBody;
         return {
           ok: false,
-          code: err.code ?? `http_${allowRes.status}`,
+          code: resolveTransportFailureCode({
+            code: err.code ?? `http_${allowRes.status}`,
+            message: err.message,
+            httpStatus: allowRes.status,
+          }),
           message: err.message ?? `Failed to load fight allowance (${allowRes.status})`,
         };
       }
@@ -195,10 +204,14 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as ErrBody;
-        const code = err.code ?? `http_${res.status}`;
+        const resolved = resolveTransportFailureCode({
+          code: err.code ?? `http_${res.status}`,
+          message: err.message ?? err.details,
+          httpStatus: res.status,
+        });
         return {
           ok: false,
-          code: code === '42501' ? 'forbidden' : code,
+          code: resolved === 'unauthenticated' ? resolved : err.code === '42501' ? 'forbidden' : resolved,
           message: err.message ?? err.details ?? `Eligibility check failed (${res.status})`,
         };
       }

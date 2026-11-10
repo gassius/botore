@@ -13,6 +13,9 @@ import {
   garageTag,
   type WeaponGlyphId,
 } from '../../garage-tag';
+import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
+import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
+import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import {
   paintCatalogueId,
   paintUiAlias,
@@ -28,13 +31,31 @@ export function CustomiseScreen(props: {
   onBack: () => void;
   onSaved?: () => void;
 }): React.ReactElement {
-  const { loadout, canProgress, selectPaint, selectWeapon, discard, save, retryHydration } =
-    useGarageSession();
+  const {
+    loadout,
+    canProgress,
+    selectPaint,
+    selectWeapon,
+    discard,
+    save,
+    retryHydration,
+    signOut,
+  } = useGarageSession();
+  const forced = useForcedSessionFailure();
   const [tab, setTab] = useState<CustomiseTab>('paint');
   const preview = loadout.pendingLoadout;
   const editingLocked = loadout.saving || loadout.hydration !== 'ready';
   const previewWeapon = preview ? weaponUiAlias(preview.weapon) : 'sword';
   const previewPaint = preview ? paintUiAlias(preview.paint) : 'oxide';
+
+  const errorKind = loadout.lastError
+    ? classifySessionFailure({
+        code: loadout.lastErrorCode,
+        message: loadout.lastError,
+      })
+    : null;
+  const failureKind =
+    forced ?? (errorKind === 'offline' || errorKind === 'auth_expired' ? errorKind : null);
 
   const onBack = () => {
     if (loadout.saving) return;
@@ -47,6 +68,20 @@ export function CustomiseScreen(props: {
     if (ok) props.onSaved?.();
   };
 
+  const onFailureAction = () => {
+    if (failureKind === 'auth_expired') {
+      void signOut();
+      return;
+    }
+    if (loadout.hydration !== 'ready') {
+      void retryHydration();
+      return;
+    }
+    if (loadout.dirty) {
+      void onSave();
+    }
+  };
+
   if (!canProgress || !preview || !loadout.confirmedLoadout) {
     return (
       <ScreenChrome
@@ -54,10 +89,14 @@ export function CustomiseScreen(props: {
         footer={
           <>
             <SecondaryButton
-              label="Retry load"
-              onPress={() => {
-                void retryHydration();
-              }}
+              label={
+                failureKind === 'auth_expired'
+                  ? sessionFailureCopy('auth_expired').actionLabel
+                  : failureKind === 'offline'
+                    ? sessionFailureCopy('offline').actionLabel
+                    : 'Retry load'
+              }
+              onPress={onFailureAction}
               testID="customise-retry-hydration"
             />
             <SecondaryButton label="Back" onPress={props.onBack} testID="customise-back-blocked" />
@@ -65,14 +104,22 @@ export function CustomiseScreen(props: {
         }
       >
         <ScreenHeader title="Customise" onBack={props.onBack} />
-        <StatusErrorBanner
-          title="Customisation blocked"
-          detail={
-            loadout.lastError ??
-            'Server-confirmed loadout is unavailable. Edits and save stay blocked until hydration succeeds.'
-          }
-          testID="customise-hydration-error"
-        />
+        {failureKind ? (
+          <SessionFailureBanner
+            kind={failureKind}
+            {...(loadout.lastError ? { detail: loadout.lastError } : {})}
+            testID={`customise-session-${failureKind}`}
+          />
+        ) : (
+          <StatusErrorBanner
+            title="Customisation blocked"
+            detail={
+              loadout.lastError ??
+              'Server-confirmed loadout is unavailable. Edits and save stay blocked until hydration succeeds.'
+            }
+            testID="customise-hydration-error"
+          />
+        )}
       </ScreenChrome>
     );
   }
@@ -96,6 +143,14 @@ export function CustomiseScreen(props: {
             disabled={!loadout.dirty || editingLocked}
             testID="customise-save"
           />
+          {failureKind ? (
+            <SecondaryButton
+              label={sessionFailureCopy(failureKind).actionLabel}
+              onPress={onFailureAction}
+              disabled={loadout.saving}
+              testID="customise-session-action"
+            />
+          ) : null}
         </>
       }
     >
@@ -191,7 +246,13 @@ export function CustomiseScreen(props: {
         </Text>
       ) : null}
 
-      {loadout.lastError ? (
+      {failureKind ? (
+        <SessionFailureBanner
+          kind={failureKind}
+          {...(loadout.lastError ? { detail: loadout.lastError } : {})}
+          testID={`customise-session-${failureKind}`}
+        />
+      ) : loadout.lastError ? (
         <StatusErrorBanner
           title="Could not save changes."
           detail={loadout.lastError}

@@ -27,6 +27,7 @@ describe('captureIntentState merge + consume', () => {
       rankingScenario: null,
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     });
   });
 
@@ -47,6 +48,7 @@ describe('captureIntentState merge + consume', () => {
       rankingScenario: null,
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     });
   });
 
@@ -69,6 +71,7 @@ describe('captureIntentState merge + consume', () => {
       rankingScenario: 'live',
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     });
     expect(consumeCaptureRoute()).toBeNull();
   });
@@ -81,5 +84,12 @@ describe('captureIntentState merge + consume', () => {
   it('accepts poseCompare for C11 heavy-hit stills', () => {
     mergeCaptureFileIntent({ poseCompare: 'quick-vs-heavy' });
     expect(peekCaptureIntent().poseCompare).toBe('quick-vs-heavy');
+  });
+
+  it('accepts sessionFailure for C10 offline/auth-expired stills', () => {
+    mergeCaptureFileIntent({ sessionFailure: 'offline' });
+    expect(peekCaptureIntent().sessionFailure).toBe('offline');
+    mergeCaptureFileIntent({ sessionFailure: 'auth_expired' });
+    expect(peekCaptureIntent().sessionFailure).toBe('auth_expired');
   });
 });

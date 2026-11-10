@@ -4,6 +4,7 @@ import { useFirstRun } from '../first-run/FirstRunContext';
 import type { FirstRunRoute } from '../first-run/routes';
 import {
   type DesignCaptureRankingScenario,
+  type DesignCaptureSessionFailure,
   isDesignCaptureEnabled,
   parseDesignCaptureUrl,
 } from './captureEnv';
@@ -37,10 +38,14 @@ export function useDesignCaptureDeepLink(): void {
       mute: boolean | null;
       route?: FirstRunRoute | string | null;
       rankingScenario?: DesignCaptureRankingScenario | null;
+      sessionFailure?: DesignCaptureSessionFailure | null;
     }) => {
       // Ranking scenario before route so RankingSlot mounts the right port.
+      // C10: sessionFailure offline/auth_expired also drives Ranking fixtures.
       if (parsed.rankingScenario) {
         setRankingCaptureScenario(parsed.rankingScenario);
+      } else if (parsed.sessionFailure === 'offline' || parsed.sessionFailure === 'auth_expired') {
+        setRankingCaptureScenario(parsed.sessionFailure);
       } else if (parsed.route === 'Ranking') {
         setRankingCaptureScenario('live');
       }
@@ -75,8 +80,8 @@ export function useDesignCaptureDeepLink(): void {
       if (!url) return;
       const parsed = parseDesignCaptureUrl(url);
       applyPaintWeaponMute(parsed);
-      if (parsed.poseCompare) {
-        // Persist for ConfirmFight / capture consumers (peekCaptureIntent).
+      if (parsed.poseCompare || parsed.sessionFailure) {
+        // Persist for ConfirmFight / C10 session-failure / capture consumers.
         mergeIntent({
           route: parsed.route,
           paintId: parsed.paintId,
@@ -86,6 +91,7 @@ export function useDesignCaptureDeepLink(): void {
           rankingScenario: parsed.rankingScenario,
           failClosed: parsed.failClosed,
           poseCompare: parsed.poseCompare,
+          sessionFailure: parsed.sessionFailure,
         });
       }
       applyRouteIfNew(parsed.route, false);

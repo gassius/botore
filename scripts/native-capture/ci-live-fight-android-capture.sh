@@ -483,6 +483,43 @@ else
   missing=1
 fi
 
+# 7) C10 offline + auth-expired banners on ≥2 screens (Opponents + Ranking).
+CAPTURE_SETTLE_SEC=4 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Opponents \
+  --name session-offline-opponents \
+  --session-failure offline >/dev/null
+CAPTURE_SETTLE_SEC=4 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Ranking \
+  --name session-auth-expired-ranking \
+  --session-failure auth_expired >/dev/null
+CAPTURE_SETTLE_SEC=4 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Ranking \
+  --name session-offline-ranking \
+  --session-failure offline >/dev/null
+CAPTURE_SETTLE_SEC=4 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Opponents \
+  --name session-auth-expired-opponents \
+  --session-failure auth_expired >/dev/null
+for c10_label in session-offline-opponents session-auth-expired-ranking session-offline-ranking session-auth-expired-opponents; do
+  c10_matches=( "${OUT_DIR}"/android-*-"${c10_label}".png )
+  if [[ -e "${c10_matches[0]:-}" ]]; then
+    write_manifest_line "${MANIFEST}" "still.android.${c10_label}" "${c10_matches[0]}"
+    echo "ok: ${c10_matches[0]}" >&2
+  else
+    echo "error: missing ${c10_label} PNG" >&2
+    missing=1
+  fi
+done
+write_manifest_line "${MANIFEST}" "c10_session_failure" "design-capture-sessionFailure-deep-link"
+
 # Assert required stills exist (if-no-files-found equivalent).
 missing="${missing:-0}"
 required_labels=(
@@ -496,6 +533,10 @@ required_labels=(
   ranking-empty
   ranking-error
   playable-misconfigured
+  session-offline-opponents
+  session-auth-expired-ranking
+  session-offline-ranking
+  session-auth-expired-opponents
 )
 if [[ "${FX_DODGE}" -ge 1 ]]; then
   required_labels+=(replay-fx-dodge)

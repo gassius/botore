@@ -32,6 +32,12 @@ export function createRankingReadClient(input: CreateRankingReadClientInput = {}
       errorMessage: 'Design-capture ranking error state',
     });
   }
+  if (scenario === 'offline') {
+    return new FixtureRankingReadAdapter({ scenario: 'offline' });
+  }
+  if (scenario === 'auth_expired') {
+    return new FixtureRankingReadAdapter({ scenario: 'auth_expired' });
+  }
 
   const config = readSupabasePublicConfig();
   const token = input.accessToken?.trim() ?? '';

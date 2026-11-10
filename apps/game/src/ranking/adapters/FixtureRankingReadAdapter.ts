@@ -1,8 +1,13 @@
-import type { RankingReadPort } from '../RankingReadPort';
+import { RankingTransportError, type RankingReadPort } from '../RankingReadPort';
 import { DEV_EMPTY_RANKING_ROWS, DEV_POPULATED_RANKING_ROWS } from '../fixtures/devRankingFixtures';
 import type { RankingRow } from '../types';
 
-export type FixtureRankingScenario = 'populated' | 'empty' | 'error';
+export type FixtureRankingScenario =
+  | 'populated'
+  | 'empty'
+  | 'error'
+  | 'offline'
+  | 'auth_expired';
 
 export type FixtureRankingReadAdapterOptions = {
   scenario?: FixtureRankingScenario;
@@ -36,6 +41,16 @@ export class FixtureRankingReadAdapter implements RankingReadPort {
       await new Promise<void>((resolve) => {
         setTimeout(resolve, this.delayMs);
       });
+    }
+
+    if (this.scenario === 'offline') {
+      throw new RankingTransportError('network_error', 'Design-capture ranking offline state');
+    }
+    if (this.scenario === 'auth_expired') {
+      throw new RankingTransportError(
+        'unauthenticated',
+        'Design-capture ranking auth-expired state',
+      );
     }
 
     if (this.scenario === 'error') {

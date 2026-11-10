@@ -20,6 +20,9 @@ import {
 } from '../../garage-tag';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import { paintUiAlias, weaponUiAlias } from '../../garage/loadout/proofCatalogue';
+import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
+import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
+import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import { canContinueToConfirm } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
 
@@ -28,7 +31,8 @@ export function OpponentsScreen(props: {
   onBack: () => void;
   onContinue: () => void;
 }): React.ReactElement {
-  const { canProgress, loadout } = useGarageSession();
+  const { canProgress, loadout, signOut } = useGarageSession();
+  const forced = useForcedSessionFailure();
   const {
     list,
     selected,
@@ -49,9 +53,19 @@ export function OpponentsScreen(props: {
       : list.status === 'error' && list.code === 'allowance_exhausted';
 
   const emptyCandidates = list.status === 'ready' && list.candidates.length === 0;
-  const networkError = list.status === 'error' && list.code === 'network_error';
+  const listFailure =
+    list.status === 'error'
+      ? classifySessionFailure({
+          code: list.code,
+          message: list.message,
+        })
+      : null;
+  const failureKind =
+    forced ?? (listFailure === 'offline' || listFailure === 'auth_expired' ? listFailure : null);
   const otherError =
-    list.status === 'error' && !networkError && list.code !== 'allowance_exhausted';
+    list.status === 'error' && failureKind === null && list.code !== 'allowance_exhausted';
+  // Never present a network/auth failure as an empty "no opponents" board.
+  const showEmpty = emptyCandidates && !failureKind;
 
   const recoverable =
     !!selected && pendingIntent !== null && pendingIntent.opponentId === selected.characterId;
@@ -77,10 +91,14 @@ export function OpponentsScreen(props: {
             onPress={props.onContinue}
             testID="opponents-continue"
           />
-          {list.status === 'error' ? (
+          {list.status === 'error' || failureKind ? (
             <PrimaryButton
-              label="Retry"
+              label={failureKind ? sessionFailureCopy(failureKind).actionLabel : 'Retry'}
               onPress={() => {
+                if (failureKind === 'auth_expired') {
+                  void signOut();
+                  return;
+                }
                 void refreshCandidates();
               }}
               testID="opponents-retry"
@@ -133,7 +151,7 @@ export function OpponentsScreen(props: {
         />
       ) : null}
 
-      {emptyCandidates ? (
+      {showEmpty ? (
         <StatusErrorBanner
           title="No opponents available"
           detail="No system opponents with a confirmed loadout are readable right now."
@@ -141,11 +159,11 @@ export function OpponentsScreen(props: {
         />
       ) : null}
 
-      {networkError ? (
-        <StatusErrorBanner
-          title="Network failure"
-          detail={list.status === 'error' ? list.message : 'Could not reach the server.'}
-          testID="opponents-network-error"
+      {failureKind ? (
+        <SessionFailureBanner
+          kind={failureKind}
+          {...(list.status === 'error' ? { detail: list.message } : {})}
+          testID={`opponents-session-${failureKind}`}
         />
       ) : null}
 

@@ -3,8 +3,10 @@ import { isFirstRunRoute } from '../first-run/routes';
 import {
   type DesignCapturePoseCompare,
   type DesignCaptureRankingScenario,
+  type DesignCaptureSessionFailure,
   parseDesignCapturePoseCompare,
   parseDesignCaptureRankingScenario,
+  parseDesignCaptureSessionFailure,
 } from './captureEnv';
 
 /**
@@ -19,12 +21,14 @@ export type CaptureIntent = {
   mute: boolean | null;
   /** Live-fight battle id for FightResult restore after iOS process relaunch. */
   battleId: string | null;
-  /** C5 ranking capture scenario (live / empty / error). */
+  /** C5 ranking capture scenario (live / empty / error / offline / auth_expired). */
   rankingScenario: DesignCaptureRankingScenario | null;
   /** C8: force PlayableMisconfiguredScreen for blocked-UI evidence. */
   failClosed: boolean | null;
   /** C11: dual-fighter quick vs heavy pose stills (design-capture only). */
   poseCompare: DesignCapturePoseCompare | null;
+  /** C10: force offline / auth-expired banners on first-run screens. */
+  sessionFailure: DesignCaptureSessionFailure | null;
 };
 
 const EMPTY: CaptureIntent = {
@@ -36,6 +40,7 @@ const EMPTY: CaptureIntent = {
   rankingScenario: null,
   failClosed: null,
   poseCompare: null,
+  sessionFailure: null,
 };
 
 let intent: CaptureIntent = { ...EMPTY };
@@ -54,6 +59,7 @@ export function mergeIntent(next: CaptureIntent): void {
     rankingScenario: next.rankingScenario ?? intent.rankingScenario,
     failClosed: next.failClosed ?? intent.failClosed,
     poseCompare: next.poseCompare ?? intent.poseCompare,
+    sessionFailure: next.sessionFailure ?? intent.sessionFailure,
   };
 }
 
@@ -68,6 +74,7 @@ export function mergeCaptureFileIntent(raw: {
   ranking?: string | null;
   failClosed?: boolean | null;
   poseCompare?: string | null;
+  sessionFailure?: string | null;
 }): void {
   const route = typeof raw.route === 'string' && isFirstRunRoute(raw.route) ? raw.route : null;
   mergeIntent({
@@ -81,6 +88,7 @@ export function mergeCaptureFileIntent(raw: {
     ),
     failClosed: typeof raw.failClosed === 'boolean' ? raw.failClosed : null,
     poseCompare: parseDesignCapturePoseCompare(raw.poseCompare),
+    sessionFailure: parseDesignCaptureSessionFailure(raw.sessionFailure),
   });
 }
 
