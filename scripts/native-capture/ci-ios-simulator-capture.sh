@@ -102,11 +102,17 @@ SCHEME_LIST="$(
 echo "available schemes:" >&2
 echo "${SCHEME_LIST}" | sed 's/^/  /' >&2 || true
 
+if [[ -n "${SCHEME}" ]] && ! echo "${SCHEME_LIST}" | grep -qx "${SCHEME}"; then
+  echo "warn: CAPTURE_IOS_SCHEME='${SCHEME}' not in workspace; resolving…" >&2
+  SCHEME=''
+fi
 if [[ -z "${SCHEME}" ]]; then
   if echo "${SCHEME_LIST}" | grep -qx 'BotoreGameClient'; then
     SCHEME='BotoreGameClient'
   elif echo "${SCHEME_LIST}" | grep -qx "${WORKSPACE_BASE}"; then
     SCHEME="${WORKSPACE_BASE}"
+  elif echo "${SCHEME_LIST}" | grep -qx 'Botore'; then
+    SCHEME='Botore'
   else
     # First non-Pods-looking scheme (skip common pod library schemes).
     SCHEME="$(

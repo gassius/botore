@@ -2354,12 +2354,14 @@ begin
          deleted_at = null
    where id = '22222222-2222-4222-8222-222222222222';
 
+  -- Capture under service_role, assert as owner (tests schema not granted
+  -- to service_role — same pattern as SEC admin grant lockdown).
   set local role service_role;
   v_res := public.admin_delete_account_by_code_hash(
     encode(digest('cccccccccccccccccccccccccccccccc', 'sha256'), 'hex')
   );
-  perform tests.assert((v_res->>'ok')::boolean, 'admin_delete_account_by_code_hash ok');
   reset role;
+  perform tests.assert((v_res->>'ok')::boolean, 'admin_delete_account_by_code_hash ok');
 
   -- seed account still intact (cross-account isolation)
   select deleted_at into v_deleted_at from public.accounts where id = v_account;

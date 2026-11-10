@@ -96,9 +96,7 @@ function memoryAdmin(): PlatformAuthAdmin & {
                     }
                     return {
                       data: {
-                        deleted_at: deletedAccounts.has(val)
-                          ? '2026-11-10T00:00:00Z'
-                          : null,
+                        deleted_at: deletedAccounts.has(val) ? '2026-11-10T00:00:00Z' : null,
                       },
                       error: null,
                     };
