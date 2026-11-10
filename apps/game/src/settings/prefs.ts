@@ -48,6 +48,20 @@ export function mergePlayerSettings(
   return normalizePlayerSettings({ ...base, ...patch });
 }
 
+/**
+ * Disk load that raced a pre-hydrate commit: keep the user's patch on top of
+ * loaded prefs so Music/Effects/reduced-motion are not overwritten by defaults.
+ */
+export function applyPendingSettingsPatch(
+  loaded: PlayerSettingsPrefs,
+  pending: Partial<PlayerSettingsPrefs> | null | undefined,
+): PlayerSettingsPrefs {
+  if (!pending) return loaded;
+  const keys = Object.keys(pending);
+  if (keys.length === 0) return loaded;
+  return mergePlayerSettings(loaded, pending);
+}
+
 /** Master mute wins; channel toggles only apply when unmuted. */
 export function effectiveMusicMuted(
   prefs: Pick<PlayerSettingsPrefs, 'muted' | 'musicEnabled'>,

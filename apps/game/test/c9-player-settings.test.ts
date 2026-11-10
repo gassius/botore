@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_PLAYER_SETTINGS,
+  applyPendingSettingsPatch,
   effectiveEffectsMuted,
   effectiveMusicMuted,
   mergePlayerSettings,
@@ -53,6 +54,24 @@ describe('C9 player settings prefs', () => {
       effectsEnabled: false,
       forceReducedMotion: false,
     });
+  });
+
+  it('hydrate keeps pre-load commits on top of disk prefs (PRR race)', () => {
+    const loaded = {
+      ...DEFAULT_PLAYER_SETTINGS,
+      musicEnabled: false,
+      effectsEnabled: false,
+      forceReducedMotion: true,
+    };
+    // Design-capture mute=1 (or Settings tap) before loadPlayerSettings resolves.
+    expect(applyPendingSettingsPatch(loaded, { muted: true })).toEqual({
+      muted: true,
+      musicEnabled: false,
+      effectsEnabled: false,
+      forceReducedMotion: true,
+    });
+    expect(applyPendingSettingsPatch(loaded, null)).toEqual(loaded);
+    expect(applyPendingSettingsPatch(loaded, {})).toEqual(loaded);
   });
 
   it('master mute wins over channel toggles', () => {

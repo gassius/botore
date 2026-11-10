@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
-import { DEFAULT_PLAYER_SETTINGS, mergePlayerSettings, type PlayerSettingsPrefs } from './prefs';
+import {
+  DEFAULT_PLAYER_SETTINGS,
+  applyPendingSettingsPatch,
+  mergePlayerSettings,
+  type PlayerSettingsPrefs,
+} from './prefs';
 import { loadPlayerSettings, savePlayerSettings } from './prefsStore';
 
 export type PlayerSettingsControls = {
@@ -24,6 +29,9 @@ export type PlayerSettingsControls = {
 /**
  * Shell-level player settings with DocumentDirectory persistence.
  * Kill/relaunch retains mute + channel toggles + force reduced-motion.
+ *
+ * Commits that race ahead of `loadPlayerSettings()` keep a pending patch and
+ * merge onto the loaded file at hydrate (avoids saving defaults over disk).
  */
 export function usePlayerSettings(): PlayerSettingsControls {
   const [prefs, setPrefs] = useState<PlayerSettingsPrefs>({ ...DEFAULT_PLAYER_SETTINGS });
@@ -31,18 +39,25 @@ export function usePlayerSettings(): PlayerSettingsControls {
   const [osReducedMotion, setOsReducedMotion] = useState(false);
   const prefsRef = useRef(prefs);
   prefsRef.current = prefs;
-  /** True once the user/capture mutates prefs — skip stale disk overwrite. */
-  const dirtyRef = useRef(false);
+  const hydratedRef = useRef(false);
+  /** Accumulated patches applied before the first disk load resolves. */
+  const pendingPatchRef = useRef<Partial<PlayerSettingsPrefs> | null>(null);
 
   useEffect(() => {
     let mounted = true;
     void loadPlayerSettings().then((loaded) => {
       if (!mounted) return;
-      if (!dirtyRef.current) {
-        prefsRef.current = loaded;
-        setPrefs(loaded);
-      }
+      const pending = pendingPatchRef.current;
+      pendingPatchRef.current = null;
+      const next = applyPendingSettingsPatch(loaded, pending);
+      prefsRef.current = next;
+      setPrefs(next);
+      hydratedRef.current = true;
       setHydrated(true);
+      // Persist the merge when a pre-hydrate commit raced the load.
+      if (pending && Object.keys(pending).length > 0) {
+        void savePlayerSettings(next);
+      }
     });
     return () => {
       mounted = false;
@@ -72,10 +87,13 @@ export function usePlayerSettings(): PlayerSettingsControls {
   }, []);
 
   const commit = useCallback((patch: Partial<PlayerSettingsPrefs>) => {
-    dirtyRef.current = true;
     const next = mergePlayerSettings(prefsRef.current, patch);
     prefsRef.current = next;
     setPrefs(next);
+    if (!hydratedRef.current) {
+      pendingPatchRef.current = { ...(pendingPatchRef.current ?? {}), ...patch };
+      return;
+    }
     void savePlayerSettings(next);
   }, []);
 
