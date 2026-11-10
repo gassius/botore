@@ -55,11 +55,7 @@ const PRODUCT_UI_SOURCES = [
   'src/settings/prefs.ts',
 ] as const;
 
-const FORBIDDEN_UI_LITERALS = [
-  'teamPlayerID',
-  'player_id',
-  '@players.botore.internal',
-] as const;
+const FORBIDDEN_UI_LITERALS = ['teamPlayerID', 'player_id', '@players.botore.internal'] as const;
 
 describe('C16 platform player id UI guards', () => {
   it('detects Game Center / Play Games / device-fallback / synthetic shapes', () => {
