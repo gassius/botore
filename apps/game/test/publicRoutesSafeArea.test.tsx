@@ -65,6 +65,7 @@ vi.mock('react-native-safe-area-context', async () => {
 import TestRenderer, { ReactTestRenderer, act } from 'react-test-renderer';
 import { PublicRouteShell } from '../src/account/PublicRouteShell';
 import { PublicAccountDeleteScreen } from '../src/garage/screens/PublicAccountDeleteScreen';
+import { PublicPrivacyPolicyScreen } from '../src/legal/PublicPrivacyPolicyScreen';
 
 const PUBLIC_ROUTES: Array<{
   path: string;
@@ -75,6 +76,11 @@ const PUBLIC_ROUTES: Array<{
     path: '/account/delete',
     testID: 'slot-public-account-delete',
     screen: () => <PublicAccountDeleteScreen />,
+  },
+  {
+    path: '/privacy',
+    testID: 'slot-public-privacy-policy',
+    screen: () => <PublicPrivacyPolicyScreen />,
   },
 ];
 
@@ -100,20 +106,25 @@ describe('public routes SafeAreaProvider', () => {
     },
   );
 
-  it('App.tsx wraps the public account-delete return in PublicRouteShell', () => {
+  it('App.tsx wraps public account-delete and privacy returns in PublicRouteShell', () => {
     // Vitest cwd is apps/game — avoid import.meta for tsc module settings.
     const appPath = join(process.cwd(), 'App.tsx');
     const src = readFileSync(appPath, 'utf8');
     expect(src).toMatch(/isPublicAccountDeletePath\(\)/);
+    expect(src).toMatch(/isPublicPrivacyPath\(\)/);
     expect(src).toMatch(/<PublicRouteShell>/);
     expect(src).toMatch(/<PublicAccountDeleteScreen\s*\/>/);
+    expect(src).toMatch(/<PublicPrivacyPolicyScreen\s*\/>/);
     expect(src).toMatch(/<\/PublicRouteShell>/);
   });
 
-  it('PublicAccountDeleteScreen alone crashes without a provider (regression signal)', () => {
+  it.each([
+    { name: 'PublicAccountDeleteScreen', screen: () => <PublicAccountDeleteScreen /> },
+    { name: 'PublicPrivacyPolicyScreen', screen: () => <PublicPrivacyPolicyScreen /> },
+  ])('$name alone crashes without a provider (regression signal)', ({ screen }) => {
     expect(() => {
       act(() => {
-        root = TestRenderer.create(<PublicAccountDeleteScreen />);
+        root = TestRenderer.create(screen());
       });
     }).toThrow(/safe area/i);
   });
