@@ -13,6 +13,9 @@ function memoryAdmin(): PlatformAuthAdmin & {
     provider: string;
     platform_id: string;
   }>;
+  readonly _deletedAccounts: Set<string>;
+  /** Simulate Auth Admin email rewrite after soft-delete. */
+  _retireEmail: (userId: string, retiredEmail: string) => void;
 } {
   const identities: Array<{
     account_id: string;
@@ -20,6 +23,7 @@ function memoryAdmin(): PlatformAuthAdmin & {
     platform_id: string;
   }> = [];
   const accounts = new Set<string>();
+  const deletedAccounts = new Set<string>();
   const usersByEmail = new Map<string, { id: string; email: string }>();
   const usersById = new Map<string, { id: string; email: string }>();
   let userSeq = 0;
@@ -27,6 +31,15 @@ function memoryAdmin(): PlatformAuthAdmin & {
   const admin = {
     _accounts: accounts,
     _identities: identities,
+    _deletedAccounts: deletedAccounts,
+    _retireEmail(userId: string, retiredEmail: string) {
+      const user = usersById.get(userId);
+      if (!user) return;
+      usersByEmail.delete(user.email);
+      const next = { id: userId, email: retiredEmail };
+      usersById.set(userId, next);
+      usersByEmail.set(retiredEmail, next);
+    },
     auth: {
       admin: {
         async getUserById(id: string) {
@@ -88,6 +101,17 @@ function memoryAdmin(): PlatformAuthAdmin & {
                   };
                 },
                 async maybeSingle() {
+                  if (table === 'accounts' && col === 'id') {
+                    if (!accounts.has(val) && !usersById.has(val)) {
+                      return { data: null, error: null };
+                    }
+                    return {
+                      data: {
+                        deleted_at: deletedAccounts.has(val) ? '2026-11-10T00:00:00Z' : null,
+                      },
+                      error: null,
+                    };
+                  }
                   return { data: null, error: null };
                 },
               };
@@ -291,4 +315,79 @@ Deno.test('rejects unknown provider and non-POST', async () => {
     await testDeps(admin),
   );
   assertEquals(bad.status, 400);
+});
+
+Deno.test('M1: soft-deleted Auth user on synthetic email fails closed (no re-link)', async () => {
+  const admin = memoryAdmin();
+  const deps = await testDeps(admin);
+
+  // First mint creates the Auth user + identity.
+  const first = await handlePlatformAuthRequest(
+    new Request('http://local/functions/v1/platform-auth', {
+      method: 'POST',
+      body: JSON.stringify({
+        provider: 'play_games',
+        serverAuthCode: 'code',
+      }),
+    }),
+    deps,
+  );
+  assertEquals(first.status, 200);
+  const firstBody = await first.json();
+  const userId = firstBody.session.user_id as string;
+
+  // Simulate DB-only delete: mark account deleted and unlink identities,
+  // but leave Auth email on the synthetic mailbox (auth_retire_failed).
+  admin._deletedAccounts.add(userId);
+  admin._identities.splice(0, admin._identities.length);
+
+  const second = await handlePlatformAuthRequest(
+    new Request('http://local/functions/v1/platform-auth', {
+      method: 'POST',
+      body: JSON.stringify({
+        provider: 'play_games',
+        serverAuthCode: 'code',
+      }),
+    }),
+    deps,
+  );
+  assertEquals(second.status, 403);
+  const secondBody = await second.json();
+  assertEquals(secondBody.ok, false);
+  assertEquals(secondBody.code, 'account_deleted');
+  assertEquals(admin._identities.length, 0);
+});
+
+Deno.test('M1: after Auth retire, same platform id mints a fresh account', async () => {
+  const admin = memoryAdmin();
+  const deps = await testDeps(admin);
+  const deviceId = 'cccccccc-dddd-4eee-8fff-000000000001';
+
+  const first = await handlePlatformAuthRequest(
+    new Request('http://local/functions/v1/platform-auth', {
+      method: 'POST',
+      body: JSON.stringify({ provider: 'device_fallback', deviceId }),
+    }),
+    deps,
+  );
+  assertEquals(first.status, 200);
+  const firstBody = await first.json();
+  const oldUserId = firstBody.session.user_id as string;
+
+  // Soft-delete + Auth retire (email rewritten away from synthetic mailbox).
+  admin._deletedAccounts.add(oldUserId);
+  admin._identities.splice(0, admin._identities.length);
+  admin._retireEmail(oldUserId, `deleted.${oldUserId.replace(/-/g, '')}@deleted.botore.internal`);
+
+  const second = await handlePlatformAuthRequest(
+    new Request('http://local/functions/v1/platform-auth', {
+      method: 'POST',
+      body: JSON.stringify({ provider: 'device_fallback', deviceId }),
+    }),
+    deps,
+  );
+  assertEquals(second.status, 200);
+  const secondBody = await second.json();
+  assertEquals(secondBody.ok, true);
+  assertEquals(secondBody.session.user_id !== oldUserId, true);
 });

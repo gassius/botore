@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  clearDeviceFallbackId,
   DEVICE_FALLBACK_STORAGE_KEY,
   DEVICE_ID_UNPERSISTED_CODE,
   getOrCreateDeviceFallbackId,
@@ -50,5 +51,24 @@ describe('getOrCreateDeviceFallbackId', () => {
     const result = await getOrCreateDeviceFallbackId();
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.code).toBe(DEVICE_ID_UNPERSISTED_CODE);
+  });
+
+  it('clears the device-fallback id after account deletion', async () => {
+    process.env.EXPO_OS = 'web';
+    const mem = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => mem.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        mem.set(key, value);
+      },
+      removeItem: (key: string) => {
+        mem.delete(key);
+      },
+    });
+
+    const first = await getOrCreateDeviceFallbackId();
+    expect(first.ok).toBe(true);
+    await clearDeviceFallbackId();
+    expect(mem.has(DEVICE_FALLBACK_STORAGE_KEY)).toBe(false);
   });
 });

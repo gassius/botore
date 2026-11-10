@@ -17,6 +17,9 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 | `list_ranking()`                | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }` |
 
 Failures: `{ ok: false, code?, message? }` or PostgREST HTTP error (`42501`).
+After R5 soft-delete, `get_owned_character()` returns
+`{ ok: false, code: 'account_deleted' }` when `accounts.deleted_at` is set
+(migration `0024_account_deletion.sql`).
 
 `list_ranking` is migration `0022_list_ranking.sql` (C5). Ordering is
 server-owned: player characters by `sum(progression_ledger.delta_xp)` desc,

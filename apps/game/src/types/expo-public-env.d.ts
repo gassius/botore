@@ -77,5 +77,16 @@ declare namespace NodeJS {
      * Never commit a real value. Ignored on native runtimes.
      */
     EXPO_PUBLIC_WEB_PREVIEW_DEV_PASSWORD?: string;
+    /**
+     * R5 public `/account/delete` fallback mailto when the player has no
+     * in-app deletion code (Play data-deletion URL). Ops inbox only.
+     */
+    EXPO_PUBLIC_ACCOUNT_DELETION_SUPPORT_EMAIL?: string;
+    /**
+     * Optional absolute origin for public web paths (`/privacy`, `/account/delete`)
+     * used in privacy disclosure links and store listing copy. No trailing slash.
+     * Example: `https://game.botore.example`. Unset → path-only / browser origin.
+     */
+    EXPO_PUBLIC_PUBLIC_WEB_ORIGIN?: string;
   }
 }

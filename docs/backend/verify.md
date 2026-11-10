@@ -62,6 +62,28 @@ deno test -A --config=supabase/functions/platform-auth/deno.json \
   supabase/functions/platform-auth
 ```
 
+## Account deletion (R5)
+
+Soft-delete + anonymize + public web code. See
+`docs/backend/account-deletion.md`.
+
+```bash
+deno test -A --config=supabase/functions/account-delete/deno.json \
+  supabase/functions/account-delete
+```
+
+Public web path on the game export: `/account/delete`.
+
+## Privacy disclosure (R6)
+
+Public `/privacy` + in-app Stable → Privacy policy. Copy covers platform auth,
+synthetic emails, sessions, crash reporting, and the R5 deletion URL
+(`/account/delete`). See `docs/legal/privacy-policy.md`.
+
+```bash
+pnpm --filter @botore/game exec vitest run test/privacyPolicy.test.ts
+```
+
 ## Sanctioned client reads (B)
 
 ```bash

@@ -131,7 +131,8 @@ export async function handlePlatformAuthRequest(
   });
 
   if (!minted.ok) {
-    return json({ ok: false, code: minted.code, message: minted.message }, 500);
+    const status = minted.code === 'account_deleted' ? 403 : 500;
+    return json({ ok: false, code: minted.code, message: minted.message }, status);
   }
 
   return json(

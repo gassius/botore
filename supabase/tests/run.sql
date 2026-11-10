@@ -2195,3 +2195,191 @@ begin
 
   raise notice 'TEST-OK C12 player_identities';
 end $$;
+
+-- =========================================================================
+-- R5: account deletion (0024) — soft-delete, grants, deletion code
+-- =========================================================================
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_other uuid := '11111111-1111-4111-8111-111111111111';
+  v_res jsonb;
+  v_code text;
+  v_hash text;
+  v_count int;
+  v_name text;
+  v_deleted_at timestamptz;
+begin
+  perform tests.assert(
+    exists (
+      select 1 from information_schema.columns
+       where table_schema = 'public'
+         and table_name = 'accounts'
+         and column_name = 'deleted_at'
+    ),
+    'accounts.deleted_at present'
+  );
+
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.mint_my_deletion_code()', 'EXECUTE'),
+    'authenticated EXECUTE mint_my_deletion_code'
+  );
+  perform tests.assert(
+    not has_function_privilege('authenticated', 'public.delete_my_account()', 'EXECUTE'),
+    'authenticated must not EXECUTE delete_my_account (Edge-only path)'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.delete_my_account()', 'EXECUTE'),
+    'anon must not EXECUTE delete_my_account'
+  );
+  perform tests.assert(
+    not has_function_privilege('authenticated', 'public.admin_delete_account(uuid)', 'EXECUTE'),
+    'authenticated must not EXECUTE admin_delete_account'
+  );
+  perform tests.assert(
+    has_function_privilege('service_role', 'public.admin_delete_account(uuid)', 'EXECUTE'),
+    'service_role EXECUTE admin_delete_account'
+  );
+
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_other,
+    'other-player-r5@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+  insert into public.accounts (id) values (v_other) on conflict do nothing;
+  insert into public.profiles (account_id, display_name)
+  values (v_other, 'Other Pilot')
+  on conflict (account_id) do update set display_name = excluded.display_name;
+  -- Prefer updating an existing owned character; otherwise insert a dedicated one.
+  update public.characters
+     set display_name = 'Other Pilot'
+   where account_id = v_other
+     and is_opponent = false;
+  if not found then
+    insert into public.characters (character_id, account_id, display_name, is_opponent)
+    values ('char-other-r5', v_other, 'Other Pilot', false)
+    on conflict (character_id) do nothing;
+  end if;
+  insert into public.player_identities (account_id, provider, platform_id)
+  values (v_other, 'device_fallback', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')
+  on conflict (provider, platform_id) do nothing;
+
+  -- mint + delete as the other account
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_other::text, true);
+  set local role authenticated;
+
+  v_res := public.mint_my_deletion_code();
+  perform tests.assert((v_res->>'ok')::boolean, 'mint_my_deletion_code ok');
+  v_code := v_res->>'deletionCode';
+  perform tests.assert(char_length(v_code) = 32, 'deletion code is 32 hex chars');
+
+  reset role;
+  v_hash := encode(digest(v_code, 'sha256'), 'hex');
+  select deletion_code_hash into v_name from public.accounts where id = v_other;
+  perform tests.assert(v_name = v_hash, 'deletion_code_hash stored');
+
+  -- anon cannot delete
+  perform set_config('request.jwt.claim.role', 'anon', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+  set local role anon;
+  begin
+    perform public.delete_my_account();
+    raise exception 'ANON FAIL: delete_my_account allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+
+  -- authenticated cannot call delete_my_account (M1 Edge-only)
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_other::text, true);
+  set local role authenticated;
+  begin
+    perform public.delete_my_account();
+    raise exception 'AUTHENTICATED FAIL: delete_my_account allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+
+  -- soft-delete via service_role admin path (Edge JWT equivalent).
+  -- Capture under service_role, assert as owner (tests schema not granted
+  -- to service_role — same pattern as admin_delete_account_by_code_hash below).
+  set local role service_role;
+  v_res := public.admin_delete_account(v_other);
+  reset role;
+  perform tests.assert((v_res->>'ok')::boolean, 'admin_delete_account ok');
+
+  select deleted_at, display_name
+    into v_deleted_at, v_name
+    from public.accounts a
+    join public.profiles p on p.account_id = a.id
+   where a.id = v_other;
+  perform tests.assert(v_deleted_at is not null, 'deleted_at set');
+  perform tests.assert(v_name = 'Deleted', 'profile anonymized');
+
+  select display_name into v_name
+    from public.characters
+   where account_id = v_other and is_opponent = false
+   limit 1;
+  perform tests.assert(v_name = 'Deleted', 'character anonymized');
+
+  select count(*)::int into v_count
+    from public.player_identities
+   where account_id = v_other;
+  perform tests.assert(v_count = 0, 'player_identities unlinked');
+
+  select deletion_code_hash into v_name from public.accounts where id = v_other;
+  perform tests.assert(v_name is null, 'deletion_code_hash cleared');
+
+  -- owned character read fails closed
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_other::text, true);
+  set local role authenticated;
+  v_res := public.get_owned_character();
+  perform tests.assert(v_res->>'ok' = 'false', 'get_owned_character not ok after delete');
+  perform tests.assert(v_res->>'code' = 'account_deleted', 'account_deleted code');
+  reset role;
+
+  -- service_role code-hash path (idempotent / second account via admin)
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    '22222222-2222-4222-8222-222222222222',
+    'code-delete-r5@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+  insert into public.accounts (id)
+  values ('22222222-2222-4222-8222-222222222222')
+  on conflict do nothing;
+  update public.accounts
+     set deletion_code_hash = encode(digest('cccccccccccccccccccccccccccccccc', 'sha256'), 'hex'),
+         deleted_at = null
+   where id = '22222222-2222-4222-8222-222222222222';
+
+  -- Capture under service_role, assert as owner (tests schema not granted
+  -- to service_role — same pattern as SEC admin grant lockdown).
+  set local role service_role;
+  v_res := public.admin_delete_account_by_code_hash(
+    encode(digest('cccccccccccccccccccccccccccccccc', 'sha256'), 'hex')
+  );
+  reset role;
+  perform tests.assert((v_res->>'ok')::boolean, 'admin_delete_account_by_code_hash ok');
+
+  -- seed account still intact (cross-account isolation)
+  select deleted_at into v_deleted_at from public.accounts where id = v_account;
+  perform tests.assert(v_deleted_at is null, 'seed account not deleted');
+
+  raise notice 'TEST-OK R5 account deletion';
+end $$;

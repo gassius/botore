@@ -122,7 +122,18 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # sdkmanager intermittently downloads a truncated system image ("Error on
+      # ZipFile unknown archive") and android-emulator-runner has no retry.
+      # continue-on-error: preinstall must not block the runner if it still flakes;
+      # success is verified by on-disk image markers (not `yes |` pipe status).
+      - name: Preinstall Android system image (retry ZipFile flakes)
+        id: android-system-image
+        continue-on-error: true
+        run: bash scripts/native-capture/preinstall-android-system-image.sh
+
       - name: Build + live first-run fight captures on emulator
+        id: android-capture
+        continue-on-error: true
         # Pin to v2.38.0 commit (do not float on @v2).
         # C3/C7c: garage → confirm → server replay → result + cold-start splash→title.
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
@@ -145,8 +156,34 @@ jobs:
           # ONE LINE ONLY — action splits newlines into separate sh -c invocations.
           script: bash scripts/native-capture/ci-live-fight-android-capture.sh
 
+      - name: Retry Android emulator captures (SDK / boot flake)
+        id: android-capture-retry
+        if: steps.android-capture.outcome == 'failure'
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        env:
+          CAPTURE_COLD_START: '1'
+          CAPTURE_COLD_START_SEC: '75'
+          CAPTURE_COLD_FRAME_COUNT: '28'
+          CAPTURE_COLD_FRAME_INTERVAL_MS: '2500'
+          CAPTURE_COLD_START_BUDGET_SEC: '180'
+          EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS: '60000'
+        with:
+          api-level: ${{ env.CAPTURE_API_LEVEL }}
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash scripts/native-capture/ci-live-fight-android-capture.sh
+
+      - name: Fail if Android captures still failed
+        if: always() && steps.android-capture.outcome == 'failure' && steps.android-capture-retry.outcome != 'success'
+        run: |
+          echo "Android emulator captures failed on first attempt and retry" >&2
+          exit 1
+
       - name: Upload capture artifacts
-        if: always()
+        if: always() && (steps.android-capture.outcome == 'success' || steps.android-capture-retry.outcome == 'success')
         uses: actions/upload-artifact@v4
         with:
           name: native-design-captures-android-${{ github.sha }}
