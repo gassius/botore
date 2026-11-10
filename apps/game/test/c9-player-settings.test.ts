@@ -100,6 +100,7 @@ describe('C9 Settings route', () => {
       rankingScenario: null,
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     });
   });
 });
