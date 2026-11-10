@@ -25,16 +25,12 @@ export function StableScreen(props: {
   onFindOpponent?: () => void;
 }): React.ReactElement {
   const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
-<<<<<<< HEAD
   const forced = useForcedSessionFailure();
-=======
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
->>>>>>> e65dd54 (feat: R5 in-app and public web account deletion)
   const confirmed = loadout.confirmedLoadout;
   const weapon = confirmed ? weaponUiAlias(confirmed.weapon) : 'sword';
   const displayName = loadout.displayName ?? 'Pilot';
 
-<<<<<<< HEAD
   const hydrationKind =
     loadout.hydration === 'unavailable'
       ? classifySessionFailure({
@@ -45,7 +41,7 @@ export function StableScreen(props: {
   const failureKind =
     forced ??
     (hydrationKind === 'offline' || hydrationKind === 'auth_expired' ? hydrationKind : null);
-=======
+
   // Temporary R5 entry until C9 Settings merges — then move under Settings.
   if (showDeleteAccount) {
     return (
@@ -55,7 +51,6 @@ export function StableScreen(props: {
       />
     );
   }
->>>>>>> e65dd54 (feat: R5 in-app and public web account deletion)
 
   return (
     <ScreenChrome
