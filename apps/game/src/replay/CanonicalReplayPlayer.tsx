@@ -293,9 +293,16 @@ export const CanonicalReplayPlayer = forwardRef<
         loadKind: perfLoadKind,
       });
       perfSummaryRef.current = summary;
-      console.log(formatPerfSummaryLog(summary));
+      const envelope = result.label === 'CONFIRMED' ? 'live_sealed' : 'dev_fixture';
+      console.log(
+        formatPerfSummaryLog(summary, {
+          envelope,
+          muted,
+          reducedMotion,
+        }),
+      );
     },
-    [perfLoadKind],
+    [muted, perfLoadKind, reducedMotion, result.label],
   );
 
   useEffect(() => {

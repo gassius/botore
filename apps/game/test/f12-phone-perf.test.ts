@@ -182,4 +182,25 @@ describe('F12 frame-time sampler + summary', () => {
     expect(line.startsWith(BOTORE_PERF_LOG_TAG)).toBe(true);
     expect(line).toContain('"frameCount":2');
   });
+
+  it('labels envelope / mute / reduced-motion honestly on the BotorePerf line', () => {
+    const line = formatPerfSummaryLog(
+      {
+        frameCount: 1,
+        p95Ms: 16,
+        p99Ms: 16,
+        hardSpikeCount: 0,
+        droppedFrameCount: 0,
+        droppedFrameRatio: 0,
+        loadToPlayReadyMs: 100,
+        loadKind: null,
+        passesProposedThresholds: true,
+        failures: [],
+      },
+      { envelope: 'live_sealed', muted: true, reducedMotion: true },
+    );
+    expect(line).toContain('"envelope":"live_sealed"');
+    expect(line).toContain('"muted":true');
+    expect(line).toContain('"reducedMotion":true');
+  });
 });

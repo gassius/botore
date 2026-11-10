@@ -41,6 +41,19 @@
         "simulator": true
       }
     },
+    "release-perf": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_PERF_SAMPLE": "1"
+      },
+      "android": {
+        "buildType": "apk",
+        "withoutCredentials": true
+      },
+      "ios": {
+        "simulator": true
+      }
+    },
     "production": {
       "autoIncrement": true
     }
