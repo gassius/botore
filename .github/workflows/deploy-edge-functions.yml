@@ -31,7 +31,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-edge-${{ github.ref }}
+  # Fixed group so workflow_dispatch cannot race a main push deploy, and
+  # non-main refs share the same lock (deploy job is main-only below).
+  group: deploy-edge-functions
   cancel-in-progress: false
 
 jobs:
@@ -50,6 +52,8 @@ jobs:
     name: supabase functions deploy
     runs-on: ubuntu-latest
     needs: assert-multifile
+    # Main only — workflow_dispatch on other refs must not deploy.
+    if: github.ref == 'refs/heads/main'
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
