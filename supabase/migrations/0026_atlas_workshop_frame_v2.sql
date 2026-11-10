@@ -1,4 +1,5 @@
--- 0024: Atlas v2 draft — Workshop Frame kit-v002 media keys (C13)
+-- 0026: Atlas v2 draft — Workshop Frame kit-v002 media keys (C13)
+-- Prefix 0026: main owns 0024_account_deletion; B4 #64 owns 0025 grant harden.
 --
 -- Registers immutable-pack draft `v2` with:
 --   • v1 carry-forward (base / quiet arena / FX / proof catalogue parts)

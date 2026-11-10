@@ -58,7 +58,7 @@ Bytes: `supabase/seed/atlas/v1/` (valid silent AAC `.m4a`, 1×1 PNG). No real ar
 ## Workshop Frame pack (v2)
 
 C13 publishes an immutable **`v2`** pack aligned to Workshop Frame **kit-v002**
-media keys (migration `0024` registers the draft; Storage upload then
+media keys (migration `0026` registers the draft; Storage upload then
 `publish_atlas_version('v2')`).
 
 | Kit-relative               | Atlas pack-relative                 |

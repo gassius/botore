@@ -34,4 +34,4 @@ node scripts/pack-workshop-frame-atlas.mjs
 ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
 ```
 
-Migration `0024` only registers the draft + relational manifest rows.
+Migration `0026` only registers the draft + relational manifest rows.
