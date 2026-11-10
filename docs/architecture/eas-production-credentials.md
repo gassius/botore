@@ -8,37 +8,37 @@ Ticket: [R2 · EAS production project + signing credentials checklist](https://a
 
 ## Status (agent-reachable)
 
-| Item | State |
-| ---- | ----- |
-| `apps/game/eas.json` `production` + `submit.production` profiles | Present (structure verified; no credentialed build in this agent VM) |
-| `extra.eas.projectId` in `apps/game/app.json` | **Placeholder** `REPLACE_WITH_EAS_PROJECT_ID_VIA_EAS_INIT` — Carlos must run `eas init` / login |
-| Apple / Play signing secrets | **Not in repo** — Carlos/ops own; configure via EAS Credentials |
-| Preview vs production Supabase public env | Documented below — bake via EAS env/secrets, never commit real values |
-| Credentialed `eas build --profile production` | **Blocked** until Expo login + real `projectId` + signing credentials |
+| Item                                                             | State                                                                                           |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `apps/game/eas.json` `production` + `submit.production` profiles | Present (structure verified; no credentialed build in this agent VM)                            |
+| `extra.eas.projectId` in `apps/game/app.json`                    | **Placeholder** `REPLACE_WITH_EAS_PROJECT_ID_VIA_EAS_INIT` — Carlos must run `eas init` / login |
+| Apple / Play signing secrets                                     | **Not in repo** — Carlos/ops own; configure via EAS Credentials                                 |
+| Preview vs production Supabase public env                        | Documented below — bake via EAS env/secrets, never commit real values                           |
+| Credentialed `eas build --profile production`                    | **Blocked** until Expo login + real `projectId` + signing credentials                           |
 
 This agent had no `~/.expo` session (`eas whoami` unavailable). Do **not** invent
 a UUID `projectId` or Apple/Play secrets to unblock CI.
 
 ## App identity (committed, non-secret)
 
-| Platform | Field | Value |
-| -------- | ----- | ----- |
-| iOS | Bundle ID | `com.botore.game` (`app.json` → `expo.ios.bundleIdentifier`) |
-| Android | Application ID | `com.botore.game` (`app.json` → `expo.android.package`) |
-| Expo slug | `botore-game` | `app.json` → `expo.slug` |
-| Display name | Botore | `app.json` → `expo.name` |
+| Platform     | Field          | Value                                                        |
+| ------------ | -------------- | ------------------------------------------------------------ |
+| iOS          | Bundle ID      | `com.botore.game` (`app.json` → `expo.ios.bundleIdentifier`) |
+| Android      | Application ID | `com.botore.game` (`app.json` → `expo.android.package`)      |
+| Expo slug    | `botore-game`  | `app.json` → `expo.slug`                                     |
+| Display name | Botore         | `app.json` → `expo.name`                                     |
 
 Apple Team ID, ASC App ID, Play Console package listing ownership, and upload
 keystores are **not** committed — fill via EAS / store consoles (Carlos/ops).
 
 ## `eas.json` profiles (verified structure)
 
-| Profile | Distribution | Notes |
-| ------- | ------------ | ----- |
-| `design-review` / `development` / `release-perf` | internal | Credential-less Android APK / iOS simulator where marked `withoutCredentials` |
-| `preview` | internal | APK + iOS simulator; playable; needs Supabase public env via EAS secrets |
-| `production` | **store** | `autoIncrement: true`; Android **app-bundle** (AAB); iOS store IPA (signing required) |
-| `submit.production` | — | Android Play **internal** track, `releaseStatus: draft`; iOS ASC fields filled by Carlos at submit time (not invented here) |
+| Profile                                          | Distribution | Notes                                                                                                                       |
+| ------------------------------------------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `design-review` / `development` / `release-perf` | internal     | Credential-less Android APK / iOS simulator where marked `withoutCredentials`                                               |
+| `preview`                                        | internal     | APK + iOS simulator; playable; needs Supabase public env via EAS secrets                                                    |
+| `production`                                     | **store**    | `autoIncrement: true`; Android **app-bundle** (AAB); iOS store IPA (signing required)                                       |
+| `submit.production`                              | —            | Android Play **internal** track, `releaseStatus: draft`; iOS ASC fields filled by Carlos at submit time (not invented here) |
 
 Supabase URL/anon key and Sentry DSN are **not** hardcoded in `eas.json` —
 set as EAS project environment / secrets per profile.
@@ -47,28 +47,28 @@ set as EAS project environment / secrets per profile.
 
 Only **public** client values. Never bake `service_role` into any EAS profile.
 
-| Variable | Preview | Production | Where it lives |
-| -------- | ------- | ---------- | -------------- |
-| `EXPO_PUBLIC_SUPABASE_URL` | Hosted **Development** (or preview) Supabase project URL | Hosted **Production** Supabase project URL | EAS env/secret for that profile; local `.env` for Metro only |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Matching Development anon JWT | Matching Production anon JWT | Same — anon only |
-| `EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD` | Must stay unset / off on preview | Must stay unset / off | Only `design-review` / `development` bake `1` |
-| `EXPO_PUBLIC_CRASH_REPORTING` | `1` (preview profile) | `1` (production profile) | Already in `eas.json`; needs DSN from R3 |
-| `EXPO_PUBLIC_SENTRY_DSN` | Optional until R3 provisioned | Optional until R3 provisioned | EAS secret — see `docs/architecture/crash-reporting.md` |
-| `EXPO_PUBLIC_WEB_PREVIEW_AUTH` / `_DEV_PASSWORD` | **Never** on native EAS | **Never** | Vercel web preview only |
+| Variable                                         | Preview                                                  | Production                                 | Where it lives                                               |
+| ------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
+| `EXPO_PUBLIC_SUPABASE_URL`                       | Hosted **Development** (or preview) Supabase project URL | Hosted **Production** Supabase project URL | EAS env/secret for that profile; local `.env` for Metro only |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY`                  | Matching Development anon JWT                            | Matching Production anon JWT               | Same — anon only                                             |
+| `EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD`                 | Must stay unset / off on preview                         | Must stay unset / off                      | Only `design-review` / `development` bake `1`                |
+| `EXPO_PUBLIC_CRASH_REPORTING`                    | `1` (preview profile)                                    | `1` (production profile)                   | Already in `eas.json`; needs DSN from R3                     |
+| `EXPO_PUBLIC_SENTRY_DSN`                         | Optional until R3 provisioned                            | Optional until R3 provisioned              | EAS secret — see `docs/architecture/crash-reporting.md`      |
+| `EXPO_PUBLIC_WEB_PREVIEW_AUTH` / `_DEV_PASSWORD` | **Never** on native EAS                                  | **Never**                                  | Vercel web preview only                                      |
 
 Local Metro: copy `apps/game/.env.example` → `.env` (gitignored). Playable
 native builds fail closed without Supabase public env (C8).
 
 ## Ownership
 
-| Asset | Owner | Location (never git) |
-| ----- | ----- | -------------------- |
-| Expo account + EAS project | Carlos / ops | expo.dev dashboard; `EXPO_TOKEN` for CI if used |
-| `extra.eas.projectId` | Carlos (after `eas init`) | Committed once real UUID replaces placeholder |
-| Apple Developer team, distribution cert, provisioning, ASC API key | Carlos / ops | Apple Developer + EAS Credentials (remote) |
-| Play Console app, upload keystore / Play App Signing, service-account JSON for submit | Carlos / ops | Play Console + EAS Credentials |
-| Supabase preview/production anon URL+key | Carlos / Supabase Infra | EAS secrets + Supabase dashboard |
-| Sentry org/DSN/token | Carlos (R3) | EAS secrets — not this ticket |
+| Asset                                                                                 | Owner                     | Location (never git)                            |
+| ------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------- |
+| Expo account + EAS project                                                            | Carlos / ops              | expo.dev dashboard; `EXPO_TOKEN` for CI if used |
+| `extra.eas.projectId`                                                                 | Carlos (after `eas init`) | Committed once real UUID replaces placeholder   |
+| Apple Developer team, distribution cert, provisioning, ASC API key                    | Carlos / ops              | Apple Developer + EAS Credentials (remote)      |
+| Play Console app, upload keystore / Play App Signing, service-account JSON for submit | Carlos / ops              | Play Console + EAS Credentials                  |
+| Supabase preview/production anon URL+key                                              | Carlos / Supabase Infra   | EAS secrets + Supabase dashboard                |
+| Sentry org/DSN/token                                                                  | Carlos (R3)               | EAS secrets — not this ticket                   |
 
 ## Carlos steps (exact)
 

@@ -23,9 +23,7 @@ describe('R2 EAS production project + credentials scaffolding', () => {
     // Do not invent a UUID. Real id is a UUID after eas init; until then REPLACE_*.
     const isUuid =
       typeof projectId === 'string' &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        projectId,
-      );
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(projectId);
     const isPlaceholder =
       typeof projectId === 'string' && projectId.startsWith('REPLACE_WITH_EAS_PROJECT_ID');
     expect(isUuid || isPlaceholder).toBe(true);
