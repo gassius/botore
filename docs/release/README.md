@@ -13,6 +13,10 @@ TestFlight / Play internal testing beyond engineering builds.
 [`docs/legal/privacy-policy.md`](../legal/privacy-policy.md). Account
 deletion (R5): [`docs/backend/account-deletion.md`](../backend/account-deletion.md).
 
+**R2 credentials (Carlos-owned):**
+[`docs/architecture/eas-production-credentials.md`](../architecture/eas-production-credentials.md)
+— do not invent `projectId` or signing secrets here.
+
 **Non-goals for these docs:** marketing site redesign; paid UA; inventing
 EAS `projectId` / signing secrets (see [R2](https://app.clickup.com/t/1amjtrey7v5));
 console uploads.

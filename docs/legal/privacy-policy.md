@@ -110,8 +110,21 @@ deletion URL (`…/account/delete`). Before wide store submission also publish:
 controller identity + privacy contact email or form; data-subject rights;
 processors (Supabase, Sentry, Vercel, Apple/Google as identity providers).
 
+R4 drafts (listing copy, screenshots pipeline, support / age / data-safety):
+
+| Doc | Path |
+| --- | ---- |
+| Release index | [`docs/release/README.md`](../release/README.md) |
+| Pre-submit checklist | [`docs/release/checklist.md`](../release/checklist.md) |
+| Listing + native screenshots | [`docs/release/store-listing.md`](../release/store-listing.md) |
+| Questionnaires | [`docs/release/store-questionnaires.md`](../release/store-questionnaires.md) |
+| R2 EAS / signing (Carlos-owned secrets) | [`docs/architecture/eas-production-credentials.md`](../architecture/eas-production-credentials.md) |
+
 ## Contact
 
-Store support channel once R4 publishes it; product owner Carlos for disclosure
-questions. Do not put Carlos’s name or “outside counsel” wording in the
+Support URL / email placeholders live in
+[`docs/release/store-questionnaires.md`](../release/store-questionnaires.md)
+(`REPLACE_WITH_SUPPORT_INBOX` until Carlos sets the real inbox and
+`EXPO_PUBLIC_ACCOUNT_DELETION_SUPPORT_EMAIL`). Product owner reviews disclosure
+wording. Do not put Carlos’s name or “outside counsel” wording in the
 player-facing `privacyPolicyContent.ts`.

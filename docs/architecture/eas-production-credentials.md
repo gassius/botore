@@ -6,6 +6,10 @@ for TestFlight and Play **internal** tracks, and documented env ownership.
 
 Ticket: [R2 · EAS production project + signing credentials checklist](https://app.clickup.com/t/1amjtrey7v5).
 
+Store listing / privacy / questionnaires (R4) live under
+[`docs/release/`](../release/README.md) and link back here for credential
+placeholders — no secrets in either place.
+
 ## Status (agent-reachable)
 
 | Item                                                             | State                                                                                          |

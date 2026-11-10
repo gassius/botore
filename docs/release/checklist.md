@@ -23,17 +23,20 @@ Do **not** invent a new bundle / package id for listing drafts.
 ## R2 — credentials (Carlos-owned; placeholders only)
 
 [R2](https://app.clickup.com/t/1amjtrey7v5) owns Expo/EAS project linkage and
-signing. **No secret values in git.** Until R2 lands, mark each item blocked.
+signing. Full ops checklist:
+[`docs/architecture/eas-production-credentials.md`](../architecture/eas-production-credentials.md).
+**No secret values in git.** Real `projectId` / signing still need Carlos’s
+Expo / Apple / Play accounts.
 
 | Item | Placeholder / where it will live | Status |
 | ---- | -------------------------------- | ------ |
-| EAS `projectId` | `apps/game` Expo config `extra.eas.projectId` (or current Expo equivalent) after `eas init` | **Blocked on R2 / Carlos Expo account** |
-| Apple Developer Team ID | Apple Developer → Membership (Carlos) | **Blocked on R2** |
-| Apple distribution cert / provisioning | EAS credentials store (Carlos-linked Apple account) | **Blocked on R2** |
-| App Store Connect app record | ASC for `com.botore.game` | **Blocked on R2** |
-| Play Console app + signing key | Play Console / Play App Signing (Carlos) | **Blocked on R2** |
-| EAS production / submit dry-run | `eas.json` `production` + `submit.production` | **Blocked on R2** |
-| Supabase public URL + anon key (preview vs production) | EAS env for playable profiles — never service-role | Document under R2; values stay in EAS / host secrets |
+| EAS `projectId` | `apps/game/app.json` → `extra.eas.projectId` placeholder `REPLACE_WITH_EAS_PROJECT_ID_VIA_EAS_INIT` until `eas init` | **Blocked on Carlos Expo account** |
+| Apple Developer Team ID | Apple Developer → Membership (Carlos) | **Blocked on Carlos** |
+| Apple distribution cert / provisioning | EAS credentials store (Carlos-linked Apple account) | **Blocked on Carlos** |
+| App Store Connect app record | ASC for `com.botore.game` | **Blocked on Carlos** |
+| Play Console app + signing key | Play Console / Play App Signing (Carlos) | **Blocked on Carlos** |
+| EAS production / submit dry-run | `eas.json` `production` (store) + `submit.production` (Play internal draft) | **Blocked on Carlos credentials** |
+| Supabase public URL + anon key (preview vs production) | EAS env for playable profiles — never service-role | Documented in R2 checklist; values stay in EAS / host secrets |
 
 Engineering builds may still use `design-review` / `development` profiles with
 `withoutCredentials: true` where configured — those are **not** store tracks.
