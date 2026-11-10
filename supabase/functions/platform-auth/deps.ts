@@ -17,9 +17,7 @@ function asAdmin(client: SupabaseClient): PlatformAuthAdmin {
           const { data, error } = await client.auth.admin.generateLink(args);
           return {
             data: {
-              user: data.user
-                ? { id: data.user.id, email: data.user.email ?? undefined }
-                : null,
+              user: data.user ? { id: data.user.id, email: data.user.email ?? undefined } : null,
               properties: data.properties
                 ? {
                     hashed_token: (data.properties as { hashed_token?: string }).hashed_token,

@@ -68,8 +68,7 @@ export async function verifyPlayGamesProof(
     };
   }
 
-  const verifyUrl =
-    `https://games.googleapis.com/games/v1/applications/${encodeURIComponent(deps.applicationId)}/verify`;
+  const verifyUrl = `https://games.googleapis.com/games/v1/applications/${encodeURIComponent(deps.applicationId)}/verify`;
   const verifyRes = await deps.fetch(verifyUrl, {
     method: 'GET',
     headers: { Authorization: `Bearer ${tokenBody.access_token}` },

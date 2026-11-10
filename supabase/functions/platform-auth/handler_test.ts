@@ -56,8 +56,7 @@ function memoryAdmin(): PlatformAuthAdmin {
                       }
                       const map: Record<string, string> = { [col]: val, [col2]: val2 };
                       const found = identities.find(
-                        (r) =>
-                          r.provider === map.provider && r.platform_id === map.platform_id,
+                        (r) => r.provider === map.provider && r.platform_id === map.platform_id,
                       );
                       return { data: found ?? null, error: null };
                     },

@@ -46,8 +46,7 @@ Deno.test('PGS verify fails closed when misconfigured or exchange fails', async 
       webClientId: 'c',
       webClientSecret: 's',
       applicationId: 'a',
-      fetch: async () =>
-        new Response(JSON.stringify({ error: 'invalid_grant' }), { status: 400 }),
+      fetch: async () => new Response(JSON.stringify({ error: 'invalid_grant' }), { status: 400 }),
     },
   );
   assertEquals(fail.ok, false);

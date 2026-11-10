@@ -28,10 +28,7 @@ export type IdentityRow = {
 export type PlatformAuthAdmin = {
   auth: {
     admin: {
-      generateLink: (args: {
-        type: 'magiclink';
-        email: string;
-      }) => Promise<{
+      generateLink: (args: { type: 'magiclink'; email: string }) => Promise<{
         data: {
           user?: { id?: string; email?: string } | null;
           properties?: { hashed_token?: string; email_otp?: string } | null;
@@ -47,10 +44,7 @@ export type PlatformAuthAdmin = {
         error: { message: string } | null;
       }>;
     };
-    verifyOtp: (args: {
-      type: 'magiclink' | 'email';
-      token_hash: string;
-    }) => Promise<{
+    verifyOtp: (args: { type: 'magiclink' | 'email'; token_hash: string }) => Promise<{
       data: {
         session?: {
           access_token?: string;
@@ -116,10 +110,7 @@ export async function lookupIdentity(
   return data;
 }
 
-export async function ensureAccountRow(
-  admin: PlatformAuthAdmin,
-  accountId: string,
-): Promise<void> {
+export async function ensureAccountRow(admin: PlatformAuthAdmin, accountId: string): Promise<void> {
   const { error } = await admin.from('accounts').insert({ id: accountId });
   // Unique violation / duplicate is fine (idempotent).
   if (error && !/duplicate|unique/i.test(error.message)) {

@@ -7,7 +7,7 @@ Native first-run auth does **not** use Supabase anonymous sign-in or
 2. Else collect a **platform proof** (iOS Game Center or Android Play Games).
 3. `POST /functions/v1/platform-auth` verifies the proof, upserts
    `player_identities`, mints a session via `auth.admin.generateLink(magiclink)`
-   + `verifyOtp` / client `setSession`.
+   - `verifyOtp` / client `setSession`.
 4. If platform proof is unavailable: random UUID in iOS Keychain
    (`expo-secure-store`) / Android Block Store → same Edge function as
    `device_fallback`; link after the next successful platform sign-in.
@@ -70,7 +70,7 @@ Migration `0023_player_identities.sql`: unique `(provider, platform_id)` →
 - [ ] Play Console → Play Games Services for the Botore app
 - [ ] Create / link **Web application** OAuth client; copy **Web client ID**
 - [ ] Store web client **secret** as Edge secret `PLAY_GAMES_WEB_CLIENT_SECRET`
-  (never in the app bundle)
+      (never in the app bundle)
 - [ ] Set Edge secrets:
   - `PLAY_GAMES_WEB_CLIENT_ID`
   - `PLAY_GAMES_WEB_CLIENT_SECRET`

@@ -213,7 +213,11 @@ export async function verifyGameCenterProof(
   const certBytes = new Uint8Array(await certRes.arrayBuffer());
   const spki = extractSpkiFromCertificate(certBytes);
   if (!spki) {
-    return { ok: false, code: 'gc_bad_certificate', message: 'could not extract SPKI from certificate' };
+    return {
+      ok: false,
+      code: 'gc_bad_certificate',
+      message: 'could not extract SPKI from certificate',
+    };
   }
 
   let salt: Uint8Array;
@@ -234,7 +238,11 @@ export async function verifyGameCenterProof(
   const verify = deps.verifySignature ?? defaultVerifySignature;
   const ok = await verify(spki, payload, signature);
   if (!ok) {
-    return { ok: false, code: 'gc_signature_invalid', message: 'RSA signature verification failed' };
+    return {
+      ok: false,
+      code: 'gc_signature_invalid',
+      message: 'RSA signature verification failed',
+    };
   }
 
   return { ok: true, platformId: proof.teamPlayerID };
