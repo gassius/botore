@@ -57,5 +57,15 @@ declare namespace NodeJS {
      * Unset → 8000.
      */
     EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS?: string;
+    /**
+     * Web-preview silent Development auth (`1` / `true`).
+     * Vercel / web preview only — never bake into native EAS profiles.
+     */
+    EXPO_PUBLIC_WEB_PREVIEW_AUTH?: string;
+    /**
+     * Password for web-preview `dev@botore.local` (Vercel / build env only).
+     * Never commit a real value. Ignored on native runtimes.
+     */
+    EXPO_PUBLIC_WEB_PREVIEW_DEV_PASSWORD?: string;
   }
 }

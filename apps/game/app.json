@@ -7,7 +7,9 @@
     "userInterfaceStyle": "light",
     "scheme": "botore",
     "icon": "./assets/launch-v001/icon/icon-ios-1024.png",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.botore.game",
@@ -64,7 +66,8 @@
           "organization": "REPLACE_SENTRY_ORG",
           "project": "REPLACE_SENTRY_PROJECT"
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }

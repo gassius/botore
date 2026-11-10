@@ -18,6 +18,7 @@ import { isPlayableFailClosed, PlayableMisconfiguredScreen } from '../runtime';
 import { readSupabasePublicConfig } from './auth/supabasePublicConfig';
 import { AuthEntryScreen } from './screens/AuthEntryScreen';
 import { LaunchTitleScreen } from './screens/LaunchTitleScreen';
+import { SessionAuthErrorScreen } from './screens/SessionAuthErrorScreen';
 import { GarageSessionProvider, useGarageSession } from './LoadoutSessionContext';
 
 /** Minimum time the silhouette title stays visible after the bitmap loads. */
@@ -65,11 +66,19 @@ function hideNativeSplash(): void {
  * LaunchTitleScreen via coldStartHoldTitle so CI can assert splash→title.
  */
 function GarageRootInner(): React.ReactElement {
-  const { booting, session, coldStartHoldTitle, coldStartIntentReady, authKind } =
-    useGarageSession();
+  const {
+    booting,
+    session,
+    coldStartHoldTitle,
+    coldStartIntentReady,
+    authKind,
+    authBootError,
+    retrySilentAuth,
+  } = useGarageSession();
   const [titleImageReady, setTitleImageReady] = useState(false);
   const [titleDwellDone, setTitleDwellDone] = useState(false);
   const [holdSplashMinDone, setHoldSplashMinDone] = useState(!isDesignCaptureEnabled());
+  const [retryBusy, setRetryBusy] = useState(false);
   const [captureFailClosed, setCaptureFailClosed] = useState(
     () => isDesignCaptureFailClosedEnabled() || peekCaptureIntent().failClosed === true,
   );
@@ -204,7 +213,7 @@ function GarageRootInner(): React.ReactElement {
     };
   }, [coldStartHoldTitle, coldStartIntentReady, releaseNativeSplash]);
 
-  // C7c design-capture cold-start: hold launch-title (skip AuthEntry / auto sign-in).
+  // C7c design-capture cold-start: hold launch-title (skip silent auth).
   // Mount title under the native splash; release only after min dwell + onLoad.
   if (coldStartHoldTitle) {
     return (
@@ -238,6 +247,24 @@ function GarageRootInner(): React.ReactElement {
       </SafeAreaProvider>
     );
   }
+
+  // C12: silent first-launch / restore failure → offline/session error (never AuthEntry / DEV).
+  if (!session && authBootError) {
+    return (
+      <SafeAreaProvider>
+        <SessionAuthErrorScreen
+          title="Could not sign in"
+          detail={authBootError.message}
+          retryBusy={retryBusy}
+          onRetry={() => {
+            setRetryBusy(true);
+            void retrySilentAuth().finally(() => setRetryBusy(false));
+          }}
+        />
+      </SafeAreaProvider>
+    );
+  }
+
 
   if (!session) {
     return (
