@@ -13,15 +13,20 @@ node scripts/native-capture/check-capture-env.mjs --platform android --tools-onl
 CI entrypoints:
 
 ```bash
-# Android emulator (single line for android-emulator-runner)
-bash scripts/native-capture/ci-android-emulator-capture.sh
+# Android emulator live fight (single line for android-emulator-runner)
+bash scripts/native-capture/ci-live-fight-android-capture.sh
 
-# iOS Simulator (macOS + Xcode; Release / phone-size device)
+# iOS Simulator live fight (macOS + Xcode + Colima/Supabase)
+bash scripts/native-capture/ci-live-fight-ios-capture.sh
+
+# Design stills only (optional local)
 bash scripts/native-capture/ci-ios-simulator-capture.sh
 ```
 
 iOS routes: `simctl launch` + Documents intent file (avoid cold `simctl openurl`
 — iOS 18 SpringBoard “Open in …?” sheets were captured instead of the app).
-Non-gating splash→title: `ios-cold-start-capture.sh`.
+Splash→title: `ios-cold-start-capture.sh` / `android-cold-start-capture.sh`
+(budgeted; hold-title intent skips auto sign-in). Assert with
+`assert-cold-start-transition.mjs`.
 
 Not a pixel-exact E2E suite. Web preview is not acceptance.

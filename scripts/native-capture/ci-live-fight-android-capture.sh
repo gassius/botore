@@ -112,6 +112,7 @@ echo "assembleRelease (live fight env)…" >&2
     EXPO_PUBLIC_SUPABASE_ANON_KEY="${EXPO_PUBLIC_SUPABASE_ANON_KEY}" \
     EXPO_USE_COMMUNITY_AUTOLINKING=0 \
     ./gradlew assembleRelease \
+    -x lintVitalRelease \
     -PreactNativeArchitectures="${ARCHS}" \
     -Pandroid.kotlinVersion=1.9.25 \
     --no-daemon \
@@ -125,6 +126,36 @@ if [[ -z "${APK}" || ! -f "${APK}" ]]; then
 fi
 echo "installing ${APK}" >&2
 adb install -r "${APK}"
+
+# C7c: real cold-start splash→title before live-fight stills (budgeted).
+if [[ "${CAPTURE_COLD_START:-0}" == "1" || "${CAPTURE_COLD_START:-0}" == "true" ]]; then
+  echo "cold-start splash→title capture…" >&2
+  set +e
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "${CAPTURE_COLD_START_BUDGET_SEC:-120}" \
+      "${SCRIPT_DIR}/android-cold-start-capture.sh" \
+      --out "${OUT_DIR}" \
+      --seconds "${CAPTURE_COLD_START_SEC:-8}"
+  else
+    "${SCRIPT_DIR}/android-cold-start-capture.sh" \
+      --out "${OUT_DIR}" \
+      --seconds "${CAPTURE_COLD_START_SEC:-8}"
+  fi
+  cold_rc=$?
+  set -e
+  if [[ "${cold_rc}" -ne 0 ]]; then
+    echo "error: android cold-start exited ${cold_rc}" >&2
+    exit "${cold_rc}"
+  fi
+  # Splash logo covers most of the framebuffer; default min graphite is 12%.
+  node "${SCRIPT_DIR}/assert-cold-start-transition.mjs" \
+    --platform android \
+    --out "${OUT_DIR}" \
+    --min-graphite "${CAPTURE_COLD_MIN_GRAPHITE:-0.12}"
+  # Clear hold-title marker so live-fight auto sign-in can proceed.
+  adb shell "run-as ${PACKAGE} rm -f files/botore-cold-start-intent.json" >/dev/null 2>&1 || true
+fi
+
 adb shell am force-stop "${PACKAGE}" >/dev/null 2>&1 || true
 adb logcat -c >/dev/null 2>&1 || true
 adb shell monkey -p "${PACKAGE}" -c android.intent.category.LAUNCHER 1 >/dev/null

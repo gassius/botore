@@ -24,7 +24,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 const SUPABASE_URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
-/** Emulator loopback to host — baked into the release JS bundle. */
+/**
+ * Device loopback to host — baked into the release JS bundle.
+ * Android emulator: 10.0.2.2 · iOS Simulator: 127.0.0.1
+ */
 const EMULATOR_SUPABASE_URL = process.env.CAPTURE_EMULATOR_SUPABASE_URL ?? 'http://10.0.2.2:54321';
 const DEV_ACCOUNT_ID = '00000000-0000-4000-8000-000000000001';
 const DEV_EMAIL_SEED = 'dev-player@botore.local';

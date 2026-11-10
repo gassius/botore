@@ -49,6 +49,7 @@ jobs:
           node scripts/edge-combat-runtime-check.mjs
           node --test scripts/smoke-combat-assert.test.mjs
           node --test scripts/wait-edge-health.test.mjs scripts/pipefail-db-log.test.mjs
+          node --test scripts/native-capture/png-diff.test.mjs
 
       - name: Architecture boundary check
         run: node scripts/check-boundaries.mjs
@@ -118,6 +119,9 @@ jobs:
   database:
     name: supabase migrations + db tests + api integration
     runs-on: ubuntu-latest
+    # Fail-fast if local Supabase / Atlas Storage bootstrap wedges (seen hung on
+    # "Atlas Storage bootstrap…" with no progress).
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -144,18 +148,24 @@ jobs:
           pnpm exec supabase db reset --local
 
       - name: Atlas Storage bootstrap (upload proof pack + publish + race test)
+        # apt + upload + publish + race should be well under 10m; hang was unbounded.
+        timeout-minutes: 10
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
           SUPABASE_URL: http://127.0.0.1:54321
         run: |
+          set -euo pipefail
           eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
           export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
           export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
           # postgresql-client for publish-gate psql checks; AAC placeholders are
           # already valid in-repo (ffprobe optional inside seed-atlas-storage).
-          sudo apt-get update && sudo apt-get install -y postgresql-client
-          node scripts/seed-atlas-storage.mjs
-          node scripts/atlas-publish-race.mjs
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y postgresql-client
+          # Bound the Node seed/race so a wedged Storage call cannot hang the job
+          # even if the step timer is slow to fire.
+          timeout 8m node scripts/seed-atlas-storage.mjs
+          timeout 2m node scripts/atlas-publish-race.mjs
 
       - name: Database tests (RLS, idempotency, append-only, bots-as-data)
         shell: bash

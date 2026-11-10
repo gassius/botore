@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Linking } from 'react-native';
 import { useFirstRun } from '../first-run/FirstRunContext';
 import type { FirstRunRoute } from '../first-run/routes';
@@ -7,33 +7,35 @@ import {
   isDesignCaptureEnabled,
   parseDesignCaptureUrl,
 } from './captureEnv';
-import {
-  armDesignCaptureIntentListener,
-  peekCaptureIntent,
-  readCaptureIntentForShell,
-} from './pendingCaptureIntent';
-import { loadCaptureIntentFile } from './readCaptureIntentFile';
+import { consumeCaptureRoute, peekCaptureIntent } from './captureIntentState';
+import { armDesignCaptureIntentListener } from './pendingCaptureIntent';
+import { consumeCaptureIntentFile, loadCaptureIntentFile } from './readCaptureIntentFile';
 
 /**
  * When design-capture mode is enabled, honor the CI Documents intent file
  * (and any deep link that arrives without SpringBoard's "Open in…?" sheet).
- * iOS Simulator `simctl openurl` for custom schemes often shows that sheet
- * instead of delivering the URL — CI therefore launches via `simctl launch`
- * and plants `botore-design-capture-intent.json`.
+ *
+ * Apply each distinct route once. Do not re-apply the same route on a 400 ms
+ * poll (C7b PRR P3 — that snapped multi-step captures back). New deep links
+ * with a different route (Stable → ConfirmFight → Replay) must still navigate.
  */
 export function useDesignCaptureDeepLink(): void {
   const { goTo, muted, toggleMute, setDemoPaintId, setDemoWeaponId, setRankingCaptureScenario } =
     useFirstRun();
+  const lastAppliedRoute = useRef<FirstRunRoute | null>(null);
+  const fileConsumed = useRef(false);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
 
   useEffect(() => {
     if (!isDesignCaptureEnabled()) return;
     armDesignCaptureIntentListener();
 
-    const applyIntent = (parsed: {
-      route: FirstRunRoute | string | null;
+    const applyPaintWeaponMute = (parsed: {
       paintId: string | null;
       weaponId: string | null;
       mute: boolean | null;
+      route?: FirstRunRoute | string | null;
       rankingScenario?: DesignCaptureRankingScenario | null;
     }) => {
       // Ranking scenario before route so RankingSlot mounts the right port.
@@ -42,28 +44,54 @@ export function useDesignCaptureDeepLink(): void {
       } else if (parsed.route === 'Ranking') {
         setRankingCaptureScenario('live');
       }
-      if (parsed.route) goTo(parsed.route as FirstRunRoute);
       if (parsed.paintId) setDemoPaintId(parsed.paintId);
       if (parsed.weaponId) setDemoWeaponId(parsed.weaponId);
-      if (parsed.mute === true && !muted) toggleMute();
-      if (parsed.mute === false && muted) toggleMute();
+      if (parsed.mute === true && !mutedRef.current) toggleMute();
+      if (parsed.mute === false && mutedRef.current) toggleMute();
+    };
+
+    const applyRouteIfNew = (route: FirstRunRoute | null, fromFile: boolean) => {
+      if (!route) return;
+      if (lastAppliedRoute.current === route) {
+        // P3: file named a route already applied (deep link / prior poll) — still
+        // consume + delete so the poll does not run the full budget.
+        if (fromFile && !fileConsumed.current) {
+          fileConsumed.current = true;
+          void consumeCaptureIntentFile();
+        }
+        return;
+      }
+      lastAppliedRoute.current = route;
+      console.log(`BOTORE_CAPTURE_ROUTE:${route}`);
+      goTo(route);
+      consumeCaptureRoute();
+      if (fromFile && !fileConsumed.current) {
+        fileConsumed.current = true;
+        void consumeCaptureIntentFile();
+      }
     };
 
     const applyUrl = (url: string | null) => {
       if (!url) return;
-      applyIntent(parseDesignCaptureUrl(url));
+      const parsed = parseDesignCaptureUrl(url);
+      applyPaintWeaponMute(parsed);
+      applyRouteIfNew(parsed.route, false);
     };
 
-    applyIntent(readCaptureIntentForShell());
+    const pending = peekCaptureIntent();
+    applyPaintWeaponMute(pending);
+    applyRouteIfNew(pending.route, false);
 
     let cancelled = false;
     void (async () => {
-      // Poll the Documents intent file — CI may rewrite it after FirstRunShell mounts.
-      for (let i = 0; i < 40 && !cancelled; i++) {
+      // Poll briefly until the Documents intent file appears (iOS CI may rewrite
+      // it after FirstRunShell mounts). Stop once the file has been consumed.
+      for (let i = 0; i < 40 && !cancelled && !fileConsumed.current; i++) {
         const intent = await loadCaptureIntentFile();
         if (cancelled) return;
-        applyIntent(intent);
-        applyIntent(peekCaptureIntent());
+        applyPaintWeaponMute(intent);
+        applyRouteIfNew(intent.route, true);
+        if (fileConsumed.current) return;
         await new Promise((r) => setTimeout(r, 400));
       }
     })();
@@ -76,5 +104,6 @@ export function useDesignCaptureDeepLink(): void {
       cancelled = true;
       sub.remove();
     };
-  }, [goTo, muted, setDemoPaintId, setDemoWeaponId, setRankingCaptureScenario, toggleMute]);
+    // muted intentionally omitted — read via mutedRef so mute toggles do not restart the poll.
+  }, [goTo, setDemoPaintId, setDemoWeaponId, setRankingCaptureScenario, toggleMute]);
 }

@@ -1,4 +1,4 @@
-# C7 — native design-review captures (NOT part of required PR quality gate).
+# C7 / C7c — native design-review + live-fight captures (NOT part of required PR quality gate).
 # Produces Android emulator + iOS Simulator stills for human design review.
 # No pixel-exact layout assertions.
 #
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       routes:
-        description: Comma-separated first-run routes
+        description: Comma-separated first-run routes (design stills path only)
         required: false
         default: 'Stable,Customise,Replay'
       clips:
@@ -21,6 +21,10 @@ on:
         description: Android emulator API level
         required: false
         default: '34'
+      cold_start:
+        description: Record splash→title cold-start (expensive)
+        required: false
+        default: 'true'
   pull_request:
     paths:
       - 'apps/game/**'
@@ -35,12 +39,17 @@ concurrency:
 
 permissions:
   contents: read
+  # Sibling jobs poll/upload artifacts within the same run (Ubuntu tunnel ↔ macOS).
+  actions: read
 
 env:
   # Prefer workflow_dispatch inputs; PR events fall back to design-review defaults.
   CAPTURE_ROUTES: ${{ github.event.inputs.routes || 'Stable,Customise,Replay' }}
   CAPTURE_CLIPS: ${{ github.event.inputs.clips || 'false' }}
   CAPTURE_API_LEVEL: ${{ github.event.inputs.api_level || '34' }}
+  # P2: expensive cold-start off on typical PRs; on for workflow_dispatch / explicit input.
+  # C7c AC still needs splash→title evidence — live-fight jobs force CAPTURE_COLD_START=1.
+  CAPTURE_COLD_START: ${{ github.event.inputs.cold_start || '0' }}
   EXPO_PUBLIC_DESIGN_CAPTURE: '1'
   EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
   CAPTURE_SETTLE_SEC: '3'
@@ -112,8 +121,11 @@ jobs:
 
       - name: Build + live first-run fight captures on emulator
         # Pin to v2.38.0 commit (do not float on @v2).
-        # C3: garage → confirm → server replay → result against local Supabase/combat-v1.
+        # C3/C7c: garage → confirm → server replay → result + cold-start splash→title.
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        env:
+          # C7c AC: real cold-start on the live-fight path (workflow PR default stays 0).
+          CAPTURE_COLD_START: '1'
         with:
           api-level: ${{ env.CAPTURE_API_LEVEL }}
           arch: x86_64
@@ -133,12 +145,58 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # C7c: Colima/qemu on macos-15 hosted runners starves the agent (lost communication).
+  # Run Supabase on Ubuntu and expose Kong via Cloudflare quick tunnel for the Simulator.
+  # No `needs:` between backend and ios — they start in parallel; iOS polls for the tunnel artifact.
+  ios-live-fight-backend:
+    name: iOS live-fight backend (tunnel)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Install postgresql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client unzip
+
+      - name: Start Supabase + Cloudflare tunnel
+        env:
+          # Upload artifact in the next step before keepalive.
+          CAPTURE_BACKEND_KEEPALIVE: '0'
+        run: bash scripts/native-capture/ci-ios-live-fight-backend.sh
+
+      - name: Upload tunnel env for iOS Simulator job
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-live-fight-tunnel-${{ github.sha }}
+          path: artifacts/ios-live-fight-tunnel/
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Keepalive until iOS captures finish
+        env:
+          CAPTURE_BACKEND_KEEPALIVE_MIN: '100'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/native-capture/ci-ios-live-fight-backend-keepalive.sh
+
   ios-simulator-captures:
     name: iOS Simulator captures
-    # C7b: run on pull_request (path-gated) and workflow_dispatch.
+    # C7b/C7c: run on pull_request (path-gated) and workflow_dispatch.
     # macos-14 retired; public repo has free macOS minutes on macos-15.
+    # Starts in parallel with ios-live-fight-backend (polls for tunnel artifact).
     runs-on: macos-15
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -156,7 +214,6 @@ jobs:
           set -euo pipefail
           echo "Available Xcode apps:"
           ls -1d /Applications/Xcode*.app 2>/dev/null || true
-          # Prefer newest Xcode_* then fall back to Xcode.app (macos-15 image).
           SELECTED=""
           for candidate in \
             /Applications/Xcode_16.4.app \
@@ -189,22 +246,76 @@ jobs:
       - name: Capture tooling check (scripts + eas.json)
         run: node scripts/native-capture/check-capture-env.mjs --platform ios --tools-only
 
-      - name: Build + run captures on iOS Simulator
+      - name: Wait for Ubuntu Supabase tunnel env
         env:
-          CAPTURE_WELCOME: '1'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CAPTURE_TUNNEL_WAIT_MIN: '45'
+        run: bash scripts/native-capture/wait-ios-tunnel-env.sh artifacts/ios-live-fight-tunnel
+
+      - name: Install ffmpeg (cold-start MP4 → frames)
+        run: |
+          set -euo pipefail
+          brew install ffmpeg || true
+          command -v ffmpeg
+          command -v ffprobe
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+
+      # prebuild --clean wipes ios/; use --no-install so pods are not installed yet.
+      # Restore CocoaPods/DerivedData AFTER prebuild, then pod install once (C7c PRR P2).
+      - name: Expo prebuild (ios, no pod install)
+        run: |
+          set -euo pipefail
+          cd apps/game
+          CI=1 pnpm exec expo prebuild --platform ios --clean --no-install
+          cd ../..
+          node scripts/native-capture/patch-ios-ci-ats.mjs
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/game/ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-pods-${{ hashFiles('apps/game/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: apps/game/ios/DerivedData
+          key: ${{ runner.os }}-dd-${{ hashFiles('apps/game/ios/Podfile.lock', 'apps/game/package.json', 'apps/game/app.json') }}-${{ hashFiles('apps/game/src/**/*.ts', 'apps/game/src/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-dd-${{ hashFiles('apps/game/ios/Podfile.lock', 'apps/game/package.json', 'apps/game/app.json') }}-
+
+      - name: pod install (once)
+        run: |
+          set -euo pipefail
+          cd apps/game/ios
+          pod install --deployment 2>/dev/null || pod install
+
+      - name: Build + live first-run fight captures on iOS Simulator
+        env:
           CAPTURE_OUT_DIR: artifacts/native-captures
           CAPTURE_IOS_SCHEME: BotoreGameClient
-          # Prefer devices present on macos-15 / Xcode 16 images; script falls back.
           CAPTURE_IOS_DEVICE: 'iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14'
-          # Cold-start + Documents intent file; warm openurl alone left every still on Stable.
           CAPTURE_IOS_COLD_SEC: '16'
           CAPTURE_SETTLE_SEC: '5'
           CAPTURE_BOOT_SEC: '12'
-          CAPTURE_MIN_DIFF_PCT: '0.5'
-          # UI/UX non-gating: splash→title frames + short video (must not fail the job).
+          CAPTURE_IOS_SKIP_PREBUILD: '1'
           CAPTURE_COLD_START: '1'
-          CAPTURE_COLD_START_SEC: '8'
-        run: bash scripts/native-capture/ci-ios-simulator-capture.sh
+          # ~2s/simctl screenshot on GHA; 24s ≈ 10–12 frames covering splash→title.
+          CAPTURE_COLD_START_SEC: '24'
+          CAPTURE_COLD_START_BUDGET_SEC: '180'
+          CAPTURE_REMOTE_SUPABASE: '1'
+        run: |
+          set -euo pipefail
+          set -a
+          # shellcheck disable=SC1091
+          source artifacts/ios-live-fight-tunnel/tunnel.env
+          set +a
+          bash scripts/native-capture/ci-live-fight-ios-capture.sh
 
       - name: Upload capture artifacts
         if: always()
@@ -214,3 +325,20 @@ jobs:
           path: artifacts/native-captures/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Signal backend keepalive to stop
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/ios-live-fight-done
+          date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/ios-live-fight-done/done.txt
+          echo "sha=${GITHUB_SHA}" >> artifacts/ios-live-fight-done/done.txt
+
+      - name: Upload done marker for backend
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-live-fight-done-${{ github.sha }}
+          path: artifacts/ios-live-fight-done/
+          if-no-files-found: error
+          retention-days: 1

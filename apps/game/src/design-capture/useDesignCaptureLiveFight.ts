@@ -4,6 +4,7 @@ import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { useFirstRun } from '../first-run/FirstRunContext';
 import { countFxEventsFromReplay } from '../replay/fxCaptureHold';
 import { isLiveFightCaptureEnabled } from './captureEnv';
+import { writeFightProofFile, writeLastFightFile } from './readCaptureIntentFile';
 
 export type CaptureFightProof = {
   readonly battleId: string;
@@ -23,8 +24,9 @@ export type CaptureFightProof = {
 };
 
 function logFightProof(proof: CaptureFightProof): void {
-  // CI greps logcat for this marker into the capture manifest.
+  // Android CI greps logcat; iOS CI reads Documents/botore-capture-fight-proof.json.
   console.log(`BOTORE_CAPTURE_FIGHT_JSON:${JSON.stringify(proof)}`);
+  void writeFightProofFile(proof);
 }
 
 /**
@@ -132,6 +134,8 @@ export function useDesignCaptureLiveFight(): void {
     if (!enabled || !lastFight?.sealedBuilds) return;
     if (proofLoggedForBattle.current === lastFight.battleId) return;
     proofLoggedForBattle.current = lastFight.battleId;
+    // Persist full fight so FightResult can restore after iOS process relaunch.
+    void writeLastFightFile(lastFight);
     logFightProof({
       battleId: lastFight.battleId,
       replayChecksum: lastFight.replayChecksum,

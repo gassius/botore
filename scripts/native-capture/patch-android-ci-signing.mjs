@@ -51,6 +51,26 @@ if (!appGradle.includes(SIGN_MARKER)) {
   console.log('ci signing patch already applied');
 }
 
+// Capture APKs set android:debuggable for run-as cold-start markers. lintVitalRelease
+// HardcodedDebugMode would fail assemble — skip vital lint on CI capture builds.
+{
+  let gradle = readFileSync(buildGradle, 'utf8');
+  const LINT_MARKER = '// botore-ci-skip-lint-vital';
+  if (!gradle.includes(LINT_MARKER) && /android\s*\{/.test(gradle)) {
+    gradle = gradle.replace(
+      /android\s*\{/,
+      (m) => `${m}
+    ${LINT_MARKER}
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }`,
+    );
+    writeFileSync(buildGradle, gradle);
+    console.log(`patched ${buildGradle} (lint checkReleaseBuilds false)`);
+  }
+}
+
 if (existsSync(gradleProps)) {
   let props = readFileSync(gradleProps, 'utf8');
   const line = `android.kotlinVersion=${KOTLIN_PIN}`;
@@ -109,11 +129,13 @@ if (existsSync(manifestPath)) {
       process.exit(1);
     }
     manifest = manifest.replace(/<application\b([^>]*)>/, (_m, attrs) => {
-      const cleaned = String(attrs).replace(/\s+android:usesCleartextTraffic="[^"]*"/g, '');
-      return `<application${cleaned} android:networkSecurityConfig="@xml/network_security_config" android:usesCleartextTraffic="true">`;
+      let cleaned = String(attrs).replace(/\s+android:usesCleartextTraffic="[^"]*"/g, '');
+      cleaned = cleaned.replace(/\s+android:debuggable="[^"]*"/g, '');
+      // Debuggable so cold-start can plant Documents markers via run-as (CI only).
+      return `<application${cleaned} android:networkSecurityConfig="@xml/network_security_config" android:usesCleartextTraffic="true" android:debuggable="true">`;
     });
     writeFileSync(manifestPath, manifest);
-    console.log(`patched ${manifestPath} (cleartext → 10.0.2.2 / localhost)`);
+    console.log(`patched ${manifestPath} (cleartext → 10.0.2.2 / localhost; debuggable)`);
   } else {
     console.log('ci cleartext networkSecurityConfig already present');
   }

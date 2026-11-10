@@ -1,4 +1,15 @@
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { isDesignCaptureEnabled } from '../design-capture/captureEnv';
+import { peekCaptureIntent } from '../design-capture/captureIntentState';
+import { loadCaptureIntentFile, readLastFightFile } from '../design-capture/readCaptureIntentFile';
 import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { createOpponentCandidatesClient } from './candidates/createOpponentCandidatesClient';
 import type { OpponentCandidatesPort } from './candidates/OpponentCandidatesPort';
@@ -13,6 +24,19 @@ import { createFightRequestClient } from './request/createFightRequestClient';
 import type { FightRequestPort } from './request/FightRequestPort';
 import { resolveFightIntent, type FightIntent } from './request/idempotency';
 import type { FightSuccess } from './request/types';
+
+function isRestorableFightSuccess(value: unknown): value is FightSuccess {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.battleId === 'string' &&
+    v.battleId.length > 0 &&
+    v.status === 'completed' &&
+    typeof v.replayChecksum === 'string' &&
+    v.sealedBuilds != null &&
+    typeof v.sealedBuilds === 'object'
+  );
+}
 
 export type FightListState =
   | { readonly status: 'idle' }
@@ -88,6 +112,36 @@ export function FightSessionProvider(props: {
   const [pendingIntent, setPendingIntent] = useState<FightIntent | null>(null);
   const [navigationGeneration, setNavigationGeneration] = useState(0);
   const [fightInFlight, setFightInFlight] = useState(false);
+  const [captureRestoreDone, setCaptureRestoreDone] = useState(!isDesignCaptureEnabled());
+  const restoredCaptureFight = useRef(false);
+
+  // C7c: iOS stills terminate+relaunch between Replay and FightResult, wiping
+  // in-memory lastFight. Restore the sealed fight from Documents before the
+  // shell mounts so FightResult does not flash missing_fight.
+  useEffect(() => {
+    if (!isDesignCaptureEnabled() || restoredCaptureFight.current) return;
+    restoredCaptureFight.current = true;
+    void (async () => {
+      try {
+        await loadCaptureIntentFile();
+        const raw = await readLastFightFile();
+        if (isRestorableFightSuccess(raw)) {
+          const wanted = peekCaptureIntent().battleId;
+          if (wanted && wanted !== raw.battleId) {
+            console.warn(
+              `BOTORE_CAPTURE_FIGHT_RESTORE_MISMATCH:wanted=${wanted} file=${raw.battleId}`,
+            );
+          } else {
+            setLastFight(raw);
+            setSubmit({ status: 'success', fight: raw });
+            console.log(`BOTORE_CAPTURE_FIGHT_RESTORED:battleId=${raw.battleId}`);
+          }
+        }
+      } finally {
+        setCaptureRestoreDone(true);
+      }
+    })();
+  }, []);
 
   const intentRef = useRef<FightIntent | null>(null);
   const inFlightRef = useRef<InFlightFight | null>(null);
@@ -346,6 +400,10 @@ export function FightSessionProvider(props: {
       navigationGeneration,
     ],
   );
+
+  if (!captureRestoreDone) {
+    return <></>;
+  }
 
   return (
     <FightSessionContext.Provider value={value}>{props.children}</FightSessionContext.Provider>
