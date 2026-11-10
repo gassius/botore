@@ -18,16 +18,23 @@ function parseArgs(argv) {
   // Require any early/mid frame to show meaningful graphite, not ≥35% full-bleed.
   let minGraphite = 0.12;
   let minDiffPct = 1.0;
+  // Prefer a measurable graphite span (splash full-bleed → title silhouette), or
+  // fall back to pixel diff alone when shares stay high but pixels move.
+  let minGraphiteSpan = 0.02;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--platform') platform = argv[++i] ?? platform;
     else if (argv[i] === '--out') outDir = argv[++i] ?? outDir;
     else if (argv[i] === '--min-graphite') minGraphite = Number(argv[++i] ?? minGraphite);
     else if (argv[i] === '--min-diff-pct') minDiffPct = Number(argv[++i] ?? minDiffPct);
+    else if (argv[i] === '--min-graphite-span')
+      minGraphiteSpan = Number(argv[++i] ?? minGraphiteSpan);
   }
-  return { platform, outDir, minGraphite, minDiffPct };
+  return { platform, outDir, minGraphite, minDiffPct, minGraphiteSpan };
 }
 
-const { platform, outDir, minGraphite, minDiffPct } = parseArgs(process.argv.slice(2));
+const { platform, outDir, minGraphite, minDiffPct, minGraphiteSpan } = parseArgs(
+  process.argv.slice(2),
+);
 const frames = readdirSync(outDir)
   .filter(
     (f) => f.startsWith(`${platform}-`) && f.includes('-ColdStart-frame') && f.endsWith('.png'),
@@ -47,16 +54,27 @@ const decoded = frames.map((f) => {
   return { path, img, g };
 });
 
-// Splash can land on frame 0–N; AuthEntry title also uses graphite chrome.
-// Take the best graphite share across the first half of the sequence.
-const earlyWindow = decoded.slice(0, Math.max(2, Math.ceil(decoded.length / 2)));
-const late = decoded.slice(-Math.min(4, decoded.length));
+// Non-overlapping early vs late windows when possible so short sequences still
+// compare first vs last rather than overlapping the same identical title frames.
+let earlyWindow;
+let late;
+if (decoded.length >= 4) {
+  const mid = Math.floor(decoded.length / 2);
+  earlyWindow = decoded.slice(0, mid);
+  late = decoded.slice(mid);
+} else {
+  earlyWindow = [decoded[0]];
+  late = [decoded[decoded.length - 1]];
+}
+
 const earlyMax = Math.max(...earlyWindow.map((d) => d.g));
 const lateMin = Math.min(...late.map((d) => d.g));
+const allG = decoded.map((d) => d.g);
+const graphiteSpan = Math.max(...allG) - Math.min(...allG);
 
 if (earlyMax < minGraphite) {
   console.error(
-    `error: cold-start frames lack splash/title graphite #302D27 (max share ${(100 * earlyMax).toFixed(1)}% in first half, need ≥${(100 * minGraphite).toFixed(0)}%)`,
+    `error: cold-start frames lack splash/title graphite #302D27 (max share ${(100 * earlyMax).toFixed(1)}% in early window, need ≥${(100 * minGraphite).toFixed(0)}%)`,
   );
   process.exit(1);
 }
@@ -67,14 +85,30 @@ for (const a of earlyWindow) {
     bestDiff = Math.max(bestDiff, pixelDiffPct(a.img, b.img));
   }
 }
-console.error(`cold-start early→late max pixel diff=${bestDiff.toFixed(3)}%`);
-if (bestDiff < minDiffPct) {
+// Also score first→last explicitly (splash → held title silhouette).
+bestDiff = Math.max(bestDiff, pixelDiffPct(decoded[0].img, decoded[decoded.length - 1].img));
+
+console.error(
+  `cold-start early→late max pixel diff=${bestDiff.toFixed(3)}% graphiteSpan=${(100 * graphiteSpan).toFixed(2)}%`,
+);
+
+const diffOk = bestDiff >= minDiffPct;
+const spanOk = graphiteSpan >= minGraphiteSpan;
+if (!diffOk && !spanOk) {
   console.error(
-    `error: cold-start frames look identical (diff ${bestDiff.toFixed(3)}% < ${minDiffPct}%) — Stable still repeated, not splash→title`,
+    `error: cold-start frames look identical (diff ${bestDiff.toFixed(3)}% < ${minDiffPct}% and graphite span ${(100 * graphiteSpan).toFixed(2)}% < ${(100 * minGraphiteSpan).toFixed(0)}%) — missed splash→title (title-only or splash-only strip)`,
+  );
+  process.exit(1);
+}
+
+// Late frames should still show graphite chrome / silhouette (not AuthEntry cream).
+if (lateMin < minGraphite * 0.5) {
+  console.error(
+    `error: late cold-start frames lost graphite silhouette (late min ${(100 * lateMin).toFixed(1)}%) — expected held launch-title, not AuthEntry/Stable`,
   );
   process.exit(1);
 }
 
 console.error(
-  `assert-cold-start-transition: ok early graphite=${(100 * earlyMax).toFixed(1)}% late graphite=${(100 * lateMin).toFixed(1)}% diff=${bestDiff.toFixed(3)}%`,
+  `assert-cold-start-transition: ok early graphite=${(100 * earlyMax).toFixed(1)}% late graphite=${(100 * lateMin).toFixed(1)}% diff=${bestDiff.toFixed(3)}% span=${(100 * graphiteSpan).toFixed(2)}%`,
 );

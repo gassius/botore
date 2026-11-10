@@ -304,13 +304,13 @@ xcrun simctl install "${UDID}" "${APP}"
 # Cold-start splash→title (budgeted) before live-fight stills.
 # Assert gates the job (same as Android) — never warn-and-continue (C7c PRR P1).
 if [[ "${CAPTURE_COLD_START:-1}" == "1" || "${CAPTURE_COLD_START:-1}" == "true" ]]; then
-  COLD_BUDGET="${CAPTURE_COLD_START_BUDGET_SEC:-120}"
+  COLD_BUDGET="${CAPTURE_COLD_START_BUDGET_SEC:-180}"
   if command -v timeout >/dev/null 2>&1; then
     timeout "${COLD_BUDGET}" "${SCRIPT_DIR}/ios-cold-start-capture.sh" \
-      --out "${OUT_DIR}" --udid "${UDID}" --seconds "${CAPTURE_COLD_START_SEC:-8}"
+      --out "${OUT_DIR}" --udid "${UDID}" --seconds "${CAPTURE_COLD_START_SEC:-24}"
   else
     "${SCRIPT_DIR}/ios-cold-start-capture.sh" \
-      --out "${OUT_DIR}" --udid "${UDID}" --seconds "${CAPTURE_COLD_START_SEC:-8}"
+      --out "${OUT_DIR}" --udid "${UDID}" --seconds "${CAPTURE_COLD_START_SEC:-24}"
   fi
   node "${SCRIPT_DIR}/assert-cold-start-transition.mjs" --platform ios --out "${OUT_DIR}"
 fi

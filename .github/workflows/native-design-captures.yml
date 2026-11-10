@@ -305,8 +305,9 @@ jobs:
           CAPTURE_BOOT_SEC: '12'
           CAPTURE_IOS_SKIP_PREBUILD: '1'
           CAPTURE_COLD_START: '1'
-          CAPTURE_COLD_START_SEC: '8'
-          CAPTURE_COLD_START_BUDGET_SEC: '120'
+          # ~2s/simctl screenshot on GHA; 24s ≈ 10–12 frames covering splash→title.
+          CAPTURE_COLD_START_SEC: '24'
+          CAPTURE_COLD_START_BUDGET_SEC: '180'
           CAPTURE_REMOTE_SUPABASE: '1'
         run: |
           set -euo pipefail
