@@ -16,7 +16,6 @@ import { FirstRunShell } from '../first-run/FirstRunShell';
 import { garageTag, InAppTitleSplash } from '../garage-tag';
 import { isPlayableFailClosed, PlayableMisconfiguredScreen } from '../runtime';
 import { readSupabasePublicConfig } from './auth/supabasePublicConfig';
-import { AuthEntryScreen } from './screens/AuthEntryScreen';
 import { LaunchTitleScreen } from './screens/LaunchTitleScreen';
 import { SessionAuthErrorScreen } from './screens/SessionAuthErrorScreen';
 import { GarageSessionProvider, useGarageSession } from './LoadoutSessionContext';
@@ -61,9 +60,11 @@ function hideNativeSplash(): void {
  * F8 auth gate around shell-owned FirstRunShell.
  * F9 FightSession mounts inside the authenticated shell (Opponents / ConfirmFight).
  *
+ * C12: first-run is silent restore / web-preview Development sign-in or
+ * GC/PGS|device-fallback → platform-auth — AuthEntry is never mounted here.
  * Normal cold start shows the C6 silhouette title (native splash releases on
- * image load, brief dwell, then AuthEntry). Design-capture cold-start holds
- * LaunchTitleScreen via coldStartHoldTitle so CI can assert splash→title.
+ * image load + brief dwell). Design-capture cold-start holds LaunchTitleScreen
+ * via coldStartHoldTitle so CI can assert splash→title.
  */
 function GarageRootInner(): React.ReactElement {
   const {
@@ -173,7 +174,7 @@ function GarageRootInner(): React.ReactElement {
     releaseNativeSplash();
   }, [coldStartHoldTitle, holdSplashMinDone, titleImageReady, releaseNativeSplash]);
 
-  // Short minimum display once the silhouette has loaded (covers cold start → AuthEntry).
+  // Short minimum display once the silhouette has loaded.
   useEffect(() => {
     if (!titleImageReady || titleDwellDone) return;
     if (coldStartHoldTitle) return; // hold path stays on LaunchTitleScreen
@@ -265,12 +266,12 @@ function GarageRootInner(): React.ReactElement {
     );
   }
 
-
+  // Still waiting for silent auth / restore — keep boot chrome (never AuthEntry).
   if (!session) {
     return (
-      <SafeAreaProvider>
-        <AuthEntryScreen />
-      </SafeAreaProvider>
+      <View style={styles.boot} testID="garage-booting">
+        <InAppTitleSplash onImageLoad={onTitleLoad} onImageError={onTitleError} />
+      </View>
     );
   }
 
