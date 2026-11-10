@@ -1,20 +1,16 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
-import { garageTag, uiKitAssets } from '../../garage-tag';
+import { StyleSheet, View } from 'react-native';
+import { garageTag, InAppTitleSplash } from '../../garage-tag';
 
 /**
- * In-app title silhouette composite (same launch-static art as the native splash).
- * Held during design-capture cold-start so CI can record splash → title, not AuthEntry.
+ * In-app title silhouette held during design-capture cold-start so CI can
+ * record native splash → launch-v001 title (not AuthEntry).
+ * Reuses C6 InAppTitleSplash / uiKitAssets.titleSilhouette.
  */
 export function LaunchTitleScreen(): React.ReactElement {
   return (
     <View style={styles.root} testID="launch-title">
-      <Image
-        source={uiKitAssets.launchStatic}
-        style={styles.mark}
-        resizeMode="contain"
-        accessibilityLabel="Botore"
-      />
+      <InAppTitleSplash testID="launch-title-splash" />
     </View>
   );
 }
@@ -22,12 +18,6 @@ export function LaunchTitleScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: garageTag.graphite,
-  },
-  mark: {
-    width: '78%',
-    height: '78%',
   },
 });
