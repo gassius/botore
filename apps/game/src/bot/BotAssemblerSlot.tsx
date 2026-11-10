@@ -1,7 +1,7 @@
 import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { View, StyleSheet } from 'react-native';
-import { BotAssembler, type BotFacing, type MotionPose } from '../assembler';
+import { BotAssembler, isMotionPose, type BotFacing, type MotionPose } from '../assembler';
 
 /**
  * Shared mount for F7 `BotAssembler` (`apps/game/src/assembler`, kit-v002 pin).
@@ -32,14 +32,7 @@ export type BotAssemblerSlotProps = {
 export function BotAssemblerSlot(props: BotAssemblerSlotProps): React.ReactElement {
   const paint = props.paintId ?? props.loadout.paintId;
   const weapon = props.weaponId ?? props.loadout.weaponId;
-  const motionPose: MotionPose =
-    props.motionPose === 'idle' ||
-    props.motionPose === 'attack' ||
-    props.motionPose === 'dodge' ||
-    props.motionPose === 'hit' ||
-    props.motionPose === 'defeat'
-      ? props.motionPose
-      : 'idle';
+  const motionPose: MotionPose = isMotionPose(props.motionPose) ? props.motionPose : 'idle';
 
   return (
     <View style={[styles.wrap, props.style]} testID={props.testID ?? 'bot-assembler-slot'}>

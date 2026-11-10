@@ -24,6 +24,9 @@ export const LIVE_FIGHT_CAPTURE_PASSWORD = 'local-only-password';
 /** Ranking capture override for empty/error stills (C5). */
 export type DesignCaptureRankingScenario = 'live' | 'empty' | 'error';
 
+/** C11: dual-fighter quick vs heavy pose stills under design-capture only. */
+export type DesignCapturePoseCompare = 'quick-vs-heavy';
+
 export type DesignCaptureConfig = {
   readonly enabled: boolean;
   /** Initial first-run route when capture mode boots. */
@@ -33,6 +36,27 @@ export type DesignCaptureConfig = {
   /** Optional demo weapon id when capture mode boots (e.g. axe). */
   readonly initialWeaponId: string | null;
 };
+
+export function parseDesignCapturePoseCompare(
+  raw: string | null | undefined,
+): DesignCapturePoseCompare | null {
+  const v = trimPublic(raw ?? undefined)?.toLowerCase();
+  if (v === '1' || v === 'true' || v === 'yes' || v === 'quick-vs-heavy') {
+    return 'quick-vs-heavy';
+  }
+  return null;
+}
+
+/**
+ * True when design-capture boots with pose-compare stills
+ * (`EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE=1`).
+ */
+export function readDesignCapturePoseCompare(
+  flag: string | undefined = process.env.EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE,
+): DesignCapturePoseCompare | null {
+  if (!isDesignCaptureEnabled()) return null;
+  return parseDesignCapturePoseCompare(flag);
+}
 
 export function parseDesignCaptureRankingScenario(
   raw: string | null | undefined,
@@ -139,6 +163,7 @@ export function parseDesignCaptureUrl(url: string): {
   weaponId: string | null;
   rankingScenario: DesignCaptureRankingScenario | null;
   failClosed: boolean | null;
+  poseCompare: DesignCapturePoseCompare | null;
 } {
   const trimmed = url.trim();
   if (!trimmed.toLowerCase().startsWith(`${DESIGN_CAPTURE_SCHEME}:`)) {
@@ -149,6 +174,7 @@ export function parseDesignCaptureUrl(url: string): {
       weaponId: null,
       rankingScenario: null,
       failClosed: null,
+      poseCompare: null,
     };
   }
 
@@ -171,6 +197,7 @@ export function parseDesignCaptureUrl(url: string): {
       weaponId: null,
       rankingScenario: null,
       failClosed: null,
+      poseCompare: null,
     };
   }
 
@@ -179,6 +206,9 @@ export function parseDesignCaptureUrl(url: string): {
   const queryRoute = params.get('route');
   const candidate = pathRoute ?? queryRoute;
   const route = candidate && isFirstRunRoute(candidate) ? candidate : null;
+  const poseCompare = parseDesignCapturePoseCompare(
+    params.get('poseCompare') ?? params.get('pose_compare'),
+  );
 
   const muteRaw = params.get('mute');
   let mute: boolean | null = null;
@@ -200,7 +230,7 @@ export function parseDesignCaptureUrl(url: string): {
     params.get('ranking') ?? params.get('rankingScenario'),
   );
 
-  return { route, mute, paintId, weaponId, rankingScenario, failClosed };
+  return { route, mute, paintId, weaponId, rankingScenario, failClosed, poseCompare };
 }
 
 export function buildDesignCaptureUrl(
@@ -211,6 +241,7 @@ export function buildDesignCaptureUrl(
     weaponId?: string;
     rankingScenario?: DesignCaptureRankingScenario;
     failClosed?: boolean;
+    poseCompare?: DesignCapturePoseCompare;
   },
 ): string {
   const query: string[] = [];
@@ -221,6 +252,7 @@ export function buildDesignCaptureUrl(
     query.push(`ranking=${encodeURIComponent(opts.rankingScenario)}`);
   }
   if (opts?.failClosed === true) query.push('failClosed=1');
+  if (opts?.poseCompare) query.push(`poseCompare=${encodeURIComponent(opts.poseCompare)}`);
   const q = query.length > 0 ? `?${query.join('&')}` : '';
   return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${q}`;
 }

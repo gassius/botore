@@ -275,7 +275,8 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
     const gaps = listWorkshopFrameGaps();
     expect(gaps.length).toBeGreaterThan(5);
     expect(gaps.some((g) => g.includes('must_not_mix_versions') || g.includes('v002'))).toBe(true);
-    expect(gaps.some((g) => g.includes('heavy_'))).toBe(true);
+    expect(gaps.some((g) => /need product mapping for heavy/i.test(g))).toBe(false);
+    expect(gaps.some((g) => g.includes('MotionPose heavy_* is mapped'))).toBe(true);
     expect(gaps.some((g) => g.includes('weapon_sword'))).toBe(true);
   });
 });

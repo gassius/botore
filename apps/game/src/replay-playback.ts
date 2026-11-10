@@ -13,7 +13,17 @@ import { type BattleEvent, type BattleReplay, validateReplay } from '@botore/rep
 export type AnimationCommand =
   | { readonly kind: 'show_battle'; readonly attacker: string; readonly defender: string }
   | { readonly kind: 'turn_banner'; readonly actor: string }
-  | { readonly kind: 'attack_anim'; readonly actor: string; readonly attack: 'basic' | 'weapon' }
+  | {
+      readonly kind: 'attack_anim';
+      readonly actor: string;
+      readonly attack: 'basic' | 'weapon';
+      /**
+       * Presentation beat for sealed weapon (heavy) attacks only.
+       * Compiled as windup then strike from one `attack_selected` — not a new
+       * combat outcome. Omitted / unused for basic (quick) attacks.
+       */
+      readonly heavyPhase?: 'windup' | 'strike';
+    }
   | { readonly kind: 'dodge_anim'; readonly actor: string }
   | {
       readonly kind: 'damage_pop';
@@ -32,6 +42,10 @@ export function commandDuration(cmd: AnimationCommand): number {
     case 'turn_banner':
       return 250;
     case 'attack_anim':
+      // Heavy hits: longer windup + weightier strike (Art Direction §9.5 / §11.4).
+      // Exact ms remain PROVISIONAL — not phone-proven.
+      if (cmd.attack === 'weapon' && cmd.heavyPhase === 'windup') return 280;
+      if (cmd.attack === 'weapon') return 420;
       return 400;
     case 'dodge_anim':
       return 300;
@@ -65,7 +79,24 @@ export function compileAnimationQueue(rawReplay: unknown): AnimationCommand[] {
         queue.push({ kind: 'turn_banner', actor: ev.actor });
         break;
       case 'attack_selected':
-        queue.push({ kind: 'attack_anim', actor: ev.actor, attack: ev.attack });
+        // Sealed basic → one quick attack beat; sealed weapon → heavy windup then
+        // strike. Presentation only — outcomes stay on the recorded event stream.
+        if (ev.attack === 'weapon') {
+          queue.push({
+            kind: 'attack_anim',
+            actor: ev.actor,
+            attack: 'weapon',
+            heavyPhase: 'windup',
+          });
+          queue.push({
+            kind: 'attack_anim',
+            actor: ev.actor,
+            attack: 'weapon',
+            heavyPhase: 'strike',
+          });
+        } else {
+          queue.push({ kind: 'attack_anim', actor: ev.actor, attack: 'basic' });
+        }
         break;
       case 'dodged':
         queue.push({ kind: 'dodge_anim', actor: ev.actor });

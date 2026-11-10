@@ -187,12 +187,12 @@ describe('F10 event-driven FX binding', () => {
 
     state = applyAnimationCommand(
       state,
-      { kind: 'attack_anim', actor: nearId, attack: 'weapon' },
+      { kind: 'attack_anim', actor: nearId, attack: 'weapon', heavyPhase: 'strike' },
       2,
       maxHp,
     );
     expect(state.activeFx).toEqual([]);
-    expect(state.near.motionPose).toBe('attack');
+    expect(state.near.motionPose).toBe('heavy_attack');
 
     state = applyAnimationCommand(state, { kind: 'dodge_anim', actor: farId }, 3, maxHp);
     expect(state.activeFx).toEqual([{ family: 'dodge', targetSlot: 'far', cueKey: 'dodge-3' }]);

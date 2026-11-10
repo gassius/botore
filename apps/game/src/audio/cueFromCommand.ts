@@ -11,6 +11,8 @@ export function sfxClipFromCommand(cmd: AnimationCommand): TrialAudioClipId | nu
     case 'show_battle':
       return 'hush';
     case 'attack_anim':
+      // Heavy windup is anticipation only — swing SFX on strike / quick attack.
+      if (cmd.attack === 'weapon' && cmd.heavyPhase === 'windup') return null;
       return 'swing';
     case 'dodge_anim':
       return 'dodge';

@@ -14,8 +14,15 @@ export type BotFacing = 'left' | 'right';
 /**
  * Motion pose keys driven by RN Animated first.
  * Exact timings / deltas are PROVISIONAL — not phone-proven.
+ *
+ * C11 product decision: extend this union (do **not** add a parallel kitPoseKey
+ * prop) so Stable / Customise / fight keep one BotAssembler API.
+ * - `attack` → kit `quick_attack` (sealed `attack_selected.attack: 'basic'`)
+ * - `heavy_windup` / `heavy_attack` → same-named kit keys
+ *   (sealed `attack_selected.attack: 'weapon'`, windup then strike)
  */
-export type MotionPose = 'idle' | 'attack' | 'dodge' | 'hit' | 'defeat';
+export type MotionPose =
+  'idle' | 'attack' | 'heavy_windup' | 'heavy_attack' | 'dodge' | 'hit' | 'defeat';
 
 /**
  * First-proof sample paints (Art Direction v0.3).

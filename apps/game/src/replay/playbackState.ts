@@ -3,7 +3,8 @@
  * No client combat decisions; FX families bind only to recorded event kinds.
  */
 import type { AnimationCommand } from '../replay-playback';
-import type { MotionPose } from '../assembler';
+import { motionPoseFromSealedAttack } from '../assembler/motionPoseMapping';
+import type { MotionPose } from '../assembler/types';
 import type { FxFamily } from '../arena';
 
 export interface FighterPresentation {
@@ -78,8 +79,13 @@ export function applyAnimationCommand(
       return initialPresentationState(state.near.characterId, state.far.characterId);
     case 'turn_banner':
       return { ...state, banner: cmd.actor, activeFx: [] };
-    case 'attack_anim':
-      return { ...withPose(state, cmd.actor, 'attack'), activeFx: [] };
+    case 'attack_anim': {
+      const pose = motionPoseFromSealedAttack(
+        cmd.attack,
+        cmd.attack === 'weapon' ? (cmd.heavyPhase ?? 'strike') : 'strike',
+      );
+      return { ...withPose(state, cmd.actor, pose), activeFx: [] };
+    }
     case 'dodge_anim': {
       const slot = slotFor(cmd.actor, state.near.characterId, state.far.characterId);
       return {

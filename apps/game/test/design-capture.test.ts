@@ -63,6 +63,7 @@ describe('C7 design-capture helpers', () => {
       weaponId: null,
       rankingScenario: null,
       failClosed: null,
+      poseCompare: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Replay?mute=1')).toEqual({
       route: 'Replay',
@@ -71,6 +72,7 @@ describe('C7 design-capture helpers', () => {
       weaponId: null,
       rankingScenario: null,
       failClosed: null,
+      poseCompare: null,
     });
     expect(parseDesignCaptureUrl('botore://capture?route=Ranking')).toEqual({
       route: 'Ranking',
@@ -79,6 +81,7 @@ describe('C7 design-capture helpers', () => {
       weaponId: null,
       rankingScenario: null,
       failClosed: null,
+      poseCompare: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Ranking?ranking=empty')).toEqual({
       route: 'Ranking',
@@ -87,6 +90,7 @@ describe('C7 design-capture helpers', () => {
       weaponId: null,
       rankingScenario: 'empty',
       failClosed: null,
+      poseCompare: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Stable?paint=petrol&weapon=axe')).toEqual({
       route: 'Stable',
@@ -95,6 +99,7 @@ describe('C7 design-capture helpers', () => {
       weaponId: 'axe',
       rankingScenario: null,
       failClosed: null,
+      poseCompare: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Stable?failClosed=1')).toEqual({
       route: 'Stable',
@@ -103,6 +108,7 @@ describe('C7 design-capture helpers', () => {
       weaponId: null,
       rankingScenario: null,
       failClosed: true,
+      poseCompare: null,
     });
     expect(parseDesignCaptureUrl('https://example.com/capture/Replay')).toEqual({
       route: null,
@@ -111,6 +117,7 @@ describe('C7 design-capture helpers', () => {
       weaponId: null,
       rankingScenario: null,
       failClosed: null,
+      poseCompare: null,
     });
     expect(
       buildDesignCaptureUrl('Stable', { mute: true, paintId: 'petrol', weaponId: 'dagger' }),
@@ -120,6 +127,21 @@ describe('C7 design-capture helpers', () => {
     );
     expect(buildDesignCaptureUrl('Stable', { failClosed: true })).toBe(
       `${DESIGN_CAPTURE_SCHEME}://capture/Stable?failClosed=1`,
+    );
+  });
+
+  it('parses C11 poseCompare deep-link flag', () => {
+    expect(parseDesignCaptureUrl('botore://capture/ConfirmFight?poseCompare=1')).toEqual({
+      route: 'ConfirmFight',
+      mute: null,
+      paintId: null,
+      weaponId: null,
+      rankingScenario: null,
+      failClosed: null,
+      poseCompare: 'quick-vs-heavy',
+    });
+    expect(buildDesignCaptureUrl('ConfirmFight', { poseCompare: 'quick-vs-heavy' })).toBe(
+      `${DESIGN_CAPTURE_SCHEME}://capture/ConfirmFight?poseCompare=quick-vs-heavy`,
     );
   });
 
@@ -135,6 +157,7 @@ describe('C7 design-capture helpers', () => {
     expect(source).toContain('process.env.EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON');
     expect(source).toContain('process.env.EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT');
     expect(source).toContain('process.env.EXPO_PUBLIC_DESIGN_CAPTURE_FAIL_CLOSED');
+    expect(source).toContain('process.env.EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE');
     expect(source).not.toMatch(/process\?\.env/);
     expect(source).not.toMatch(/env\?\.\[/);
     const bootstrap = readFileSync(

@@ -48,10 +48,16 @@ if (WORKSHOP_FRAME_MANIFEST.version !== ACTIVE_WORKSHOP_FRAME_ASSET_VERSION) {
 export const WORKSHOP_FRAME_KIT_ID = `${WORKSHOP_FRAME_MANIFEST.kit_id}-${WORKSHOP_FRAME_MANIFEST.version}`;
 export const ACTIVE_WORKSHOP_FRAME_FAMILY = `workshop-frame-${WORKSHOP_FRAME_MANIFEST.version}`;
 
-/** F7 MotionPose → kit pose key (sketch motion; not combat-event authority). */
+/**
+ * F7 MotionPose → kit pose key (sketch motion).
+ * Combat authority is sealed replay events → MotionPose (see
+ * `motionPoseFromSealedAttack`); this table only resolves kit geometry.
+ */
 export const MOTION_POSE_TO_KIT: Readonly<Record<MotionPose, string>> = {
   idle: 'idle',
   attack: 'quick_attack',
+  heavy_windup: 'heavy_windup',
+  heavy_attack: 'heavy_attack',
   dodge: 'dodge',
   hit: 'hit',
   defeat: 'defeat',
@@ -299,7 +305,6 @@ export function workshopFramePaintToken(paintId: string): string {
 export function listWorkshopFrameGaps(): readonly string[] {
   return [
     'ACTIVE pin is v002 only; v001 assets removed — must_not_mix_versions (coords/padding differ). Prefer sealed atomic packs so F7 never sees partial trees.',
-    'Kit pose keys include heavy_windup/heavy_attack; F7 MotionPose only exposes attack→quick_attack — need product mapping for heavy hits without forking props. heavy_windup.root_y changed 20→45 in v002 only.',
     'Paint path: under→mask-tint(color)→over via kit materials/masks (RN Image tintColor on mask alpha). Precomposited parts/{id}-{paint}.png retained as fallback/reference only — do not whole-sprite tint.',
     'No arena/FX/audio in kit-v002 — fight stage still uses separate quiet-arena placeholders when those land.',
     'Shield/drone/decal are reserved only; assembler ignores loadout.shield/drone/decals.',
@@ -309,5 +314,6 @@ export function listWorkshopFrameGaps(): readonly string[] {
     'Atlas null; F5/F6 atlas/vN packaging not yet aligned (mediaKey paths differ: parts/torso-oxide.png vs parts/chassis-basic/...).',
     'Weapon media ids use underscores (weapon_sword); catalogue/F5 use hyphens (weapon-sword) — adapter maps, keep both until atlas rename.',
     'Float socket values (e.g. neck y 51.39999999999999) are exact JSON serializations — consume as floats; do not round in the adapter.',
+    'heavy_windup.root_y is 45 in v002 (was 20 in v001 sketches) — geometry note only; MotionPose heavy_* is mapped (C11).',
   ];
 }

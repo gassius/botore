@@ -350,6 +350,10 @@ export function provisionalMotionOffset(
   switch (pose) {
     case 'attack':
       return { translateX: 10, translateY: -2, rotateDeg: -6, provisional: true };
+    case 'heavy_windup':
+      return { translateX: -6, translateY: -4, rotateDeg: 10, provisional: true };
+    case 'heavy_attack':
+      return { translateX: 14, translateY: -3, rotateDeg: -10, provisional: true };
     case 'dodge':
       return { translateX: -8, translateY: -4, rotateDeg: 4, provisional: true };
     case 'hit':

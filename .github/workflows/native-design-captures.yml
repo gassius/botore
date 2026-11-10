@@ -12,7 +12,7 @@ on:
       routes:
         description: Comma-separated first-run routes (design stills path only)
         required: false
-        default: 'Stable,Customise,Replay'
+        default: 'Stable,Customise,ConfirmFight,Replay'
       clips:
         description: Also record short clips (true/false)
         required: false
@@ -44,13 +44,14 @@ permissions:
 
 env:
   # Prefer workflow_dispatch inputs; PR events fall back to design-review defaults.
-  CAPTURE_ROUTES: ${{ github.event.inputs.routes || 'Stable,Customise,Replay' }}
+  CAPTURE_ROUTES: ${{ github.event.inputs.routes || 'Stable,Customise,ConfirmFight,Replay' }}
   CAPTURE_CLIPS: ${{ github.event.inputs.clips || 'false' }}
   CAPTURE_API_LEVEL: ${{ github.event.inputs.api_level || '34' }}
   # P2: expensive cold-start off on typical PRs; on for workflow_dispatch / explicit input.
   # C7c AC still needs splash→title evidence — live-fight jobs force CAPTURE_COLD_START=1.
   CAPTURE_COLD_START: ${{ github.event.inputs.cold_start || '0' }}
   EXPO_PUBLIC_DESIGN_CAPTURE: '1'
+  EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE: '1'
   EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
   CAPTURE_SETTLE_SEC: '3'
   CAPTURE_SECONDS: '5'

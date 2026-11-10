@@ -8,6 +8,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_DESIGN_CAPTURE": "1",
+        "EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE": "1",
         "EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD": "1",
         "EXPO_PUBLIC_CRASH_REPORTING": "0",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"

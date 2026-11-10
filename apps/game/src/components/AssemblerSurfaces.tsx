@@ -7,7 +7,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { BotAssembler } from '../assembler';
+import { BotAssembler, MOTION_POSES } from '../assembler';
 import type { AssemblerLoadoutInput, MotionPose } from '../assembler';
 import { OXIDE_PAINT, PETROL_PAINT, PLACEHOLDER_WEAPONS } from '../assembler';
 
@@ -135,7 +135,11 @@ export const AssemblerSurfaces: React.FC = () => {
               <BotAssembler
                 loadout={opponentLoadout}
                 facing="left"
-                motionPose={pose === 'attack' ? 'hit' : pose}
+                motionPose={
+                  pose === 'attack' || pose === 'heavy_attack' || pose === 'heavy_windup'
+                    ? 'hit'
+                    : pose
+                }
                 size={170}
                 placeholder={false}
                 testID="assembler-fight-opponent"
@@ -143,7 +147,7 @@ export const AssemblerSurfaces: React.FC = () => {
             </View>
           </View>
           <View style={styles.row}>
-            {(['idle', 'attack', 'dodge', 'hit', 'defeat'] as const).map((p) => (
+            {MOTION_POSES.map((p) => (
               <Pressable
                 key={p}
                 testID={`pose-${p}`}
