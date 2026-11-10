@@ -9,10 +9,7 @@ import React, {
 } from 'react';
 import { isDesignCaptureEnabled } from '../design-capture/captureEnv';
 import { peekCaptureIntent } from '../design-capture/captureIntentState';
-import {
-  loadCaptureIntentFile,
-  readLastFightFile,
-} from '../design-capture/readCaptureIntentFile';
+import { loadCaptureIntentFile, readLastFightFile } from '../design-capture/readCaptureIntentFile';
 import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { createOpponentCandidatesClient } from './candidates/createOpponentCandidatesClient';
 import type { OpponentCandidatesPort } from './candidates/OpponentCandidatesPort';
