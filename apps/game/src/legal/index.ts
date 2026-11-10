@@ -1,6 +1,7 @@
 export {
   DOCUMENTED_ACCOUNT_DELETE_PATH,
   PUBLIC_PRIVACY_PATH,
+  isAbsoluteHttpUrl,
   isPublicPrivacyPath,
   publicWebHref,
   readPublicWebOrigin,

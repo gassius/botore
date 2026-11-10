@@ -1,8 +1,9 @@
 /**
- * Botore privacy policy disclosure copy (R6).
+ * Botore privacy policy — player-facing disclosure copy (R6).
  *
- * Engineering draft for store readiness — not a law-firm engagement.
- * Keep in sync with `docs/legal/privacy-policy.md`.
+ * Keep player text free of internal ops notes. Engineering / store-readiness
+ * notes live in `docs/legal/privacy-policy.md` only.
+ * Deletion claims assume this branch is stacked on R5 (#55).
  */
 
 import { DOCUMENTED_ACCOUNT_DELETE_PATH, PUBLIC_PRIVACY_PATH } from './privacyPaths';
@@ -19,7 +20,7 @@ export const PRIVACY_POLICY_LAST_UPDATED = '10 November 2026';
 export const PRIVACY_POLICY_TITLE = 'Botore Privacy Policy';
 
 export const PRIVACY_POLICY_INTRO =
-  'This notice explains how Botore uses platform identity (Game Center / Play Games), device-fallback sign-in, sessions, crash reports, and account deletion. It is an engineering disclosure for store readiness, not legal advice.';
+  'This notice explains how Botore uses platform identity (Game Center / Play Games), device-fallback sign-in, sessions, crash reports, and account deletion.';
 
 export const privacyPolicySections: readonly PrivacyPolicySection[] = [
   {
@@ -28,7 +29,7 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     paragraphs: [
       'On iOS, Botore may request a Game Center identity proof. On Android, Botore may request a Play Games Services identity proof when Play Games is configured.',
       'Those proofs are sent to Botore’s server (Supabase Edge Function platform-auth), which verifies them and creates or restores a Botore account linked to that platform id. The client does not write identity rows directly.',
-      'If a platform proof is unavailable, Botore may use a random device-stored UUID (iOS Keychain / Android Block Store) as a temporary device-fallback identity. Botore does not use IDFV or ANDROID_ID for this fallback.',
+      'If a platform proof is unavailable, Botore may use a random device-stored UUID in secure on-device storage (iOS Keychain / Android Keystore) as a temporary device-fallback identity. Botore does not use IDFV or ANDROID_ID for this fallback.',
       'Web preview uses a separate Development password path and is not the store native sign-in flow.',
     ],
   },
@@ -45,7 +46,7 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     title: 'Session handling',
     paragraphs: [
       'After a successful sign-in, Botore stores a Supabase access and refresh token on the device so you can relaunch without proving identity again while the session remains valid.',
-      'Sign out clears the local session. A deleted or banned Auth user cannot keep using the old session.',
+      'Sign out clears the local session. If an Auth user is deleted or banned, refresh is blocked; any already-issued access token expires shortly afterward (typically within about one hour).',
     ],
   },
   {
@@ -54,7 +55,7 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     paragraphs: [
       'Botore stores account and profile data (such as a display name), characters and loadouts, fight allowances, and append-only inventory and battle ledgers needed to run the game.',
       'Platform identity mappings (provider + platform id → account) are stored server-side so the same Game Center / Play Games id returns to the same account until deletion.',
-      'On preview and production builds, Botore may send crash and uncaught-error reports to Sentry when a DSN is configured. Crash reporting is not a product analytics stack; local development does not require a Sentry account. Reports are scrubbed to avoid passwords, tokens, cookies, and email-shaped fields where possible.',
+      'On preview and production builds, Botore may send crash and uncaught-error reports to Sentry when a DSN is configured. Crash reporting is not a product analytics stack. Events may include stack traces, breadcrumbs, device model, OS version, and app version; they are scrubbed to avoid passwords, tokens, cookies, and email-shaped fields where possible. Sentry is a processor and may store those reports outside the European Union.',
     ],
   },
   {
@@ -63,7 +64,7 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     paragraphs: [
       `You can request deletion in the app (Stable → Delete account until Settings ships) or on the public web path ${DOCUMENTED_ACCOUNT_DELETE_PATH} using a one-time deletion code minted in-app.`,
       'Deletion soft-deletes the account, anonymizes display names, unlinks platform identities / devices / consents, and rewrites the Auth user so the same Game Center or Play Games id can mint a fresh account later.',
-      'Hard-delete of every historical row is not possible: append-only ledgers and fight history remain as anonymous tombstones for integrity. See docs/backend/account-deletion.md once R5 lands.',
+      'Hard-delete of every historical row is not possible: append-only ledgers and fight history remain as anonymous tombstones for integrity.',
     ],
   },
   {
@@ -77,18 +78,18 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
   },
   {
     id: 'store',
-    title: 'Store listing and public URLs',
+    title: 'Public privacy and deletion URLs',
     paragraphs: [
       `Public privacy policy path: ${PUBLIC_PRIVACY_PATH}. Public account deletion path: ${DOCUMENTED_ACCOUNT_DELETE_PATH}.`,
-      'Carlos attaches a custom domain (or otherwise SSO-free host) to the game web export so App Store / Play reviewers can open these URLs without Vercel SSO. Record the absolute URLs in R4 store listing materials.',
+      'Processors that may see player data include Supabase (database, Auth, Edge Functions), Sentry (crash reports), Vercel (hosts the public privacy and deletion pages), and Apple or Google when you sign in with Game Center or Play Games.',
     ],
   },
   {
     id: 'contact',
     title: 'Contact',
     paragraphs: [
-      'Questions about this disclosure: contact the Botore product owner (Carlos) through the store listing support channel once R4 publishes it.',
-      'This document does not engage outside counsel unless Carlos asks.',
+      'Questions about this notice or your data: use the support channel listed on the Botore App Store or Google Play listing.',
+      'You may also request access to, correction of, or deletion of personal data we hold about your account through that channel.',
     ],
   },
 ];

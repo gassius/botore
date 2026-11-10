@@ -10,7 +10,7 @@ export const PUBLIC_PRIVACY_PATH = '/privacy';
 
 /**
  * Public account-deletion path shipped by R5 (#55).
- * R6 references this path in disclosure copy; it does not implement deletion.
+ * Player disclosure assumes this PR is stacked/merged with R5.
  */
 export const DOCUMENTED_ACCOUNT_DELETE_PATH = '/account/delete';
 
@@ -53,4 +53,9 @@ export function publicWebHref(path: string): string {
     }
   }
   return normalized;
+}
+
+/** True when `href` is safe to pass to `Linking.openURL` as an absolute web URL. */
+export function isAbsoluteHttpUrl(href: string): boolean {
+  return /^https?:\/\//i.test(href);
 }

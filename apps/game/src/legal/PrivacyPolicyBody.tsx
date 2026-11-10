@@ -7,19 +7,28 @@ import {
   PRIVACY_POLICY_TITLE,
   privacyPolicySections,
 } from './privacyPolicyContent';
-import { DOCUMENTED_ACCOUNT_DELETE_PATH, PUBLIC_PRIVACY_PATH, publicWebHref } from './privacyPaths';
+import {
+  DOCUMENTED_ACCOUNT_DELETE_PATH,
+  PUBLIC_PRIVACY_PATH,
+  isAbsoluteHttpUrl,
+  publicWebHref,
+} from './privacyPaths';
 
 function openHref(href: string): void {
-  void Linking.openURL(href);
+  void Linking.openURL(href).catch(() => {
+    // Relative / missing-origin hrefs must not become unhandled rejections.
+  });
 }
 
 /** Shared Garage Tag body for in-app + public privacy disclosure. */
 export function PrivacyPolicyBody(props: {
-  /** When true, show a control that opens the documented public deletion URL. */
+  /** When false, omit the deletion link row (rare); default shows path / absolute link. */
   showDeletionLink?: boolean;
 }): React.ReactElement {
-  const deletionHref = publicWebHref(DOCUMENTED_ACCOUNT_DELETE_PATH);
   const privacyHref = publicWebHref(PUBLIC_PRIVACY_PATH);
+  const deletionHref = publicWebHref(DOCUMENTED_ACCOUNT_DELETE_PATH);
+  const showDeletion = props.showDeletionLink !== false;
+  const deletionLinkable = showDeletion && isAbsoluteHttpUrl(deletionHref);
 
   return (
     <View style={styles.root} testID="privacy-policy-body">
@@ -50,24 +59,26 @@ export function PrivacyPolicyBody(props: {
         <Text style={styles.heading} allowFontScaling>
           Links
         </Text>
-        <Text style={styles.body} allowFontScaling>
+        <Text style={styles.body} allowFontScaling testID="privacy-path-label">
           Privacy path: {privacyHref}
         </Text>
-        {props.showDeletionLink !== false ? (
-          <Pressable
-            accessibilityRole="link"
-            onPress={() => openHref(deletionHref)}
-            testID="privacy-open-account-delete"
-          >
-            <Text style={styles.link} allowFontScaling>
+        {showDeletion ? (
+          deletionLinkable ? (
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => openHref(deletionHref)}
+              testID="privacy-open-account-delete"
+            >
+              <Text style={styles.link} allowFontScaling>
+                Account deletion: {deletionHref}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text style={styles.body} allowFontScaling testID="privacy-account-delete-text">
               Account deletion: {deletionHref}
             </Text>
-          </Pressable>
-        ) : (
-          <Text style={styles.body} allowFontScaling>
-            Account deletion: {deletionHref}
-          </Text>
-        )}
+          )
+        ) : null}
       </View>
     </View>
   );
