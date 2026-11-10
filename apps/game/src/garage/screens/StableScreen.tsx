@@ -12,6 +12,7 @@ import {
   WeaponGlyphSlot,
   garageTag,
 } from '../../garage-tag';
+import { PrivacyPolicyScreen } from '../../legal/PrivacyPolicyScreen';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
@@ -27,6 +28,7 @@ export function StableScreen(props: {
   const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
   const forced = useForcedSessionFailure();
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const confirmed = loadout.confirmedLoadout;
   const weapon = confirmed ? weaponUiAlias(confirmed.weapon) : 'sword';
   const displayName = loadout.displayName ?? 'Pilot';
@@ -42,7 +44,7 @@ export function StableScreen(props: {
     forced ??
     (hydrationKind === 'offline' || hydrationKind === 'auth_expired' ? hydrationKind : null);
 
-  // Temporary R5 entry until C9 Settings merges — then move under Settings.
+  // Temporary R5/R6 entries until C9 Settings merges — then move under Settings.
   if (showDeleteAccount) {
     return (
       <DeleteAccountScreen
@@ -50,6 +52,9 @@ export function StableScreen(props: {
         onDeleted={() => setShowDeleteAccount(false)}
       />
     );
+  }
+  if (showPrivacy) {
+    return <PrivacyPolicyScreen onBack={() => setShowPrivacy(false)} />;
   }
 
   return (
@@ -88,6 +93,11 @@ export function StableScreen(props: {
               testID="stable-retry-hydration"
             />
           ) : null}
+          <SecondaryButton
+            label="Privacy policy"
+            onPress={() => setShowPrivacy(true)}
+            testID="stable-privacy-policy"
+          />
           <SecondaryButton
             label="Delete account"
             onPress={() => setShowDeleteAccount(true)}

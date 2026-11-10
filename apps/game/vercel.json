@@ -5,6 +5,8 @@
   "installCommand": "echo 'Skipping default install, using buildCommand'",
   "rewrites": [
     { "source": "/account/delete", "destination": "/index.html" },
-    { "source": "/account/delete/", "destination": "/index.html" }
+    { "source": "/account/delete/", "destination": "/index.html" },
+    { "source": "/privacy", "destination": "/index.html" },
+    { "source": "/privacy/", "destination": "/index.html" }
   ]
 }

@@ -127,3 +127,15 @@ with a SecureStore UUID. That needs only Migration `0023` + deployed
 in the APK.
 
 ClickUp: [C12](https://app.clickup.com/t/1amjtrey7v7).
+
+## Privacy disclosure (R6)
+
+Store / in-app privacy materials that describe Game Center, Play Games,
+device-fallback, and synthetic `*@players.botore.internal` emails:
+
+- Public path: `/privacy` (game web export)
+- In-app: Stable → Privacy policy (until Settings)
+- Canonical copy: `docs/legal/privacy-policy.md`
+
+Account deletion path (R5): `/account/delete` — see
+`docs/backend/account-deletion.md` when that PR lands.
