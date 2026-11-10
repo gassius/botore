@@ -64,7 +64,8 @@
           "organization": "REPLACE_SENTRY_ORG",
           "project": "REPLACE_SENTRY_PROJECT"
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }

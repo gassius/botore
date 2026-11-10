@@ -3,7 +3,7 @@ import type { AuthPort, AuthResult, AuthSession, AuthSignInInput } from './AuthP
 const DEV_USER_ID = '00000000-0000-4000-8000-000000000001';
 
 /**
- * DEV auth scaffolding when EXPO_PUBLIC_SUPABASE_* is unset.
+ * DEV auth scaffolding when EXPO_PUBLIC_SUPABASE_* is unset and scaffolds are allowed.
  * Issues a local session only — not a real JWT for PostgREST.
  */
 export class DevAuthAdapter implements AuthPort {
@@ -31,6 +31,10 @@ export class DevAuthAdapter implements AuthPort {
       expiresAt: null,
     };
     return { ok: true, session: this.session };
+  }
+
+  async applySession(session: AuthSession): Promise<void> {
+    this.session = session;
   }
 
   async signOut(): Promise<void> {

@@ -1,0 +1,7 @@
+{
+  "imports": {},
+  "tasks": {
+    "test": "deno test -A --config=./deno.json ."
+  },
+  "lock": false
+}

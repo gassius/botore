@@ -11,6 +11,7 @@ import { designCaptureCredentials, isDesignCaptureEnabled } from '../design-capt
 import { isColdStartHoldTitle } from '../design-capture/readCaptureIntentFile';
 import { createAuthClient } from './auth/createAuthClient';
 import type { AuthPort, AuthSession } from './auth/AuthPort';
+import { runSilentFirstLaunchAuth } from './auth/silentFirstLaunchAuth';
 import { createLoadoutSaveClient } from './loadout/createLoadoutSaveClient';
 import type { LoadoutSavePort } from './loadout/LoadoutSavePort';
 import {
@@ -26,10 +27,17 @@ import {
 } from './loadout/loadoutState';
 import { withUpdatedPaint, withUpdatedWeapon } from './loadout/proofCatalogue';
 
+export type AuthBootError = {
+  readonly code: string;
+  readonly message: string;
+};
+
 export type GarageSessionContextValue = {
   readonly authKind: AuthPort['kind'];
   readonly session: AuthSession | null;
   readonly booting: boolean;
+  /** Silent first-launch / restore failure — offline/session UX (never DEV AuthEntry). */
+  readonly authBootError: AuthBootError | null;
   /** Design-capture cold-start: hold launch-title silhouette (skip auto sign-in). */
   readonly coldStartHoldTitle: boolean;
   /**
@@ -44,6 +52,8 @@ export type GarageSessionContextValue = {
     email: string,
     password: string,
   ) => Promise<{ ok: true } | { ok: false; message: string }>;
+  /** Retry silent first-launch auth after a boot error. */
+  retrySilentAuth: () => Promise<void>;
   signOut: () => Promise<void>;
   retryHydration: () => Promise<void>;
   selectPaint: (paintId: string) => void;
@@ -66,6 +76,7 @@ export function GarageSessionProvider(props: {
   const [booting, setBooting] = useState(true);
   const [coldStartHoldTitle, setColdStartHoldTitle] = useState(false);
   const [coldStartIntentReady, setColdStartIntentReady] = useState(() => !isDesignCaptureEnabled());
+  const [authBootError, setAuthBootError] = useState<AuthBootError | null>(null);
   const [loadout, setLoadout] = useState<LoadoutPreviewState>(() =>
     createUnavailableLoadoutState(),
   );
@@ -136,12 +147,32 @@ export function GarageSessionProvider(props: {
   }, [auth, loadouts]);
 
   const captureAutoSignInStarted = useRef(false);
+  const silentAuthStarted = useRef(false);
+
+  const runSilentFirstLaunch = useCallback(async () => {
+    if (auth.kind === 'unavailable') {
+      // GarageRoot shows PlayableMisconfiguredScreen for unavailable adapters.
+      setAuthBootError(null);
+      setBooting(false);
+      return;
+    }
+    setBooting(true);
+    setAuthBootError(null);
+    const result = await runSilentFirstLaunchAuth(auth);
+    if (!result.ok) {
+      setAuthBootError({ code: result.code, message: result.message });
+      setBooting(false);
+      return;
+    }
+    setSession(result.session);
+    await hydrate();
+  }, [auth, hydrate]);
 
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
 
-  // Detect cold-start hold-title ASAP so we never flash "Opening garage…" / AuthEntry.
+  // Detect cold-start hold-title ASAP so we never flash AuthEntry / error chrome.
   // Always mark intentReady when the probe settles — including hold=false — so splash
   // release is not gated forever when the marker file is absent.
   useEffect(() => {
@@ -170,11 +201,9 @@ export function GarageSessionProvider(props: {
   }, []);
 
   /**
-   * C7 design-capture builds auto-enter the DEV garage so capture scripts can
-   * deep-link into first-run routes without tapping the auth form.
-   * Opt-in only (`EXPO_PUBLIC_DESIGN_CAPTURE=1`); never for store builds.
-   * Cold-start hold-title intent skips auto sign-in so splash→launch-title
-   * silhouette is visible (C7c) — not AuthEntry / spinner.
+   * C7 design-capture builds auto-enter with seed credentials so capture scripts
+   * can deep-link without AuthEntry. Opt-in only; never for store builds.
+   * Cold-start hold-title skips auto sign-in (C7c).
    */
   useEffect(() => {
     if (!isDesignCaptureEnabled()) return;
@@ -192,6 +221,7 @@ export function GarageSessionProvider(props: {
       }
       setColdStartHoldTitle(false);
       setColdStartIntentReady(true);
+      setAuthBootError(null);
       const creds = designCaptureCredentials();
       const result = await auth.signInWithPassword({
         email: creds.email,
@@ -199,6 +229,7 @@ export function GarageSessionProvider(props: {
       });
       if (!result.ok) {
         captureAutoSignInStarted.current = false;
+        setAuthBootError({ code: result.code, message: result.message });
         console.warn(
           `BOTORE_CAPTURE_AUTH_ERROR:sign_in_failed email=${creds.email} message=${result.message}`,
         );
@@ -211,11 +242,27 @@ export function GarageSessionProvider(props: {
     })();
   }, [auth, booting, coldStartHoldTitle, hydrate, session]);
 
+  /**
+   * C12 first-run: restore session, or silent web-preview Development sign-in /
+   * native identity plug-in seam. AuthEntry is never on this path.
+   * Design-capture keeps the seed password path above.
+   */
+  useEffect(() => {
+    if (isDesignCaptureEnabled()) return;
+    if (coldStartHoldTitle) return;
+    if (session || authBootError) return;
+    if (booting) return;
+    if (silentAuthStarted.current) return;
+    silentAuthStarted.current = true;
+    void runSilentFirstLaunch();
+  }, [authBootError, booting, coldStartHoldTitle, runSilentFirstLaunch, session]);
+
   const value = useMemo<GarageSessionContextValue>(
     () => ({
       authKind: auth.kind,
       session,
       booting,
+      authBootError,
       coldStartHoldTitle,
       coldStartIntentReady,
       loadout,
@@ -223,15 +270,27 @@ export function GarageSessionProvider(props: {
       signIn: async (email, password) => {
         const result = await auth.signInWithPassword({ email, password });
         if (!result.ok) return { ok: false, message: result.message };
+        setAuthBootError(null);
         setBooting(true);
         setSession(result.session);
         await hydrate();
         return { ok: true };
       },
+      retrySilentAuth: async () => {
+        silentAuthStarted.current = true;
+        captureAutoSignInStarted.current = false;
+        await runSilentFirstLaunch();
+      },
       signOut: async () => {
         await auth.signOut();
         setSession(null);
         setLoadout(createUnavailableLoadoutState());
+        setAuthBootError(null);
+        silentAuthStarted.current = false;
+        // Re-enter silent first-launch on the first-run path (never AuthEntry).
+        if (!isDesignCaptureEnabled()) {
+          setBooting(false);
+        }
       },
       retryHydration: async () => {
         setBooting(true);
@@ -289,7 +348,18 @@ export function GarageSessionProvider(props: {
         return true;
       },
     }),
-    [auth, session, booting, coldStartHoldTitle, coldStartIntentReady, loadout, hydrate, loadouts],
+    [
+      auth,
+      session,
+      booting,
+      authBootError,
+      coldStartHoldTitle,
+      coldStartIntentReady,
+      loadout,
+      hydrate,
+      loadouts,
+      runSilentFirstLaunch,
+    ],
   );
 
   return (

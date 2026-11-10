@@ -16,8 +16,8 @@ import { FirstRunShell } from '../first-run/FirstRunShell';
 import { garageTag, InAppTitleSplash } from '../garage-tag';
 import { isPlayableFailClosed, PlayableMisconfiguredScreen } from '../runtime';
 import { readSupabasePublicConfig } from './auth/supabasePublicConfig';
-import { AuthEntryScreen } from './screens/AuthEntryScreen';
 import { LaunchTitleScreen } from './screens/LaunchTitleScreen';
+import { SessionAuthErrorScreen } from './screens/SessionAuthErrorScreen';
 import { GarageSessionProvider, useGarageSession } from './LoadoutSessionContext';
 
 /** Minimum time the silhouette title stays visible after the bitmap loads. */
@@ -60,16 +60,26 @@ function hideNativeSplash(): void {
  * F8 auth gate around shell-owned FirstRunShell.
  * F9 FightSession mounts inside the authenticated shell (Opponents / ConfirmFight).
  *
+ * C12: first-run is silent restore / web-preview Development sign-in or
+ * GC/PGS|device-fallback → platform-auth — AuthEntry is never mounted here.
  * Normal cold start shows the C6 silhouette title (native splash releases on
- * image load, brief dwell, then AuthEntry). Design-capture cold-start holds
- * LaunchTitleScreen via coldStartHoldTitle so CI can assert splash→title.
+ * image load + brief dwell). Design-capture cold-start holds LaunchTitleScreen
+ * via coldStartHoldTitle so CI can assert splash→title.
  */
 function GarageRootInner(): React.ReactElement {
-  const { booting, session, coldStartHoldTitle, coldStartIntentReady, authKind } =
-    useGarageSession();
+  const {
+    booting,
+    session,
+    coldStartHoldTitle,
+    coldStartIntentReady,
+    authKind,
+    authBootError,
+    retrySilentAuth,
+  } = useGarageSession();
   const [titleImageReady, setTitleImageReady] = useState(false);
   const [titleDwellDone, setTitleDwellDone] = useState(false);
   const [holdSplashMinDone, setHoldSplashMinDone] = useState(!isDesignCaptureEnabled());
+  const [retryBusy, setRetryBusy] = useState(false);
   const [captureFailClosed, setCaptureFailClosed] = useState(
     () => isDesignCaptureFailClosedEnabled() || peekCaptureIntent().failClosed === true,
   );
@@ -164,7 +174,7 @@ function GarageRootInner(): React.ReactElement {
     releaseNativeSplash();
   }, [coldStartHoldTitle, holdSplashMinDone, titleImageReady, releaseNativeSplash]);
 
-  // Short minimum display once the silhouette has loaded (covers cold start → AuthEntry).
+  // Short minimum display once the silhouette has loaded.
   useEffect(() => {
     if (!titleImageReady || titleDwellDone) return;
     if (coldStartHoldTitle) return; // hold path stays on LaunchTitleScreen
@@ -204,7 +214,7 @@ function GarageRootInner(): React.ReactElement {
     };
   }, [coldStartHoldTitle, coldStartIntentReady, releaseNativeSplash]);
 
-  // C7c design-capture cold-start: hold launch-title (skip AuthEntry / auto sign-in).
+  // C7c design-capture cold-start: hold launch-title (skip silent auth).
   // Mount title under the native splash; release only after min dwell + onLoad.
   if (coldStartHoldTitle) {
     return (
@@ -239,11 +249,29 @@ function GarageRootInner(): React.ReactElement {
     );
   }
 
-  if (!session) {
+  // C12: silent first-launch / restore failure → offline/session error (never AuthEntry / DEV).
+  if (!session && authBootError) {
     return (
       <SafeAreaProvider>
-        <AuthEntryScreen />
+        <SessionAuthErrorScreen
+          code={authBootError.code}
+          detail={authBootError.message}
+          retryBusy={retryBusy}
+          onRetry={() => {
+            setRetryBusy(true);
+            void retrySilentAuth().finally(() => setRetryBusy(false));
+          }}
+        />
       </SafeAreaProvider>
+    );
+  }
+
+  // Still waiting for silent auth / restore — keep boot chrome (never AuthEntry).
+  if (!session) {
+    return (
+      <View style={styles.boot} testID="garage-booting">
+        <InAppTitleSplash onImageLoad={onTitleLoad} onImageError={onTitleError} />
+      </View>
     );
   }
 

@@ -141,6 +141,19 @@ describe('C8 fail-closed playable factory selection', () => {
     if (!result.ok) expect(result.code).toBe(PLAYABLE_MISCONFIGURED_CODE);
   });
 
+  it('unavailable auth refuses password sign-in with playable_misconfigured (no DEV)', async () => {
+    clearPublicEnv();
+    process.env.EXPO_PUBLIC_DESIGN_CAPTURE_FAIL_CLOSED = '1';
+    const auth = createAuthClient();
+    expect(auth.kind).toBe('unavailable');
+    const result = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.code).toBe(PLAYABLE_MISCONFIGURED_CODE);
+  });
+
   it('does not load DEV golden via resolveSessionConfirmedResult when fail-closed', () => {
     clearPublicEnv();
     process.env.EXPO_PUBLIC_DESIGN_CAPTURE_FAIL_CLOSED = '1';
