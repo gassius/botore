@@ -10,15 +10,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const SafeAreaContext = React.createContext<{
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-} | null>(null);
-
-vi.mock('react-native', () => {
-  const R = require('react') as typeof React;
+vi.mock('react-native', async () => {
+  const R = await vi.importActual<typeof import('react')>('react');
   const make =
     (name: string) =>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,8 +30,14 @@ vi.mock('react-native', () => {
   };
 });
 
-vi.mock('react-native-safe-area-context', () => {
-  const R = require('react') as typeof React;
+vi.mock('react-native-safe-area-context', async () => {
+  const R = await vi.importActual<typeof import('react')>('react');
+  const SafeAreaContext = R.createContext<{
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  } | null>(null);
   return {
     SafeAreaProvider: ({ children }: { children: React.ReactNode }) =>
       R.createElement(
