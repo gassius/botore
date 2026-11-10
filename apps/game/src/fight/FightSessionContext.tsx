@@ -10,6 +10,8 @@ import React, {
 import { isDesignCaptureEnabled } from '../design-capture/captureEnv';
 import { peekCaptureIntent } from '../design-capture/captureIntentState';
 import { loadCaptureIntentFile, readLastFightFile } from '../design-capture/readCaptureIntentFile';
+import { ensureRuntimePacksBestEffort } from '../atlas/atlasPackRuntime';
+import { readSupabasePublicConfig } from '../garage/auth/supabasePublicConfig';
 import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { createOpponentCandidatesClient } from './candidates/createOpponentCandidatesClient';
 import type { OpponentCandidatesPort } from './candidates/OpponentCandidatesPort';
@@ -149,6 +151,21 @@ export function FightSessionProvider(props: {
   const listRef = useRef<FightListState>(list);
   selectedRef.current = selected;
   listRef.current = list;
+
+  // C13: ensure atlas packs for stable + selected fight opponent (pinned version).
+  useEffect(() => {
+    const confirmed = loadout.confirmedLoadout;
+    if (!session || !confirmed) return;
+    const loadouts = selected?.loadout ? [confirmed, selected.loadout] : [confirmed];
+    void ensureRuntimePacksBestEffort({
+      config: readSupabasePublicConfig(),
+      accessToken: session.accessToken,
+      atlasVersion: loadout.atlasVersion,
+      loadouts,
+      includeArena: true,
+      includeFx: true,
+    });
+  }, [session, loadout.confirmedLoadout, loadout.atlasVersion, selected]);
 
   const syncIntent = useCallback((next: FightIntent | null) => {
     intentRef.current = next;
@@ -332,7 +349,7 @@ export function FightSessionProvider(props: {
                   decals: opponent.loadout.decals,
                   soundTags: opponent.loadout.soundTags,
                   loadoutVersionId: opponent.loadoutVersionId,
-                  atlasVersion: opponent.atlasVersion ?? 'v1',
+                  atlasVersion: opponent.atlasVersion ?? 'v2',
                 },
               },
             }

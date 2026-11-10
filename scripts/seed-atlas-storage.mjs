@@ -15,6 +15,12 @@
  * Usage (after supabase start + db reset migrations):
  *   node scripts/seed-atlas-storage.mjs
  *   ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs
+ *   ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs   # after pack-workshop-frame-atlas.mjs
+ *
+ * Hosted Botore Development publish (Carlos — never commit secrets):
+ *   SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… DATABASE_URL=… \
+ *     node scripts/pack-workshop-frame-atlas.mjs && \
+ *     ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
  */
 import { spawnSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
@@ -24,7 +30,7 @@ import process from 'node:process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const VERSION = process.env.ATLAS_VERSION ?? 'v1';
-const SEED_DIR = join(ROOT, 'supabase/seed/atlas', VERSION);
+const SEED_DIR = process.env.ATLAS_SEED_DIR ?? join(ROOT, 'supabase/seed/atlas', VERSION);
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 const SUPABASE_URL = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';

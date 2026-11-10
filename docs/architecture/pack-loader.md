@@ -77,20 +77,23 @@ are treated like a failed fetch when `allowOffline: false`.
 | `apps/game/src/atlas/expo-bundled-base-pack.ts` | Metro + `expo-asset` base wiring  |
 | `apps/game/test/atlas-pack-loader.test.ts`      | Headless acceptance for contracts |
 
-## Workshop Frame kit-v002 (F7 coordination)
+## Workshop Frame kit-v002 (C13 / F7 coordination)
 
 Visible build pins **kit-v002 only** — do not mix v001 coords/assets.
 
-Local art kit (store):
-`docs/art-direction/…/workshop-frame-kit-v002/`. Its `manifest.json` is a
-**media-adapter** for assembly geometry — not a second Storage schema.
+Published pack: **`atlas/v2/`** (immutable). Kit local `manifest.json`
+(`atlas: null`) is still a **media-adapter** for assembly geometry — not a
+second Storage schema. Metro `apps/game/assets/workshop-frame-kit-v002/`
+remains a render fallback; `ensurePacks` is the long-term download/cache path
+for stable + current fight bots (not the future catalogue).
 
-| Concern                          | Source of truth                                              |
-| -------------------------------- | ------------------------------------------------------------ |
-| Wire / Storage / cache           | F5 `get_atlas_manifest` + this loader                        |
-| Geometry / pivots / paint layers | Kit-v002 media-adapter (F7 consumes)                         |
-| Paint aliases Oxide/Petrol       | Client map → `paint-crimson` / `paint-cobalt`                |
-| Weapon aliases                   | Client map → `weapon-sword` / `weapon-axe` / `weapon-dagger` |
+| Concern                          | Source of truth                                         |
+| -------------------------------- | ------------------------------------------------------- |
+| Wire / Storage / cache           | F5 `get_atlas_manifest('v2')` + this loader             |
+| Fight pin                        | `battle_participants.atlas_version` from sealed loadout |
+| Geometry / pivots / paint layers | Kit-v002 media-adapter (F7 consumes)                    |
+| Paint aliases Oxide/Petrol       | Client map → `paint-crimson` / `paint-cobalt`           |
+| Weapon aliases                   | Kit `weapon_sword` ↔ catalogue/atlas `weapon-sword`     |
 
 Atlas packing recipe (F5 `parts/<partId>/…`, hyphenated partIds):
 
@@ -102,12 +105,19 @@ Atlas packing recipe (F5 `parts/<partId>/…`, hyphenated partIds):
 | `masks/{id}-paint.png`     | `parts/{partId}/mask.png`           |
 
 Helpers: `partIdsForWorkshopFrameLoadout`, `atlasPathForWorkshopKitFile`,
-`canonicalAtlasPartId` in `apps/game/src/atlas/workshop-frame-paths.ts`.
-F6 does not edit the F5 branch or invent catalogue rows. Re-check after F7
-pushes its v002 adapter asset dir.
+`canonicalAtlasPartId`, `WORKSHOP_FRAME_ATLAS_VERSION`,
+`ensureStableFightPacks`, `createRestPackTransport` under
+`apps/game/src/atlas/`. Stable hydration and fight selection call
+`ensureRuntimePacksBestEffort` (best-effort; never blocks a fight).
+
+Pack bytes: `node scripts/pack-workshop-frame-atlas.mjs` then
+`ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs`. Hosted upload needs
+Carlos credentials — see `supabase/seed/atlas/v2/README.md`.
 
 ## Native verification (open in CI/cloud VMs without device)
 
 Unit tests cover cache, version change, bundle-only base pack, silent audio
-fallback, and workshop-frame path/ID mapping. Device/simulator confirmation on
-Android and iOS remains an acceptance gate outside headless CI.
+fallback, workshop-frame path/ID mapping, and stable/fight ensurePacks
+selection. Pack script: `node --test scripts/pack-workshop-frame-atlas.test.mjs`.
+Device cold-fetch once Storage is available remains an acceptance gate outside
+headless CI.

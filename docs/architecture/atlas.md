@@ -53,7 +53,38 @@ Local/CI after bootstrap:
 
 Bytes: `supabase/seed/atlas/v1/` (valid silent AAC `.m4a`, 1×1 PNG). No real art generation; Game Art / Audio directors own finals. Export/cache budgets remain provisional (`budgets_final = false`).
 
-`backend_health_snapshot().checks.storage.proof_pack_ok` evaluates the seeded **`v1`** proof pack (`proof_version`), not chronological `latest_version`. Later publishes (race fixtures, ops drafts) must not flip the gate.
+`backend_health_snapshot().checks.storage.proof_pack_ok` evaluates the seeded **`v1`** proof pack (`proof_version`), not chronological `latest_version`. Later publishes (race fixtures, ops drafts, **v2**) must not flip the gate.
+
+## Workshop Frame pack (v2)
+
+C13 publishes an immutable **`v2`** pack aligned to Workshop Frame **kit-v002**
+media keys (migration `0024` registers the draft; Storage upload then
+`publish_atlas_version('v2')`).
+
+| Kit-relative               | Atlas pack-relative                 |
+| -------------------------- | ----------------------------------- |
+| `parts/{id}-{paint}.png`   | `parts/{partId}/{paint}.png`        |
+| `materials/{id}-under.png` | `parts/{partId}/material-under.png` |
+| `materials/{id}-over.png`  | `parts/{partId}/material-over.png`  |
+| `masks/{id}-paint.png`     | `parts/{partId}/mask.png`           |
+
+**Weapon id rule:** kit filenames keep underscores (`weapon_sword-oxide.png`);
+atlas / catalogue partIds use hyphens (`parts/weapon-sword/oxide.png`). Client
+adapters map both. **Do not mix kit-v001.**
+
+Local/CI:
+
+```bash
+node scripts/pack-workshop-frame-atlas.mjs
+ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
+```
+
+Hosted Botore Development publish needs Carlos’s project URL + service-role
+key (never commit). See `supabase/seed/atlas/v2/README.md`.
+
+First-run loadouts pin **`v2`**. Fight still records
+`battle_participants.atlas_version` from the sealed loadout; offline
+same-version cache continues to work.
 
 Hosted Development does not auto-run `supabase/seed.sql` or
 `scripts/seed-atlas-storage.mjs` on `db push`. Run both after migrations or
@@ -66,6 +97,5 @@ Expo on-demand download + device cache for catalogue / arena / FX packs, with
 the small base pack shipped in `apps/game/assets/atlas/base/`. See
 `docs/architecture/pack-loader.md`.
 
-Workshop Frame visible build pins **kit-v002 only** (do not mix v001
-coords/assets). Packing recipe maps kit-relative files onto F5
-`parts/<partId>/…` paths; F7 adapter ID aliases stay client-side.
+Stable / fight call `ensurePacks` for bots in the stable or current fight only
+— Metro kit assets remain a render fallback; Storage is the long-term delivery.

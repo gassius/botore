@@ -157,7 +157,7 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
           loadout: normalizeGarageLoadout(row.loadout),
           loadoutVersionId:
             typeof row.loadout_version_id === 'string' ? row.loadout_version_id : null,
-          atlasVersion: String(row.atlas_version ?? 'v1'),
+          atlasVersion: String(row.atlas_version ?? 'v2'),
         });
       }
 

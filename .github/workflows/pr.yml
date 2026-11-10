@@ -168,6 +168,8 @@ jobs:
           # Bound the Node seed/race so a wedged Storage call cannot hang the job
           # even if the step timer is slow to fire.
           timeout 8m node scripts/seed-atlas-storage.mjs
+          timeout 3m node scripts/pack-workshop-frame-atlas.mjs
+          timeout 8m env ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
           timeout 2m node scripts/atlas-publish-race.mjs
 
       - name: Database tests (RLS, idempotency, append-only, bots-as-data)

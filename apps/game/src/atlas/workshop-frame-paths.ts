@@ -24,6 +24,12 @@ export const WORKSHOP_FRAME_KIT = {
   localAssetDir: 'workshop-frame-kit-v002',
 } as const;
 
+/**
+ * Published atlas pack that carries Workshop Frame kit-v002 media keys (C13).
+ * Fight/stable pin this version; `v1` remains the health proof-pack fixture only.
+ */
+export const WORKSHOP_FRAME_ATLAS_VERSION = 'v2';
+
 /** Body + limb kit asset ids (15). Weapons are separate. */
 export const WORKSHOP_FRAME_BODY_ASSET_IDS = [
   'torso',

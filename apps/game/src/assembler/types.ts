@@ -142,7 +142,8 @@ export interface AssembledLayer {
 }
 
 export interface AssembledBot {
-  readonly atlasVersion: 'v1';
+  /** Fight/stable media pin (`v2` for workshop-frame-v002; `v1` is proof-pack only). */
+  readonly atlasVersion: string;
   readonly chassisId: string;
   readonly paintId: string;
   readonly paintVisual: SamplePaintVisual;

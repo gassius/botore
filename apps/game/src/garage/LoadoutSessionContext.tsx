@@ -30,6 +30,7 @@ import {
   type LoadoutPreviewState,
 } from './loadout/loadoutState';
 import { withUpdatedPaint, withUpdatedWeapon } from './loadout/proofCatalogue';
+import { ensureRuntimePacksBestEffort } from '../atlas/atlasPackRuntime';
 
 export type AuthBootError = {
   readonly code: string;
@@ -148,6 +149,15 @@ export function GarageSessionProvider(props: {
           atlasVersion: fetched.snapshot.atlasVersion,
         }),
       );
+      // C13: teach ensurePacks for stable bots (download/cache; never blocks hydrate).
+      void ensureRuntimePacksBestEffort({
+        config: readSupabasePublicConfig(),
+        accessToken: current.accessToken,
+        atlasVersion: fetched.snapshot.atlasVersion,
+        loadouts: [fetched.snapshot.loadout],
+        includeArena: false,
+        includeFx: false,
+      });
     } else {
       if (isDesignCaptureEnabled()) {
         console.warn(
