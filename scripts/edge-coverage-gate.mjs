@@ -31,6 +31,11 @@ const TARGETS = [
     dir: join(root, 'supabase/functions/health'),
     include: '.*/supabase/functions/health/handler\\.ts$',
   },
+  {
+    name: 'platform-auth',
+    dir: join(root, 'supabase/functions/platform-auth'),
+    include: '.*/supabase/functions/platform-auth/handler\\.ts$',
+  },
 ];
 
 function fail(msg) {

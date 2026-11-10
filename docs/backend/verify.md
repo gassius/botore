@@ -52,6 +52,16 @@ Returns the SQL snapshot plus `service: "health"` and
 HTTP 200 and `status: ok` when DB/cron/storage are healthy **and** combat-v1
 is mounted. Missing Edge peers yield `status: degraded` (HTTP 503).
 
+## Platform auth (C12)
+
+Native Game Center / Play Games → Edge `platform-auth` → session. See
+`docs/backend/platform-auth.md`. No Supabase anonymous sign-in.
+
+```bash
+deno test -A --config=supabase/functions/platform-auth/deno.json \
+  supabase/functions/platform-auth
+```
+
 ## Sanctioned client reads (B)
 
 ```bash

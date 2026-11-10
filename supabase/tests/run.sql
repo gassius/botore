@@ -2140,3 +2140,58 @@ begin
   reset role;
   raise notice 'TEST-OK C5 list_ranking';
 end $$;
+
+-- =========================================================================
+-- C12: player_identities (0023) — Edge/service_role write; authenticated own read
+-- =========================================================================
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_other uuid := '11111111-1111-4111-8111-111111111111';
+  v_count int;
+begin
+  perform tests.assert(
+    to_regclass('public.player_identities') is not null,
+    'player_identities table present'
+  );
+
+  insert into public.accounts (id) values (v_other) on conflict do nothing;
+
+  -- service_role / owner path inserts identities (Edge shape)
+  insert into public.player_identities (account_id, provider, platform_id)
+  values
+    (v_account, 'game_center', 'T:seed-player'),
+    (v_account, 'device_fallback', 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee')
+  on conflict (provider, platform_id) do nothing;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  select count(*)::int into v_count from public.player_identities;
+  perform tests.assert(v_count >= 1, 'authenticated can read own player_identities');
+
+  -- cannot insert as authenticated (no write policy)
+  begin
+    insert into public.player_identities (account_id, provider, platform_id)
+    values (v_account, 'play_games', 'should-fail');
+    raise exception 'AUTHZ FAIL: authenticated insert into player_identities allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' or sqlerrm like '%policy%' then null; else raise; end if;
+  end;
+
+  reset role;
+
+  -- unique (provider, platform_id)
+  begin
+    insert into public.player_identities (account_id, provider, platform_id)
+    values (v_other, 'game_center', 'T:seed-player');
+    raise exception 'UNIQUE FAIL: duplicate provider+platform_id allowed';
+  exception
+    when unique_violation then null;
+  end;
+
+  raise notice 'TEST-OK C12 player_identities';
+end $$;

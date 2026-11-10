@@ -53,3 +53,8 @@ verify_jwt = false
 # verify stays off so local smoke can mint a seed-user token without Kong
 # rejecting before the Edge Function runs (same pattern as /health).
 verify_jwt = false
+
+[functions.platform-auth]
+# C12: platform proof → session mint. Gateway JWT verify off; function uses
+# service role internally after GC/PGS/device-fallback verification.
+verify_jwt = false
