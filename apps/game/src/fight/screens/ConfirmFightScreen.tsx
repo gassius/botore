@@ -16,6 +16,7 @@ import {
   StatusErrorBanner,
   garageTag,
 } from '../../garage-tag';
+import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { isServerPlaybackReady } from '../../replay/serverPlayback';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
@@ -55,7 +56,7 @@ export function ConfirmFightScreen(props: {
   } = useFightSession();
   // Inherit F8 hydration — never invent a confirmed loadout here.
   const confirmed = loadout.confirmedLoadout;
-  const playerName = loadout.displayName ?? 'Pilot';
+  const playerName = playerFacingDisplayName(loadout.displayName);
   const [eligMessage, setEligMessage] = useState<string | null>(null);
   const [eligAllowances, setEligAllowances] = useState<number | null>(null);
   const [eligLoading, setEligLoading] = useState(false);
@@ -260,10 +261,10 @@ export function ConfirmFightScreen(props: {
               size={140}
               reducedMotion
               motionPose={farPose}
-              label={selected.displayName}
+              label={playerFacingDisplayName(selected.displayName)}
               testID="confirm-opponent"
             />
-            <Nameplate name={selected.displayName} />
+            <Nameplate name={playerFacingDisplayName(selected.displayName)} />
           </View>
         </View>
       )}

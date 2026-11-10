@@ -1,4 +1,5 @@
 import type { SupabasePublicConfig } from '../../garage/auth/supabasePublicConfig';
+import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { resolveTransportFailureCode } from '../../session-failure';
 import {
   LIST_RANKING_RPC,
@@ -63,10 +64,11 @@ export class SupabaseRankingReadAdapter implements RankingReadPort {
     }
 
     // Preserve server order exactly — do not sort.
+    // C16: never surface platform player ids as ranking labels.
     return body.rows.map((row) => ({
       rank: row.rank,
       botId: row.characterId,
-      displayName: row.displayName,
+      displayName: playerFacingDisplayName(row.displayName),
       isCurrentBot: row.isCurrentBot,
       source: 'live' as const,
       totalXp: row.totalXp,

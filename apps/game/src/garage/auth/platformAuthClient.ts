@@ -1,8 +1,13 @@
 /**
  * Client → Edge `platform-auth` (C12).
  * Uses public anon key only; Edge holds service role.
+ *
+ * C16: `platformId` on a successful response is for auth correlation only —
+ * never pass it into Nameplate / ranking / settings / fight labels. Prefer
+ * {@link platformIdLogToken} if a log line needs correlation.
  */
 
+import { hashPlatformIdForLog } from '../../identity/platformPlayerId';
 import type { AuthSession } from './AuthPort';
 import type { SupabasePublicConfig } from './supabasePublicConfig';
 
@@ -55,6 +60,11 @@ type EdgeSessionBody = {
 
 /** Bound silent first-launch so a hung Edge call cannot pin the splash forever. */
 export const PLATFORM_AUTH_FETCH_TIMEOUT_MS = 15_000;
+
+/** Hashed platform id for internal logs — never show the raw id in product UI. */
+export function platformIdLogToken(platformId: string): string {
+  return hashPlatformIdForLog(platformId);
+}
 
 function abortSignalForTimeout(ms: number): AbortSignal {
   const timeoutFn = (AbortSignal as unknown as { timeout?: (n: number) => AbortSignal }).timeout;

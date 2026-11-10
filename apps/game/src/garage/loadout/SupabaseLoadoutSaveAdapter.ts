@@ -1,18 +1,19 @@
-import type { SupabasePublicConfig } from '../auth/supabasePublicConfig';
+import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { resolveTransportFailureCode } from '../../session-failure';
 import {
   OWNED_CHARACTER_RPC,
   type ClientReadRpcFail,
   type OwnedCharacterRpcOk,
 } from '../../supabase/clientReadRpcs';
+import type { SupabasePublicConfig } from '../auth/supabasePublicConfig';
 import type { LoadoutSavePort } from './LoadoutSavePort';
-import { normalizeGarageLoadout } from './normalizeLoadout';
 import type {
   FetchCurrentLoadoutResult,
   OwnedCharacterResult,
   SaveLoadoutInput,
   SaveLoadoutResult,
 } from './loadoutTypes';
+import { normalizeGarageLoadout } from './normalizeLoadout';
 
 type RpcErrorBody = {
   message?: string;
@@ -76,10 +77,12 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
           message: 'No player character is linked to this account.',
         };
       }
-      const displayName =
+      const rawName =
         typeof body.displayName === 'string' && body.displayName.trim().length > 0
           ? body.displayName.trim()
           : characterId;
+      // C16: prefer botore character id over any platform-shaped label.
+      const displayName = playerFacingDisplayName(rawName, characterId);
       return {
         ok: true,
         character: { characterId, displayName },

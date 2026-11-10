@@ -1,5 +1,6 @@
 import type { SupabasePublicConfig } from '../../garage/auth/supabasePublicConfig';
 import { normalizeGarageLoadout } from '../../garage/loadout/normalizeLoadout';
+import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { resolveTransportFailureCode } from '../../session-failure';
 import {
   FIGHT_ALLOWANCE_SUMMARY_RPC,
@@ -152,7 +153,7 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         if (!characterId) continue;
         byId.set(characterId, {
           characterId,
-          displayName: characterId,
+          displayName: playerFacingDisplayName(characterId, characterId),
           loadout: normalizeGarageLoadout(row.loadout),
           loadoutVersionId:
             typeof row.loadout_version_id === 'string' ? row.loadout_version_id : null,
@@ -166,12 +167,14 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         if (!id) continue;
         const withLoadout = byId.get(id);
         if (!withLoadout) continue; // incomplete opponent — not fight-ready
+        const rawName =
+          typeof c.displayName === 'string' && c.displayName.trim().length > 0
+            ? c.displayName.trim()
+            : id;
         candidates.push({
           ...withLoadout,
-          displayName:
-            typeof c.displayName === 'string' && c.displayName.trim().length > 0
-              ? c.displayName.trim()
-              : id,
+          // C16: platform ids never become opponent labels; fall back to botore id.
+          displayName: playerFacingDisplayName(rawName, id),
         });
       }
 

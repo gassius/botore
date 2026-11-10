@@ -34,6 +34,7 @@ import { EventFxLayer } from '../arena/EventFxLayer';
 import { RepairYardArena } from '../arena/RepairYardArena';
 import type { ArenaFxFamily } from '../arena/environmentPin';
 import { garageTag } from '../garage-tag';
+import { playerFacingDisplayName } from '../identity/platformPlayerId';
 import { compileAnimationQueue, commandDuration, PlaybackController } from '../replay-playback';
 import type { ConfirmedFightResult } from './confirmedResult';
 import { formatOutcomeLine, resolvePlaybackMedia } from './confirmedResult';
@@ -566,13 +567,13 @@ export const CanonicalReplayPlayer = forwardRef<
 
       <View style={styles.hpRow} testID={`${testID}-hp`}>
         <View style={styles.hpBlock}>
-          <Text style={styles.hpLabel}>{nearFighter.displayName}</Text>
+          <Text style={styles.hpLabel}>{playerFacingDisplayName(nearFighter.displayName)}</Text>
           <View style={styles.hpTrack}>
             <View style={[styles.hpFillNear, { width: `${presentation.hp.near * 100}%` }]} />
           </View>
         </View>
         <View style={styles.hpBlock}>
-          <Text style={styles.hpLabel}>{farFighter.displayName}</Text>
+          <Text style={styles.hpLabel}>{playerFacingDisplayName(farFighter.displayName)}</Text>
           <View style={styles.hpTrack}>
             <View style={[styles.hpFillFar, { width: `${presentation.hp.far * 100}%` }]} />
           </View>

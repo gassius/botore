@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { designCaptureCredentials, isDesignCaptureEnabled } from '../design-capture';
 import { isColdStartHoldTitle } from '../design-capture/readCaptureIntentFile';
+import { playerFacingDisplayName } from '../identity/platformPlayerId';
 import { deleteAccountWithSession } from './auth/accountDeleteClient';
 import { createAuthClient } from './auth/createAuthClient';
 import type { AuthPort, AuthSession } from './auth/AuthPort';
@@ -137,7 +138,11 @@ export function GarageSessionProvider(props: {
         createLoadoutPreviewState({
           accountId: current.userId,
           characterId: owned.character.characterId,
-          displayName: owned.character.displayName,
+          // C16: never hold platform player ids in garage UI state.
+          displayName: playerFacingDisplayName(
+            owned.character.displayName,
+            owned.character.characterId,
+          ),
           confirmedLoadout: fetched.snapshot.loadout,
           confirmedVersionId: fetched.snapshot.loadoutVersionId,
           atlasVersion: fetched.snapshot.atlasVersion,
@@ -153,7 +158,10 @@ export function GarageSessionProvider(props: {
         markHydrationUnavailable(prev, {
           accountId: current.userId,
           characterId: owned.character.characterId,
-          displayName: owned.character.displayName,
+          displayName: playerFacingDisplayName(
+            owned.character.displayName,
+            owned.character.characterId,
+          ),
           message: fetched.message,
           code: fetched.code,
         }),

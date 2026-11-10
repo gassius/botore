@@ -16,6 +16,7 @@ import { PrivacyPolicyScreen } from '../../legal/PrivacyPolicyScreen';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
+import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { paintUiAlias, weaponUiAlias } from '../loadout/proofCatalogue';
 import { useGarageSession } from '../LoadoutSessionContext';
 import { DeleteAccountScreen } from './DeleteAccountScreen';
@@ -32,7 +33,7 @@ export function StableScreen(props: {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const confirmed = loadout.confirmedLoadout;
   const weapon = confirmed ? weaponUiAlias(confirmed.weapon) : 'sword';
-  const displayName = loadout.displayName ?? 'Pilot';
+  const displayName = playerFacingDisplayName(loadout.displayName);
 
   const hydrationKind =
     loadout.hydration === 'unavailable'
