@@ -2,7 +2,7 @@
   "ticket": "1amjtrey7v4",
   "ticketName": "R1: Native release-build acceptance measure (F12 residual)",
   "agentUrl": "https://cursor.com/agents/bc-2c51e721-fa34-579e-8df7-f82b54b94cc5",
-  "tipShaAtScaffold": null,
+  "tipShaAtScaffold": "4b51be31b3f7aa094bc72cd96ecb6f5bd25c13fa",
   "easProfile": "release-perf",
   "envelopePreferred": "live_sealed",
   "device": {
