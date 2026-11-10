@@ -6,8 +6,7 @@
  */
 import React from 'react';
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-native', async () => {
@@ -102,7 +101,8 @@ describe('public routes SafeAreaProvider', () => {
   );
 
   it('App.tsx wraps the public account-delete return in PublicRouteShell', () => {
-    const appPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'App.tsx');
+    // Vitest cwd is apps/game — avoid import.meta for tsc module settings.
+    const appPath = join(process.cwd(), 'App.tsx');
     const src = readFileSync(appPath, 'utf8');
     expect(src).toMatch(/isPublicAccountDeletePath\(\)/);
     expect(src).toMatch(/<PublicRouteShell>/);
