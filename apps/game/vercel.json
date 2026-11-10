@@ -2,5 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "cd ../.. && pnpm install && pnpm turbo run build --filter=@botore/game...",
   "outputDirectory": "dist",
-  "installCommand": "echo 'Skipping default install, using buildCommand'"
+  "installCommand": "echo 'Skipping default install, using buildCommand'",
+  "rewrites": [
+    { "source": "/account/delete", "destination": "/index.html" },
+    { "source": "/account/delete/", "destination": "/index.html" }
+  ]
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Text, StyleSheet, View } from 'react-native';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import {
@@ -17,6 +17,7 @@ import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import { paintUiAlias, weaponUiAlias } from '../loadout/proofCatalogue';
 import { useGarageSession } from '../LoadoutSessionContext';
+import { DeleteAccountScreen } from './DeleteAccountScreen';
 
 /** Stable domain — mounts into shell Stable slot; does not own routes. */
 export function StableScreen(props: {
@@ -24,11 +25,16 @@ export function StableScreen(props: {
   onFindOpponent?: () => void;
 }): React.ReactElement {
   const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
+<<<<<<< HEAD
   const forced = useForcedSessionFailure();
+=======
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+>>>>>>> e65dd54 (feat: R5 in-app and public web account deletion)
   const confirmed = loadout.confirmedLoadout;
   const weapon = confirmed ? weaponUiAlias(confirmed.weapon) : 'sword';
   const displayName = loadout.displayName ?? 'Pilot';
 
+<<<<<<< HEAD
   const hydrationKind =
     loadout.hydration === 'unavailable'
       ? classifySessionFailure({
@@ -39,6 +45,17 @@ export function StableScreen(props: {
   const failureKind =
     forced ??
     (hydrationKind === 'offline' || hydrationKind === 'auth_expired' ? hydrationKind : null);
+=======
+  // Temporary R5 entry until C9 Settings merges — then move under Settings.
+  if (showDeleteAccount) {
+    return (
+      <DeleteAccountScreen
+        onCancel={() => setShowDeleteAccount(false)}
+        onDeleted={() => setShowDeleteAccount(false)}
+      />
+    );
+  }
+>>>>>>> e65dd54 (feat: R5 in-app and public web account deletion)
 
   return (
     <ScreenChrome
@@ -76,6 +93,11 @@ export function StableScreen(props: {
               testID="stable-retry-hydration"
             />
           ) : null}
+          <SecondaryButton
+            label="Delete account"
+            onPress={() => setShowDeleteAccount(true)}
+            testID="stable-delete-account"
+          />
           <SecondaryButton
             label="Sign out"
             onPress={() => {

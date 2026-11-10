@@ -75,6 +75,27 @@ function newDeviceId(): string {
   });
 }
 
+/** R5: wipe device-fallback UUID after account deletion so relaunch mints a new account. */
+export async function clearDeviceFallbackId(): Promise<void> {
+  if (preferWebStorage()) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(DEVICE_FALLBACK_STORAGE_KEY);
+      }
+    } catch {
+      // private mode — ignore
+    }
+    return;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const SecureStore = require('expo-secure-store') as typeof import('expo-secure-store');
+    await SecureStore.deleteItemAsync(DEVICE_FALLBACK_STORAGE_KEY);
+  } catch {
+    // SecureStore unavailable — ignore
+  }
+}
+
 /**
  * Load or create the durable device-fallback UUID (Keychain / SecureStore).
  * Fails closed when a new id cannot be persisted — never mint against an

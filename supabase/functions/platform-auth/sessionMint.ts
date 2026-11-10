@@ -71,12 +71,12 @@ export type PlatformAuthAdmin = {
           val2: string,
         ) => {
           maybeSingle: () => Promise<{
-            data: IdentityRow | null;
+            data: IdentityRow | Record<string, unknown> | null;
             error: { message: string } | null;
           }>;
         };
         maybeSingle: () => Promise<{
-          data: IdentityRow | null;
+          data: IdentityRow | Record<string, unknown> | null;
           error: { message: string } | null;
         }>;
       };
@@ -111,7 +111,24 @@ export async function lookupIdentity(
     .eq('platform_id', platformId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data;
+  if (!data || typeof data !== 'object' || !('account_id' in data)) return null;
+  return data as IdentityRow;
+}
+
+/** R5: soft-deleted accounts must not receive new sessions. */
+export async function isAccountDeleted(
+  admin: PlatformAuthAdmin,
+  accountId: string,
+): Promise<boolean> {
+  const { data, error } = await admin
+    .from('accounts')
+    .select('deleted_at')
+    .eq('id', accountId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data || typeof data !== 'object') return false;
+  const deletedAt = (data as { deleted_at?: string | null }).deleted_at;
+  return deletedAt != null && String(deletedAt).length > 0;
 }
 
 export async function ensureAccountRow(admin: PlatformAuthAdmin, accountId: string): Promise<void> {
@@ -179,10 +196,22 @@ export async function mintSessionForPlatformIdentity(
     let created = false;
     let accountId = existing?.account_id ?? null;
 
+    // R5: ignore soft-deleted accounts (identities should already be unlinked).
+    if (accountId && (await isAccountDeleted(admin, accountId))) {
+      existing = null;
+      accountId = null;
+    }
+
     // Link path: platform proof first time, but device fallback already known.
     if (!accountId && input.fallbackDeviceId) {
       const fallback = await lookupIdentity(admin, 'device_fallback', input.fallbackDeviceId);
-      if (fallback) accountId = fallback.account_id;
+      if (fallback) {
+        if (await isAccountDeleted(admin, fallback.account_id)) {
+          accountId = null;
+        } else {
+          accountId = fallback.account_id;
+        }
+      }
     }
 
     const email = accountId

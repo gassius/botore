@@ -9,9 +9,12 @@ import React, {
 } from 'react';
 import { designCaptureCredentials, isDesignCaptureEnabled } from '../design-capture';
 import { isColdStartHoldTitle } from '../design-capture/readCaptureIntentFile';
+import { deleteAccountWithSession } from './auth/accountDeleteClient';
 import { createAuthClient } from './auth/createAuthClient';
 import type { AuthPort, AuthSession } from './auth/AuthPort';
+import { clearDeviceFallbackId } from './auth/deviceFallbackStore';
 import { runSilentFirstLaunchAuth } from './auth/silentFirstLaunchAuth';
+import { readSupabasePublicConfig } from './auth/supabasePublicConfig';
 import { createLoadoutSaveClient } from './loadout/createLoadoutSaveClient';
 import type { LoadoutSavePort } from './loadout/LoadoutSavePort';
 import {
@@ -55,6 +58,11 @@ export type GarageSessionContextValue = {
   /** Retry silent first-launch auth after a boot error. */
   retrySilentAuth: () => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * R5: permanently delete the signed-in account (Edge soft-delete + Auth ban).
+   * Clears session + device-fallback so relaunch mints a new identity.
+   */
+  deleteAccount: () => Promise<{ ok: true } | { ok: false; message: string }>;
   retryHydration: () => Promise<void>;
   selectPaint: (paintId: string) => void;
   selectWeapon: (weaponId: string) => void;
@@ -303,6 +311,40 @@ export function GarageSessionProvider(props: {
         if (!isDesignCaptureEnabled()) {
           setBooting(false);
         }
+      },
+      deleteAccount: async () => {
+        const current = session ?? (await auth.getSession());
+        if (!current) {
+          return { ok: false as const, message: 'Not signed in' };
+        }
+        const config = readSupabasePublicConfig();
+        if (!config) {
+          // Dev / unavailable adapters: local sign-out stands in for delete.
+          if (auth.kind !== 'supabase') {
+            await clearDeviceFallbackId();
+            await auth.signOut();
+            setSession(null);
+            setLoadout(createUnavailableLoadoutState());
+            setAuthBootError(null);
+            silentAuthStarted.current = false;
+            return { ok: true as const };
+          }
+          return { ok: false as const, message: 'Account deletion is unavailable in this build' };
+        }
+        const result = await deleteAccountWithSession(config, current.accessToken);
+        if (!result.ok) {
+          return { ok: false as const, message: result.message };
+        }
+        await clearDeviceFallbackId();
+        await auth.signOut();
+        setSession(null);
+        setLoadout(createUnavailableLoadoutState());
+        setAuthBootError(null);
+        silentAuthStarted.current = false;
+        if (!isDesignCaptureEnabled()) {
+          setBooting(false);
+        }
+        return { ok: true as const };
       },
       retryHydration: async () => {
         setBooting(true);

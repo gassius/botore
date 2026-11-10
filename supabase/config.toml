@@ -58,3 +58,8 @@ verify_jwt = false
 # C12: platform proof → session mint. Gateway JWT verify off; function uses
 # service role internally after GC/PGS/device-fallback verification.
 verify_jwt = false
+
+[functions.account-delete]
+# R5: in-app JWT or public deletion-code. Gateway JWT verify off; handler
+# uses auth.getUser for the session path and service_role for soft-delete.
+verify_jwt = false

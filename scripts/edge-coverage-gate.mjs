@@ -36,6 +36,11 @@ const TARGETS = [
     dir: join(root, 'supabase/functions/platform-auth'),
     include: '.*/supabase/functions/platform-auth/handler\\.ts$',
   },
+  {
+    name: 'account-delete',
+    dir: join(root, 'supabase/functions/account-delete'),
+    include: '.*/supabase/functions/account-delete/handler\\.ts$',
+  },
 ];
 
 function fail(msg) {

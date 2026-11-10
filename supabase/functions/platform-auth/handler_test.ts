@@ -20,6 +20,7 @@ function memoryAdmin(): PlatformAuthAdmin & {
     platform_id: string;
   }> = [];
   const accounts = new Set<string>();
+  const deletedAccounts = new Set<string>();
   const usersByEmail = new Map<string, { id: string; email: string }>();
   const usersById = new Map<string, { id: string; email: string }>();
   let userSeq = 0;
@@ -27,6 +28,7 @@ function memoryAdmin(): PlatformAuthAdmin & {
   const admin = {
     _accounts: accounts,
     _identities: identities,
+    _deletedAccounts: deletedAccounts,
     auth: {
       admin: {
         async getUserById(id: string) {
@@ -88,6 +90,19 @@ function memoryAdmin(): PlatformAuthAdmin & {
                   };
                 },
                 async maybeSingle() {
+                  if (table === 'accounts' && col === 'id') {
+                    if (!accounts.has(val) && !usersById.has(val)) {
+                      return { data: null, error: null };
+                    }
+                    return {
+                      data: {
+                        deleted_at: deletedAccounts.has(val)
+                          ? '2026-11-10T00:00:00Z'
+                          : null,
+                      },
+                      error: null,
+                    };
+                  }
                   return { data: null, error: null };
                 },
               };

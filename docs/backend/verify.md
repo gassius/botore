@@ -62,6 +62,18 @@ deno test -A --config=supabase/functions/platform-auth/deno.json \
   supabase/functions/platform-auth
 ```
 
+## Account deletion (R5)
+
+Soft-delete + anonymize + public web code. See
+`docs/backend/account-deletion.md`.
+
+```bash
+deno test -A --config=supabase/functions/account-delete/deno.json \
+  supabase/functions/account-delete
+```
+
+Public web path on the game export: `/account/delete`.
+
 ## Sanctioned client reads (B)
 
 ```bash
