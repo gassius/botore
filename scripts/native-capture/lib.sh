@@ -33,6 +33,7 @@ capture_url_for_route() {
   local paint="${3:-}"
   local weapon="${4:-}"
   local ranking="${5:-}"
+  local fail_closed="${6:-}"
   local query=()
   if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then
     query+=("mute=1")
@@ -45,6 +46,9 @@ capture_url_for_route() {
   fi
   if [[ -n "${ranking}" ]]; then
     query+=("ranking=${ranking}")
+  fi
+  if [[ "${fail_closed}" == "1" || "${fail_closed}" == "true" ]]; then
+    query+=("failClosed=1")
   fi
   if [[ ${#query[@]} -eq 0 ]]; then
     printf '%s/%s' "${SCHEME_CAPTURE_PREFIX}" "${route}"

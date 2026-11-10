@@ -91,6 +91,14 @@ export function OpponentsScreen(props: {
     >
       <ScreenHeader title="Opponents" onBack={props.onBack} />
 
+      {candidatesKind === 'unavailable' ? (
+        <StatusErrorBanner
+          title="Backend required"
+          detail="EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set. DEV opponent roster is not used on playable builds."
+          testID="opponents-misconfigured"
+        />
+      ) : null}
+
       {!canProgress ? (
         <StatusErrorBanner
           title="Equipped loadout unavailable"

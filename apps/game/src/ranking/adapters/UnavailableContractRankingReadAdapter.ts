@@ -9,9 +9,11 @@ import type { RankingRow } from '../types';
  * instead of inventing an API.
  */
 export class UnavailableContractRankingReadAdapter implements RankingReadPort {
+  constructor(
+    private readonly message = 'Live ranking read is blocked: no verified authoritative ranking endpoint/RPC, auth/RLS, ordering, or pagination contract exists yet. See apps/game/src/ranking/BACKEND_CONTRACT.md.',
+  ) {}
+
   async list(): Promise<readonly RankingRow[]> {
-    throw new RankingContractUnavailableError(
-      'Live ranking read is blocked: no verified authoritative ranking endpoint/RPC, auth/RLS, ordering, or pagination contract exists yet. See apps/game/src/ranking/BACKEND_CONTRACT.md.',
-    );
+    throw new RankingContractUnavailableError(this.message);
   }
 }

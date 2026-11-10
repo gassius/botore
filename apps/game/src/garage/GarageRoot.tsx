@@ -1,12 +1,21 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
-import { armDesignCaptureIntentListener } from '../design-capture/pendingCaptureIntent';
+import {
+  isDesignCaptureEnabled,
+  isDesignCaptureFailClosedEnabled,
+} from '../design-capture/captureEnv';
+import {
+  armDesignCaptureIntentListener,
+  peekCaptureIntent,
+} from '../design-capture/pendingCaptureIntent';
 import { loadCaptureIntentFile } from '../design-capture/readCaptureIntentFile';
 import { FightSessionProvider } from '../fight/FightSessionContext';
 import { FirstRunShell } from '../first-run/FirstRunShell';
 import { garageTag, InAppTitleSplash } from '../garage-tag';
+import { isPlayableFailClosed, PlayableMisconfiguredScreen } from '../runtime';
+import { readSupabasePublicConfig } from './auth/supabasePublicConfig';
 import { AuthEntryScreen } from './screens/AuthEntryScreen';
 import { LaunchTitleScreen } from './screens/LaunchTitleScreen';
 import { GarageSessionProvider, useGarageSession } from './LoadoutSessionContext';
@@ -36,16 +45,44 @@ function hideNativeSplash(): void {
  * LaunchTitleScreen via coldStartHoldTitle so CI can assert splash→title.
  */
 function GarageRootInner(): React.ReactElement {
-  const { booting, session, coldStartHoldTitle } = useGarageSession();
+  const { booting, session, coldStartHoldTitle, authKind } = useGarageSession();
   const [titleImageReady, setTitleImageReady] = useState(false);
   const [titleDwellDone, setTitleDwellDone] = useState(false);
+  const [captureFailClosed, setCaptureFailClosed] = useState(
+    () => isDesignCaptureFailClosedEnabled() || peekCaptureIntent().failClosed === true,
+  );
   const nativeHiddenRef = useRef(false);
+  const misconfigured = useMemo(() => {
+    // Design-capture evidence still / bake-time fail-closed override.
+    if (captureFailClosed || isDesignCaptureFailClosedEnabled()) return true;
+    if (authKind === 'unavailable') return true;
+    return isPlayableFailClosed() && readSupabasePublicConfig() === null;
+  }, [authKind, captureFailClosed]);
 
   // Arm deep-link capture before FirstRunShell exists so iOS getInitialURL is not missed.
   useEffect(() => {
     armDesignCaptureIntentListener();
-    void loadCaptureIntentFile();
+    void loadCaptureIntentFile().then((intent) => {
+      if (intent.failClosed === true) setCaptureFailClosed(true);
+    });
   }, []);
+
+  // C8 evidence: poll briefly for failClosed deep link / Documents intent.
+  useEffect(() => {
+    if (!isDesignCaptureEnabled() || captureFailClosed) return;
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled) return;
+      if (peekCaptureIntent().failClosed === true) setCaptureFailClosed(true);
+    };
+    const id = setInterval(tick, 400);
+    const stop = setTimeout(() => clearInterval(id), 16_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      clearTimeout(stop);
+    };
+  }, [captureFailClosed]);
 
   const releaseNativeSplash = useCallback(() => {
     if (nativeHiddenRef.current) return;
@@ -100,6 +137,15 @@ function GarageRootInner(): React.ReactElement {
       <View style={styles.boot} testID="garage-booting">
         <InAppTitleSplash onImageLoad={onTitleLoad} onImageError={onTitleError} />
       </View>
+    );
+  }
+
+  // C8: preview/production without Supabase public env — actionable blocked UI.
+  if (misconfigured) {
+    return (
+      <SafeAreaProvider>
+        <PlayableMisconfiguredScreen />
+      </SafeAreaProvider>
     );
   }
 

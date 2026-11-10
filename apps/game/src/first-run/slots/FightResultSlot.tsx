@@ -42,7 +42,7 @@ export function FightResultSlot(): React.ReactElement {
         />
         <DomainNote
           text={
-            fightKind === 'dev'
+            fightKind === 'dev' || fightKind === 'unavailable'
               ? 'Domain: F10 · blocked — XP/cost stay withheld until a live combat-v1 fight.'
               : `Domain: F10 · blocked (${resolution.reason}) — no sample XP.`
           }

@@ -101,7 +101,11 @@ Deep links used by the scripts:
 
 - Android **APK** (emulator/device installable)
 - iOS **simulator** build
-- Bakes `EXPO_PUBLIC_DESIGN_CAPTURE=1`
+- Bakes `EXPO_PUBLIC_DESIGN_CAPTURE=1` and `EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD=1`
+  (labelled DEV scaffolds for CI). Preview/production profiles omit that flag
+  and **fail closed** without Supabase public env (C8).
+- Optional evidence override: deep link `botore://capture/Stable?failClosed=1`
+  forces the playable-misconfigured blocked UI under design-capture.
 
 One-time account link (Carlos / Expo owner):
 

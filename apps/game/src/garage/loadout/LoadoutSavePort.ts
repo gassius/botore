@@ -11,7 +11,7 @@ import type {
  * Character ids come from the authenticated ownership boundary, not fixtures.
  */
 export interface LoadoutSavePort {
-  readonly kind: 'dev' | 'supabase';
+  readonly kind: 'dev' | 'supabase' | 'unavailable';
   /** Resolve the caller's owned player character (B RPC / DEV fixture). */
   resolveOwnedCharacter(accessToken: string): Promise<OwnedCharacterResult>;
   fetchCurrent(input: {

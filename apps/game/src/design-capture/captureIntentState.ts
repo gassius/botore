@@ -16,6 +16,8 @@ export type CaptureIntent = {
   battleId: string | null;
   /** C5 ranking capture scenario (live / empty / error). */
   rankingScenario: DesignCaptureRankingScenario | null;
+  /** C8: force PlayableMisconfiguredScreen for blocked-UI evidence. */
+  failClosed: boolean | null;
 };
 
 const EMPTY: CaptureIntent = {
@@ -25,6 +27,7 @@ const EMPTY: CaptureIntent = {
   mute: null,
   battleId: null,
   rankingScenario: null,
+  failClosed: null,
 };
 
 let intent: CaptureIntent = { ...EMPTY };
@@ -41,6 +44,7 @@ export function mergeIntent(next: CaptureIntent): void {
     mute: next.mute ?? intent.mute,
     battleId: next.battleId ?? intent.battleId,
     rankingScenario: next.rankingScenario ?? intent.rankingScenario,
+    failClosed: next.failClosed ?? intent.failClosed,
   };
 }
 
@@ -53,6 +57,7 @@ export function mergeCaptureFileIntent(raw: {
   battleId?: string | null;
   rankingScenario?: string | null;
   ranking?: string | null;
+  failClosed?: boolean | null;
 }): void {
   const route = typeof raw.route === 'string' && isFirstRunRoute(raw.route) ? raw.route : null;
   mergeIntent({
@@ -64,6 +69,7 @@ export function mergeCaptureFileIntent(raw: {
     rankingScenario: parseDesignCaptureRankingScenario(
       raw.rankingScenario ?? raw.ranking ?? undefined,
     ),
+    failClosed: typeof raw.failClosed === 'boolean' ? raw.failClosed : null,
   });
 }
 

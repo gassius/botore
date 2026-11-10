@@ -13,6 +13,7 @@ MUTE=""
 PAINT=""
 WEAPON=""
 RANKING=""
+FAIL_CLOSED=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -44,6 +45,10 @@ while [[ $# -gt 0 ]]; do
       RANKING="$2"
       shift 2
       ;;
+    --fail-closed)
+      FAIL_CLOSED="1"
+      shift
+      ;;
     -h | --help)
       sed -n '2,5p' "$0"
       exit 0
@@ -59,8 +64,8 @@ require_cmd adb
 OUT_DIR="$(ensure_out_dir "${OUT_DIR}")"
 android_assert_app_foreground "${PACKAGE_ANDROID}"
 
-if [[ -n "${ROUTE}" ]]; then
-  URL="$(capture_url_for_route "${ROUTE}" "${MUTE}" "${PAINT}" "${WEAPON}" "${RANKING}")"
+if [[ -n "${ROUTE}" || -n "${FAIL_CLOSED}" ]]; then
+  URL="$(capture_url_for_route "${ROUTE:-Stable}" "${MUTE}" "${PAINT}" "${WEAPON}" "${RANKING}" "${FAIL_CLOSED}")"
   echo "opening ${URL}" >&2
   adb shell am start -a android.intent.action.VIEW -d "${URL}" >/dev/null
   # Settle UI after deep link (not a pixel assertion — just wait for paint).

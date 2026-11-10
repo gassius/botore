@@ -70,6 +70,16 @@ export function isLiveFightCaptureEnabled(
   return isDesignCaptureEnabled() && truthyFlag(flag);
 }
 
+/**
+ * C8 evidence: force fail-closed blocked UI under design-capture.
+ * Never bake into preview/production store profiles.
+ */
+export function isDesignCaptureFailClosedEnabled(
+  flag: string | undefined = process.env.EXPO_PUBLIC_DESIGN_CAPTURE_FAIL_CLOSED,
+): boolean {
+  return isDesignCaptureEnabled() && truthyFlag(flag);
+}
+
 /** Credentials used by capture auto sign-in. */
 export function designCaptureCredentials(): { email: string; password: string } {
   if (isLiveFightCaptureEnabled()) {
@@ -128,6 +138,7 @@ export function parseDesignCaptureUrl(url: string): {
   paintId: string | null;
   weaponId: string | null;
   rankingScenario: DesignCaptureRankingScenario | null;
+  failClosed: boolean | null;
 } {
   const trimmed = url.trim();
   if (!trimmed.toLowerCase().startsWith(`${DESIGN_CAPTURE_SCHEME}:`)) {
@@ -137,6 +148,7 @@ export function parseDesignCaptureUrl(url: string): {
       paintId: null,
       weaponId: null,
       rankingScenario: null,
+      failClosed: null,
     };
   }
 
@@ -158,6 +170,7 @@ export function parseDesignCaptureUrl(url: string): {
       paintId: null,
       weaponId: null,
       rankingScenario: null,
+      failClosed: null,
     };
   }
 
@@ -174,13 +187,20 @@ export function parseDesignCaptureUrl(url: string): {
     mute = v === '1' || v === 'true' || v === 'yes';
   }
 
+  const failClosedRaw = params.get('failClosed') ?? params.get('fail_closed');
+  let failClosed: boolean | null = null;
+  if (failClosedRaw !== null) {
+    const v = failClosedRaw.toLowerCase();
+    failClosed = v === '1' || v === 'true' || v === 'yes';
+  }
+
   const paintId = trimPublic(params.get('paint') ?? undefined) ?? null;
   const weaponId = trimPublic(params.get('weapon') ?? undefined) ?? null;
   const rankingScenario = parseDesignCaptureRankingScenario(
     params.get('ranking') ?? params.get('rankingScenario'),
   );
 
-  return { route, mute, paintId, weaponId, rankingScenario };
+  return { route, mute, paintId, weaponId, rankingScenario, failClosed };
 }
 
 export function buildDesignCaptureUrl(
@@ -190,6 +210,7 @@ export function buildDesignCaptureUrl(
     paintId?: string;
     weaponId?: string;
     rankingScenario?: DesignCaptureRankingScenario;
+    failClosed?: boolean;
   },
 ): string {
   const query: string[] = [];
@@ -199,6 +220,7 @@ export function buildDesignCaptureUrl(
   if (opts?.rankingScenario) {
     query.push(`ranking=${encodeURIComponent(opts.rankingScenario)}`);
   }
+  if (opts?.failClosed === true) query.push('failClosed=1');
   const q = query.length > 0 ? `?${query.join('&')}` : '';
   return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${q}`;
 }
