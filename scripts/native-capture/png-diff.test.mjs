@@ -30,19 +30,23 @@ function chunk(type, data) {
   return Buffer.concat([len, typeBuf, data, crcBuf]);
 }
 
-/** Tiny solid-color 8-bit PNG. color=6 RGBA (default) or color=2 RGB. */
+/** Tiny solid-color 8-bit PNG. color=6 RGBA, 2=RGB, 0=grayscale. */
 function solidPng(w, h, rgba, color = 6) {
-  const srcBpp = color === 2 ? 3 : 4;
+  const srcBpp = color === 0 ? 1 : color === 2 ? 3 : 4;
   const stride = w * srcBpp;
   const raw = Buffer.alloc((stride + 1) * h);
   for (let y = 0; y < h; y++) {
     raw[y * (stride + 1)] = 0; // filter None
     for (let x = 0; x < w; x++) {
       const i = y * (stride + 1) + 1 + x * srcBpp;
-      raw[i] = rgba[0];
-      raw[i + 1] = rgba[1];
-      raw[i + 2] = rgba[2];
-      if (color === 6) raw[i + 3] = rgba[3] ?? 255;
+      if (color === 0) {
+        raw[i] = rgba[0];
+      } else {
+        raw[i] = rgba[0];
+        raw[i + 1] = rgba[1];
+        raw[i + 2] = rgba[2];
+        if (color === 6) raw[i + 3] = rgba[3] ?? 255;
+      }
     }
   }
   const ihdr = Buffer.alloc(13);
@@ -106,4 +110,13 @@ test('RGB color-type-2 PNGs decode to RGBA rows (ffmpeg frames)', () => {
   const rgba = decodePngRgba(solidPng(8, 8, [0x30, 0x2d, 0x27], 6));
   assert.equal(pixelDiffPct(rgb, rgba), 0);
   assert.ok(graphiteShare(rgb) > 0.9);
+});
+
+test('grayscale color-type-0 PNGs expand to opaque RGBA', () => {
+  const gray = decodePngRgba(solidPng(4, 4, [0x30, 0x30, 0x30], 0));
+  assert.equal(gray.rows[0].length, 4 * 4);
+  assert.equal(gray.rows[0][0], 0x30);
+  assert.equal(gray.rows[0][1], 0x30);
+  assert.equal(gray.rows[0][2], 0x30);
+  assert.equal(gray.rows[0][3], 255);
 });

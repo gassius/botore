@@ -21,7 +21,7 @@ export function decodePngRgba(buf) {
   let pos = 8;
   let w = 0;
   let h = 0;
-  // color 2 = RGB, color 6 = RGBA (ffmpeg cold-start frames are often RGB).
+  // 0=gray, 2=RGB, 6=RGBA (ffmpeg cold-start frames are often RGB).
   let color = 6;
   const idat = [];
   while (pos < buf.length) {
@@ -33,7 +33,7 @@ export function decodePngRgba(buf) {
       h = data.readUInt32BE(4);
       const bit = data[8];
       color = data[9];
-      if (bit !== 8 || (color !== 6 && color !== 2)) {
+      if (bit !== 8 || (color !== 6 && color !== 2 && color !== 0)) {
         throw new Error(`unsupported PNG bit=${bit} color=${color}`);
       }
     } else if (type === 'IDAT') {
@@ -44,7 +44,7 @@ export function decodePngRgba(buf) {
     pos += 12 + len;
   }
   const raw = inflateSync(Buffer.concat(idat));
-  const srcBpp = color === 2 ? 3 : 4;
+  const srcBpp = color === 0 ? 1 : color === 2 ? 3 : 4;
   const stride = w * srcBpp;
   const rows = [];
   let prev = Buffer.alloc(stride);
@@ -81,6 +81,17 @@ export function decodePngRgba(buf) {
         rgba[d] = row[s];
         rgba[d + 1] = row[s + 1];
         rgba[d + 2] = row[s + 2];
+        rgba[d + 3] = 255;
+      }
+      rows.push(rgba);
+    } else if (color === 0) {
+      const rgba = Buffer.alloc(w * 4);
+      for (let x = 0; x < w; x++) {
+        const g = row[x];
+        const d = x * 4;
+        rgba[d] = g;
+        rgba[d + 1] = g;
+        rgba[d + 2] = g;
         rgba[d + 3] = 255;
       }
       rows.push(rgba);
