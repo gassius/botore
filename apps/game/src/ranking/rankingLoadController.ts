@@ -16,18 +16,29 @@ export function createRankingLoadController(
   setSession: RankingSessionSetter,
 ): {
   load: () => Promise<void>;
+  /** Invalidate in-flight loads so a superseded port/controller cannot write. */
+  dispose: () => void;
   /** Latest issued request id (for tests). */
   getGeneration: () => number;
 } {
   let generation = 0;
+  let disposed = false;
 
   return {
     getGeneration: () => generation,
+    dispose: () => {
+      disposed = true;
+      // Bump past any in-flight requestId so load() ignores late resolves.
+      generation += 1;
+    },
     load: async () => {
+      if (disposed) {
+        return;
+      }
       const requestId = ++generation;
       setSession((prev) => beginRankingLoad(prev));
       const result = await loadRankingFromPort(port);
-      if (requestId !== generation) {
+      if (disposed || requestId !== generation) {
         return;
       }
       setSession((prev) => applyRankingLoadResult(prev, result));

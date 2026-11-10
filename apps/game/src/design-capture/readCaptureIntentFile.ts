@@ -31,6 +31,8 @@ export async function loadCaptureIntentFile(): Promise<CaptureIntent> {
       paintId?: string | null;
       weaponId?: string | null;
       mute?: boolean | null;
+      rankingScenario?: string | null;
+      ranking?: string | null;
     };
     mergeCaptureFileIntent(raw);
   } catch {

@@ -277,4 +277,30 @@ describe('ranking load controller coalescing', () => {
     expect(session.errorMessage).toBeNull();
     expect(session.rows).toHaveLength(DEV_POPULATED_RANKING_ROWS.length);
   });
+
+  it('dispose ignores a late resolve from a superseded controller', async () => {
+    let resolveLate!: (rows: readonly RankingRow[]) => void;
+    const port: RankingReadPort = {
+      list: async () =>
+        await new Promise<readonly RankingRow[]>((resolve) => {
+          resolveLate = resolve;
+        }),
+    };
+
+    let session: RankingSessionState = createInitialRankingSession();
+    const controller = createRankingLoadController(port, (updater) => {
+      session = updater(session);
+    });
+
+    const pending = controller.load();
+    expect(session.phase).toBe('loading');
+    controller.dispose();
+
+    resolveLate(DEV_POPULATED_RANKING_ROWS);
+    await pending;
+    await Promise.resolve();
+    // Disposed controller must not apply rows (RankingScreen recreates on port change).
+    expect(session.phase).toBe('loading');
+    expect(session.rows).toHaveLength(0);
+  });
 });

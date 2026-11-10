@@ -9,15 +9,20 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 
 ## Contract
 
-| RPC                             | Args                | Success body                                              |
-| ------------------------------- | ------------------- | --------------------------------------------------------- |
-| `get_owned_character()`         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }`                  |
-| `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName }] }` |
-| `get_fight_allowance_summary()` | none (`auth.uid()`) | `{ ok: true, utcDay, allowancesRemaining }`               |
+| RPC                             | Args                | Success body                                                                      |
+| ------------------------------- | ------------------- | --------------------------------------------------------------------------------- |
+| `get_owned_character()`         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }`                                          |
+| `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName }] }`                         |
+| `get_fight_allowance_summary()` | none (`auth.uid()`) | `{ ok: true, utcDay, allowancesRemaining }`                                       |
+| `list_ranking()`                | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }` |
 
 Failures: `{ ok: false, code?, message? }` or PostgREST HTTP error (`42501`).
 
-All three are `SECURITY DEFINER` with `set search_path = public, extensions`.
+`list_ranking` is migration `0022_list_ranking.sql` (C5). Ordering is
+server-owned: player characters by `sum(progression_ledger.delta_xp)` desc,
+then `character_id` asc; client must not re-sort.
+
+All are `SECURITY DEFINER` with `set search_path = public, extensions`.
 `EXECUTE` is granted to **`authenticated` only** (revoked from `public`,
 `anon`, and `service_role`). Account identity always comes from `auth.uid()` —
 there is no account-id argument. No new table grants to `authenticated`.
@@ -36,6 +41,7 @@ there is no account-id argument. No new table grants to `authenticated`.
 - Owned character → garage loadout save / preview
 - Opponent roster + allowance summary → Confirm dual-bot chrome; loadouts still
   from `current_bot_loadouts`
+- Ranking board → `SupabaseRankingReadAdapter` / `createRankingReadClient`
 - Do **not** `SELECT` from `characters` or `fight_allowances` in the game client
 
 ## Negative tests (db)

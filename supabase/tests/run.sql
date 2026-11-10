@@ -1936,4 +1936,207 @@ begin
 
   reset role;
   raise notice 'TEST-OK 0021 loadout RLS via SECURITY DEFINER helpers';
+
+  -- =========================================================================
+  -- 0022 / C5: list_ranking — progression XP board, authenticated only
+  -- =========================================================================
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.list_ranking()', 'EXECUTE'),
+    'authenticated EXECUTE list_ranking'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.list_ranking()', 'EXECUTE'),
+    'anon must not EXECUTE list_ranking'
+  );
+  perform tests.assert(
+    not has_function_privilege('service_role', 'public.list_ranking()', 'EXECUTE'),
+    'service_role must not EXECUTE list_ranking'
+  );
+
+  -- Early suite truncates progression_ledger (append-only cleanup). Restore the
+  -- 1002 ranking-peer XP packs as table owner so list_ranking has a known board.
+  -- Peers/characters themselves remain from seed; this only re-appends XP rows.
+  reset role;
+  perform tests.assert(
+    exists (select 1 from public.characters where character_id = 'peer-bolt' and is_opponent = false),
+    'ranking peer-bolt character present'
+  );
+  if not exists (
+    select 1 from public.progression_ledger where character_id = 'peer-bolt'
+  ) then
+    insert into public.progression_ledger (account_id, character_id, delta_xp, reason)
+    values
+      ('00000000-0000-4000-8000-000000000011', 'peer-bolt', 2, 'battle'),
+      ('00000000-0000-4000-8000-000000000011', 'peer-bolt', 2, 'battle'),
+      ('00000000-0000-4000-8000-000000000011', 'peer-bolt', 2, 'battle');
+  end if;
+  if not exists (
+    select 1 from public.progression_ledger where character_id = 'peer-clank'
+  ) then
+    insert into public.progression_ledger (account_id, character_id, delta_xp, reason)
+    values
+      ('00000000-0000-4000-8000-000000000012', 'peer-clank', 2, 'battle'),
+      ('00000000-0000-4000-8000-000000000012', 'peer-clank', 1, 'battle');
+  end if;
+  if not exists (
+    select 1 from public.progression_ledger where character_id = 'peer-rivet'
+  ) then
+    insert into public.progression_ledger (account_id, character_id, delta_xp, reason)
+    values
+      ('00000000-0000-4000-8000-000000000013', 'peer-rivet', 1, 'battle');
+  end if;
+  perform tests.assert(
+    (select coalesce(sum(delta_xp), 0) from public.progression_ledger where character_id = 'peer-bolt') = 6,
+    'restored peer-bolt XP totals 6'
+  );
+  perform tests.assert(
+    (select coalesce(sum(delta_xp), 0) from public.progression_ledger where character_id = 'peer-clank') = 3,
+    'restored peer-clank XP totals 3'
+  );
+  perform tests.assert(
+    (select coalesce(sum(delta_xp), 0) from public.progression_ledger where character_id = 'peer-rivet') = 1,
+    'restored peer-rivet XP totals 1'
+  );
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  v_res := public.list_ranking();
+  perform tests.assert((v_res->>'ok')::boolean, 'list_ranking ok');
+  perform tests.assert(jsonb_typeof(v_res->'rows') = 'array', 'list_ranking rows array');
+  select count(*)::int into v_count from jsonb_array_elements(v_res->'rows');
+  perform tests.assert(v_count >= 4, format('expected >=4 ranking rows (hero+peers), got %s', v_count));
+  -- Do not assume peer-bolt is rank 1: earlier suite steps award XP to player-hero.
+  perform tests.assert(
+    (v_res->'rows'->0->>'rank')::integer = 1,
+    'first row rank is 1'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'peer-bolt'
+         and (r->>'totalXp')::integer = 6
+    ),
+    'peer-bolt list_ranking totalXp is 6'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'peer-clank'
+         and (r->>'totalXp')::integer = 3
+    ),
+    'peer-clank list_ranking totalXp is 3'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'peer-rivet'
+         and (r->>'totalXp')::integer = 1
+    ),
+    'peer-rivet list_ranking totalXp is 1'
+  );
+  -- Server order: totalXp desc, then characterId asc. Adjacent rows must obey.
+  -- (Earlier suite steps may award XP to player-hero, so absolute ranks vary.)
+  perform tests.assert(
+    coalesce(
+      (
+        select bool_and(
+          (a.elem->>'totalXp')::integer > (b.elem->>'totalXp')::integer
+          or (
+            (a.elem->>'totalXp')::integer = (b.elem->>'totalXp')::integer
+            and (a.elem->>'characterId') <= (b.elem->>'characterId')
+          )
+        )
+          and bool_and((a.elem->>'rank')::integer + 1 = (b.elem->>'rank')::integer)
+        from jsonb_array_elements(v_res->'rows') with ordinality as a(elem, idx)
+        join jsonb_array_elements(v_res->'rows') with ordinality as b(elem, idx)
+          on b.idx = a.idx + 1
+      ),
+      false
+    ),
+    'list_ranking preserves XP desc / characterId asc with dense ranks'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'player-hero'
+         and (r->>'isCurrentBot')::boolean = true
+    ),
+    'caller hero marked isCurrentBot'
+  );
+  perform tests.assert(
+    (
+      select count(*)::int
+        from jsonb_array_elements(v_res->'rows') r
+       where (r->>'isCurrentBot')::boolean = true
+    ) = 1,
+    'exactly one isCurrentBot row'
+  );
+  -- Client must not need characters SELECT for ranking.
+  begin
+    perform 1 from public.characters where character_id = 'player-hero';
+    if found then
+      raise exception 'SEC FAIL: authenticated SELECT on characters succeeded during ranking test';
+    end if;
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+
+  -- Cross-account: seeded peer caller sees only their own isCurrentBot flag.
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config(
+    'request.jwt.claim.sub',
+    '00000000-0000-4000-8000-000000000011',
+    true
+  );
+  set local role authenticated;
+  v_res := public.list_ranking();
+  perform tests.assert((v_res->>'ok')::boolean, 'list_ranking ok as peer');
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'peer-bolt'
+         and (r->>'isCurrentBot')::boolean = true
+    ),
+    'peer caller: peer-bolt isCurrentBot'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r->>'characterId' = 'player-hero'
+         and (r->>'isCurrentBot')::boolean = false
+    ),
+    'peer caller: player-hero is not YOU'
+  );
+  perform tests.assert(
+    (
+      select count(*)::int
+        from jsonb_array_elements(v_res->'rows') r
+       where (r->>'isCurrentBot')::boolean = true
+    ) = 1,
+    'peer caller: exactly one isCurrentBot row'
+  );
+  reset role;
+
+  set local role anon;
+  begin
+    perform public.list_ranking();
+    raise exception 'ANON FAIL: list_ranking allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+  raise notice 'TEST-OK C5 list_ranking';
 end $$;

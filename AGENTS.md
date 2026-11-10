@@ -188,7 +188,8 @@ pnpm test:integration   # requires env:up && db:reset && DATABASE_URL
   sequential numeric prefixes. Never edit an applied migration.
 - Never `DROP` columns/tables without a deprecation migration. Architecture
   changes are approved decision updates in ClickUp.
-- Seed data lives in numbered seed migrations (`1xxx_`) — idempotent.
+- Seed data lives in `supabase/seed.sql` (local / CI via `[db.seed]` on
+  `db reset` only — **not** applied by hosted `db push`). Idempotent.
 - DB tests live in `supabase/tests/run.sql`; extend them when adding tables,
   especially RLS coverage for any new client-visible table.
 

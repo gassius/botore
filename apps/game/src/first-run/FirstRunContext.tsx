@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { readDesignCaptureConfig } from '../design-capture';
+import { type DesignCaptureRankingScenario, readDesignCaptureConfig } from '../design-capture';
 import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
 import { useMute } from '../hooks/useMute';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -25,6 +25,9 @@ export type FirstRunContextValue = {
   setDemoWeaponId: (id: string) => void;
   demoOpponentId: string | null;
   setDemoOpponentId: (id: string | null) => void;
+  /** Design-capture Ranking empty/error/live override (C5). */
+  rankingCaptureScenario: DesignCaptureRankingScenario | null;
+  setRankingCaptureScenario: (scenario: DesignCaptureRankingScenario | null) => void;
 };
 
 const FirstRunContext = createContext<FirstRunContextValue | null>(null);
@@ -47,6 +50,8 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
     pending.weaponId ?? captureBoot.initialWeaponId ?? 'sword',
   );
   const [demoOpponentId, setDemoOpponentId] = useState<string | null>(null);
+  const [rankingCaptureScenario, setRankingCaptureScenario] =
+    useState<DesignCaptureRankingScenario | null>(null);
 
   const value = useMemo<FirstRunContextValue>(
     () => ({
@@ -71,6 +76,8 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       setDemoWeaponId,
       demoOpponentId,
       setDemoOpponentId,
+      rankingCaptureScenario,
+      setRankingCaptureScenario,
     }),
     [
       route,
@@ -82,6 +89,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       demoPaintId,
       demoWeaponId,
       demoOpponentId,
+      rankingCaptureScenario,
     ],
   );
 

@@ -15,10 +15,12 @@ export {
   isDesignCaptureEnabled,
   isLiveFightCaptureEnabled,
   listCaptureRoutes,
+  parseDesignCaptureRankingScenario,
   parseDesignCaptureUrl,
   readDesignCaptureConfig,
   readDesignCaptureInitialPaint,
   readDesignCaptureInitialRoute,
   readDesignCaptureInitialWeapon,
   type DesignCaptureConfig,
+  type DesignCaptureRankingScenario,
 } from './captureEnv';
