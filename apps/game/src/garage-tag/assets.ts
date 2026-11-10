@@ -1,15 +1,19 @@
 /**
- * ui-kit-v0.1 asset map. Prefer parametric chrome; use PNGs for brand/glyphs only.
- * Stretch rules: brand/glyphs = uniform aspect; never stretch-to-fill.
+ * Brand + glyph asset map.
+ *
+ * Brand swap lives here (one file): launch-v001 wordmark / icon / splash /
+ * in-app title. ui-kit-v0.1 keeps panels/buttons/tabs/glyphs + robot-head
+ * ranking marks only — its wordmark/icon/static-launch are retired.
  */
-import wordmarkDark from '../../assets/ui-kit-v0.1/brand/wordmark-dark.png';
-import wordmarkLight from '../../assets/ui-kit-v0.1/brand/wordmark-light.png';
-import wordmarkSmall from '../../assets/ui-kit-v0.1/brand/wordmark-small.png';
+import wordmarkDark from '../../assets/launch-v001/wordmark/wordmark-dark-2400w.png';
+import wordmarkLight from '../../assets/launch-v001/wordmark/wordmark-light-2400w.png';
+import wordmarkSmall from '../../assets/launch-v001/wordmark/wordmark-small-dark-2400w.png';
+import wordmarkSmallLight from '../../assets/launch-v001/wordmark/wordmark-small-light-2400w.png';
+import appIcon from '../../assets/launch-v001/icon/icon-ios-1024.png';
+import titleSilhouette from '../../assets/launch-v001/title/title-composite-silhouette-1290x2796.png';
 import robotHead from '../../assets/ui-kit-v0.1/brand/robot-head.png';
 import robotHeadSmall from '../../assets/ui-kit-v0.1/brand/robot-head-small.png';
 import robotHeadMono from '../../assets/ui-kit-v0.1/brand/robot-head-mono.png';
-import appIcon from '../../assets/ui-kit-v0.1/brand/app-icon.png';
-import launchStatic from '../../assets/ui-kit-v0.1/brand/launch-static.png';
 import glyphCheck from '../../assets/ui-kit-v0.1/glyphs/glyph-check.png';
 import glyphCheckLight from '../../assets/ui-kit-v0.1/glyphs/glyph-check-light.png';
 import glyphCheckSelected from '../../assets/ui-kit-v0.1/glyphs/glyph-check-selected.png';
@@ -24,15 +28,23 @@ import glyphSword from '../../assets/ui-kit-v0.1/glyphs/glyph-sword.png';
 import glyphAxe from '../../assets/ui-kit-v0.1/glyphs/glyph-axe.png';
 import glyphDagger from '../../assets/ui-kit-v0.1/glyphs/glyph-dagger.png';
 
+/** launch-v001 wordmark intrinsic aspect (2400×558). */
+export const BRAND_WORDMARK_ASPECT = { width: 2400, height: 558 } as const;
+
+/** In-app title silhouette composite intrinsic size (1290×2796). */
+export const TITLE_SILHOUETTE_ASPECT = { width: 1290, height: 2796 } as const;
+
 export const uiKitAssets = {
   wordmarkDark,
   wordmarkLight,
   wordmarkSmall,
+  wordmarkSmallLight,
   robotHead,
   robotHeadSmall,
   robotHeadMono,
   appIcon,
-  launchStatic,
+  /** REF-01 in-app title — silhouette composite (not layered title/*, not lit). */
+  titleSilhouette,
   glyphCheck,
   glyphCheckLight,
   glyphCheckSelected,

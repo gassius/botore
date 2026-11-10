@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
+    // Brand FINAL: Oxide (and all swatch) labels use dark ink, not cream.
     color: garageTag.graphite,
   },
   check: {

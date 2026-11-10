@@ -6,22 +6,20 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "scheme": "botore",
-    "icon": "./assets/ui-kit-v0.1/brand/app-icon.png",
-    "splash": {
-      "image": "./assets/ui-kit-v0.1/brand/launch-static.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#302D27"
-    },
+    "icon": "./assets/launch-v001/icon/icon-ios-1024.png",
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.botore.game"
+      "bundleIdentifier": "com.botore.game",
+      "icon": "./assets/launch-v001/icon/icon-ios-1024.png"
     },
     "android": {
       "package": "com.botore.game",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/ui-kit-v0.1/brand/app-icon.png",
-        "backgroundColor": "#F4B820"
+        "foregroundImage": "./assets/launch-v001/icon/adaptive-foreground-1024.png",
+        "backgroundImage": "./assets/launch-v001/icon/adaptive-background-1024.png",
+        "backgroundColor": "#F4B820",
+        "monochromeImage": "./assets/launch-v001/icon/adaptive-monochrome-1024.png"
       }
     },
     "web": {
@@ -36,6 +34,26 @@
         {
           "android": {
             "kotlinVersion": "1.9.25"
+          }
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#302D27",
+          "image": "./assets/launch-v001/splash/splash-logo-1284.png",
+          "imageWidth": 280,
+          "resizeMode": "contain",
+          "ios": {
+            "backgroundColor": "#302D27",
+            "image": "./assets/launch-v001/splash/splash-logo-1284.png",
+            "imageWidth": 280,
+            "resizeMode": "contain"
+          },
+          "android": {
+            "backgroundColor": "#302D27",
+            "image": "./assets/launch-v001/splash/splash-icon-android-1024.png",
+            "imageWidth": 200
           }
         }
       ]
