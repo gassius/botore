@@ -55,8 +55,9 @@ for i in $(seq 1 $((TIMEOUT_MIN * 4))); do
       exit 1
     fi
     echo "tunnel.env ready:" >&2
-    # Redact long keys in log
-    sed -E 's/(KEY|ANON_KEY|SERVICE_ROLE_KEY)=.{12}/&…/' "${OUT_DIR}/tunnel.env" >&2 || true
+    # Real redact — do not re-emit secret/URL prefixes into public logs.
+    sed -E 's/((ANON_KEY|SUPABASE_ANON_KEY|EXPO_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_URL|CAPTURE_EMULATOR_SUPABASE_URL|EXPO_PUBLIC_SUPABASE_URL|SERVICE_ROLE_KEY|SUPABASE_SERVICE_ROLE_KEY)=).*/\1<redacted>/' \
+      "${OUT_DIR}/tunnel.env" >&2 || true
     exit 0
   fi
   if (( i % 4 == 0 )); then

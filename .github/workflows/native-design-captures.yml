@@ -252,11 +252,20 @@ jobs:
           CAPTURE_TUNNEL_WAIT_MIN: '45'
         run: bash scripts/native-capture/wait-ios-tunnel-env.sh artifacts/ios-live-fight-tunnel
 
-      - name: Expo prebuild (ios)
+      - name: Install ffmpeg (cold-start MP4 → frames)
+        run: |
+          set -euo pipefail
+          brew install ffmpeg || true
+          command -v ffmpeg
+          ffmpeg -version | head -n 1
+
+      # prebuild --clean wipes ios/; use --no-install so pods are not installed yet.
+      # Restore CocoaPods/DerivedData AFTER prebuild, then pod install once (C7c PRR P2).
+      - name: Expo prebuild (ios, no pod install)
         run: |
           set -euo pipefail
           cd apps/game
-          CI=1 pnpm exec expo prebuild --platform ios --clean
+          CI=1 pnpm exec expo prebuild --platform ios --clean --no-install
           cd ../..
           node scripts/native-capture/patch-ios-ci-ats.mjs
 
@@ -278,7 +287,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-dd-${{ hashFiles('apps/game/ios/Podfile.lock', 'apps/game/package.json', 'apps/game/app.json') }}-
 
-      - name: pod install
+      - name: pod install (once)
         run: |
           set -euo pipefail
           cd apps/game/ios

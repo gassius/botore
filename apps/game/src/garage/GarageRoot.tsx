@@ -8,6 +8,7 @@ import { FightSessionProvider } from '../fight/FightSessionContext';
 import { FirstRunShell } from '../first-run/FirstRunShell';
 import { garageTag, InAppTitleSplash } from '../garage-tag';
 import { AuthEntryScreen } from './screens/AuthEntryScreen';
+import { LaunchTitleScreen } from './screens/LaunchTitleScreen';
 import { GarageSessionProvider, useGarageSession } from './LoadoutSessionContext';
 
 /** Minimum time the silhouette title stays visible after the bitmap loads. */
@@ -30,11 +31,12 @@ function hideNativeSplash(): void {
  * F8 auth gate around shell-owned FirstRunShell.
  * F9 FightSession mounts inside the authenticated shell (Opponents / ConfirmFight).
  *
- * Cold start without a session still shows the silhouette title: native splash
- * releases on title image load, then the title dwells briefly before AuthEntry.
+ * Normal cold start shows the C6 silhouette title (native splash releases on
+ * image load, brief dwell, then AuthEntry). Design-capture cold-start holds
+ * LaunchTitleScreen via coldStartHoldTitle so CI can assert splash→title.
  */
 function GarageRootInner(): React.ReactElement {
-  const { booting, session } = useGarageSession();
+  const { booting, session, coldStartHoldTitle } = useGarageSession();
   const [titleImageReady, setTitleImageReady] = useState(false);
   const [titleDwellDone, setTitleDwellDone] = useState(false);
   const nativeHiddenRef = useRef(false);
@@ -85,6 +87,11 @@ function GarageRootInner(): React.ReactElement {
       clearTimeout(handle);
     };
   }, [releaseNativeSplash]);
+
+  // C7c design-capture cold-start: hold launch-title (skip AuthEntry / auto sign-in).
+  if (coldStartHoldTitle) {
+    return <LaunchTitleScreen />;
+  }
 
   const showTitle = booting || !titleImageReady || !titleDwellDone;
 

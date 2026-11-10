@@ -182,11 +182,15 @@ if [[ ! -d "${IOS_DIR}" ]]; then
 fi
 node "${SCRIPT_DIR}/patch-ios-ci-ats.mjs"
 
-if [[ -f "${IOS_DIR}/Podfile" ]] && command -v pod >/dev/null 2>&1; then
-  (
-    cd "${IOS_DIR}"
-    pod install --deployment 2>/dev/null || pod install
-  )
+# When the workflow already ran prebuild --no-install + one pod install, skip
+# a second pod install here (CAPTURE_IOS_SKIP_PREBUILD=1).
+if [[ "${CAPTURE_IOS_SKIP_PREBUILD:-0}" != "1" && "${CAPTURE_IOS_SKIP_PREBUILD:-0}" != "true" ]]; then
+  if [[ -f "${IOS_DIR}/Podfile" ]] && command -v pod >/dev/null 2>&1; then
+    (
+      cd "${IOS_DIR}"
+      pod install --deployment 2>/dev/null || pod install
+    )
+  fi
 fi
 
 # Reuse device boot + xcodebuild path from design-capture by exporting flags and
@@ -298,9 +302,9 @@ xcrun simctl uninstall "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
 xcrun simctl install "${UDID}" "${APP}"
 
 # Cold-start splash→title (budgeted) before live-fight stills.
+# Assert gates the job (same as Android) — never warn-and-continue (C7c PRR P1).
 if [[ "${CAPTURE_COLD_START:-1}" == "1" || "${CAPTURE_COLD_START:-1}" == "true" ]]; then
   COLD_BUDGET="${CAPTURE_COLD_START_BUDGET_SEC:-120}"
-  set +e
   if command -v timeout >/dev/null 2>&1; then
     timeout "${COLD_BUDGET}" "${SCRIPT_DIR}/ios-cold-start-capture.sh" \
       --out "${OUT_DIR}" --udid "${UDID}" --seconds "${CAPTURE_COLD_START_SEC:-8}"
@@ -308,9 +312,7 @@ if [[ "${CAPTURE_COLD_START:-1}" == "1" || "${CAPTURE_COLD_START:-1}" == "true" 
     "${SCRIPT_DIR}/ios-cold-start-capture.sh" \
       --out "${OUT_DIR}" --udid "${UDID}" --seconds "${CAPTURE_COLD_START_SEC:-8}"
   fi
-  set -e
-  node "${SCRIPT_DIR}/assert-cold-start-transition.mjs" --platform ios --out "${OUT_DIR}" || \
-    echo "warn: cold-start assert failed" >&2
+  node "${SCRIPT_DIR}/assert-cold-start-transition.mjs" --platform ios --out "${OUT_DIR}"
 fi
 
 # Remove cold-start hold-title so live-fight can auto sign-in.
@@ -336,13 +338,19 @@ capture_named() {
   local route="$1"
   local label="$2"
   local settle="${3:-5}"
+  local battle_id="${4:-}"
+  local screencap_args=(
+    --out "${OUT_DIR}"
+    --udid "${UDID}"
+    --route "${route}"
+    --name "${label}"
+  )
+  if [[ -n "${battle_id}" ]]; then
+    screencap_args+=(--battle-id "${battle_id}")
+  fi
   CAPTURE_SETTLE_SEC="${settle}" \
     CAPTURE_IOS_COLD_SEC="${CAPTURE_IOS_COLD_SEC:-16}" \
-    "${SCRIPT_DIR}/ios-screencap.sh" \
-    --out "${OUT_DIR}" \
-    --udid "${UDID}" \
-    --route "${route}" \
-    --name "${label}" >/dev/null
+    "${SCRIPT_DIR}/ios-screencap.sh" "${screencap_args[@]}" >/dev/null
   local matches=( "${OUT_DIR}"/ios-*-"${label}".png )
   if [[ ! -e "${matches[0]:-}" ]]; then
     echo "error: missing PNG for ${label}" >&2
@@ -385,7 +393,8 @@ write_manifest_line "${MANIFEST}" xp_awarded "${XP}"
 write_manifest_line "${MANIFEST}" server_confirmed "true"
 echo "fight proof: battleId=${BATTLE_ID} xp=${XP}" >&2
 
-capture_named FightResult result 5
+# Pass battle id so FightResult restores the sealed fight after process relaunch.
+capture_named FightResult result 5 "${BATTLE_ID}"
 
 missing=0
 for label in garage confirm replay-impact result; do

@@ -92,7 +92,7 @@ for i in $(seq 1 "${KEEPALIVE_MIN}"); do
       || echo "warn: tunnel health failed at minute ${i}" >&2
   fi
   if (( i % 5 == 0 )); then
-    echo "keepalive ${i}/${KEEPALIVE_MIN}m tunnel=${TUNNEL_URL:-unknown}" >&2
+    echo "keepalive ${i}/${KEEPALIVE_MIN}m (tunnel hostname redacted)" >&2
   fi
   sleep 60
 done

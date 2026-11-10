@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Cold-start frame sequence + short video: native splash #302D27 → in-app title.
+# Cold-start frame sequence + short video: native splash #302D27 → launch-title
+# silhouette composite (not AuthEntry / "Opening garage…" spinner).
 #
-# Force-stops the package, plants a hold-title marker on external storage that
-# the app mirrors into Documents on boot is not available on Android the same
-# way — instead we clear app data so AuthEntry (title) shows after splash, then
-# skip design-capture auto sign-in via a files-dir marker written with run-as
-# when possible, else via clearing + temporary CAPTURE_SKIP (marker file).
+# Force-stops the package, clears app data, plants hold-title via run-as so the
+# app shows LaunchTitleScreen after the native splash (C7c UI/UX).
 #
 # Usage: android-cold-start-capture.sh [--out DIR] [--seconds N]
 set -euo pipefail

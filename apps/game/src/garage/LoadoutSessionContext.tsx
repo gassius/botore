@@ -30,6 +30,8 @@ export type GarageSessionContextValue = {
   readonly authKind: AuthPort['kind'];
   readonly session: AuthSession | null;
   readonly booting: boolean;
+  /** Design-capture cold-start: hold launch-title silhouette (skip auto sign-in). */
+  readonly coldStartHoldTitle: boolean;
   readonly loadout: LoadoutPreviewState;
   readonly canProgress: boolean;
   signIn: (
@@ -56,6 +58,7 @@ export function GarageSessionProvider(props: {
 
   const [session, setSession] = useState<AuthSession | null>(null);
   const [booting, setBooting] = useState(true);
+  const [coldStartHoldTitle, setColdStartHoldTitle] = useState(false);
   const [loadout, setLoadout] = useState<LoadoutPreviewState>(() =>
     createUnavailableLoadoutState(),
   );
@@ -131,23 +134,37 @@ export function GarageSessionProvider(props: {
     void hydrate();
   }, [hydrate]);
 
+  // Detect cold-start hold-title ASAP so we never flash "Opening garage…" / AuthEntry.
+  useEffect(() => {
+    if (!isDesignCaptureEnabled()) return;
+    void isColdStartHoldTitle().then((hold) => {
+      if (!hold) return;
+      setColdStartHoldTitle(true);
+      setBooting(false);
+      console.log('BOTORE_CAPTURE_COLD_START_HOLD_TITLE:1');
+    });
+  }, []);
+
   /**
    * C7 design-capture builds auto-enter the DEV garage so capture scripts can
    * deep-link into first-run routes without tapping the auth form.
    * Opt-in only (`EXPO_PUBLIC_DESIGN_CAPTURE=1`); never for store builds.
-   * Cold-start hold-title intent skips auto sign-in so splash→AuthEntry title
-   * is visible (C7c).
+   * Cold-start hold-title intent skips auto sign-in so splash→launch-title
+   * silhouette is visible (C7c) — not AuthEntry / spinner.
    */
   useEffect(() => {
     if (!isDesignCaptureEnabled()) return;
     if (captureAutoSignInStarted.current) return;
+    if (coldStartHoldTitle) return;
     if (booting || session) return;
     captureAutoSignInStarted.current = true;
     void (async () => {
       if (await isColdStartHoldTitle()) {
+        setColdStartHoldTitle(true);
         console.log('BOTORE_CAPTURE_COLD_START_HOLD_TITLE:1');
         return;
       }
+      setColdStartHoldTitle(false);
       const creds = designCaptureCredentials();
       const result = await auth.signInWithPassword({
         email: creds.email,
@@ -165,13 +182,14 @@ export function GarageSessionProvider(props: {
       setSession(result.session);
       await hydrate();
     })();
-  }, [auth, booting, hydrate, session]);
+  }, [auth, booting, coldStartHoldTitle, hydrate, session]);
 
   const value = useMemo<GarageSessionContextValue>(
     () => ({
       authKind: auth.kind,
       session,
       booting,
+      coldStartHoldTitle,
       loadout,
       canProgress: loadout.hydration === 'ready' && loadout.confirmedLoadout !== null,
       signIn: async (email, password) => {
@@ -243,7 +261,7 @@ export function GarageSessionProvider(props: {
         return true;
       },
     }),
-    [auth, session, booting, loadout, hydrate, loadouts],
+    [auth, session, booting, coldStartHoldTitle, loadout, hydrate, loadouts],
   );
 
   return (

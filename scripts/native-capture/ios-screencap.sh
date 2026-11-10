@@ -11,6 +11,7 @@ ROUTE=""
 MUTE=""
 PAINT=""
 WEAPON=""
+BATTLE_ID=""
 UDID="booted"
 
 while [[ $# -gt 0 ]]; do
@@ -39,6 +40,10 @@ while [[ $# -gt 0 ]]; do
       WEAPON="$2"
       shift 2
       ;;
+    --battle-id)
+      BATTLE_ID="$2"
+      shift 2
+      ;;
     --udid)
       UDID="$2"
       shift 2
@@ -63,6 +68,7 @@ write_capture_intent_file() {
   local paint="$2"
   local weapon="$3"
   local mute="$4"
+  local battle_id="$5"
   local data_dir
   data_dir="$(xcrun simctl get_app_container "${UDID}" "${BUNDLE_ID}" data 2>/dev/null || true)"
   if [[ -z "${data_dir}" || ! -d "${data_dir}" ]]; then
@@ -78,16 +84,19 @@ write_capture_intent_file() {
     CAPTURE_INTENT_PAINT="${paint}" \
     CAPTURE_INTENT_WEAPON="${weapon}" \
     CAPTURE_INTENT_MUTE="${mute_flag}" \
+    CAPTURE_INTENT_BATTLE_ID="${battle_id}" \
     node -e '
       const o = {
         route: process.env.CAPTURE_INTENT_ROUTE || null,
         paintId: process.env.CAPTURE_INTENT_PAINT || null,
         weaponId: process.env.CAPTURE_INTENT_WEAPON || null,
         mute: process.env.CAPTURE_INTENT_MUTE === "true",
+        battleId: process.env.CAPTURE_INTENT_BATTLE_ID || null,
       };
       if (!o.paintId) o.paintId = null;
       if (!o.weaponId) o.weaponId = null;
       if (!o.mute) o.mute = null;
+      if (!o.battleId) o.battleId = null;
       process.stdout.write(JSON.stringify(o) + "\n");
     ' >"${data_dir}/Documents/botore-design-capture-intent.json"
   echo "wrote capture intent → ${data_dir}/Documents/botore-design-capture-intent.json" >&2
@@ -136,7 +145,7 @@ if [[ -n "${ROUTE}" ]]; then
   xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
   dismiss_open_in_alert_if_any
   ensure_app_data_container
-  if ! write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}"; then
+  if ! write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" "${BATTLE_ID}"; then
     echo "error: could not write capture intent file for ${ROUTE}" >&2
     exit 1
   fi
@@ -150,7 +159,7 @@ if [[ -n "${ROUTE}" ]]; then
   # Auth auto-sign-in + intent file poll + FirstRunShell route paint.
   sleep "${CAPTURE_IOS_COLD_SEC:-${CAPTURE_SETTLE_SEC:-16}}"
   # Re-write intent in case Documents was recreated, then bring app forward.
-  write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" || true
+  write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" "${BATTLE_ID}" || true
   xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
   sleep "${CAPTURE_SETTLE_SEC:-5}"
   dismiss_open_in_alert_if_any

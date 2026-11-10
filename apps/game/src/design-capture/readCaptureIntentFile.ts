@@ -14,6 +14,9 @@ export const COLD_START_INTENT_FILENAME = 'botore-cold-start-intent.json';
 /** Live-fight proof written for CI (iOS has no reliable logcat). */
 export const FIGHT_PROOF_FILENAME = 'botore-capture-fight-proof.json';
 
+/** Full FightSuccess for FightResult restore after iOS process relaunch. */
+export const LAST_FIGHT_FILENAME = 'botore-capture-last-fight.json';
+
 type ExpoFs = {
   documentDirectory: string | null;
   getInfoAsync: (uri: string) => Promise<{ exists: boolean }>;
@@ -97,5 +100,34 @@ export async function writeFightProofFile(proof: unknown): Promise<void> {
     await FileSystem.writeAsStringAsync(`${root}${FIGHT_PROOF_FILENAME}`, JSON.stringify(proof));
   } catch {
     // Ignore — logcat / OSLog remain the Android primary path.
+  }
+}
+
+/** Persist the sealed FightSuccess so FightResult survives iOS capture relaunches. */
+export async function writeLastFightFile(fight: unknown): Promise<void> {
+  if (!isDesignCaptureEnabled()) return;
+  try {
+    const FileSystem = tryFs();
+    const root = FileSystem?.documentDirectory;
+    if (!FileSystem || !root) return;
+    await FileSystem.writeAsStringAsync(`${root}${LAST_FIGHT_FILENAME}`, JSON.stringify(fight));
+  } catch {
+    // Ignore.
+  }
+}
+
+/** Read a previously persisted FightSuccess (design-capture only). */
+export async function readLastFightFile(): Promise<unknown | null> {
+  if (!isDesignCaptureEnabled()) return null;
+  try {
+    const FileSystem = tryFs();
+    const root = FileSystem?.documentDirectory;
+    if (!FileSystem || !root) return null;
+    const uri = `${root}${LAST_FIGHT_FILENAME}`;
+    const info = await FileSystem.getInfoAsync(uri);
+    if (!info.exists) return null;
+    return JSON.parse(await FileSystem.readAsStringAsync(uri)) as unknown;
+  } catch {
+    return null;
   }
 }

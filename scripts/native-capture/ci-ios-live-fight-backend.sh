@@ -70,11 +70,13 @@ start_functions_serve
 export CAPTURE_EMULATOR_SUPABASE_URL="${SUPABASE_URL}"
 node "${SCRIPT_DIR}/prepare-live-fight-backend.mjs" --write /tmp/botore-live-fight-local.env
 
-echo "starting Cloudflare quick tunnel (docker, host network)…" >&2
+# Pin cloudflared (host network) — do not float on :latest (C7c PRR P2).
+CLOUDFLARED_IMAGE="${CAPTURE_CLOUDFLARED_IMAGE:-cloudflare/cloudflared:2026.10.7}"
+echo "starting Cloudflare quick tunnel (docker, host network, image=${CLOUDFLARED_IMAGE})…" >&2
 docker rm -f botore-cf-tunnel >/dev/null 2>&1 || true
-docker pull cloudflare/cloudflared:latest >/dev/null
+docker pull "${CLOUDFLARED_IMAGE}" >/dev/null
 docker run -d --name botore-cf-tunnel --network host \
-  cloudflare/cloudflared:latest \
+  "${CLOUDFLARED_IMAGE}" \
   tunnel --no-autoupdate --url "${SUPABASE_URL}" >/dev/null
 
 TUNNEL_URL=""
@@ -94,7 +96,8 @@ if [[ -z "${TUNNEL_URL}" ]]; then
   docker logs botore-cf-tunnel >&2 || true
   exit 1
 fi
-echo "tunnel ready: ${TUNNEL_URL}" >&2
+# Do not print the public tunnel hostname into CI logs (public repo).
+echo "tunnel ready (hostname redacted)" >&2
 
 # Probe edge health through the tunnel (Simulator path).
 probe_ok=0
@@ -109,12 +112,13 @@ for _ in $(seq 1 30); do
   sleep 2
 done
 if [[ "${probe_ok}" != "1" ]]; then
-  echo "error: tunnel health probe failed for ${TUNNEL_URL}/functions/v1/health" >&2
+  echo "error: tunnel health probe failed" >&2
   docker logs botore-cf-tunnel >&2 || true
   cat /tmp/botore-functions-serve.log >&2 || true
   exit 1
 fi
 
+# Artifact for the macOS job: URL + anon only — never service-role (C7c PRR P2).
 {
   echo "CAPTURE_REMOTE_SUPABASE=1"
   echo "CAPTURE_EMULATOR_SUPABASE_URL=${TUNNEL_URL}"
@@ -123,11 +127,9 @@ fi
   echo "SUPABASE_URL=${TUNNEL_URL}"
   echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
   echo "ANON_KEY=${SUPABASE_ANON_KEY}"
-  echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
-  echo "SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
 } >"${ARTIFACT_DIR}/tunnel.env"
 
-# Persist keys for the keepalive step (restart functions serve if needed).
+# Persist keys for the keepalive step only (local runner disk, not artifact).
 {
   echo "SUPABASE_URL=http://127.0.0.1:54321"
   echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
@@ -138,5 +140,7 @@ fi
 } >/tmp/botore-ios-backend.env
 
 echo "wrote ${ARTIFACT_DIR}/tunnel.env" >&2
-sed -E 's/(KEY|ANON_KEY|SERVICE_ROLE_KEY)=.{12}/&…/' "${ARTIFACT_DIR}/tunnel.env" >&2 || true
+# Real redact (previous sed re-emitted the secret via &).
+sed -E 's/((ANON_KEY|SUPABASE_ANON_KEY|EXPO_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_URL|CAPTURE_EMULATOR_SUPABASE_URL|EXPO_PUBLIC_SUPABASE_URL)=).*/\1<redacted>/' \
+  "${ARTIFACT_DIR}/tunnel.env" >&2 || true
 echo "ci-ios-live-fight-backend: prepare done (keepalive is a separate step)" >&2
