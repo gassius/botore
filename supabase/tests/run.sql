@@ -2311,11 +2311,13 @@ begin
   end;
   reset role;
 
-  -- soft-delete via service_role admin path (Edge JWT equivalent)
+  -- soft-delete via service_role admin path (Edge JWT equivalent).
+  -- Capture under service_role, assert as owner (tests schema not granted
+  -- to service_role — same pattern as admin_delete_account_by_code_hash below).
   set local role service_role;
   v_res := public.admin_delete_account(v_other);
-  perform tests.assert((v_res->>'ok')::boolean, 'admin_delete_account ok');
   reset role;
+  perform tests.assert((v_res->>'ok')::boolean, 'admin_delete_account ok');
 
   select deleted_at, display_name
     into v_deleted_at, v_name
