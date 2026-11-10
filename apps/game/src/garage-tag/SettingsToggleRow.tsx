@@ -43,7 +43,7 @@ export function SettingsToggleRow({
           {label}
         </Text>
         {detail ? (
-          <Text style={styles.detail} allowFontScaling>
+          <Text style={[styles.detail, value ? styles.detailOn : null]} allowFontScaling>
             {detail}
           </Text>
         ) : null}
@@ -101,6 +101,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 12,
     color: garageTag.steel,
+  },
+  /** Mustard On rows: graphite ~70% for WCAG AA over yellow (steel was too light). */
+  detailOn: {
+    color: garageTag.graphite,
+    opacity: 0.7,
   },
   stateCol: {
     flexDirection: 'row',

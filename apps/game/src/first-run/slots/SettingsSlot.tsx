@@ -8,7 +8,6 @@ import {
   garageTag,
 } from '../../garage-tag';
 import { useFirstRun } from '../FirstRunContext';
-import { DomainNote } from './DomainNote';
 
 /**
  * Settings surface — mute persist, Music/Effects, reduced-motion override.
@@ -23,7 +22,6 @@ export function SettingsSlot(): React.ReactElement {
     setMusicEnabled,
     effectsEnabled,
     setEffectsEnabled,
-    reducedMotion,
     forceReducedMotion,
     setForceReducedMotion,
     osReducedMotion,
@@ -71,19 +69,12 @@ export function SettingsSlot(): React.ReactElement {
           onValueChange={setForceReducedMotion}
           detail={
             osReducedMotion
-              ? 'OS preference on — outcomes preserved either way'
+              ? 'Your device setting is on'
               : 'Override only; OS preference is always respected'
           }
           testID="settings-reduced-motion"
         />
-        <Text style={styles.effective} allowFontScaling testID="settings-reduced-motion-effective">
-          Effective: {reducedMotion ? 'reduced motion on' : 'full motion'}
-          {osReducedMotion ? ' (OS)' : ''}
-          {forceReducedMotion ? ' (override)' : ''}
-        </Text>
       </View>
-
-      <DomainNote text="Domain: C9 · settings — mute persist · Music/Effects · reduced-motion override" />
     </ScreenChrome>
   );
 }
@@ -98,10 +89,5 @@ const styles = StyleSheet.create({
   },
   stack: {
     gap: 10,
-  },
-  effective: {
-    fontWeight: '600',
-    fontSize: 13,
-    color: garageTag.graphite,
   },
 });
