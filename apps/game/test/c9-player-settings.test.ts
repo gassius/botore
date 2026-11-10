@@ -79,6 +79,7 @@ describe('C9 Settings route', () => {
       paintId: null,
       weaponId: null,
       rankingScenario: null,
+      failClosed: null,
     });
   });
 });
