@@ -1,4 +1,5 @@
 import type { SupabasePublicConfig } from '../auth/supabasePublicConfig';
+import { resolveTransportFailureCode } from '../../session-failure';
 import {
   OWNED_CHARACTER_RPC,
   type ClientReadRpcFail,
@@ -44,7 +45,11 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
         const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
         return {
           ok: false,
-          code: err.code ?? `http_${res.status}`,
+          code: resolveTransportFailureCode({
+            code: err.code ?? `http_${res.status}`,
+            message: err.message,
+            httpStatus: res.status,
+          }),
           message: err.message ?? `Failed to resolve owned character (${res.status})`,
         };
       }
@@ -103,7 +108,11 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
         const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
         return {
           ok: false,
-          code: err.code ?? `http_${res.status}`,
+          code: resolveTransportFailureCode({
+            code: err.code ?? `http_${res.status}`,
+            message: err.message,
+            httpStatus: res.status,
+          }),
           message: err.message ?? `Failed to load confirmed loadout (${res.status})`,
         };
       }
@@ -159,7 +168,11 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
         const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
         return {
           ok: false,
-          code: err.code ?? `http_${res.status}`,
+          code: resolveTransportFailureCode({
+            code: err.code ?? `http_${res.status}`,
+            message: err.message ?? err.details,
+            httpStatus: res.status,
+          }),
           message:
             err.message ??
             err.details ??

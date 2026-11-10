@@ -37,6 +37,7 @@ function applyUrl(url: string | null): void {
     rankingScenario: parsed.rankingScenario,
     failClosed: parsed.failClosed,
     poseCompare: parsed.poseCompare,
+    sessionFailure: parsed.sessionFailure,
   });
 }
 

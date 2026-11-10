@@ -173,6 +173,6 @@ describe('ticket B client-read RPC adapters', () => {
     await expect(empty.list()).resolves.toEqual([]);
 
     const errored = createRankingReadClient({ captureScenario: 'error' });
-    await expect(errored.list()).rejects.toThrow(/Design-capture ranking error/);
+    await expect(errored.list()).rejects.toThrow(/Could not load ranking/);
   });
 });

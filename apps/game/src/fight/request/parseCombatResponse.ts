@@ -1,3 +1,4 @@
+import { resolveTransportFailureCode } from '../../session-failure';
 import type { FightRequestResult, FightSuccess } from './types';
 
 type ErrBody = {
@@ -54,8 +55,13 @@ export function parseCombatError(
   status: number,
   body: ErrBody,
 ): Extract<FightRequestResult, { ok: false }> {
-  const code = body.code ?? `http_${status}`;
   const message = body.error ?? body.message ?? `Fight request failed (${status})`;
+  const rawCode = body.code ?? `http_${status}`;
+  const code = resolveTransportFailureCode({
+    code: rawCode,
+    message,
+    httpStatus: status,
+  });
   return {
     ok: false,
     code,

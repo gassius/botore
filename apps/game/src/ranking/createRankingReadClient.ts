@@ -29,8 +29,14 @@ export function createRankingReadClient(input: CreateRankingReadClientInput = {}
   if (scenario === 'error') {
     return new FixtureRankingReadAdapter({
       scenario: 'error',
-      errorMessage: 'Design-capture ranking error state',
+      errorMessage: 'Could not load ranking.',
     });
+  }
+  if (scenario === 'offline') {
+    return new FixtureRankingReadAdapter({ scenario: 'offline' });
+  }
+  if (scenario === 'auth_expired') {
+    return new FixtureRankingReadAdapter({ scenario: 'auth_expired' });
   }
 
   const config = readSupabasePublicConfig();

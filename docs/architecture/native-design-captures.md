@@ -106,6 +106,9 @@ Deep links used by the scripts:
   and **fail closed** without Supabase public env (C8).
 - Optional evidence override: deep link `botore://capture/Stable?failClosed=1`
   forces the playable-misconfigured blocked UI under design-capture.
+- C10 session-failure stills: `botore://capture/Opponents?sessionFailure=offline`
+  or `?sessionFailure=auth_expired` (also Ranking). Shared offline / auth-expired
+  banners — never an empty “no players” board.
 
 One-time account link (Carlos / Expo owner):
 

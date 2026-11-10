@@ -64,6 +64,7 @@ describe('C7 design-capture helpers', () => {
       rankingScenario: null,
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Replay?mute=1')).toEqual({
       route: 'Replay',
@@ -73,6 +74,7 @@ describe('C7 design-capture helpers', () => {
       rankingScenario: null,
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     });
     expect(parseDesignCaptureUrl('botore://capture?route=Ranking')).toEqual({
       route: 'Ranking',
@@ -82,6 +84,7 @@ describe('C7 design-capture helpers', () => {
       rankingScenario: null,
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Ranking?ranking=empty')).toEqual({
       route: 'Ranking',
@@ -91,6 +94,7 @@ describe('C7 design-capture helpers', () => {
       rankingScenario: 'empty',
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Stable?paint=petrol&weapon=axe')).toEqual({
       route: 'Stable',
@@ -100,6 +104,7 @@ describe('C7 design-capture helpers', () => {
       rankingScenario: null,
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Stable?failClosed=1')).toEqual({
       route: 'Stable',
@@ -109,6 +114,7 @@ describe('C7 design-capture helpers', () => {
       rankingScenario: null,
       failClosed: true,
       poseCompare: null,
+      sessionFailure: null,
     });
     expect(parseDesignCaptureUrl('https://example.com/capture/Replay')).toEqual({
       route: null,
@@ -118,6 +124,7 @@ describe('C7 design-capture helpers', () => {
       rankingScenario: null,
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     });
     expect(
       buildDesignCaptureUrl('Stable', { mute: true, paintId: 'petrol', weaponId: 'dagger' }),
@@ -139,9 +146,26 @@ describe('C7 design-capture helpers', () => {
       rankingScenario: null,
       failClosed: null,
       poseCompare: 'quick-vs-heavy',
+      sessionFailure: null,
     });
     expect(buildDesignCaptureUrl('ConfirmFight', { poseCompare: 'quick-vs-heavy' })).toBe(
       `${DESIGN_CAPTURE_SCHEME}://capture/ConfirmFight?poseCompare=quick-vs-heavy`,
+    );
+  });
+
+  it('parses C10 sessionFailure deep-link flag', () => {
+    expect(parseDesignCaptureUrl('botore://capture/Opponents?sessionFailure=offline')).toEqual({
+      route: 'Opponents',
+      mute: null,
+      paintId: null,
+      weaponId: null,
+      rankingScenario: null,
+      failClosed: null,
+      poseCompare: null,
+      sessionFailure: 'offline',
+    });
+    expect(buildDesignCaptureUrl('Ranking', { sessionFailure: 'auth_expired' })).toBe(
+      `${DESIGN_CAPTURE_SCHEME}://capture/Ranking?sessionFailure=auth_expired`,
     );
   });
 

@@ -22,3 +22,14 @@ export class RankingContractUnavailableError extends Error {
     this.name = 'RankingContractUnavailableError';
   }
 }
+
+/** Thrown for network / auth transport failures (C10) — not empty boards. */
+export class RankingTransportError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'RankingTransportError';
+  }
+}

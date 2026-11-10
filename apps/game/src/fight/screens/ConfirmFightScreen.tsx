@@ -17,6 +17,9 @@ import {
   garageTag,
 } from '../../garage-tag';
 import { isServerPlaybackReady } from '../../replay/serverPlayback';
+import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
+import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
+import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import { computeConfirmFightControls, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
 
@@ -34,7 +37,8 @@ export function ConfirmFightScreen(props: {
   onBack: () => void;
   onFightStarted: () => void;
 }): React.ReactElement {
-  const { loadout, session, canProgress } = useGarageSession();
+  const { loadout, session, canProgress, signOut } = useGarageSession();
+  const forced = useForcedSessionFailure();
   const {
     selected,
     submit,
@@ -133,10 +137,20 @@ export function ConfirmFightScreen(props: {
     selectedOpponentId: selected.characterId,
   });
   const noAllowance = allowances !== null && allowances < 1 && !controls.recoverable;
-  const networkError = submit.status === 'error' && submit.code === 'network_error';
+  const submitFailure =
+    submit.status === 'error'
+      ? classifySessionFailure({
+          code: submit.code,
+          message: submit.message,
+        })
+      : null;
+  const failureKind =
+    forced ??
+    (submitFailure === 'offline' || submitFailure === 'auth_expired' ? submitFailure : null);
   const allowanceError =
     submit.status === 'error' && submit.code === 'allowance_exhausted' && !controls.recoverable;
-  const otherError = submit.status === 'error' && !networkError && !allowanceError ? submit : null;
+  const otherError =
+    submit.status === 'error' && failureKind === null && !allowanceError ? submit : null;
   const { startDisabled, showRetry, retryDisabled, recoverable } = controls;
 
   const runStart = () => {
@@ -184,11 +198,17 @@ export function ConfirmFightScreen(props: {
             onPress={runStart}
             testID="confirm-start"
           />
-          {showRetry ? (
+          {showRetry || failureKind ? (
             <PrimaryButton
-              label="Retry"
-              disabled={retryDisabled}
-              onPress={runStart}
+              label={failureKind ? sessionFailureCopy(failureKind).actionLabel : 'Retry'}
+              disabled={retryDisabled && failureKind !== 'auth_expired'}
+              onPress={() => {
+                if (failureKind === 'auth_expired') {
+                  void signOut();
+                  return;
+                }
+                runStart();
+              }}
               testID="confirm-retry"
             />
           ) : null}
@@ -282,11 +302,11 @@ export function ConfirmFightScreen(props: {
         />
       ) : null}
 
-      {networkError ? (
-        <StatusErrorBanner
-          title="Network failure"
-          detail={submit.status === 'error' ? submit.message : 'Could not reach combat-v1.'}
-          testID="confirm-network-error"
+      {failureKind ? (
+        <SessionFailureBanner
+          kind={failureKind}
+          {...(submit.status === 'error' ? { detail: submit.message } : {})}
+          testID={`confirm-session-${failureKind}`}
         />
       ) : null}
 

@@ -1,10 +1,12 @@
 import type { SupabasePublicConfig } from '../../garage/auth/supabasePublicConfig';
+import { resolveTransportFailureCode } from '../../session-failure';
 import {
   LIST_RANKING_RPC,
   type ClientReadRpcFail,
   type ListRankingRpcOk,
 } from '../../supabase/clientReadRpcs';
 import type { RankingReadPort } from '../RankingReadPort';
+import { RankingTransportError } from '../RankingReadPort';
 import type { RankingRow } from '../types';
 
 type ErrBody = { message?: string; code?: string; details?: string; hint?: string };
@@ -35,7 +37,13 @@ export class SupabaseRankingReadAdapter implements RankingReadPort {
 
     if (!res.ok) {
       const err = (await res.json().catch(() => ({}))) as ErrBody;
-      throw new Error(err.message ?? err.details ?? `list_ranking failed (${res.status})`);
+      const message = err.message ?? err.details ?? `list_ranking failed (${res.status})`;
+      const code = resolveTransportFailureCode({
+        code: err.code ?? `http_${res.status}`,
+        message,
+        httpStatus: res.status,
+      });
+      throw new RankingTransportError(code, message);
     }
 
     const body = (await res.json()) as ListRankingRpcOk | ClientReadRpcFail | null;
@@ -43,7 +51,15 @@ export class SupabaseRankingReadAdapter implements RankingReadPort {
       throw new Error('list_ranking returned a malformed body');
     }
     if (body.ok !== true) {
-      throw new Error(body.message ?? body.code ?? 'list_ranking failed');
+      const message = body.message ?? body.code ?? 'list_ranking failed';
+      const code = resolveTransportFailureCode({
+        code: body.code ?? 'list_ranking_failed',
+        message,
+      });
+      if (code === 'network_error' || code === 'unauthenticated') {
+        throw new RankingTransportError(code, message);
+      }
+      throw new Error(message);
     }
 
     // Preserve server order exactly — do not sort.

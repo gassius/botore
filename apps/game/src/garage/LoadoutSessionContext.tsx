@@ -102,6 +102,7 @@ export function GarageSessionProvider(props: {
           accountId: current.userId,
           characterId: null,
           message: owned.message,
+          code: owned.code,
         }),
       );
       setBooting(false);
@@ -140,6 +141,7 @@ export function GarageSessionProvider(props: {
           characterId: owned.character.characterId,
           displayName: owned.character.displayName,
           message: fetched.message,
+          code: fetched.code,
         }),
       );
     }
@@ -313,6 +315,10 @@ export function GarageSessionProvider(props: {
         const current = await auth.getSession();
         if (!current) {
           setSession(null);
+          // F8: keep last confirmed; surface auth-expired so Customise is not silent.
+          setLoadout((s) =>
+            failSave(s, 'Session expired. Sign in again to continue.', 'unauthenticated'),
+          );
           return false;
         }
         if (
@@ -335,7 +341,7 @@ export function GarageSessionProvider(props: {
           accessToken: current.accessToken,
         });
         if (!result.ok) {
-          setLoadout((s) => failSave(s, result.message));
+          setLoadout((s) => failSave(s, result.message, result.code));
           return false;
         }
         setLoadout((s) =>

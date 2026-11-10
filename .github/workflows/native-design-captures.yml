@@ -307,7 +307,8 @@ jobs:
       - name: Build + live first-run fight captures on iOS Simulator
         env:
           CAPTURE_OUT_DIR: artifacts/native-captures
-          CAPTURE_IOS_SCHEME: BotoreGameClient
+          # Scheme auto-resolves (Botore after rename; never first CocoaPods entry).
+          # Override with CAPTURE_IOS_SCHEME only when needed.
           CAPTURE_IOS_DEVICE: 'iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14'
           CAPTURE_IOS_COLD_SEC: '16'
           CAPTURE_SETTLE_SEC: '5'

@@ -21,8 +21,11 @@ export const DESIGN_CAPTURE_DEV_PASSWORD = 'design-capture';
 export const LIVE_FIGHT_CAPTURE_EMAIL = 'dev-player@example.com';
 export const LIVE_FIGHT_CAPTURE_PASSWORD = 'local-only-password';
 
-/** Ranking capture override for empty/error stills (C5). */
-export type DesignCaptureRankingScenario = 'live' | 'empty' | 'error';
+/** Ranking capture override for empty/error/offline/auth-expired stills (C5/C10). */
+export type DesignCaptureRankingScenario = 'live' | 'empty' | 'error' | 'offline' | 'auth_expired';
+
+/** C10: force shared offline / auth-expired banners under design-capture. */
+export type DesignCaptureSessionFailure = 'offline' | 'auth_expired';
 
 /** C11: dual-fighter quick vs heavy pose stills under design-capture only. */
 export type DesignCapturePoseCompare = 'quick-vs-heavy';
@@ -62,8 +65,29 @@ export function parseDesignCaptureRankingScenario(
   raw: string | null | undefined,
 ): DesignCaptureRankingScenario | null {
   const v = trimPublic(raw ?? undefined)?.toLowerCase();
-  if (v === 'live' || v === 'empty' || v === 'error') return v;
+  if (v === 'live' || v === 'empty' || v === 'error' || v === 'offline' || v === 'auth_expired') {
+    return v;
+  }
   return null;
+}
+
+export function parseDesignCaptureSessionFailure(
+  raw: string | null | undefined,
+): DesignCaptureSessionFailure | null {
+  const v = trimPublic(raw ?? undefined)?.toLowerCase();
+  if (v === 'offline' || v === 'auth_expired') return v;
+  return null;
+}
+
+/**
+ * True when design-capture boots with a forced session-failure banner
+ * (`EXPO_PUBLIC_DESIGN_CAPTURE_SESSION_FAILURE=offline|auth_expired`).
+ */
+export function readDesignCaptureSessionFailure(
+  flag: string | undefined = process.env.EXPO_PUBLIC_DESIGN_CAPTURE_SESSION_FAILURE,
+): DesignCaptureSessionFailure | null {
+  if (!isDesignCaptureEnabled()) return null;
+  return parseDesignCaptureSessionFailure(flag);
 }
 
 function trimPublic(value: string | undefined): string | undefined {
@@ -164,6 +188,7 @@ export function parseDesignCaptureUrl(url: string): {
   rankingScenario: DesignCaptureRankingScenario | null;
   failClosed: boolean | null;
   poseCompare: DesignCapturePoseCompare | null;
+  sessionFailure: DesignCaptureSessionFailure | null;
 } {
   const trimmed = url.trim();
   if (!trimmed.toLowerCase().startsWith(`${DESIGN_CAPTURE_SCHEME}:`)) {
@@ -175,6 +200,7 @@ export function parseDesignCaptureUrl(url: string): {
       rankingScenario: null,
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     };
   }
 
@@ -198,6 +224,7 @@ export function parseDesignCaptureUrl(url: string): {
       rankingScenario: null,
       failClosed: null,
       poseCompare: null,
+      sessionFailure: null,
     };
   }
 
@@ -229,8 +256,20 @@ export function parseDesignCaptureUrl(url: string): {
   const rankingScenario = parseDesignCaptureRankingScenario(
     params.get('ranking') ?? params.get('rankingScenario'),
   );
+  const sessionFailure = parseDesignCaptureSessionFailure(
+    params.get('sessionFailure') ?? params.get('session_failure'),
+  );
 
-  return { route, mute, paintId, weaponId, rankingScenario, failClosed, poseCompare };
+  return {
+    route,
+    mute,
+    paintId,
+    weaponId,
+    rankingScenario,
+    failClosed,
+    poseCompare,
+    sessionFailure,
+  };
 }
 
 export function buildDesignCaptureUrl(
@@ -242,6 +281,7 @@ export function buildDesignCaptureUrl(
     rankingScenario?: DesignCaptureRankingScenario;
     failClosed?: boolean;
     poseCompare?: DesignCapturePoseCompare;
+    sessionFailure?: DesignCaptureSessionFailure;
   },
 ): string {
   const query: string[] = [];
@@ -253,6 +293,9 @@ export function buildDesignCaptureUrl(
   }
   if (opts?.failClosed === true) query.push('failClosed=1');
   if (opts?.poseCompare) query.push(`poseCompare=${encodeURIComponent(opts.poseCompare)}`);
+  if (opts?.sessionFailure) {
+    query.push(`sessionFailure=${encodeURIComponent(opts.sessionFailure)}`);
+  }
   const q = query.length > 0 ? `?${query.join('&')}` : '';
   return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${q}`;
 }

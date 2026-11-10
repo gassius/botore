@@ -29,6 +29,8 @@ export type RankingSessionState = {
   /** Last successfully read rows; kept coherent across refresh failures. */
   rows: readonly RankingRow[];
   errorMessage: string | null;
+  /** Machine code for errorMessage (network_error / unauthenticated / …). */
+  errorCode: string | null;
   /** True while a refresh is in flight and prior rows remain visible. */
   refreshing: boolean;
 };
@@ -36,4 +38,4 @@ export type RankingSessionState = {
 export type RankingLoadResult =
   | { kind: 'ok'; rows: readonly RankingRow[] }
   | { kind: 'unavailable_contract'; message: string }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string; code?: string };

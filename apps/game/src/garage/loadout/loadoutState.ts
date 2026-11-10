@@ -16,6 +16,8 @@ export type LoadoutPreviewState = {
   /** Loadout snapshot sent with the in-flight save (guards late responses). */
   readonly saveRequestLoadout: GarageLoadout | null;
   readonly lastError: string | null;
+  /** Machine code for lastError (network_error / unauthenticated / …). */
+  readonly lastErrorCode: string | null;
 };
 
 export function loadoutsEqual(a: GarageLoadout, b: GarageLoadout): boolean {
@@ -34,6 +36,7 @@ export function loadoutsEqual(a: GarageLoadout, b: GarageLoadout): boolean {
 
 export function createUnavailableLoadoutState(input?: {
   message?: string;
+  code?: string | null;
   atlasVersion?: string;
 }): LoadoutPreviewState {
   return {
@@ -49,6 +52,7 @@ export function createUnavailableLoadoutState(input?: {
     saving: false,
     saveRequestLoadout: null,
     lastError: input?.message ?? null,
+    lastErrorCode: input?.code ?? null,
   };
 }
 
@@ -73,6 +77,7 @@ export function createLoadoutPreviewState(input: {
     saving: false,
     saveRequestLoadout: null,
     lastError: null,
+    lastErrorCode: null,
   };
 }
 
@@ -88,6 +93,7 @@ export function markHydrationUnavailable(
     characterId: string | null;
     displayName?: string | null;
     message: string;
+    code?: string | null;
   },
 ): LoadoutPreviewState {
   const sameOwner =
@@ -108,6 +114,7 @@ export function markHydrationUnavailable(
       saving: false,
       saveRequestLoadout: null,
       lastError: input.message,
+      lastErrorCode: input.code ?? null,
     };
   }
 
@@ -124,6 +131,7 @@ export function markHydrationUnavailable(
     saving: false,
     saveRequestLoadout: null,
     lastError: input.message,
+    lastErrorCode: input.code ?? null,
   };
 }
 
@@ -139,6 +147,7 @@ export function setPendingLoadout(
     pendingLoadout,
     dirty: !loadoutsEqual(state.confirmedLoadout, pendingLoadout),
     lastError: null,
+    lastErrorCode: null,
   };
 }
 
@@ -152,6 +161,7 @@ export function discardPending(state: LoadoutPreviewState): LoadoutPreviewState 
     saving: false,
     saveRequestLoadout: null,
     lastError: null,
+    lastErrorCode: null,
   };
 }
 
@@ -170,6 +180,7 @@ export function beginSave(state: LoadoutPreviewState): LoadoutPreviewState {
     saving: true,
     saveRequestLoadout: state.pendingLoadout,
     lastError: null,
+    lastErrorCode: null,
   };
 }
 
@@ -177,12 +188,17 @@ export function beginSave(state: LoadoutPreviewState): LoadoutPreviewState {
  * Failed save keeps last confirmed configuration; pending preview intentionally
  * remains so the player can retry or discard.
  */
-export function failSave(state: LoadoutPreviewState, message: string): LoadoutPreviewState {
+export function failSave(
+  state: LoadoutPreviewState,
+  message: string,
+  code?: string | null,
+): LoadoutPreviewState {
   return {
     ...state,
     saving: false,
     saveRequestLoadout: null,
     lastError: message,
+    lastErrorCode: code ?? null,
     // confirmedLoadout unchanged by design
   };
 }
@@ -217,6 +233,7 @@ export function confirmSave(
       saving: false,
       saveRequestLoadout: null,
       lastError: null,
+      lastErrorCode: null,
     };
   }
 
@@ -231,5 +248,6 @@ export function confirmSave(
     saving: false,
     saveRequestLoadout: null,
     lastError: null,
+    lastErrorCode: null,
   };
 }

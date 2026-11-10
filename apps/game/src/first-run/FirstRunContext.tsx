@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { type DesignCaptureRankingScenario, readDesignCaptureConfig } from '../design-capture';
+import {
+  type DesignCaptureRankingScenario,
+  type DesignCaptureSessionFailure,
+  readDesignCaptureConfig,
+  readDesignCaptureSessionFailure,
+} from '../design-capture';
 import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
 import { useMute } from '../hooks/useMute';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -28,9 +33,16 @@ export type FirstRunContextValue = {
   /** Design-capture Ranking empty/error/live override (C5). */
   rankingCaptureScenario: DesignCaptureRankingScenario | null;
   setRankingCaptureScenario: (scenario: DesignCaptureRankingScenario | null) => void;
+  /**
+   * C10 design-capture: live offline / auth-expired override.
+   * Replaced (or cleared) on every capture deep link — never sticky across stills.
+   */
+  sessionFailureCapture: DesignCaptureSessionFailure | null;
+  setSessionFailureCapture: (failure: DesignCaptureSessionFailure | null) => void;
 };
 
-const FirstRunContext = createContext<FirstRunContextValue | null>(null);
+/** Exported so design-capture session-failure can read live overrides without a hard throw. */
+export const FirstRunContext = createContext<FirstRunContextValue | null>(null);
 
 function initialCaptureRoute(): FirstRunRoute {
   // Prefer deep-link / CI intent captured during auth over the baked env default.
@@ -52,6 +64,10 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
   const [demoOpponentId, setDemoOpponentId] = useState<string | null>(null);
   const [rankingCaptureScenario, setRankingCaptureScenario] =
     useState<DesignCaptureRankingScenario | null>(null);
+  const [sessionFailureCapture, setSessionFailureCapture] =
+    useState<DesignCaptureSessionFailure | null>(
+      () => pending.sessionFailure ?? readDesignCaptureSessionFailure(),
+    );
 
   const value = useMemo<FirstRunContextValue>(
     () => ({
@@ -78,6 +94,8 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       setDemoOpponentId,
       rankingCaptureScenario,
       setRankingCaptureScenario,
+      sessionFailureCapture,
+      setSessionFailureCapture,
     }),
     [
       route,
@@ -90,6 +108,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       demoWeaponId,
       demoOpponentId,
       rankingCaptureScenario,
+      sessionFailureCapture,
     ],
   );
 

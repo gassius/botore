@@ -42,6 +42,11 @@ declare namespace NodeJS {
      */
     EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE?: string;
     /**
+     * C10: force offline / auth-expired banners under design-capture
+     * (`offline` | `auth_expired`). Never for store builds.
+     */
+    EXPO_PUBLIC_DESIGN_CAPTURE_SESSION_FAILURE?: string;
+    /**
      * R3 Sentry public DSN. When unset, crash reporting stays disabled
      * (local Metro needs no cloud account).
      */

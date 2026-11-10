@@ -1,8 +1,9 @@
-import type { RankingReadPort } from '../RankingReadPort';
+import { SESSION_FAILURE_COPY } from '../../session-failure';
+import { RankingTransportError, type RankingReadPort } from '../RankingReadPort';
 import { DEV_EMPTY_RANKING_ROWS, DEV_POPULATED_RANKING_ROWS } from '../fixtures/devRankingFixtures';
 import type { RankingRow } from '../types';
 
-export type FixtureRankingScenario = 'populated' | 'empty' | 'error';
+export type FixtureRankingScenario = 'populated' | 'empty' | 'error' | 'offline' | 'auth_expired';
 
 export type FixtureRankingReadAdapterOptions = {
   scenario?: FixtureRankingScenario;
@@ -28,7 +29,7 @@ export class FixtureRankingReadAdapter implements RankingReadPort {
     this.scenario = options.scenario ?? 'populated';
     this.rows = options.rows ?? DEV_POPULATED_RANKING_ROWS;
     this.delayMs = options.delayMs ?? 0;
-    this.errorMessage = options.errorMessage ?? 'DEV fixture ranking load failed';
+    this.errorMessage = options.errorMessage ?? 'Could not load ranking.';
   }
 
   async list(): Promise<readonly RankingRow[]> {
@@ -36,6 +37,14 @@ export class FixtureRankingReadAdapter implements RankingReadPort {
       await new Promise<void>((resolve) => {
         setTimeout(resolve, this.delayMs);
       });
+    }
+
+    // Player-facing copy only — never leak design-capture internals into banners.
+    if (this.scenario === 'offline') {
+      throw new RankingTransportError('network_error', SESSION_FAILURE_COPY.offline.detail);
+    }
+    if (this.scenario === 'auth_expired') {
+      throw new RankingTransportError('unauthenticated', SESSION_FAILURE_COPY.auth_expired.detail);
     }
 
     if (this.scenario === 'error') {

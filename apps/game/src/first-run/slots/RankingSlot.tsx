@@ -9,13 +9,16 @@ import { useFirstRun } from '../FirstRunContext';
  */
 export function RankingSlot(): React.ReactElement {
   const { goTo, rankingCaptureScenario } = useFirstRun();
-  const { session } = useGarageSession();
+  const { session, signOut } = useGarageSession();
 
   return (
     <RankingScreen
       accessToken={session?.accessToken ?? null}
       captureScenario={rankingCaptureScenario}
       onBack={() => goTo('Stable')}
+      onSignInAgain={() => {
+        void signOut();
+      }}
     />
   );
 }
