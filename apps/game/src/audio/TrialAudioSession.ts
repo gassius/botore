@@ -18,7 +18,12 @@ export type TrialAudioSources = Readonly<Record<TrialAudioClipId, AudioSource | 
 export type TrialAudioSessionOptions = {
   readonly backend?: TrialAudioBackend;
   readonly sources: TrialAudioSources;
+  /** Master mute — silences music + effects. */
   readonly muted?: boolean;
+  /** Independent music channel (default true). Master mute still wins. */
+  readonly musicEnabled?: boolean;
+  /** Independent effects/SFX channel (default true). Master mute still wins. */
+  readonly effectsEnabled?: boolean;
   readonly playing?: boolean;
 };
 
@@ -26,6 +31,8 @@ export type TrialAudioSession = {
   notifyCommand: (cmd: AnimationCommand) => void;
   playUiTap: () => void;
   setMuted: (muted: boolean) => void;
+  setMusicEnabled: (enabled: boolean) => void;
+  setEffectsEnabled: (enabled: boolean) => void;
   setPlaying: (playing: boolean) => void;
   /** Stop loop + owned one-shots; allow hush/music again on the next show_battle. */
   reset: () => void;
@@ -49,6 +56,8 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
   const backend = opts.backend ?? createNoopAudioBackend();
   const sources = opts.sources;
   let muted = Boolean(opts.muted);
+  let musicEnabled = opts.musicEnabled !== false;
+  let effectsEnabled = opts.effectsEnabled !== false;
   let playing = opts.playing !== false;
   let disposed = false;
   let music: LoopHandle | null = null;
@@ -58,6 +67,9 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
   let modeEnsured = false;
   const oneshots = new Set<OneShotHandle>();
   const stats = { cues: 0, failures: 0 };
+
+  const musicChannelMuted = () => muted || !musicEnabled;
+  const effectsChannelMuted = () => muted || !effectsEnabled;
 
   const ensureMode = () => {
     if (modeEnsured || disposed) return;
@@ -92,7 +104,7 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
   const playClip = (id: TrialAudioClipId) => {
     if (disposed) return;
     stats.cues += 1;
-    if (muted && id !== 'musicLoop') return;
+    if (effectsChannelMuted()) return;
     const source = sources[id];
     if (source == null) {
       stats.failures += 1;
@@ -100,10 +112,11 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     }
     ensureMode();
     const volume = trialAudioClipVolume(id);
+    const channelMuted = effectsChannelMuted();
     safeRun(
       id,
       async () => {
-        const handle = await backend.playOneShot(source, { volume, muted });
+        const handle = await backend.playOneShot(source, { volume, muted: channelMuted });
         if (!handle) {
           stats.failures += 1;
           return;
@@ -114,13 +127,13 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
         }
         oneshots.add(handle);
         try {
-          await handle.setMuted(muted);
+          await handle.setMuted(effectsChannelMuted());
           if (disposed) {
             await handle.stop();
             forgetOneShot(handle);
             return;
           }
-          if (!muted) {
+          if (!effectsChannelMuted()) {
             await handle.play();
           }
         } catch {
@@ -136,12 +149,14 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
   };
 
   const reconcileMusic = async (handle: LoopHandle) => {
-    await handle.setMuted(muted);
+    await handle.setMuted(musicChannelMuted());
     await handle.setPaused(!playing);
   };
 
   const startMusic = () => {
     if (disposed || musicStarted) return;
+    // Still create the loop handle when channel-muted so unmute can resume
+    // without waiting for another show_battle — but never audible while muted.
     musicStarted = true;
     const generation = musicGeneration;
     const source = sources.musicLoop;
@@ -185,6 +200,31 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     );
   };
 
+  const reconcileOwnedOneShots = () => {
+    const channelMuted = effectsChannelMuted();
+    for (const handle of oneshots) {
+      safeRun(
+        'oneshotMuted',
+        () => handle.setMuted(channelMuted),
+        () => {
+          stats.failures += 1;
+        },
+      );
+    }
+  };
+
+  const reconcileOwnedMusic = () => {
+    const handle = music;
+    if (!handle) return;
+    safeRun(
+      'setMuted',
+      () => reconcileMusic(handle),
+      () => {
+        stats.failures += 1;
+      },
+    );
+  };
+
   const stopMusic = () => {
     musicGeneration += 1;
     const handle = music;
@@ -214,24 +254,16 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     },
     setMuted: (next) => {
       muted = Boolean(next);
-      for (const handle of oneshots) {
-        safeRun(
-          'oneshotMuted',
-          () => handle.setMuted(muted),
-          () => {
-            stats.failures += 1;
-          },
-        );
-      }
-      const handle = music;
-      if (!handle) return;
-      safeRun(
-        'setMuted',
-        () => handle.setMuted(muted),
-        () => {
-          stats.failures += 1;
-        },
-      );
+      reconcileOwnedOneShots();
+      reconcileOwnedMusic();
+    },
+    setMusicEnabled: (enabled) => {
+      musicEnabled = Boolean(enabled);
+      reconcileOwnedMusic();
+    },
+    setEffectsEnabled: (enabled) => {
+      effectsEnabled = Boolean(enabled);
+      reconcileOwnedOneShots();
     },
     setPlaying: (next) => {
       playing = Boolean(next);

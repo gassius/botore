@@ -73,6 +73,10 @@ export interface CanonicalReplayPlayerProps {
   readonly result: ConfirmedFightResult;
   readonly autoPlay?: boolean;
   readonly muted?: boolean;
+  /** Independent music channel (default true). Master mute still wins. */
+  readonly musicEnabled?: boolean;
+  /** Independent effects channel (default true). Master mute still wins. */
+  readonly effectsEnabled?: boolean;
   /** Effective reduced-motion preference from shell (force ∪ OS). */
   readonly reducedMotion?: boolean;
   /** When false, hide local Play/Replay buttons (shell ReplayAudioControls owns them). */
@@ -106,6 +110,8 @@ export const CanonicalReplayPlayer = forwardRef<
     result,
     autoPlay = true,
     muted = false,
+    musicEnabled = true,
+    effectsEnabled = true,
     reducedMotion: reducedMotionProp,
     showLocalControls = true,
     onFinished,
@@ -193,6 +199,8 @@ export const CanonicalReplayPlayer = forwardRef<
 
   const trialAudio = useTrialReplayAudio({
     muted,
+    musicEnabled,
+    effectsEnabled,
     playing: playbackUi.playing,
     enabled: media.assetsAvailable,
   });

@@ -1,6 +1,7 @@
 /**
  * Named first-run routes / slots (shared-ui-rig-contract).
  * Domain screens mount into these slots — shell does not own F8–F10 logic.
+ * Settings is a side surface (Garage Tag entry), not part of the fight flow.
  */
 export const FIRST_RUN_ROUTES = [
   'Stable',
@@ -10,6 +11,7 @@ export const FIRST_RUN_ROUTES = [
   'Replay',
   'FightResult',
   'Ranking',
+  'Settings',
 ] as const;
 
 export type FirstRunRoute = (typeof FIRST_RUN_ROUTES)[number];
@@ -22,10 +24,19 @@ export const ROUTE_TITLES: Record<FirstRunRoute, string> = {
   Replay: 'Fight Replay',
   FightResult: 'Fight Result',
   Ranking: 'Ranking',
+  Settings: 'Settings',
 };
 
-/** Linear demo navigation order for the overnight shell. */
-export const ROUTE_FLOW: FirstRunRoute[] = [...FIRST_RUN_ROUTES];
+/** Linear fight-loop navigation — Settings is side-entry only. */
+export const ROUTE_FLOW: FirstRunRoute[] = [
+  'Stable',
+  'Customise',
+  'Opponents',
+  'ConfirmFight',
+  'Replay',
+  'FightResult',
+  'Ranking',
+];
 
 export function nextRoute(current: FirstRunRoute): FirstRunRoute | null {
   const i = ROUTE_FLOW.indexOf(current);

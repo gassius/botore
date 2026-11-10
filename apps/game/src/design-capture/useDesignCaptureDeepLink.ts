@@ -24,7 +24,7 @@ export function useDesignCaptureDeepLink(): void {
   const {
     goTo,
     muted,
-    toggleMute,
+    setMuted,
     setDemoPaintId,
     setDemoWeaponId,
     setRankingCaptureScenario,
@@ -65,8 +65,9 @@ export function useDesignCaptureDeepLink(): void {
       }
       if (parsed.paintId) setDemoPaintId(parsed.paintId);
       if (parsed.weaponId) setDemoWeaponId(parsed.weaponId);
-      if (parsed.mute === true && !mutedRef.current) toggleMute();
-      if (parsed.mute === false && mutedRef.current) toggleMute();
+      // Idempotent set — safer than toggle when prefs hydrate from disk.
+      if (parsed.mute === true) setMuted(true);
+      if (parsed.mute === false) setMuted(false);
     };
 
     const applyRouteIfNew = (route: FirstRunRoute | null, fromFile: boolean) => {
@@ -145,6 +146,6 @@ export function useDesignCaptureDeepLink(): void {
     setDemoWeaponId,
     setRankingCaptureScenario,
     setSessionFailureCapture,
-    toggleMute,
+    setMuted,
   ]);
 }

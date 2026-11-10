@@ -6,8 +6,7 @@ import {
   readDesignCaptureSessionFailure,
 } from '../design-capture';
 import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
-import { useMute } from '../hooks/useMute';
-import { useReducedMotion } from '../hooks/useReducedMotion';
+import { usePlayerSettings } from '../settings';
 import { nextRoute, prevRoute, type FirstRunRoute } from './routes';
 
 export type FirstRunContextValue = {
@@ -16,10 +15,18 @@ export type FirstRunContextValue = {
   goNext: () => void;
   goBack: () => void;
   muted: boolean;
+  setMuted: (muted: boolean) => void;
   toggleMute: () => void;
+  musicEnabled: boolean;
+  setMusicEnabled: (enabled: boolean) => void;
+  effectsEnabled: boolean;
+  setEffectsEnabled: (enabled: boolean) => void;
+  /** Effective reduced motion (OS ∪ force override). */
   reducedMotion: boolean;
   forceReducedMotion: boolean;
   setForceReducedMotion: (v: boolean) => void;
+  osReducedMotion: boolean;
+  settingsHydrated: boolean;
   /**
    * Shell-local demo selection only — NOT F8 confirmed/pending domain.
    * Domain tickets own real pending vs confirmed loadout + server save.
@@ -53,8 +60,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
   const captureBoot = readDesignCaptureConfig();
   const pending = peekCaptureIntent();
   const [route, setRoute] = useState<FirstRunRoute>(initialCaptureRoute);
-  const { muted, toggleMute } = useMute(false);
-  const { reducedMotion, forceReducedMotion, setForceReducedMotion } = useReducedMotion();
+  const settings = usePlayerSettings();
   const [demoPaintId, setDemoPaintId] = useState(
     pending.paintId ?? captureBoot.initialPaintId ?? 'oxide',
   );
@@ -78,14 +84,26 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
         if (n) setRoute(n);
       },
       goBack: () => {
+        // Settings is side-entry — Back always returns to Stable chrome.
+        if (route === 'Settings') {
+          setRoute('Stable');
+          return;
+        }
         const p = prevRoute(route);
         if (p) setRoute(p);
       },
-      muted,
-      toggleMute,
-      reducedMotion,
-      forceReducedMotion,
-      setForceReducedMotion,
+      muted: settings.muted,
+      setMuted: settings.setMuted,
+      toggleMute: settings.toggleMute,
+      musicEnabled: settings.musicEnabled,
+      setMusicEnabled: settings.setMusicEnabled,
+      effectsEnabled: settings.effectsEnabled,
+      setEffectsEnabled: settings.setEffectsEnabled,
+      reducedMotion: settings.reducedMotion,
+      forceReducedMotion: settings.forceReducedMotion,
+      setForceReducedMotion: settings.setForceReducedMotion,
+      osReducedMotion: settings.osReducedMotion,
+      settingsHydrated: settings.hydrated,
       demoPaintId,
       demoWeaponId,
       setDemoPaintId,
@@ -99,11 +117,18 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
     }),
     [
       route,
-      muted,
-      toggleMute,
-      reducedMotion,
-      forceReducedMotion,
-      setForceReducedMotion,
+      settings.muted,
+      settings.setMuted,
+      settings.toggleMute,
+      settings.musicEnabled,
+      settings.setMusicEnabled,
+      settings.effectsEnabled,
+      settings.setEffectsEnabled,
+      settings.reducedMotion,
+      settings.forceReducedMotion,
+      settings.setForceReducedMotion,
+      settings.osReducedMotion,
+      settings.hydrated,
       demoPaintId,
       demoWeaponId,
       demoOpponentId,

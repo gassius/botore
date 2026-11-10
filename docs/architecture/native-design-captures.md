@@ -90,10 +90,14 @@ Artifacts land in `artifacts/native-captures/` (gitignored) with a
 
 Deep links used by the scripts:
 
-| URL                              | Effect               |
-| -------------------------------- | -------------------- |
-| `botore://capture/Stable`        | Jump to Stable       |
-| `botore://capture/Replay?mute=1` | Jump to Replay muted |
+| URL                              | Effect                |
+| -------------------------------- | --------------------- |
+| `botore://capture/Stable`        | Jump to Stable        |
+| `botore://capture/Settings`      | Jump to Settings (C9) |
+| `botore://capture/Replay?mute=1` | Jump to Replay muted  |
+
+Live-fight CI also captures **Settings** and a **muted Replay** still
+(`settings`, `replay-muted`) for audio/settings design review.
 
 ## EAS path (optional cloud binary)
 

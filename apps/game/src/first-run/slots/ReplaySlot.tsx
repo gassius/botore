@@ -40,7 +40,8 @@ import { DomainNote } from './DomainNote';
  * Never silently plays DEV golden fixtures on the first-run path.
  */
 export function ReplaySlot(): React.ReactElement {
-  const { goBack, goNext, muted, toggleMute, reducedMotion } = useFirstRun();
+  const { goBack, goNext, muted, toggleMute, musicEnabled, effectsEnabled, reducedMotion } =
+    useFirstRun();
   const { lastFight, fightKind } = useFightSession();
   const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
   const fxHoldRef = useRef<FxCaptureHoldState>(initialFxCaptureHoldState());
@@ -150,6 +151,8 @@ export function ReplaySlot(): React.ReactElement {
           ref={playerRef}
           result={confirmed}
           muted={muted}
+          musicEnabled={musicEnabled}
+          effectsEnabled={effectsEnabled}
           // Live capture needs motion poses + FX frames for stills (not reduced-motion accents).
           reducedMotion={liveCapture ? false : reducedMotion}
           // Live capture starts idle so replay-start ≠ first hit hold; play() after idle window.

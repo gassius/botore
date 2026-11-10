@@ -375,6 +375,7 @@ capture_named() {
   local label="$2"
   local settle="${3:-5}"
   local battle_id="${4:-}"
+  local mute="${5:-}"
   local screencap_args=(
     --out "${OUT_DIR}"
     --udid "${UDID}"
@@ -383,6 +384,9 @@ capture_named() {
   )
   if [[ -n "${battle_id}" ]]; then
     screencap_args+=(--battle-id "${battle_id}")
+  fi
+  if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then
+    screencap_args+=(--mute)
   fi
   CAPTURE_SETTLE_SEC="${settle}" \
     CAPTURE_IOS_COLD_SEC="${CAPTURE_IOS_COLD_SEC:-16}" \
@@ -397,6 +401,8 @@ capture_named() {
 }
 
 capture_named Stable garage 5
+# C9 Settings — mute / Music / Effects / reduced motion
+capture_named Settings settings 5
 capture_named ConfirmFight confirm 8
 capture_named Replay replay-impact 14
 
@@ -432,8 +438,11 @@ echo "fight proof: battleId=${BATTLE_ID} xp=${XP}" >&2
 # Pass battle id so FightResult restores the sealed fight after process relaunch.
 capture_named FightResult result 5 "${BATTLE_ID}"
 
+# C9 muted replay still (same sealed fight; mute=1 intent)
+capture_named Replay replay-muted 5 "${BATTLE_ID}" 1
+
 missing=0
-for label in garage confirm replay-impact result; do
+for label in garage settings confirm replay-impact result replay-muted; do
   matches=( "${OUT_DIR}"/ios-*-"${label}".png )
   if [[ ! -e "${matches[0]:-}" ]]; then
     echo "error: missing capture PNG ${label}" >&2

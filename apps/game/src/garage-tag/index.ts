@@ -17,6 +17,7 @@ export { WeaponGlyphSlot, type WeaponGlyphSlotProps } from './WeaponGlyphSlot';
 export { Nameplate, type NameplateProps } from './Nameplate';
 export { GlyphButton, type GlyphButtonProps } from './GlyphButton';
 export { ReplayAudioControls, type ReplayAudioControlsProps } from './ReplayAudioControls';
+export { SettingsToggleRow, type SettingsToggleRowProps } from './SettingsToggleRow';
 export { ScreenHeader, type ScreenHeaderProps } from './ScreenHeader';
 export { ScreenChrome, type ScreenChromeProps } from './ScreenChrome';
 export { StatusErrorBanner, type StatusErrorBannerProps } from './StatusErrorBanner';

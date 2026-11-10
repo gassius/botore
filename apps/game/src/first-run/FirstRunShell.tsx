@@ -12,6 +12,7 @@ import { ConfirmFightSlot } from './slots/ConfirmFightSlot';
 import { ReplaySlot } from './slots/ReplaySlot';
 import { FightResultSlot } from './slots/FightResultSlot';
 import { RankingSlot } from './slots/RankingSlot';
+import { SettingsSlot } from './slots/SettingsSlot';
 
 function RouteSlot({ route }: { route: FirstRunRoute }): React.ReactElement {
   switch (route) {
@@ -29,6 +30,8 @@ function RouteSlot({ route }: { route: FirstRunRoute }): React.ReactElement {
       return <FightResultSlot />;
     case 'Ranking':
       return <RankingSlot />;
+    case 'Settings':
+      return <SettingsSlot />;
     default: {
       const _exhaustive: never = route;
       return _exhaustive;
