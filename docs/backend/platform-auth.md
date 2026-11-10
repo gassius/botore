@@ -86,10 +86,44 @@ Migration `0023_player_identities.sql`: unique `(provider, platform_id)` →
 - [ ] Else thin custom Expo module for GC `fetchItems` + PGS server auth code
 - [ ] Requires EAS **development** / preview **dev client** — not Expo Go
 
-### Supabase project
+### Supabase project (Development) — Infra handoff
+
+Agent cannot deploy: Supabase MCP auth was declined; no project credentials in this
+VM. **Supabase Infra** (or Carlos) must run against the **Development** project:
+
+```bash
+# From repo root, linked to Development (or with --project-ref <dev-ref>)
+pnpm exec supabase db push
+# applies supabase/migrations/0023_player_identities.sql
+
+pnpm exec supabase functions deploy platform-auth --no-verify-jwt
+# config.toml already has [functions.platform-auth] verify_jwt = false
+```
+
+Confirm after deploy:
+
+```bash
+curl -sS -X POST "$SUPABASE_URL/functions/v1/platform-auth" \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"provider":"device_fallback","deviceId":"00000000-0000-4000-8000-0000000000aa"}'
+# expect HTTP 200, ok:true, session.access_token present
+```
 
 - [ ] Apply migration `0023_player_identities`
-- [ ] Deploy Edge Function `platform-auth` with service role available
+- [ ] Deploy Edge Function `platform-auth` (service role available to the function)
 - [ ] Confirm hosted Dev does **not** need anonymous sign-ins for this path
+- [ ] Smoke `device_fallback` as above (today’s Android APK path — no PGS secrets required)
+
+### Today’s Android APK (device-fallback only)
+
+PGS / Play Console / SHA-1 / `PLAY_GAMES_*` Edge secrets are **not** required for
+silent first launch today. The client has **no** `@tubinex/expo-game-services`
+dependency yet, so `collectPlatformProof()` returns null and
+`signInWithNativePlatformIdentity` always POSTs `provider: "device_fallback"`
+with a SecureStore UUID. That needs only Migration `0023` + deployed
+`platform-auth` + `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+in the APK.
 
 ClickUp: [C12](https://app.clickup.com/t/1amjtrey7v7).
