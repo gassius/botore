@@ -42,9 +42,11 @@ events appear in a dashboard and symbolication upload is skipped.
 3. **Auth token** — EAS secret `SENTRY_AUTH_TOKEN` (sensitive) so native builds
    upload source maps and debug symbols.
 4. **EAS `projectId` / signing** — owned by **R2**. Crash reporting does not
-   invent an Expo project; once R2 lands `extra.eas.projectId` and credentials,
-   re-stack / rebuild preview to prove upload. Native GitHub stack onto R2 only
-   if that PR is the hard dependency for merge order.
+   invent an Expo project; see
+   `docs/architecture/eas-production-credentials.md`. Until Carlos replaces
+   `REPLACE_WITH_EAS_PROJECT_ID_VIA_EAS_INIT` via `eas init` and provisions
+   signing, live symbolication upload remains blocked. Native GitHub stack onto
+   R2 only if that PR is the hard dependency for merge order.
 
 ## Forced native / JS error path (internal proof)
 

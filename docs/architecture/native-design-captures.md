@@ -114,10 +114,12 @@ Live-fight CI also captures **Settings** and a **muted Replay** still
   or `?sessionFailure=auth_expired` (also Ranking). Shared offline / auth-expired
   banners — never an empty “no players” board.
 
-One-time account link (Carlos / Expo owner):
+One-time account link (Carlos / Expo owner) — also the R2 production gate; see
+`docs/architecture/eas-production-credentials.md`:
 
 ```bash
 cd apps/game
+npx eas-cli@latest login
 npx eas-cli@latest init   # writes projectId into app config when authorized
 npx eas-cli@latest build -p android --profile design-review
 # when a Mac/signing path exists:

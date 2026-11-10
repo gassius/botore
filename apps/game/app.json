@@ -66,6 +66,11 @@
         }
       ],
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID_VIA_EAS_INIT"
+      }
+    }
   }
 }

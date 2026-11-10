@@ -65,13 +65,22 @@
     },
     "production": {
       "autoIncrement": true,
+      "distribution": "store",
       "env": {
         "EXPO_PUBLIC_CRASH_REPORTING": "1",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
+      "android": {
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    }
   }
 }
