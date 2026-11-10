@@ -1,5 +1,6 @@
 import React from 'react';
 import { isPublicAccountDeletePath } from './src/account/isPublicAccountDeletePath';
+import { PublicRouteShell } from './src/account/PublicRouteShell';
 import { GarageRoot } from './src/garage/GarageRoot';
 import { PublicAccountDeleteScreen } from './src/garage/screens/PublicAccountDeleteScreen';
 
@@ -10,10 +11,16 @@ import { PublicAccountDeleteScreen } from './src/garage/screens/PublicAccountDel
  * F7 BotAssembler is consumed via BotAssemblerSlot / apps/game/src/assembler.
  *
  * R5: `/account/delete` on the web export is a public deletion page (no garage).
+ * Public routes wrap in PublicRouteShell (SafeAreaProvider) — they never mount
+ * GarageRoot, which is otherwise the only SafeAreaProvider on the tree.
  */
 export default function App(): React.ReactElement {
   if (isPublicAccountDeletePath()) {
-    return <PublicAccountDeleteScreen />;
+    return (
+      <PublicRouteShell>
+        <PublicAccountDeleteScreen />
+      </PublicRouteShell>
+    );
   }
   return <GarageRoot />;
 }
