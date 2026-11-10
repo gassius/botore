@@ -27,8 +27,10 @@ checks. Sanctioned authenticated client reads (no table GRANTs on
 `list_opponent_roster()`, `get_fight_allowance_summary()` —
 see `docs/backend/client-read-rpcs.md`. Admin read APIs (`admin_*` views,
 `admin_dashboard_snapshot()`, `backend_health_snapshot()`, and Edge
-`/functions/v1/health`) are ready for a future dashboard UI — see
-`docs/backend/admin-dashboard.md`. Dashboard pages are not built here.
+`/functions/v1/health`) power `apps/dashboard` (B3) — see
+`docs/backend/admin-dashboard.md`. The dashboard uses
+`DASHBOARD_DATABASE_URL` + Edge health; never Fastify api/worker health URLs
+or browser service-role keys.
 
 Edge combat (F2/F3): `supabase/functions/combat-v1` runs deterministic
 `combat-v1` with a server CSPRNG seed after `prepare_fight_context()`

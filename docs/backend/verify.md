@@ -181,10 +181,12 @@ pnpm test:coverage:db -- --log /tmp/db-tests.log
 pnpm test:coverage:edge
 ```
 
-## Admin dashboard readiness (B2 APIs/views)
+## Admin dashboard (B2 APIs/views + B3 UI)
 
-Backend contract for a future dashboard UI — **no `apps/dashboard` UI in this
-slice**. Full table: [`docs/backend/admin-dashboard.md`](./admin-dashboard.md).
+Backend contract for `apps/dashboard`: server components call
+`admin_dashboard_snapshot()` via `DASHBOARD_DATABASE_URL` and prefer Edge
+`GET /functions/v1/health` (fallback: snapshot `backend_health_snapshot`).
+Full table: [`docs/backend/admin-dashboard.md`](./admin-dashboard.md).
 
 **SEC lockdown:** `admin_*` views and
 `backend_health_snapshot` / `outbox_status_snapshot` / `admin_list_cron_jobs`

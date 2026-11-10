@@ -1,17 +1,42 @@
-# Admin dashboard backend APIs (B2)
+# Admin dashboard (B2 APIs + B3 UI)
 
-Read-only SQL views and RPCs for a future `apps/dashboard` UI. **This ticket
-ships APIs/views only** — no Next.js pages, no Vercel UI work.
+Read-only SQL views/RPCs (B2) consumed by `apps/dashboard` (B3). Prefer these
+contracts over ad-hoc table SQL in dashboard code.
 
 Connect with the server-side reporting credential (`DASHBOARD_DATABASE_URL`)
-or `service_role`. Do not expose service-role keys to the browser. Prefer
-these contracts over ad-hoc table SQL in dashboard code.
+or `service_role`. Do not expose service-role keys to the browser. Package
+boundary: `pg` read-only only in `apps/dashboard/lib` (see
+`scripts/check-boundaries.mjs`).
 
 All `admin_*` views and admin/health definer RPCs
 (`admin_dashboard_snapshot`, `admin_list_cron_job_runs`,
 `backend_health_snapshot`, `outbox_status_snapshot`, `admin_list_cron_jobs`)
 are **granted only to `service_role`** (not `anon` / `authenticated`).
-Client JWT callers must be denied.
+Client JWT callers must be denied. Local/CI reporting uses
+`DASHBOARD_DATABASE_URL` (postgres owner / reporting URL), never a browser
+JWT.
+
+## Dashboard UI (B3)
+
+`apps/dashboard` server components:
+
+1. Call `admin_dashboard_snapshot()` via `DASHBOARD_DATABASE_URL` for fights,
+   outbox, cron, atlas, DAU, and recent battles.
+2. Prefer live health from Edge `GET /functions/v1/health`
+   (`SUPABASE_URL` + optional `SUPABASE_ANON_KEY`, or `EDGE_HEALTH_URL`).
+   Fall back to `snapshot.health` (`backend_health_snapshot()`).
+3. **Do not** use Fastify-era `API_HEALTH_URL` / `WORKER_HEALTH_URL` as the
+   health source of truth.
+
+Dev login remains the shared-secret cookie gate (`DASHBOARD_AUTH_TOKEN`) and
+fails closed outside `BOTORE_ENV=development`.
+
+```bash
+# Local smoke (after pnpm env:up && db:reset)
+cp apps/dashboard/.env.example apps/dashboard/.env.local
+# set DASHBOARD_AUTH_TOKEN cookie via /login, then:
+pnpm --filter @botore/dashboard dev   # http://127.0.0.1:3100
+```
 
 ## One-shot poll
 
@@ -36,7 +61,7 @@ Returns JSON with:
 | `recentBattles`       | `admin_recent_battles` (limit 25)           |
 
 HTTP health remains `GET /functions/v1/health` (same shape as `health` above
-plus `service: "health"`).
+plus `service: "health"` and `checks.edge_functions` probes).
 
 ## Domain views / RPCs
 
@@ -86,7 +111,15 @@ psql "$DATABASE_URL" -c "select * from public.admin_list_cron_job_runs(10);"
 psql "$DATABASE_URL" -c "select * from public.admin_fight_stats;"
 psql "$DATABASE_URL" -c "select * from public.admin_players_overview;"
 psql "$DATABASE_URL" -c "select version, status from public.admin_atlas_overview;"
+
+# Anon JWT must be denied (expect permission denied / 401)
+curl -sS "$SUPABASE_URL/rest/v1/rpc/admin_dashboard_snapshot" \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
 ```
 
 Covered by `supabase/tests/run.sql` (`TEST-OK B2 admin dashboard APIs`) and
-`node scripts/backend-smoke.mjs`.
+`node scripts/backend-smoke.mjs`. Dashboard unit coverage:
+`apps/dashboard/test/snapshot.test.ts`.
