@@ -7,13 +7,15 @@ import {
   StatusErrorBanner,
   garageTag,
 } from '../../garage-tag';
+import { resolveAuthEntryPresentation } from '../auth/authEntryPresentation';
 import { useGarageSession } from '../LoadoutSessionContext';
 
 /** Authenticated entry — Garage Tag chrome from shell exports. */
 export function AuthEntryScreen(): React.ReactElement {
   const { authKind, signIn } = useGarageSession();
-  const [email, setEmail] = useState('dev@botore.local');
-  const [password, setPassword] = useState('dev-password');
+  const presentation = resolveAuthEntryPresentation(authKind);
+  const [email, setEmail] = useState(presentation.email);
+  const [password, setPassword] = useState(presentation.password);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,12 +47,7 @@ export function AuthEntryScreen(): React.ReactElement {
       >
         <BrandWordmark width={200} />
         <Text style={styles.subtitle} allowFontScaling>
-          Sign in to open your stable.{' '}
-          {authKind === 'dev'
-            ? 'DEV auth scaffold.'
-            : authKind === 'unavailable'
-              ? 'Backend required.'
-              : 'Supabase Auth.'}
+          {presentation.subtitle}
         </Text>
 
         {authKind === 'unavailable' ? (
@@ -93,11 +90,14 @@ export function AuthEntryScreen(): React.ReactElement {
           testID="auth-password"
         />
 
-        <View style={styles.spacer} />
-        <Text style={styles.footnote} allowFontScaling>
-          Public anon key only — no service-role credentials. RLS + save_bot_loadout remain
-          authoritative.
-        </Text>
+        {presentation.footnote ? (
+          <>
+            <View style={styles.spacer} />
+            <Text style={styles.footnote} allowFontScaling>
+              {presentation.footnote}
+            </Text>
+          </>
+        ) : null}
       </ScreenChrome>
     </KeyboardAvoidingView>
   );
