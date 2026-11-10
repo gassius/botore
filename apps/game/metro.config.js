@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { getDefaultConfig } = require('expo/metro-config');
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 
-const config = getDefaultConfig(__dirname);
+// Sentry Metro serializer assigns Debug IDs for release source maps (R3).
+const config = getSentryExpoConfig(__dirname);
 
 // Base-pack AAC placeholders ship as Metro assets (F6). Catalogue packs are
 // downloaded on demand and must not be required() into the bundle.

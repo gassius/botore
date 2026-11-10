@@ -36,5 +36,20 @@ declare namespace NodeJS {
      * Never for store builds.
      */
     EXPO_PUBLIC_DESIGN_CAPTURE_FAIL_CLOSED?: string;
+    /**
+     * R3 Sentry public DSN. When unset, crash reporting stays disabled
+     * (local Metro needs no cloud account).
+     */
+    EXPO_PUBLIC_SENTRY_DSN?: string;
+    /**
+     * R3 crash reporting gate: `1` enable (preview/production), `0` force off
+     * (DEV / design-review). Unset → infer from playable fail-closed policy.
+     */
+    EXPO_PUBLIC_CRASH_REPORTING?: string;
+    /**
+     * Internal proof build only: capture a forced test error after init.
+     * Never bake into store production.
+     */
+    EXPO_PUBLIC_CRASH_REPORTING_FORCE_TEST?: string;
   }
 }

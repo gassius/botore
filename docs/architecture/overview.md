@@ -57,6 +57,10 @@ protocol, parked native acceptance checks, and cost ledger —
 `docs/architecture/android-release-perf.md`. Agree limits on ClickUp before
 treating device numbers as acceptance; Expo web is not a substitute.
 
+Crash reporting (R3): Sentry on preview/production playable profiles only —
+`docs/architecture/crash-reporting.md`. Local Metro needs no cloud account;
+Carlos provisions DSN / org secrets (and R2 EAS `projectId`) before live proof.
+
 This checkout still contains leftover Fastify `apps/api` and `apps/worker`.
 Do not extend them. Target path: client → Edge Function → Postgres function
 → pg_cron.

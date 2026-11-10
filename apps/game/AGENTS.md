@@ -74,6 +74,12 @@ Profiles live in `eas.json`. The `design-review` profile bakes
 `docs/architecture/native-design-captures.md` and
 `scripts/native-capture/`. Web preview is not design-review acceptance.
 
+Crash reporting (R3): `@sentry/react-native` initializes only when a DSN is
+present and the playable/production gate allows it (`src/crashReporting/`).
+DEV / `design-review` bake `EXPO_PUBLIC_CRASH_REPORTING=0`. See
+`docs/architecture/crash-reporting.md` for Carlos provisioning (DSN, org,
+`SENTRY_AUTH_TOKEN`, EAS `projectId` via R2) and the forced test-error path.
+
 ## Native design captures (C7)
 
 ```bash
