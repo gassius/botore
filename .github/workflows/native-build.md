@@ -12,6 +12,15 @@ Use the dispatch workflow and scripts documented in:
 - `scripts/native-capture/`
 - `apps/game/eas.json` (`design-review` profile)
 
+## Release boot smoke (launch stay-alive)
+
+PR / main workflow that builds a **non–design-capture** `assembleRelease` APK,
+installs it on an Android emulator, and asserts `com.botore.game` stays running
+past the splash (C12 silent-auth path). See:
+
+- `.github/workflows/android-release-boot-smoke.yml`
+- `scripts/native-capture/ci-android-release-boot-smoke.sh`
+
 ## Release / perf binaries (F12)
 
 Phone performance measurement remains a **release** Android APK/AAB on a
