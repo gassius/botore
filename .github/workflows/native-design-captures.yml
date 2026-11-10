@@ -309,7 +309,10 @@ jobs:
           CAPTURE_COLD_START: '1'
           # ~2s/simctl screenshot on GHA; 24s ≈ 10–12 frames covering splash→title.
           CAPTURE_COLD_START_SEC: '24'
-          CAPTURE_COLD_START_BUDGET_SEC: '180'
+          # Fresh-install simctl launch often >40s on GHA; hybrid launch+splash poll.
+          CAPTURE_COLD_LAUNCH_TIMEOUT_SEC: '90'
+          CAPTURE_COLD_SPLASH_WAIT_SEC: '120'
+          CAPTURE_COLD_START_BUDGET_SEC: '240'
           CAPTURE_REMOTE_SUPABASE: '1'
         run: |
           set -euo pipefail
