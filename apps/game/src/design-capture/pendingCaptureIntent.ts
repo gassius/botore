@@ -35,6 +35,7 @@ function applyUrl(url: string | null): void {
     mute: parsed.mute,
     battleId: null,
     rankingScenario: parsed.rankingScenario,
+    failClosed: parsed.failClosed,
   });
 }
 

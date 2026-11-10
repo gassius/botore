@@ -3,13 +3,14 @@
  */
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { garageTag } from '../garage-tag';
+import { StatusErrorBanner, garageTag } from '../garage-tag';
 import { CanonicalReplayPlayer } from '../replay/CanonicalReplayPlayer';
 import { loadDevGoldenConfirmedResult } from '../replay/loadDevReplay';
 import type { ConfirmedFightResult } from '../replay/confirmedResult';
+import { isDevScaffoldAllowed } from '../runtime/devScaffoldPolicy';
 
 export interface ReplaySlotScreenProps {
-  /** Live F9 fight confirmation when available; otherwise DEV golden fixture. */
+  /** Live F9 fight confirmation when available; otherwise labelled DEV golden when allowed. */
   readonly confirmed?: ConfirmedFightResult;
   readonly muted?: boolean;
   readonly reducedMotion?: boolean;
@@ -23,7 +24,23 @@ export const ReplaySlotScreen: React.FC<ReplaySlotScreenProps> = ({
   onReplayFinished,
 }) => {
   const [finished, setFinished] = useState(false);
-  const result = useMemo(() => confirmed ?? loadDevGoldenConfirmedResult(0), [confirmed]);
+  const result = useMemo(() => {
+    if (confirmed) return confirmed;
+    if (isDevScaffoldAllowed()) return loadDevGoldenConfirmedResult(0);
+    return null;
+  }, [confirmed]);
+
+  if (!result) {
+    return (
+      <View style={styles.root} testID="replay-slot-screen-blocked">
+        <StatusErrorBanner
+          title="Server fight required"
+          detail="No sealed combat-v1 replay is available. Playable builds do not load DEV golden fixtures."
+          testID="replay-slot-misconfigured"
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root} testID="replay-slot-screen">

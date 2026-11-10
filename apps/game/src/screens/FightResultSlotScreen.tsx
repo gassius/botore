@@ -4,10 +4,11 @@
  */
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { PrimaryButton, SecondaryButton, garageTag } from '../garage-tag';
+import { PrimaryButton, SecondaryButton, StatusErrorBanner, garageTag } from '../garage-tag';
 import type { ConfirmedFightResult } from '../replay/confirmedResult';
 import { FightResultContent } from '../replay/FightResultContent';
 import { loadDevGoldenConfirmedResult } from '../replay/loadDevReplay';
+import { isDevScaffoldAllowed } from '../runtime/devScaffoldPolicy';
 
 export interface FightResultSlotScreenProps {
   readonly confirmed?: ConfirmedFightResult;
@@ -20,7 +21,23 @@ export const FightResultSlotScreen: React.FC<FightResultSlotScreenProps> = ({
   onWatchReplay,
   onDone,
 }) => {
-  const result = useMemo(() => confirmed ?? loadDevGoldenConfirmedResult(0), [confirmed]);
+  const result = useMemo(() => {
+    if (confirmed) return confirmed;
+    if (isDevScaffoldAllowed()) return loadDevGoldenConfirmedResult(0);
+    return null;
+  }, [confirmed]);
+
+  if (!result) {
+    return (
+      <View style={styles.root} testID="fight-result-slot-screen-blocked">
+        <StatusErrorBanner
+          title="Backend result required"
+          detail="XP and allowances come from server-confirmed combat-v1 only. Playable builds do not invent sample progression."
+          testID="fight-result-slot-misconfigured"
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root} testID="fight-result-slot-screen">

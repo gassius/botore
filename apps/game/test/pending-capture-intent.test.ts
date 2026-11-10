@@ -25,6 +25,7 @@ describe('captureIntentState merge + consume', () => {
       mute: true,
       battleId: null,
       rankingScenario: null,
+      failClosed: null,
     });
   });
 
@@ -43,6 +44,7 @@ describe('captureIntentState merge + consume', () => {
       mute: false,
       battleId: null,
       rankingScenario: null,
+      failClosed: null,
     });
   });
 
@@ -63,7 +65,13 @@ describe('captureIntentState merge + consume', () => {
       mute: null,
       battleId: '11780c0f-39b3-41fc-b364-64a2769ef013',
       rankingScenario: 'live',
+      failClosed: null,
     });
     expect(consumeCaptureRoute()).toBeNull();
+  });
+
+  it('accepts failClosed for C8 blocked-UI evidence', () => {
+    mergeCaptureFileIntent({ failClosed: true });
+    expect(peekCaptureIntent().failClosed).toBe(true);
   });
 });

@@ -118,8 +118,8 @@ export function ReplaySlot(): React.ReactElement {
         />
         <DomainNote
           text={
-            fightKind === 'dev'
-              ? 'Domain: F10 · blocked — DEV adapters cannot supply a sealed combat-v1 replay for first-run.'
+            fightKind === 'dev' || fightKind === 'unavailable'
+              ? 'Domain: F10 · blocked — live combat-v1 required; DEV golden is not first-run playback.'
               : `Domain: F10 · blocked (${resolution.reason}) — no fixture playback.`
           }
         />

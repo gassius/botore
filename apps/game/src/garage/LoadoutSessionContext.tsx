@@ -154,6 +154,7 @@ export function GarageSessionProvider(props: {
    */
   useEffect(() => {
     if (!isDesignCaptureEnabled()) return;
+    if (auth.kind === 'unavailable') return;
     if (captureAutoSignInStarted.current) return;
     if (coldStartHoldTitle) return;
     if (booting || session) return;

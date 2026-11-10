@@ -449,8 +449,25 @@ capture_named Ranking ranking-live 6 live
 capture_named Ranking ranking-empty 4 empty
 capture_named Ranking ranking-error 4 error
 
+# 6) C8 fail-closed blocked UI evidence (design-capture failClosed deep link).
+CAPTURE_SETTLE_SEC=4 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Stable \
+  --name playable-misconfigured \
+  --fail-closed >/dev/null
+fail_closed_matches=( "${OUT_DIR}"/android-*-playable-misconfigured.png )
+if [[ -e "${fail_closed_matches[0]:-}" ]]; then
+  write_manifest_line "${MANIFEST}" "still.android.playable-misconfigured" "${fail_closed_matches[0]}"
+  write_manifest_line "${MANIFEST}" "c8_fail_closed" "design-capture-failClosed-deep-link"
+  echo "ok: ${fail_closed_matches[0]}" >&2
+else
+  echo "error: missing playable-misconfigured PNG" >&2
+  missing=1
+fi
+
 # Assert required stills exist (if-no-files-found equivalent).
-missing=0
+missing="${missing:-0}"
 required_labels=(
   garage
   confirm
@@ -461,6 +478,7 @@ required_labels=(
   ranking-live
   ranking-empty
   ranking-error
+  playable-misconfigured
 )
 if [[ "${FX_DODGE}" -ge 1 ]]; then
   required_labels+=(replay-fx-dodge)

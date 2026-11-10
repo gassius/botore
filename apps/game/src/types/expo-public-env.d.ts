@@ -26,5 +26,15 @@ declare namespace NodeJS {
      * Requires design-capture + baked Supabase public env. Never for store builds.
      */
     EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT?: string;
+    /**
+     * Explicit DEV scaffold opt-in (`1` / `true`).
+     * Baked by EAS `design-review` / `development` only — never preview/production.
+     */
+    EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD?: string;
+    /**
+     * Force fail-closed blocked UI under design-capture (C8 evidence).
+     * Never for store builds.
+     */
+    EXPO_PUBLIC_DESIGN_CAPTURE_FAIL_CLOSED?: string;
   }
 }

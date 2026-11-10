@@ -13,6 +13,7 @@ export {
   buildDesignCaptureUrl,
   designCaptureCredentials,
   isDesignCaptureEnabled,
+  isDesignCaptureFailClosedEnabled,
   isLiveFightCaptureEnabled,
   listCaptureRoutes,
   parseDesignCaptureRankingScenario,

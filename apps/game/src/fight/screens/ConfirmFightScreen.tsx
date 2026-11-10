@@ -141,7 +141,7 @@ export function ConfirmFightScreen(props: {
       // Fight returned but cannot drive first-run Replay (DEV scaffold / unsealed).
       if (fight && fight.opponentId === expectedOpponentId && !isServerPlaybackReady(fight)) {
         setPlaybackBlocked(
-          fightKind === 'dev'
+          fightKind === 'dev' || fightKind === 'unavailable'
             ? 'Live combat-v1 is required for first-run Replay. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY — DEV scaffold is not a sealed server fight.'
             : 'Fight response was not a sealed combat-v1 replay with garage sealed builds. Replay stayed blocked so fixture robots and sample XP cannot appear.',
         );
@@ -293,6 +293,14 @@ export function ConfirmFightScreen(props: {
           title="Server fight required"
           detail={playbackBlocked}
           testID="confirm-playback-blocked"
+        />
+      ) : null}
+
+      {fightKind === 'unavailable' || candidatesKind === 'unavailable' ? (
+        <StatusErrorBanner
+          title="Backend required"
+          detail="EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set. DEV fight scaffolds are not used on playable builds."
+          testID="confirm-misconfigured"
         />
       ) : null}
 

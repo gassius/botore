@@ -38,7 +38,7 @@ export function AuthEntryScreen(): React.ReactElement {
             onPress={() => {
               void onSignIn();
             }}
-            disabled={busy}
+            disabled={busy || authKind === 'unavailable'}
             testID="auth-enter"
           />
         }
@@ -46,10 +46,24 @@ export function AuthEntryScreen(): React.ReactElement {
         <BrandWordmark width={200} />
         <Text style={styles.subtitle} allowFontScaling>
           Sign in to open your stable.{' '}
-          {authKind === 'dev' ? 'DEV auth scaffold.' : 'Supabase Auth.'}
+          {authKind === 'dev'
+            ? 'DEV auth scaffold.'
+            : authKind === 'unavailable'
+              ? 'Backend required.'
+              : 'Supabase Auth.'}
         </Text>
 
-        {error ? <StatusErrorBanner title="Sign-in failed" detail={error} /> : null}
+        {authKind === 'unavailable' ? (
+          <StatusErrorBanner
+            title="Backend required"
+            detail="EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set for this playable build. DEV auth is not used."
+            testID="auth-misconfigured"
+          />
+        ) : null}
+
+        {error ? (
+          <StatusErrorBanner title="Sign-in failed" detail={error} testID="auth-sign-in-error" />
+        ) : null}
 
         <Text style={styles.label} allowFontScaling>
           Email

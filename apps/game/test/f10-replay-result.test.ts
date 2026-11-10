@@ -341,64 +341,78 @@ describe('confirmed result integrity + server mapping', () => {
     expect(confirmed.xpAwarded).toBe(2);
     expect(confirmed.builds.attacker.paint).toBe('paint-cobalt');
     expect(confirmed.builds.defender.paint).toBe('paint-crimson');
-    expect(resolveSessionConfirmedResult(fight).label).toBe('CONFIRMED');
+    expect(resolveSessionConfirmedResult(fight)?.label).toBe('CONFIRMED');
   });
 
   it('falls back to DEV golden when FightSuccess replay is not sealed (standalone only)', () => {
-    const scaffold: FightSuccess = {
-      battleId: 'dev-battle',
-      status: 'completed',
-      rulesVersion: 'combat-v1',
-      seed: '0'.repeat(64),
-      outcome: { winner: 'player-hero', reason: 'defeat' },
-      replay: { note: 'DEV scaffold — not sealed' },
-      replayChecksum: 'dev-checksum',
-      xpAwarded: 0,
-      allowancesRemaining: 2,
-      utcDay: '2026-11-09',
-      repeated: false,
-      persistence: 'persisted',
-      loadoutVersionIds: { attacker: 'a', defender: 'b' },
-      atlasVersions: { attacker: 'v1', defender: 'v1' },
-      opponentId: 'opp',
-      idempotencyKey: 'idem-dev',
-    };
-    const resolved = resolveSessionConfirmedResult(scaffold);
-    expect(resolved.label).toBe('DEV');
-    expect(resolved.serverConfirmed).toBe(false);
-    expect(resolved.xpAwarded).toBeNull();
-    expect(resolved.builds.attacker.paint).toBe('paint-cobalt');
-    expect(resolveSessionConfirmedResult(null).label).toBe('DEV');
-    expect(isServerPlaybackReady(scaffold)).toBe(false);
-    expect(tryConfirmedResultFromFight(scaffold)).toBeNull();
+    const prevAllow = process.env.EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD;
+    process.env.EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD = '1';
+    try {
+      const scaffold: FightSuccess = {
+        battleId: 'dev-battle',
+        status: 'completed',
+        rulesVersion: 'combat-v1',
+        seed: '0'.repeat(64),
+        outcome: { winner: 'player-hero', reason: 'defeat' },
+        replay: { note: 'DEV scaffold — not sealed' },
+        replayChecksum: 'dev-checksum',
+        xpAwarded: 0,
+        allowancesRemaining: 2,
+        utcDay: '2026-11-09',
+        repeated: false,
+        persistence: 'persisted',
+        loadoutVersionIds: { attacker: 'a', defender: 'b' },
+        atlasVersions: { attacker: 'v1', defender: 'v1' },
+        opponentId: 'opp',
+        idempotencyKey: 'idem-dev',
+      };
+      const resolved = resolveSessionConfirmedResult(scaffold);
+      expect(resolved?.label).toBe('DEV');
+      expect(resolved?.serverConfirmed).toBe(false);
+      expect(resolved?.xpAwarded).toBeNull();
+      expect(resolved?.builds.attacker.paint).toBe('paint-cobalt');
+      expect(resolveSessionConfirmedResult(null)?.label).toBe('DEV');
+      expect(isServerPlaybackReady(scaffold)).toBe(false);
+      expect(tryConfirmedResultFromFight(scaffold)).toBeNull();
+    } finally {
+      if (prevAllow === undefined) delete process.env.EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD;
+      else process.env.EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD = prevAllow;
+    }
   });
 
   it('falls back to DEV when FightSuccess lacks sealedBuilds (standalone only)', () => {
-    const base = loadDevGoldenConfirmedResult(0);
-    const fight: FightSuccess = {
-      battleId: base.battleId,
-      status: 'completed',
-      rulesVersion: base.rulesVersion,
-      seed: base.replay.seed,
-      outcome: {
-        winner: base.replay.outcome.winner,
-        reason: base.replay.outcome.reason,
-      },
-      replay: base.replay,
-      replayChecksum: base.replay.checksum,
-      xpAwarded: 2,
-      allowancesRemaining: 1,
-      utcDay: '2026-11-09',
-      repeated: false,
-      persistence: 'persisted',
-      loadoutVersionIds: { attacker: 'a', defender: 'b' },
-      atlasVersions: { attacker: 'v1', defender: 'v1' },
-      opponentId: 'opp',
-      idempotencyKey: 'idem-no-builds',
-    };
-    const resolved = resolveSessionConfirmedResult(fight);
-    expect(resolved.label).toBe('DEV');
-    expect(isServerPlaybackReady(fight)).toBe(false);
+    const prevAllow = process.env.EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD;
+    process.env.EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD = '1';
+    try {
+      const base = loadDevGoldenConfirmedResult(0);
+      const fight: FightSuccess = {
+        battleId: base.battleId,
+        status: 'completed',
+        rulesVersion: base.rulesVersion,
+        seed: base.replay.seed,
+        outcome: {
+          winner: base.replay.outcome.winner,
+          reason: base.replay.outcome.reason,
+        },
+        replay: base.replay,
+        replayChecksum: base.replay.checksum,
+        xpAwarded: 2,
+        allowancesRemaining: 1,
+        utcDay: '2026-11-09',
+        repeated: false,
+        persistence: 'persisted',
+        loadoutVersionIds: { attacker: 'a', defender: 'b' },
+        atlasVersions: { attacker: 'v1', defender: 'v1' },
+        opponentId: 'opp',
+        idempotencyKey: 'idem-no-builds',
+      };
+      const resolved = resolveSessionConfirmedResult(fight);
+      expect(resolved?.label).toBe('DEV');
+      expect(isServerPlaybackReady(fight)).toBe(false);
+    } finally {
+      if (prevAllow === undefined) delete process.env.EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD;
+      else process.env.EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD = prevAllow;
+    }
   });
 
   it('C3 first-run resolve refuses fixture fallback and keeps garage sealed builds', () => {

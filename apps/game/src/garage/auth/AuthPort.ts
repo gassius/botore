@@ -21,7 +21,7 @@ export type AuthResult =
  * Live adapter talks to Supabase Auth HTTP APIs with the public anon key only.
  */
 export interface AuthPort {
-  readonly kind: 'dev' | 'supabase';
+  readonly kind: 'dev' | 'supabase' | 'unavailable';
   getSession(): Promise<AuthSession | null>;
   signInWithPassword(input: AuthSignInInput): Promise<AuthResult>;
   signOut(): Promise<void>;

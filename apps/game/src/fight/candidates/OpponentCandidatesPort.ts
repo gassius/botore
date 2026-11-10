@@ -10,7 +10,7 @@ import type { ListCandidatesResult, PrepareEligibilityResult } from './types';
  * have a confirmed loadout, then rely on `prepare_fight_context` + combat-v1.
  */
 export interface OpponentCandidatesPort {
-  readonly kind: 'dev' | 'supabase';
+  readonly kind: 'dev' | 'supabase' | 'unavailable';
   listCandidates(input: { accessToken: string; accountId: string }): Promise<ListCandidatesResult>;
   prepareEligibility(input: {
     accessToken: string;
