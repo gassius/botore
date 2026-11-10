@@ -90,9 +90,70 @@ export function buildGameCenterSignedPayload(
   return out;
 }
 
-/** Extract SPKI from a DER/PEM X.509 certificate (minimal ASN.1 walk for SubjectPublicKeyInfo). */
+type DerNode = {
+  readonly tag: number;
+  readonly headerLength: number;
+  readonly length: number;
+  readonly start: number; // content start
+  readonly end: number; // content end (exclusive)
+  readonly tlvStart: number;
+  readonly tlvEnd: number;
+};
+
+function readDerLength(
+  der: Uint8Array,
+  offset: number,
+): { length: number; headerBytes: number } | null {
+  if (offset >= der.length) return null;
+  const first = der[offset];
+  if (first < 0x80) return { length: first, headerBytes: 1 };
+  const n = first & 0x7f;
+  if (n === 0 || n > 4 || offset + 1 + n > der.length) return null;
+  let length = 0;
+  for (let i = 0; i < n; i++) length = (length << 8) | der[offset + 1 + i];
+  return { length, headerBytes: 1 + n };
+}
+
+function readDerNode(der: Uint8Array, tlvStart: number): DerNode | null {
+  if (tlvStart >= der.length) return null;
+  const tag = der[tlvStart];
+  const lenInfo = readDerLength(der, tlvStart + 1);
+  if (!lenInfo) return null;
+  const headerLength = 1 + lenInfo.headerBytes;
+  const start = tlvStart + headerLength;
+  const end = start + lenInfo.length;
+  if (end > der.length) return null;
+  return {
+    tag,
+    headerLength,
+    length: lenInfo.length,
+    start,
+    end,
+    tlvStart,
+    tlvEnd: end,
+  };
+}
+
+function readSequenceChildren(der: Uint8Array, seq: DerNode): DerNode[] | null {
+  if (seq.tag !== 0x30) return null;
+  const kids: DerNode[] = [];
+  let i = seq.start;
+  while (i < seq.end) {
+    const kid = readDerNode(der, i);
+    if (!kid || kid.tlvEnd > seq.end) return null;
+    kids.push(kid);
+    i = kid.tlvEnd;
+  }
+  return kids;
+}
+
+/**
+ * Extract SubjectPublicKeyInfo from a DER/PEM X.509 certificate.
+ *
+ * Walks Certificate → tbsCertificate → subjectPublicKeyInfo (7th element of
+ * TBS, after optional [0] version). Does **not** stop at AlgorithmIdentifier.
+ */
 export function extractSpkiFromCertificate(certDer: Uint8Array): ArrayBuffer | null {
-  // Prefer PEM unwrap.
   let der = certDer;
   const asText = new TextDecoder().decode(certDer);
   if (asText.includes('BEGIN CERTIFICATE')) {
@@ -100,52 +161,40 @@ export function extractSpkiFromCertificate(certDer: Uint8Array): ArrayBuffer | n
       .replace(/-----BEGIN CERTIFICATE-----/g, '')
       .replace(/-----END CERTIFICATE-----/g, '')
       .replace(/\s+/g, '');
-    der = b64ToBytes(b64);
-  }
-
-  // Scan for BIT STRING that typically wraps SPKI inside the certificate.
-  // For robust production we validate Apple chain; here we locate AlgorithmIdentifier+BIT STRING SPKI.
-  // Look for rsaEncryption OID 1.2.840.113549.1.1.1 → 06 09 2A 86 48 86 F7 0D 01 01 01
-  const oid = [0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01];
-  let oidAt = -1;
-  for (let i = 0; i < der.length - oid.length; i++) {
-    let match = true;
-    for (let j = 0; j < oid.length; j++) {
-      if (der[i + j] !== oid[j]) {
-        match = false;
-        break;
-      }
-    }
-    if (match) {
-      oidAt = i;
-      break;
+    try {
+      der = b64ToBytes(b64);
+    } catch {
+      return null;
     }
   }
-  if (oidAt < 0) return null;
 
-  // Walk back to SEQUENCE start of SubjectPublicKeyInfo (tag 0x30).
-  let spkiStart = -1;
-  for (let i = oidAt; i >= 0; i--) {
-    if (der[i] === 0x30) {
-      spkiStart = i;
-      // Heuristic: SPKI is a short SEQUENCE containing AlgorithmIdentifier + BIT STRING
-      break;
-    }
-  }
-  if (spkiStart < 0) return null;
+  const cert = readDerNode(der, 0);
+  if (!cert || cert.tag !== 0x30) return null;
+  const certKids = readSequenceChildren(der, cert);
+  if (!certKids || certKids.length < 1) return null;
 
-  // Parse length of SEQUENCE at spkiStart
-  let idx = spkiStart + 1;
-  if (idx >= der.length) return null;
-  let len = der[idx++];
-  if (len > 0x80) {
-    const n = len & 0x7f;
-    len = 0;
-    for (let k = 0; k < n; k++) len = (len << 8) | der[idx++];
+  const tbs = certKids[0];
+  if (tbs.tag !== 0x30) return null;
+  const tbsKids = readSequenceChildren(der, tbs);
+  if (!tbsKids || tbsKids.length < 6) return null;
+
+  // TBSCertificate: [version], serial, signature, issuer, validity, subject, spki, …
+  let idx = 0;
+  if ((tbsKids[0].tag & 0xe0) === 0xa0) {
+    // Explicit [0] version — skip
+    idx = 1;
   }
-  const spkiEnd = idx + len;
-  if (spkiEnd > der.length) return null;
-  return der.slice(spkiStart, spkiEnd).buffer;
+  // serial(1) + signature(1) + issuer(1) + validity(1) + subject(1) + spki(1)
+  if (tbsKids.length < idx + 6) return null;
+  const spki = tbsKids[idx + 5];
+  if (spki.tag !== 0x30) return null;
+
+  // SPKI must contain AlgorithmIdentifier SEQUENCE + subjectPublicKey BIT STRING
+  const spkiKids = readSequenceChildren(der, spki);
+  if (!spkiKids || spkiKids.length < 2) return null;
+  if (spkiKids[0].tag !== 0x30 || spkiKids[1].tag !== 0x03) return null;
+
+  return der.slice(spki.tlvStart, spki.tlvEnd).buffer;
 }
 
 async function defaultVerifySignature(
@@ -235,9 +284,19 @@ export async function verifyGameCenterProof(
     proof.timestamp,
     salt,
   );
-  const verify = deps.verifySignature ?? defaultVerifySignature;
-  const ok = await verify(spki, payload, signature);
-  if (!ok) {
+
+  try {
+    const verify = deps.verifySignature ?? defaultVerifySignature;
+    const ok = await verify(spki, payload, signature);
+    if (!ok) {
+      return {
+        ok: false,
+        code: 'gc_signature_invalid',
+        message: 'RSA signature verification failed',
+      };
+    }
+  } catch {
+    // importKey / verify throws on bad SPKI or malformed signature → fail closed
     return {
       ok: false,
       code: 'gc_signature_invalid',

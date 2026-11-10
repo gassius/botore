@@ -35,6 +35,10 @@ export type PlatformAuthAdmin = {
         };
         error: { message: string } | null;
       }>;
+      getUserById: (id: string) => Promise<{
+        data: { user: { id: string; email?: string | null } | null };
+        error: { message: string } | null;
+      }>;
       createUser?: (args: {
         email: string;
         email_confirm: boolean;
@@ -137,8 +141,29 @@ export async function insertIdentity(
 }
 
 /**
+ * Resolve mint email for a known account. Prefer the existing auth user's email
+ * so generateLink returns **that** user — never a new synthetic for a linked
+ * platform id.
+ */
+export async function resolveMintEmailForAccount(
+  admin: PlatformAuthAdmin,
+  accountId: string,
+  fallbackProvider: PlatformProvider,
+  fallbackPlatformId: string,
+): Promise<string> {
+  const got = await admin.auth.admin.getUserById(accountId);
+  if (got.error) throw new Error(got.error.message);
+  const email = got.data.user?.email?.trim();
+  if (email) return email;
+  return syntheticEmailFor(fallbackProvider, fallbackPlatformId);
+}
+
+/**
  * Resolve or create auth user for a verified platform id, then mint a session
  * via generateLink(magiclink) + verifyOtp(token_hash).
+ *
+ * When linking onto an existing device_fallback account A, mints for **A**
+ * (getUserById email), never a fresh synthetic user for the platform id.
  */
 export async function mintSessionForPlatformIdentity(
   admin: PlatformAuthAdmin,
@@ -161,8 +186,7 @@ export async function mintSessionForPlatformIdentity(
     }
 
     const email = accountId
-      ? // Existing account — still mint via synthetic email for this provider.
-        syntheticEmailFor(input.provider, input.platformId)
+      ? await resolveMintEmailForAccount(admin, accountId, input.provider, input.platformId)
       : syntheticEmailFor(input.provider, input.platformId);
 
     const link = await admin.auth.admin.generateLink({
@@ -192,17 +216,16 @@ export async function mintSessionForPlatformIdentity(
       accountId = userId;
       created = true;
     } else if (accountId !== userId) {
-      // generateLink created/found a user for the synthetic email that differs
-      // from the linked account — prefer the mapped account_id from identities.
-      // Re-generate against the mapped user's email is not available; treat as
-      // identity already bound to accountId and require that user id matches
-      // after first insert. For first platform insert onto fallback account,
-      // store identity under fallback account_id.
+      return {
+        ok: false,
+        code: 'session_account_mismatch',
+        message: 'generateLink user does not match linked account',
+      };
     }
 
     if (!existing) {
       await insertIdentity(admin, {
-        accountId: accountId!,
+        accountId,
         provider: input.provider,
         platformId: input.platformId,
         linkedAt: input.fallbackDeviceId ? new Date().toISOString() : null,
@@ -215,7 +238,7 @@ export async function mintSessionForPlatformIdentity(
       const fallback = await lookupIdentity(admin, 'device_fallback', input.fallbackDeviceId);
       if (!fallback) {
         await insertIdentity(admin, {
-          accountId: accountId!,
+          accountId,
           provider: 'device_fallback',
           platformId: input.fallbackDeviceId,
           linkedAt: new Date().toISOString(),
@@ -233,6 +256,14 @@ export async function mintSessionForPlatformIdentity(
         ok: false,
         code: 'session_verify_failed',
         message: verified.error?.message ?? 'verifyOtp failed',
+      };
+    }
+
+    if (session.user.id !== accountId) {
+      return {
+        ok: false,
+        code: 'session_account_mismatch',
+        message: 'session user id does not match linked account',
       };
     }
 

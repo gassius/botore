@@ -1,10 +1,14 @@
 import {
   assertGcPublicKeyUrl,
   buildGameCenterSignedPayload,
+  extractSpkiFromCertificate,
   GC_PUBLIC_KEY_HOST_ALLOWLIST,
   verifyGameCenterProof,
 } from './gcVerify.ts';
-import { assertEquals, assertRejects } from 'https://deno.land/std@0.224.0/assert/mod.ts';
+import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
+import { dirname, fromFileUrl, join } from 'https://deno.land/std@0.224.0/path/mod.ts';
+
+const fixturesDir = join(dirname(fromFileUrl(import.meta.url)), 'fixtures');
 
 Deno.test('GC publicKeyURL allowlist rejects non-Apple hosts and http', () => {
   const badHost = assertGcPublicKeyUrl('https://evil.example/public-key/x');
@@ -52,20 +56,64 @@ Deno.test('GC verify fails closed on stale timestamp and redirect-blocked fetch'
   if (!stale.ok) assertEquals(stale.code, 'gc_timestamp_stale');
 });
 
+Deno.test('Apple gc-prod-10.cer SPKI imports as RSASSA-PKCS1-v1_5', async () => {
+  const cert = await Deno.readFile(join(fixturesDir, 'gc-prod-10.cer'));
+  const spki = extractSpkiFromCertificate(cert);
+  assertEquals(spki !== null, true);
+  // Must be longer than AlgorithmIdentifier alone (~15 bytes).
+  assertEquals((spki as ArrayBuffer).byteLength > 64, true);
+
+  const key = await crypto.subtle.importKey(
+    'spki',
+    spki as ArrayBuffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify'],
+  );
+  assertEquals(key.type, 'public');
+});
+
+Deno.test('Apple gc-prod-4.cer SPKI imports as RSASSA-PKCS1-v1_5', async () => {
+  const cert = await Deno.readFile(join(fixturesDir, 'gc-prod-4.cer'));
+  const spki = extractSpkiFromCertificate(cert);
+  assertEquals(spki !== null, true);
+  assertEquals((spki as ArrayBuffer).byteLength > 64, true);
+  await crypto.subtle.importKey(
+    'spki',
+    spki as ArrayBuffer,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify'],
+  );
+});
+
+Deno.test('GC verify maps importKey/verify throws to gc_signature_invalid', async () => {
+  const now = 1_700_000_000_000;
+  const cert = await Deno.readFile(join(fixturesDir, 'gc-prod-10.cer'));
+  const result = await verifyGameCenterProof(
+    {
+      teamPlayerID: 'T:throw',
+      bundleId: 'com.botore.game',
+      publicKeyURL: 'https://static.gc.apple.com/key',
+      signature: btoa('sig'),
+      salt: btoa('abc'),
+      timestamp: now,
+    },
+    {
+      nowMs: () => now,
+      fetch: async () => new Response(cert, { status: 200 }),
+      verifySignature: async () => {
+        throw new Error('Invalid keyData');
+      },
+    },
+  );
+  assertEquals(result.ok, false);
+  if (!result.ok) assertEquals(result.code, 'gc_signature_invalid');
+});
+
 Deno.test('GC verify succeeds when signature verifier returns true', async () => {
   const now = 1_700_000_000_000;
-  const pem = `-----BEGIN CERTIFICATE-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu1SU1LfVLPHCozMxH2Mo
-4lgOEePzNm0tRgeLezV6ffAt0gutU07gHpPQTLHRfPU=
------END CERTIFICATE-----`;
-  // Minimal fake DER-ish bytes containing rsaEncryption OID so extractSpki can find something.
-  // For this unit test we bypass extract failure by injecting verifySignature after a custom fetch
-  // that returns bytes with the OID embedded, and a verifySignature that ignores SPKI.
-  const oid = [0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01];
-  const fakeCert = new Uint8Array(64);
-  fakeCert[0] = 0x30;
-  fakeCert[1] = 40;
-  fakeCert.set(oid, 10);
+  const cert = await Deno.readFile(join(fixturesDir, 'gc-prod-10.cer'));
 
   const result = await verifyGameCenterProof(
     {
@@ -80,24 +128,18 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu1SU1LfVLPHCozMxH2Mo
       nowMs: () => now,
       fetch: async (_url, init) => {
         assertEquals(init?.redirect, 'error');
-        return new Response(fakeCert, { status: 200 });
+        return new Response(cert, { status: 200 });
       },
       verifySignature: async () => true,
     },
   );
   assertEquals(result.ok, true);
   if (result.ok) assertEquals(result.platformId, 'T:ok');
-  // silence unused
-  assertEquals(typeof pem, 'string');
 });
 
 Deno.test('GC verify rejects invalid signature', async () => {
   const now = 1_700_000_000_000;
-  const oid = [0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01];
-  const fakeCert = new Uint8Array(64);
-  fakeCert[0] = 0x30;
-  fakeCert[1] = 40;
-  fakeCert.set(oid, 10);
+  const cert = await Deno.readFile(join(fixturesDir, 'gc-prod-10.cer'));
 
   const result = await verifyGameCenterProof(
     {
@@ -110,13 +152,10 @@ Deno.test('GC verify rejects invalid signature', async () => {
     },
     {
       nowMs: () => now,
-      fetch: async () => new Response(fakeCert, { status: 200 }),
+      fetch: async () => new Response(cert, { status: 200 }),
       verifySignature: async () => false,
     },
   );
   assertEquals(result.ok, false);
   if (!result.ok) assertEquals(result.code, 'gc_signature_invalid');
 });
-
-// Keep assertRejects import used if needed by future async throws.
-void assertRejects;

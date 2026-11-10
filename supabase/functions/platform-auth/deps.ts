@@ -28,6 +28,15 @@ function asAdmin(client: SupabaseClient): PlatformAuthAdmin {
             error: error ? { message: error.message } : null,
           };
         },
+        async getUserById(id) {
+          const { data, error } = await client.auth.admin.getUserById(id);
+          return {
+            data: {
+              user: data.user ? { id: data.user.id, email: data.user.email ?? null } : null,
+            },
+            error: error ? { message: error.message } : null,
+          };
+        },
       },
       async verifyOtp(args) {
         const { data, error } = await client.auth.verifyOtp(args);

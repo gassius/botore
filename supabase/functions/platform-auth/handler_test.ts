@@ -1,41 +1,66 @@
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts';
+import { dirname, fromFileUrl, join } from 'https://deno.land/std@0.224.0/path/mod.ts';
 import { handlePlatformAuthRequest, type PlatformAuthDeps } from './handler.ts';
 import type { PlatformAuthAdmin } from './sessionMint.ts';
 import { syntheticEmailFor } from './sessionMint.ts';
 
-function memoryAdmin(): PlatformAuthAdmin {
+const appleGcCertPath = join(dirname(fromFileUrl(import.meta.url)), 'fixtures', 'gc-prod-10.cer');
+
+function memoryAdmin(): PlatformAuthAdmin & {
+  readonly _accounts: Set<string>;
+  readonly _identities: Array<{
+    account_id: string;
+    provider: string;
+    platform_id: string;
+  }>;
+} {
   const identities: Array<{
     account_id: string;
     provider: string;
     platform_id: string;
   }> = [];
   const accounts = new Set<string>();
+  const usersByEmail = new Map<string, { id: string; email: string }>();
+  const usersById = new Map<string, { id: string; email: string }>();
   let userSeq = 0;
 
-  return {
+  const admin = {
+    _accounts: accounts,
+    _identities: identities,
     auth: {
       admin: {
-        async generateLink({ email }) {
-          userSeq += 1;
-          const id = `00000000-0000-4000-8000-${String(userSeq).padStart(12, '0')}`;
+        async getUserById(id: string) {
+          const user = usersById.get(id) ?? null;
+          return { data: { user }, error: user ? null : { message: 'not found' } };
+        },
+        async generateLink({ email }: { email: string }) {
+          let user = usersByEmail.get(email);
+          if (!user) {
+            userSeq += 1;
+            const id = `00000000-0000-4000-8000-${String(userSeq).padStart(12, '0')}`;
+            user = { id, email };
+            usersByEmail.set(email, user);
+            usersById.set(id, user);
+          }
           return {
             data: {
-              user: { id, email },
-              properties: { hashed_token: `hash-${id}` },
+              user: { id: user.id, email: user.email },
+              properties: { hashed_token: `hash-${user.id}` },
             },
             error: null,
           };
         },
       },
-      async verifyOtp({ token_hash }) {
+      async verifyOtp({ token_hash }: { token_hash: string }) {
         const id = token_hash.replace('hash-', '');
+        const user = usersById.get(id);
         return {
           data: {
             session: {
               access_token: `access-${id}`,
               refresh_token: `refresh-${id}`,
               expires_at: 1_800_000_000,
-              user: { id, email: 'x@players.botore.internal' },
+              user: { id, email: user?.email ?? 'x@players.botore.internal' },
             },
           },
           error: null,
@@ -95,22 +120,20 @@ function memoryAdmin(): PlatformAuthAdmin {
       };
     },
   };
+  return admin as PlatformAuthAdmin & typeof admin;
 }
 
-function testDeps(admin: PlatformAuthAdmin): PlatformAuthDeps {
+async function testDeps(admin: PlatformAuthAdmin): Promise<PlatformAuthDeps> {
   const now = 1_700_000_000_000;
-  const oid = [0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01];
-  const fakeCert = new Uint8Array(64);
-  fakeCert[0] = 0x30;
-  fakeCert[1] = 40;
-  fakeCert.set(oid, 10);
+  // Real Apple cert so extractSpkiFromCertificate succeeds; signature mocked.
+  const appleCert = await Deno.readFile(appleGcCertPath);
 
   return {
     admin,
     fetch: async () => new Response('{}'),
     gc: {
       nowMs: () => now,
-      fetch: async () => new Response(fakeCert, { status: 200 }),
+      fetch: async () => new Response(appleCert, { status: 200 }),
       verifySignature: async () => true,
     },
     pgs: {
@@ -150,7 +173,7 @@ Deno.test('POST game_center mints session and stores identity', async () => {
         timestamp: 1_700_000_000_000,
       }),
     }),
-    testDeps(admin),
+    await testDeps(admin),
   );
   assertEquals(res.status, 200);
   const body = await res.json();
@@ -171,7 +194,7 @@ Deno.test('POST play_games mints session', async () => {
         serverAuthCode: 'code',
       }),
     }),
-    testDeps(admin),
+    await testDeps(admin),
   );
   assertEquals(res.status, 200);
   const body = await res.json();
@@ -186,7 +209,7 @@ Deno.test('POST device_fallback rejects short ids; accepts UUID-shaped id', asyn
       method: 'POST',
       body: JSON.stringify({ provider: 'device_fallback', deviceId: 'short' }),
     }),
-    testDeps(admin),
+    await testDeps(admin),
   );
   assertEquals(bad.status, 400);
 
@@ -198,7 +221,7 @@ Deno.test('POST device_fallback rejects short ids; accepts UUID-shaped id', asyn
         deviceId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
       }),
     }),
-    testDeps(admin),
+    await testDeps(admin),
   );
   assertEquals(ok.status, 200);
   const body = await ok.json();
@@ -206,11 +229,57 @@ Deno.test('POST device_fallback rejects short ids; accepts UUID-shaped id', asyn
   assertEquals(body.provider, 'device_fallback');
 });
 
+Deno.test(
+  'device_fallback then play_games with same fallbackDeviceId keeps one account',
+  async () => {
+    const admin = memoryAdmin();
+    const deps = await testDeps(admin);
+    const deviceId = 'bbbbbbbb-cccc-4ddd-8eee-ffffffffffff';
+
+    const first = await handlePlatformAuthRequest(
+      new Request('http://local/functions/v1/platform-auth', {
+        method: 'POST',
+        body: JSON.stringify({ provider: 'device_fallback', deviceId }),
+      }),
+      deps,
+    );
+    assertEquals(first.status, 200);
+    const firstBody = await first.json();
+    assertEquals(firstBody.ok, true);
+    const userId = firstBody.session.user_id as string;
+
+    const second = await handlePlatformAuthRequest(
+      new Request('http://local/functions/v1/platform-auth', {
+        method: 'POST',
+        body: JSON.stringify({
+          provider: 'play_games',
+          serverAuthCode: 'code',
+          fallbackDeviceId: deviceId,
+        }),
+      }),
+      deps,
+    );
+    assertEquals(second.status, 200);
+    const secondBody = await second.json();
+    assertEquals(secondBody.ok, true);
+    assertEquals(secondBody.session.user_id, userId);
+    assertEquals(secondBody.platformId, 'pgs-1');
+    assertEquals(admin._accounts.size, 1);
+    assertEquals(admin._accounts.has(userId), true);
+    const providers = admin._identities.map((r) => r.provider).sort();
+    assertEquals(providers, ['device_fallback', 'play_games']);
+    assertEquals(
+      admin._identities.every((r) => r.account_id === userId),
+      true,
+    );
+  },
+);
+
 Deno.test('rejects unknown provider and non-POST', async () => {
   const admin = memoryAdmin();
   const get = await handlePlatformAuthRequest(
     new Request('http://local/functions/v1/platform-auth', { method: 'GET' }),
-    testDeps(admin),
+    await testDeps(admin),
   );
   assertEquals(get.status, 405);
 
@@ -219,7 +288,7 @@ Deno.test('rejects unknown provider and non-POST', async () => {
       method: 'POST',
       body: JSON.stringify({ provider: 'anonymous' }),
     }),
-    testDeps(admin),
+    await testDeps(admin),
   );
   assertEquals(bad.status, 400);
 });
