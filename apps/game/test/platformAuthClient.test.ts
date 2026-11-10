@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { callPlatformAuth } from '../src/garage/auth/platformAuthClient';
+import {
+  callPlatformAuth,
+  PLATFORM_AUTH_FETCH_TIMEOUT_MS,
+} from '../src/garage/auth/platformAuthClient';
 
 describe('callPlatformAuth', () => {
   afterEach(() => {
@@ -50,6 +53,7 @@ describe('callPlatformAuth', () => {
           apikey: 'anon',
           Authorization: 'Bearer anon',
         }),
+        signal: expect.any(AbortSignal),
       }),
     );
   });
@@ -78,5 +82,22 @@ describe('callPlatformAuth', () => {
       code: 'invalid_signature',
       message: 'bad gc',
     });
+  });
+
+  it('maps AbortError / timeout to network_error', async () => {
+    const err = new Error(`platform-auth timed out after ${PLATFORM_AUTH_FETCH_TIMEOUT_MS}ms`);
+    err.name = 'AbortError';
+    const fetchMock = vi.fn().mockRejectedValue(err);
+
+    const result = await callPlatformAuth(
+      { url: 'http://127.0.0.1:54321', anonKey: 'anon' },
+      { provider: 'device_fallback', deviceId: 'device-uuid-1' },
+      fetchMock as unknown as typeof fetch,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe('network_error');
+      expect(result.message).toMatch(/timed out|abort/i);
+    }
   });
 });

@@ -8,6 +8,16 @@
 
 export const DEVICE_FALLBACK_STORAGE_KEY = 'botore.auth.device_fallback.v1';
 
+export const DEVICE_ID_UNPERSISTED_CODE = 'device_id_unpersisted' as const;
+
+export type DeviceFallbackIdResult =
+  | { readonly ok: true; readonly deviceId: string }
+  | {
+      readonly ok: false;
+      readonly code: typeof DEVICE_ID_UNPERSISTED_CODE;
+      readonly message: string;
+    };
+
 function preferWebStorage(): boolean {
   if (typeof process !== 'undefined' && process.env.EXPO_OS === 'web') return true;
   return typeof localStorage !== 'undefined';
@@ -31,22 +41,25 @@ async function readRaw(): Promise<string | null> {
   }
 }
 
-async function writeRaw(value: string): Promise<void> {
+/** Persist and verify; returns false when the value cannot be read back. */
+async function writeAndVerify(value: string): Promise<boolean> {
   if (preferWebStorage()) {
     try {
-      if (typeof localStorage === 'undefined') return;
+      if (typeof localStorage === 'undefined') return false;
       localStorage.setItem(DEVICE_FALLBACK_STORAGE_KEY, value);
+      return localStorage.getItem(DEVICE_FALLBACK_STORAGE_KEY) === value;
     } catch {
-      /* ignore */
+      return false;
     }
-    return;
   }
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const SecureStore = require('expo-secure-store') as typeof import('expo-secure-store');
     await SecureStore.setItemAsync(DEVICE_FALLBACK_STORAGE_KEY, value);
+    const roundTrip = await SecureStore.getItemAsync(DEVICE_FALLBACK_STORAGE_KEY);
+    return roundTrip === value;
   } catch {
-    /* ignore */
+    return false;
   }
 }
 
@@ -62,11 +75,23 @@ function newDeviceId(): string {
   });
 }
 
-/** Load or create the durable device-fallback UUID (Keychain / SecureStore). */
-export async function getOrCreateDeviceFallbackId(): Promise<string> {
+/**
+ * Load or create the durable device-fallback UUID (Keychain / SecureStore).
+ * Fails closed when a new id cannot be persisted — never mint against an
+ * ephemeral id that would create a new account every launch.
+ */
+export async function getOrCreateDeviceFallbackId(): Promise<DeviceFallbackIdResult> {
   const existing = await readRaw();
-  if (existing && existing.length >= 16) return existing;
+  if (existing && existing.length >= 16) return { ok: true, deviceId: existing };
+
   const id = newDeviceId();
-  await writeRaw(id);
-  return id;
+  const persisted = await writeAndVerify(id);
+  if (!persisted) {
+    return {
+      ok: false,
+      code: DEVICE_ID_UNPERSISTED_CODE,
+      message: 'Could not persist device identity in SecureStore / Keychain. Retry silent auth.',
+    };
+  }
+  return { ok: true, deviceId: id };
 }

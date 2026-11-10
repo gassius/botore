@@ -64,6 +64,19 @@ describe('C12 silent first-launch auth (web preview + platform-auth)', () => {
     expect(source).toMatch(/authBootError/);
   });
 
+  it('SessionAuthErrorScreen keeps player-facing copy (no DEV footnote / raw detail)', () => {
+    const screen = readFileSync(
+      join(process.cwd(), 'src/garage/screens/SessionAuthErrorScreen.tsx'),
+      'utf8',
+    );
+    expect(screen).toMatch(/Can't connect right now/);
+    expect(screen).toMatch(/We couldn't reach the game server/);
+    expect(screen).toMatch(/Check your connection and try again/);
+    expect(screen).not.toMatch(/Playable builds never fall back/);
+    expect(screen).not.toMatch(/Could not open a play session/);
+    expect(screen).toMatch(/BOTORE_SESSION_AUTH_ERROR/);
+  });
+
   it('does not ship signInAnonymously as a product path', () => {
     const authSources = [
       readFileSync(join(process.cwd(), 'src/garage/auth/AuthPort.ts'), 'utf8'),
@@ -171,9 +184,20 @@ describe('C12 silent first-launch auth (web preview + platform-auth)', () => {
   it('silent first-launch device-fallback → platform-auth when preview is off', async () => {
     const auth = new DevAuthAdapter();
     delete process.env.EXPO_PUBLIC_WEB_PREVIEW_AUTH;
-    process.env.EXPO_OS = 'ios';
+    // Web storage stand-in so device id persists (Vitest has no SecureStore).
+    process.env.EXPO_OS = 'web';
     process.env.EXPO_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = 'anon-test-key';
+    const mem = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => mem.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        mem.set(key, value);
+      },
+      removeItem: (key: string) => {
+        mem.delete(key);
+      },
+    });
 
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -202,6 +226,7 @@ describe('C12 silent first-launch auth (web preview + platform-auth)', () => {
     const body = JSON.parse(String(init.body)) as { provider: string; deviceId: string };
     expect(body.provider).toBe('device_fallback');
     expect(body.deviceId.length).toBeGreaterThanOrEqual(16);
+    expect(init.signal).toBeDefined();
   });
 
   it('native identity fails closed when Supabase public config is missing', async () => {

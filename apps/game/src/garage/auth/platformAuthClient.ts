@@ -53,6 +53,17 @@ type EdgeSessionBody = {
   };
 };
 
+/** Bound silent first-launch so a hung Edge call cannot pin the splash forever. */
+export const PLATFORM_AUTH_FETCH_TIMEOUT_MS = 15_000;
+
+function abortSignalForTimeout(ms: number): AbortSignal {
+  const timeoutFn = (AbortSignal as unknown as { timeout?: (n: number) => AbortSignal }).timeout;
+  if (typeof timeoutFn === 'function') return timeoutFn.call(AbortSignal, ms);
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), ms);
+  return controller.signal;
+}
+
 export async function callPlatformAuth(
   config: SupabasePublicConfig,
   body: PlatformAuthRequest,
@@ -67,6 +78,7 @@ export async function callPlatformAuth(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      signal: abortSignalForTimeout(PLATFORM_AUTH_FETCH_TIMEOUT_MS),
     });
     const json = (await res.json().catch(() => ({}))) as EdgeSessionBody;
     if (!res.ok || !json.ok || !json.session?.access_token || !json.session.user_id) {
@@ -89,10 +101,19 @@ export async function callPlatformAuth(
       },
     };
   } catch (err) {
+    const aborted =
+      (err instanceof Error && err.name === 'AbortError') ||
+      (typeof DOMException !== 'undefined' &&
+        err instanceof DOMException &&
+        err.name === 'AbortError');
     return {
       ok: false,
       code: 'network_error',
-      message: err instanceof Error ? err.message : String(err),
+      message: aborted
+        ? `platform-auth timed out after ${PLATFORM_AUTH_FETCH_TIMEOUT_MS}ms`
+        : err instanceof Error
+          ? err.message
+          : String(err),
     };
   }
 }

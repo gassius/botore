@@ -253,7 +253,7 @@ function GarageRootInner(): React.ReactElement {
     return (
       <SafeAreaProvider>
         <SessionAuthErrorScreen
-          title="Could not sign in"
+          code={authBootError.code}
           detail={authBootError.message}
           retryBusy={retryBusy}
           onRetry={() => {

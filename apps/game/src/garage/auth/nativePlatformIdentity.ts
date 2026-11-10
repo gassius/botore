@@ -41,7 +41,15 @@ export async function signInWithNativePlatformIdentity(auth: AuthPort): Promise<
     };
   }
 
-  const fallbackDeviceId = await getOrCreateDeviceFallbackId();
+  const deviceIdResult = await getOrCreateDeviceFallbackId();
+  if (!deviceIdResult.ok) {
+    return {
+      ok: false,
+      code: deviceIdResult.code,
+      message: deviceIdResult.message,
+    };
+  }
+  const fallbackDeviceId = deviceIdResult.deviceId;
   const proof = await collectPlatformProof();
 
   const edge = proof
