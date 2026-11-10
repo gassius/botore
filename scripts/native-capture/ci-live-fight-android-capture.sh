@@ -231,6 +231,7 @@ capture_named() {
   local label="$2"
   local settle="${3:-4}"
   local ranking="${4:-}"
+  local mute="${5:-}"
   local args=(
     --out "${OUT_DIR}"
     --route "${route}"
@@ -238,6 +239,9 @@ capture_named() {
   )
   if [[ -n "${ranking}" ]]; then
     args+=(--ranking "${ranking}")
+  fi
+  if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then
+    args+=(--mute)
   fi
   CAPTURE_SETTLE_SEC="${settle}" \
     "${SCRIPT_DIR}/android-screencap.sh" \
@@ -284,6 +288,9 @@ wait_logcat_marker() {
 
 # 1) Garage (Stable equipped loadout)
 capture_named Stable garage 5
+
+# 1b) C9 Settings — mute / Music / Effects / reduced motion
+capture_named Settings settings 4
 
 # 2) Confirm — both bots (orchestrator selects opponent)
 capture_named ConfirmFight confirm 8
@@ -461,6 +468,9 @@ fi
 # 4) Result — backend XP / allowances (after server confirm so UI can show XP)
 capture_named FightResult result 5
 
+# 4b) C9 muted replay still (same sealed fight; mute=1 deep link)
+capture_named Replay replay-muted 3 "" 1
+
 # 5) C5 Ranking — live board (list_ranking + seed peers + fight XP), empty, error
 capture_named Ranking ranking-live 6 live
 capture_named Ranking ranking-empty 4 empty
@@ -524,11 +534,13 @@ write_manifest_line "${MANIFEST}" "c10_session_failure" "design-capture-sessionF
 missing="${missing:-0}"
 required_labels=(
   garage
+  settings
   confirm
   arena-layers
   replay-fx-hit
   replay-fx-defeat
   result
+  replay-muted
   ranking-live
   ranking-empty
   ranking-error

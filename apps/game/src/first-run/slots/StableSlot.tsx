@@ -9,6 +9,10 @@ import { useFirstRun } from '../FirstRunContext';
 export function StableSlot(): React.ReactElement {
   const { goTo } = useFirstRun();
   return (
-    <StableScreen onCustomise={() => goTo('Customise')} onFindOpponent={() => goTo('Opponents')} />
+    <StableScreen
+      onCustomise={() => goTo('Customise')}
+      onFindOpponent={() => goTo('Opponents')}
+      onSettings={() => goTo('Settings')}
+    />
   );
 }

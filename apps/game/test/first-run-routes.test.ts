@@ -9,7 +9,7 @@ import {
 import { garageTag } from '../src/garage-tag/tokens';
 
 describe('first-run routes', () => {
-  it('exposes the shared contract route names in order', () => {
+  it('exposes the shared contract route names; Settings is side-entry only', () => {
     expect(FIRST_RUN_ROUTES).toEqual([
       'Stable',
       'Customise',
@@ -18,8 +18,17 @@ describe('first-run routes', () => {
       'Replay',
       'FightResult',
       'Ranking',
+      'Settings',
     ]);
-    expect(ROUTE_FLOW).toEqual([...FIRST_RUN_ROUTES]);
+    expect(ROUTE_FLOW).toEqual([
+      'Stable',
+      'Customise',
+      'Opponents',
+      'ConfirmFight',
+      'Replay',
+      'FightResult',
+      'Ranking',
+    ]);
   });
 
   it('walks next/prev without inventing extra screens', () => {
@@ -28,6 +37,7 @@ describe('first-run routes', () => {
     expect(prevRoute('Stable')).toBeNull();
     expect(prevRoute('Ranking')).toBe('FightResult');
     expect(isFirstRunRoute('Stable')).toBe(true);
+    expect(isFirstRunRoute('Settings')).toBe(true);
     expect(isFirstRunRoute('Shop')).toBe(false);
   });
 });

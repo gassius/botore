@@ -16,13 +16,19 @@ export type TrialReplayAudioApi = {
 
 export function useTrialReplayAudio(opts: {
   muted: boolean;
+  musicEnabled?: boolean;
+  effectsEnabled?: boolean;
   playing: boolean;
   enabled?: boolean;
 }): TrialReplayAudioApi {
   const sessionRef = useRef<TrialAudioSession | null>(null);
   const mutedRef = useRef(opts.muted);
+  const musicEnabledRef = useRef(opts.musicEnabled !== false);
+  const effectsEnabledRef = useRef(opts.effectsEnabled !== false);
   const playingRef = useRef(opts.playing);
   mutedRef.current = opts.muted;
+  musicEnabledRef.current = opts.musicEnabled !== false;
+  effectsEnabledRef.current = opts.effectsEnabled !== false;
   playingRef.current = opts.playing;
   const enabled = opts.enabled !== false;
 
@@ -35,6 +41,8 @@ export function useTrialReplayAudio(opts: {
       backend: createExpoAvBackend(),
       sources: TRIAL_AUDIO_METRO_SOURCES,
       muted: mutedRef.current,
+      musicEnabled: musicEnabledRef.current,
+      effectsEnabled: effectsEnabledRef.current,
       playing: playingRef.current,
     });
     sessionRef.current = session;
@@ -47,6 +55,14 @@ export function useTrialReplayAudio(opts: {
   useEffect(() => {
     sessionRef.current?.setMuted(opts.muted);
   }, [opts.muted]);
+
+  useEffect(() => {
+    sessionRef.current?.setMusicEnabled(opts.musicEnabled !== false);
+  }, [opts.musicEnabled]);
+
+  useEffect(() => {
+    sessionRef.current?.setEffectsEnabled(opts.effectsEnabled !== false);
+  }, [opts.effectsEnabled]);
 
   useEffect(() => {
     sessionRef.current?.setPlaying(opts.playing);

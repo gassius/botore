@@ -100,3 +100,13 @@ sound tags.
 A fight never waits on audio download. Player controls (Music / Effects
 toggles, iOS silent switch, Android sound mode, pause on interruption) are
 runtime requirements; web preview starts audio on the first tap.
+
+### Settings (C9)
+
+The first-run **Settings** screen (Garage Tag entry from Stable) owns:
+
+- **Master mute** — persisted across kill/relaunch (`botore-player-settings.json`)
+- **Music** / **Effects** channel toggles — honored by `TrialAudioSession` on replay
+- **Reduced-motion override** — OR'd with the OS preference (never clears OS)
+
+Do not invent loudness finals here; Audio Director owns creative levels.

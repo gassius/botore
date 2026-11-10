@@ -24,6 +24,7 @@ import { DeleteAccountScreen } from './DeleteAccountScreen';
 export function StableScreen(props: {
   onCustomise: () => void;
   onFindOpponent?: () => void;
+  onSettings?: () => void;
 }): React.ReactElement {
   const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
   const forced = useForcedSessionFailure();
@@ -74,6 +75,9 @@ export function StableScreen(props: {
             disabled={!canProgress || !props.onFindOpponent}
             testID="stable-find-opponent"
           />
+          {props.onSettings ? (
+            <SecondaryButton label="Settings" onPress={props.onSettings} testID="stable-settings" />
+          ) : null}
           {failureKind === 'offline' || loadout.hydration === 'unavailable' ? (
             <SecondaryButton
               label={
