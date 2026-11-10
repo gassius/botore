@@ -136,8 +136,9 @@ echo "video=${VIDEO}" >>"${MANIFEST_NOTE}"
 # Extract dense frames from the MP4 (covers first 1–2s after launch).
 TMP_FRAMES="$(mktemp -d "${OUT_DIR}/.cold-frames.XXXXXX")"
 # ffmpeg 1-indexes; take first FRAME_COUNT frames at FRAME_FPS.
+# Force RGBA so png-diff/assert accept the frames (default ffmpeg PNG is RGB).
 ffmpeg -y -hide_banner -loglevel error -i "${VIDEO}" \
-  -vf "fps=${FRAME_FPS}" -frames:v "${FRAME_COUNT}" \
+  -vf "fps=${FRAME_FPS}" -frames:v "${FRAME_COUNT}" -pix_fmt rgba \
   "${TMP_FRAMES}/frame-%02d.png"
 extracted=0
 for ((i = 1; i <= FRAME_COUNT; i++)); do

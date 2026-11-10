@@ -30,25 +30,26 @@ function chunk(type, data) {
   return Buffer.concat([len, typeBuf, data, crcBuf]);
 }
 
-/** Tiny solid-color 8-bit RGBA PNG. */
-function solidPng(w, h, rgba) {
-  const stride = w * 4;
+/** Tiny solid-color 8-bit PNG. color=6 RGBA (default) or color=2 RGB. */
+function solidPng(w, h, rgba, color = 6) {
+  const srcBpp = color === 2 ? 3 : 4;
+  const stride = w * srcBpp;
   const raw = Buffer.alloc((stride + 1) * h);
   for (let y = 0; y < h; y++) {
     raw[y * (stride + 1)] = 0; // filter None
     for (let x = 0; x < w; x++) {
-      const i = y * (stride + 1) + 1 + x * 4;
+      const i = y * (stride + 1) + 1 + x * srcBpp;
       raw[i] = rgba[0];
       raw[i + 1] = rgba[1];
       raw[i + 2] = rgba[2];
-      raw[i + 3] = rgba[3] ?? 255;
+      if (color === 6) raw[i + 3] = rgba[3] ?? 255;
     }
   }
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(w, 0);
   ihdr.writeUInt32BE(h, 4);
   ihdr[8] = 8;
-  ihdr[9] = 6;
+  ihdr[9] = color;
   ihdr[10] = 0;
   ihdr[11] = 0;
   ihdr[12] = 0;
@@ -93,4 +94,16 @@ test('graphiteShare is high for #302D27 splash', () => {
   assert.ok(graphiteShare(splash) > 0.9);
   const cream = decodePngRgba(solidPng(16, 16, [0xf4, 0xe4, 0xc8]));
   assert.ok(graphiteShare(cream) < 0.1);
+});
+
+test('RGB color-type-2 PNGs decode to RGBA rows (ffmpeg frames)', () => {
+  const rgb = decodePngRgba(solidPng(8, 8, [0x30, 0x2d, 0x27], 2));
+  assert.equal(rgb.w, 8);
+  assert.equal(rgb.h, 8);
+  assert.equal(rgb.rows[0].length, 8 * 4);
+  assert.equal(rgb.rows[0][0], 0x30);
+  assert.equal(rgb.rows[0][3], 255);
+  const rgba = decodePngRgba(solidPng(8, 8, [0x30, 0x2d, 0x27], 6));
+  assert.equal(pixelDiffPct(rgb, rgba), 0);
+  assert.ok(graphiteShare(rgb) > 0.9);
 });

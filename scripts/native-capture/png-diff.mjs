@@ -21,6 +21,8 @@ export function decodePngRgba(buf) {
   let pos = 8;
   let w = 0;
   let h = 0;
+  // color 2 = RGB, color 6 = RGBA (ffmpeg cold-start frames are often RGB).
+  let color = 6;
   const idat = [];
   while (pos < buf.length) {
     const len = buf.readUInt32BE(pos);
@@ -30,8 +32,10 @@ export function decodePngRgba(buf) {
       w = data.readUInt32BE(0);
       h = data.readUInt32BE(4);
       const bit = data[8];
-      const color = data[9];
-      if (bit !== 8 || color !== 6) throw new Error(`unsupported PNG bit=${bit} color=${color}`);
+      color = data[9];
+      if (bit !== 8 || (color !== 6 && color !== 2)) {
+        throw new Error(`unsupported PNG bit=${bit} color=${color}`);
+      }
     } else if (type === 'IDAT') {
       idat.push(data);
     } else if (type === 'IEND') {
@@ -40,8 +44,8 @@ export function decodePngRgba(buf) {
     pos += 12 + len;
   }
   const raw = inflateSync(Buffer.concat(idat));
-  const bpp = 4;
-  const stride = w * bpp;
+  const srcBpp = color === 2 ? 3 : 4;
+  const stride = w * srcBpp;
   const rows = [];
   let prev = Buffer.alloc(stride);
   let i = 0;
@@ -50,25 +54,39 @@ export function decodePngRgba(buf) {
     const row = Buffer.from(raw.subarray(i, i + stride));
     i += stride;
     if (filter === 1) {
-      for (let x = bpp; x < stride; x++) row[x] = (row[x] + row[x - bpp]) & 255;
+      for (let x = srcBpp; x < stride; x++) row[x] = (row[x] + row[x - srcBpp]) & 255;
     } else if (filter === 2) {
       for (let x = 0; x < stride; x++) row[x] = (row[x] + prev[x]) & 255;
     } else if (filter === 3) {
       for (let x = 0; x < stride; x++) {
-        const left = x >= bpp ? row[x - bpp] : 0;
+        const left = x >= srcBpp ? row[x - srcBpp] : 0;
         row[x] = (row[x] + ((left + prev[x]) >> 1)) & 255;
       }
     } else if (filter === 4) {
       for (let x = 0; x < stride; x++) {
-        const a = x >= bpp ? row[x - bpp] : 0;
+        const a = x >= srcBpp ? row[x - srcBpp] : 0;
         const b = prev[x];
-        const c = x >= bpp ? prev[x - bpp] : 0;
+        const c = x >= srcBpp ? prev[x - srcBpp] : 0;
         row[x] = (row[x] + paeth(a, b, c)) & 255;
       }
     } else if (filter !== 0) {
       throw new Error(`bad PNG filter ${filter}`);
     }
-    rows.push(row);
+    // Normalize to RGBA rows so callers always index x*4.
+    if (color === 2) {
+      const rgba = Buffer.alloc(w * 4);
+      for (let x = 0; x < w; x++) {
+        const s = x * 3;
+        const d = x * 4;
+        rgba[d] = row[s];
+        rgba[d + 1] = row[s + 1];
+        rgba[d + 2] = row[s + 2];
+        rgba[d + 3] = 255;
+      }
+      rows.push(rgba);
+    } else {
+      rows.push(row);
+    }
     prev = row;
   }
   return { w, h, rows };
