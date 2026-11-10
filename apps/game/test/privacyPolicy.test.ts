@@ -75,8 +75,12 @@ describe('R6 privacy policy disclosure', () => {
     expect(blob).not.toMatch(/Block Store/i);
     expect(blob).toMatch(/players\.botore\.internal/);
     expect(blob).toContain(DOCUMENTED_ACCOUNT_DELETE_PATH);
-    expect(blob).toMatch(/soft-delete|tombstone|anonymiz/i);
-    expect(blob).toMatch(/one hour|refresh is blocked/i);
+    expect(blob).toMatch(/soft-delete|anonymiz/i);
+    expect(blob).toMatch(
+      /character rows|loadouts|inventory|battle_commands|auth\.users|audit logs/i,
+    );
+    expect(blob).toMatch(/one hour|ban|refresh|session revoke/i);
+    expect(blob).not.toMatch(/cannot keep using the old session/i);
     expect(blob).toMatch(/stack traces|breadcrumbs|device model/i);
     expect(blob).toMatch(/Sentry.*processor|processor.*Sentry|outside the European Union/i);
     expect(blob).not.toMatch(/Carlos|R4|outside counsel|engineering disclosure|not legal advice/i);

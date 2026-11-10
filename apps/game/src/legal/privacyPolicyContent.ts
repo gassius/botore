@@ -46,7 +46,7 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     title: 'Session handling',
     paragraphs: [
       'After a successful sign-in, Botore stores a Supabase access and refresh token on the device so you can relaunch without proving identity again while the session remains valid.',
-      'Sign out clears the local session. If an Auth user is deleted or banned, refresh is blocked; any already-issued access token expires shortly afterward (typically within about one hour).',
+      'Sign out clears the local session. After account deletion, Botore bans the Auth user (blocking refresh) and, on the in-app delete path, attempts a global session revoke using your access token. Any access token that is not revoked expires shortly afterward (typically within about one hour).',
     ],
   },
   {
@@ -63,8 +63,8 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     title: 'Account deletion',
     paragraphs: [
       `You can request deletion in the app (Stable → Delete account until Settings ships) or on the public web path ${DOCUMENTED_ACCOUNT_DELETE_PATH} using a one-time deletion code minted in-app.`,
-      'Deletion soft-deletes the account, anonymizes display names, unlinks platform identities / devices / consents, and rewrites the Auth user so the same Game Center or Play Games id can mint a fresh account later.',
-      'Hard-delete of every historical row is not possible: append-only ledgers and fight history remain as anonymous tombstones for integrity.',
+      'Deletion soft-deletes the account, anonymizes display names, unlinks platform identities / devices / consents, and rewrites the Auth user so the same Game Center or Play Games id can mint a fresh account later. Your account can no longer be accessed as a playable account.',
+      'Hard-delete of every historical row is not possible. Anonymized records retained for integrity include: character rows, builds, loadouts, inventory and progression ledgers, battles and battle_commands, the banned auth.users row, and Auth audit logs.',
     ],
   },
   {
@@ -72,7 +72,7 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     title: 'Data retention',
     paragraphs: [
       'Active account and gameplay data are kept while the account is in use.',
-      'After deletion, identity links are removed and the account is marked deleted; anonymized ledger and battle tombstones may be retained indefinitely for fairness and audit integrity.',
+      'After deletion, platform identity links are removed and the account is marked deleted. The anonymized records listed under Account deletion may be retained indefinitely for fairness and audit integrity; they are not player-accessible.',
       'Crash report retention follows the configured Sentry project policy when crash reporting is enabled.',
     ],
   },

@@ -55,9 +55,10 @@ a verified Game Center, Play Games, or device-fallback proof.
 - Access / refresh tokens are stored on device and restored on relaunch while
   valid.
 - Sign out clears the local session.
-- If an Auth user is deleted or banned, **refresh is blocked**; an already-issued
-  access JWT remains valid until it expires (Supabase default ≈ 1 hour), aside
-  from RPCs that check `deleted_at`.
+- After deletion: Auth user is **banned** (refresh blocked). In-app JWT path
+  also attempts `auth.admin.signOut(accessJwt, 'global')` (M2;
+  `sessionsRevoked` may be false). Public code path has no JWT to revoke —
+  issued access tokens expire ≈ 1 hour. RPCs that check `deleted_at` fail closed.
 
 ## What we store
 
@@ -81,17 +82,24 @@ Players can request deletion:
 
 Server policy (soft-delete): mark `accounts.deleted_at`, anonymize display
 names, unlink identities / devices / consents, rewrite Auth email and ban so
-the same Game Center / Play Games id can mint a **new** account. Append-only
-ledgers and battle rows remain as anonymous tombstones — hard-delete of every
-historical row is not possible.
+the same Game Center / Play Games id can mint a **new** account. Hard-delete of
+every historical row is not possible.
+
+**Retained anonymized records** (unreachable by the player, kept for integrity):
+character rows, builds, loadouts, inventory and progression ledgers, battles /
+`battle_commands`, the banned `auth.users` row, and Auth audit logs.
+
+**Sessions after delete (M2):** ban blocks refresh; in-app path attempts
+`signOut(accessJwt, 'global')` when a JWT is present; code path relies on ban
+only. Player-facing copy must not claim every access token is killed instantly.
 
 Details: `docs/backend/account-deletion.md`.
 
 ## Data retention
 
 - Active gameplay data while the account is in use.
-- After deletion: identity links removed; anonymized ledger / battle tombstones
-  may be retained for integrity.
+- After deletion: identity links removed; anonymized tombstones listed above may
+  be retained indefinitely.
 - Crash report retention follows the Sentry project policy when enabled.
 
 ## Store listing (R4) — ops
