@@ -60,9 +60,14 @@ export type GarageSessionContextValue = {
   signOut: () => Promise<void>;
   /**
    * R5: permanently delete the signed-in account (Edge soft-delete + Auth ban).
-   * Clears session + device-fallback so relaunch mints a new identity.
+   * Clears session + device-fallback. Holds silent re-auth until
+   * `acknowledgeAccountDeleted` so the success notice can show.
    */
   deleteAccount: () => Promise<{ ok: true } | { ok: false; message: string }>;
+  /** True after a successful delete until the player taps Continue. */
+  readonly accountDeletedNotice: boolean;
+  /** Clear the deleted notice and allow silent first-launch auth. */
+  acknowledgeAccountDeleted: () => void;
   retryHydration: () => Promise<void>;
   selectPaint: (paintId: string) => void;
   selectWeapon: (weaponId: string) => void;
@@ -85,6 +90,7 @@ export function GarageSessionProvider(props: {
   const [coldStartHoldTitle, setColdStartHoldTitle] = useState(false);
   const [coldStartIntentReady, setColdStartIntentReady] = useState(() => !isDesignCaptureEnabled());
   const [authBootError, setAuthBootError] = useState<AuthBootError | null>(null);
+  const [accountDeletedNotice, setAccountDeletedNotice] = useState(false);
   const [loadout, setLoadout] = useState<LoadoutPreviewState>(() =>
     createUnavailableLoadoutState(),
   );
@@ -270,12 +276,21 @@ export function GarageSessionProvider(props: {
   useEffect(() => {
     if (isDesignCaptureEnabled()) return;
     if (coldStartHoldTitle) return;
+    // M4: hold silent re-auth until the player acknowledges the deleted notice.
+    if (accountDeletedNotice) return;
     if (session || authBootError) return;
     if (booting) return;
     if (silentAuthStarted.current) return;
     silentAuthStarted.current = true;
     void runSilentFirstLaunch();
-  }, [authBootError, booting, coldStartHoldTitle, runSilentFirstLaunch, session]);
+  }, [
+    accountDeletedNotice,
+    authBootError,
+    booting,
+    coldStartHoldTitle,
+    runSilentFirstLaunch,
+    session,
+  ]);
 
   const value = useMemo<GarageSessionContextValue>(
     () => ({
@@ -306,8 +321,17 @@ export function GarageSessionProvider(props: {
         setSession(null);
         setLoadout(createUnavailableLoadoutState());
         setAuthBootError(null);
+        setAccountDeletedNotice(false);
         silentAuthStarted.current = false;
         // Re-enter silent first-launch on the first-run path (never AuthEntry).
+        if (!isDesignCaptureEnabled()) {
+          setBooting(false);
+        }
+      },
+      accountDeletedNotice,
+      acknowledgeAccountDeleted: () => {
+        setAccountDeletedNotice(false);
+        silentAuthStarted.current = false;
         if (!isDesignCaptureEnabled()) {
           setBooting(false);
         }
@@ -326,7 +350,9 @@ export function GarageSessionProvider(props: {
             setSession(null);
             setLoadout(createUnavailableLoadoutState());
             setAuthBootError(null);
-            silentAuthStarted.current = false;
+            // Hold silent re-auth until Continue (same as real delete).
+            setAccountDeletedNotice(true);
+            silentAuthStarted.current = true;
             return { ok: true as const };
           }
           return { ok: false as const, message: 'Account deletion is unavailable in this build' };
@@ -340,10 +366,9 @@ export function GarageSessionProvider(props: {
         setSession(null);
         setLoadout(createUnavailableLoadoutState());
         setAuthBootError(null);
-        silentAuthStarted.current = false;
-        if (!isDesignCaptureEnabled()) {
-          setBooting(false);
-        }
+        // M4: show success until Continue before silent auth mints a fresh account.
+        setAccountDeletedNotice(true);
+        silentAuthStarted.current = true;
         return { ok: true as const };
       },
       retryHydration: async () => {
@@ -411,6 +436,7 @@ export function GarageSessionProvider(props: {
       session,
       booting,
       authBootError,
+      accountDeletedNotice,
       coldStartHoldTitle,
       coldStartIntentReady,
       loadout,

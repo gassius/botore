@@ -6,7 +6,8 @@
 -- Auth email rewrite + ban happen in Edge `account-delete` (service_role).
 --
 -- No new client table GRANTs. EXECUTE:
---   mint_my_deletion_code / delete_my_account → authenticated only
+--   mint_my_deletion_code → authenticated only
+--   delete_my_account → EXECUTE granted to no role (Edge-only delete path)
 --   admin_delete_account* → service_role only (Edge)
 
 alter table public.accounts
@@ -306,13 +307,15 @@ begin
 end;
 $$;
 
+-- M1: no client EXECUTE — Edge `admin_delete_account` is the only delete path so
+-- Auth email rewrite + ban always run. Function retained for ops/inspection.
 revoke all on function public.delete_my_account() from public;
 revoke all on function public.delete_my_account() from anon;
+revoke all on function public.delete_my_account() from authenticated;
 revoke all on function public.delete_my_account() from service_role;
-grant execute on function public.delete_my_account() to authenticated;
 
 comment on function public.delete_my_account() is
-  'R5 in-app soft-delete for auth.uid() only. Edge still bans Auth user. EXECUTE authenticated only.';
+  'R5 DB soft-delete for auth.uid(). EXECUTE granted to no role — use Edge account-delete + admin_delete_account so Auth retire always runs.';
 
 -- ---------------------------------------------------------------------------
 -- Fail closed: owned-character read rejects soft-deleted accounts

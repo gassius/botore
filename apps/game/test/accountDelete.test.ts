@@ -6,6 +6,10 @@ import {
   mintDeletionCode,
   PUBLIC_ACCOUNT_DELETE_PATH,
 } from '../src/garage/auth/accountDeleteClient';
+import {
+  buildDeletionSupportMailto,
+  readDeletionSupportEmail,
+} from '../src/garage/auth/deletionSupportContact';
 import { isPublicAccountDeletePath } from '../src/account/isPublicAccountDeletePath';
 
 const config = {
@@ -105,5 +109,23 @@ describe('R5 account deletion client', () => {
       fetchImpl as unknown as typeof fetch,
     );
     expect(result).toEqual({ ok: false, code: 'invalid_code', message: 'nope' });
+  });
+
+  it('builds a no-code support mailto when support email is configured', () => {
+    expect(readDeletionSupportEmail({})).toBeNull();
+    expect(
+      readDeletionSupportEmail({
+        EXPO_PUBLIC_ACCOUNT_DELETION_SUPPORT_EMAIL: 'privacy@example.com',
+      }),
+    ).toBe('privacy@example.com');
+    const mailto = buildDeletionSupportMailto({
+      supportEmail: 'privacy@example.com',
+      contactEmail: 'player@example.com',
+      platform: 'iOS Game Center',
+      platformId: 'T:hero',
+    });
+    expect(mailto.startsWith('mailto:privacy@example.com?')).toBe(true);
+    expect(decodeURIComponent(mailto)).toContain('T:hero');
+    expect(decodeURIComponent(mailto)).toContain('player@example.com');
   });
 });

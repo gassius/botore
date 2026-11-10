@@ -2225,8 +2225,8 @@ begin
     'authenticated EXECUTE mint_my_deletion_code'
   );
   perform tests.assert(
-    has_function_privilege('authenticated', 'public.delete_my_account()', 'EXECUTE'),
-    'authenticated EXECUTE delete_my_account'
+    not has_function_privilege('authenticated', 'public.delete_my_account()', 'EXECUTE'),
+    'authenticated must not EXECUTE delete_my_account (Edge-only path)'
   );
   perform tests.assert(
     not has_function_privilege('anon', 'public.delete_my_account()', 'EXECUTE'),
@@ -2297,12 +2297,24 @@ begin
   end;
   reset role;
 
-  -- authenticated delete
+  -- authenticated cannot call delete_my_account (M1 Edge-only)
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   perform set_config('request.jwt.claim.sub', v_other::text, true);
   set local role authenticated;
-  v_res := public.delete_my_account();
-  perform tests.assert((v_res->>'ok')::boolean, 'delete_my_account ok');
+  begin
+    perform public.delete_my_account();
+    raise exception 'AUTHENTICATED FAIL: delete_my_account allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+
+  -- soft-delete via service_role admin path (Edge JWT equivalent)
+  set local role service_role;
+  v_res := public.admin_delete_account(v_other);
+  perform tests.assert((v_res->>'ok')::boolean, 'admin_delete_account ok');
   reset role;
 
   select deleted_at, display_name

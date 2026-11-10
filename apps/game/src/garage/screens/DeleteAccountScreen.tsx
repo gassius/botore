@@ -27,7 +27,7 @@ export function DeleteAccountScreen(props: {
   onCancel: () => void;
   onDeleted: () => void;
 }): React.ReactElement {
-  const { session, deleteAccount } = useGarageSession();
+  const { session, deleteAccount, acknowledgeAccountDeleted } = useGarageSession();
   const [phase, setPhase] = useState<DeleteAccountPhase>('confirm');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,16 +72,21 @@ export function DeleteAccountScreen(props: {
       setError(result.message);
       return;
     }
+    // M4: stay on done until Continue; do not unmount / silent-auth yet.
     setPhase('done');
+  }, [confirmTyped, deleteAccount]);
+
+  const onContinue = useCallback(() => {
+    acknowledgeAccountDeleted();
     props.onDeleted();
-  }, [confirmTyped, deleteAccount, props]);
+  }, [acknowledgeAccountDeleted, props]);
 
   return (
     <ScreenChrome
       testID="slot-delete-account"
       footer={
         phase === 'done' ? (
-          <PrimaryButton label="Continue" onPress={props.onDeleted} testID="delete-account-done" />
+          <PrimaryButton label="Continue" onPress={onContinue} testID="delete-account-done" />
         ) : (
           <>
             {phase === 'confirm' ? (
@@ -121,14 +126,14 @@ export function DeleteAccountScreen(props: {
 
       {phase === 'done' ? (
         <Text style={styles.body} allowFontScaling testID="delete-account-success">
-          Your account has been deleted. Progress and platform links for this account are gone.
+          Your account is deleted and can no longer be accessed. Anonymized game records are kept
+          for integrity.
         </Text>
       ) : (
         <>
           <Text style={styles.body} allowFontScaling>
-            This permanently deletes your Botore account. Display names are anonymized, platform
-            links are removed, and you will be signed out. Fight history for other players is kept
-            as anonymous records.
+            This deletes your Botore account. Display names are anonymized, platform links are
+            removed, and you will be signed out. Anonymized game records are kept for integrity.
           </Text>
           <Text style={styles.body} allowFontScaling>
             Type DELETE below to confirm.

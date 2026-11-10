@@ -70,6 +70,7 @@ export async function handleAccountDeleteRequest(
   }
 
   const authHeader = req.headers.get('authorization') ?? '';
+  const accessJwt = authHeader.replace(/^Bearer\s+/i, '').trim();
   const userId = await deps.getUserId(authHeader);
   const rawCode = typeof body.deletionCode === 'string' ? body.deletionCode : '';
 
@@ -114,7 +115,11 @@ export async function handleAccountDeleteRequest(
     );
   }
 
-  const retired = await deps.retireAuthUser(deleted.accountId);
+  // JWT path: pass the caller's access JWT so Auth Admin can revoke sessions.
+  // Code path: no user JWT — ban covers refresh; do not claim session revoke.
+  const retired = await deps.retireAuthUser(deleted.accountId, {
+    accessJwt: userId ? accessJwt : null,
+  });
   if (!retired.ok) {
     // DB side already soft-deleted; surface Auth retire failure so ops can repair.
     return json(
@@ -133,6 +138,7 @@ export async function handleAccountDeleteRequest(
       ok: true,
       repeated: deleted.repeated === true,
       accountId: deleted.accountId,
+      sessionsRevoked: retired.sessionsRevoked === true,
     },
     200,
   );

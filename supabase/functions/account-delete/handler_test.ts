@@ -16,7 +16,7 @@ function baseDeps(overrides: Partial<AccountDeleteDeps> = {}): AccountDeleteDeps
       ok: true,
       accountId: '00000000-0000-4000-8000-000000000001',
     }),
-    retireAuthUser: async () => ({ ok: true }),
+    retireAuthUser: async () => ({ ok: true, sessionsRevoked: false }),
     sha256Hex,
     ...overrides,
   };
@@ -66,9 +66,10 @@ Deno.test('requires confirm: true', async () => {
   assertEquals(body.code, 'confirmation_required');
 });
 
-Deno.test('JWT path deletes by auth.uid()', async () => {
+Deno.test('JWT path deletes by auth.uid() and passes access JWT to retire', async () => {
   let deletedId: string | null = null;
   let retiredId: string | null = null;
+  let retireJwt: string | null | undefined = undefined;
   const res = await handleAccountDeleteRequest(
     post({ confirm: true }, { authorization: 'Bearer user-jwt' }),
     baseDeps({
@@ -77,17 +78,20 @@ Deno.test('JWT path deletes by auth.uid()', async () => {
         deletedId = id;
         return { ok: true, accountId: id };
       },
-      retireAuthUser: async (id) => {
+      retireAuthUser: async (id, opts) => {
         retiredId = id;
-        return { ok: true };
+        retireJwt = opts?.accessJwt;
+        return { ok: true, sessionsRevoked: true };
       },
     }),
   );
   assertEquals(res.status, 200);
   const body = await res.json();
   assertEquals(body.ok, true);
+  assertEquals(body.sessionsRevoked, true);
   assertEquals(deletedId, 'acct-1');
   assertEquals(retiredId, 'acct-1');
+  assertEquals(retireJwt, 'user-jwt');
 });
 
 Deno.test('code path hashes then deletes', async () => {
@@ -101,13 +105,17 @@ Deno.test('code path hashes then deletes', async () => {
         seenHash = hash;
         return { ok: true, accountId: 'acct-code' };
       },
-      retireAuthUser: async () => ({ ok: true }),
+      retireAuthUser: async (_id, opts) => {
+        assertEquals(opts?.accessJwt ?? null, null);
+        return { ok: true, sessionsRevoked: false };
+      },
     }),
   );
   assertEquals(res.status, 200);
   assertEquals(seenHash, expectedHash);
   const body = await res.json();
   assertEquals(body.accountId, 'acct-code');
+  assertEquals(body.sessionsRevoked, false);
 });
 
 Deno.test('invalid code shape returns 400', async () => {

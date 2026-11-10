@@ -24,6 +24,9 @@ export type DeleteRpcResult =
   | { ok: true; repeated?: boolean; accountId: string }
   | { ok: false; code?: string; message?: string };
 
+export type RetireAuthResult =
+  { ok: true; sessionsRevoked: boolean } | { ok: false; message: string };
+
 export type AdminClient = {
   rpc: (
     fn: string,
@@ -35,8 +38,12 @@ export type AdminClient = {
         id: string,
         attrs: { email?: string; ban_duration?: string; email_confirm?: boolean },
       ) => Promise<{ data: unknown; error: { message: string } | null }>;
+      /**
+       * supabase-js auth-js: `signOut(jwt, scope)` takes the user **access JWT**,
+       * not a user id. Passing a UUID yields 401 and revokes nothing.
+       */
       signOut?: (
-        id: string,
+        jwt: string,
         scope?: 'global' | 'local' | 'others',
       ) => Promise<{ data: unknown; error: { message: string } | null }>;
     };
@@ -47,7 +54,15 @@ export type AccountDeleteDeps = {
   getUserId: (authHeader: string) => Promise<string | null>;
   deleteByAccountId: (accountId: string) => Promise<DeleteRpcResult>;
   deleteByCodeHash: (codeHash: string) => Promise<DeleteRpcResult>;
-  retireAuthUser: (accountId: string) => Promise<{ ok: true } | { ok: false; message: string }>;
+  /**
+   * Rewrite Auth email + ban. When `accessJwt` is set (in-app JWT path), also
+   * attempt global session revoke via that JWT. Code path relies on the ban
+   * (no caller JWT to revoke with).
+   */
+  retireAuthUser: (
+    accountId: string,
+    opts?: { accessJwt?: string | null },
+  ) => Promise<RetireAuthResult>;
   sha256Hex: (input: string) => Promise<string>;
 };
 
@@ -77,17 +92,17 @@ function defaultAdminClient(url: string, key: string): AdminClient {
           const { data, error } = await client.auth.admin.updateUserById(id, attrs);
           return { data, error: error ? { message: error.message } : null };
         },
-        async signOut(id, scope = 'global') {
+        async signOut(jwt, scope = 'global') {
           const admin = client.auth.admin as {
             signOut?: (
-              userId: string,
+              accessJwt: string,
               scope?: string,
             ) => Promise<{ data: unknown; error: { message: string } | null }>;
           };
           if (typeof admin.signOut !== 'function') {
             return { data: null, error: null };
           }
-          const { data, error } = await admin.signOut(id, scope);
+          const { data, error } = await admin.signOut(jwt, scope);
           return { data, error: error ? { message: error.message } : null };
         },
       },
@@ -176,7 +191,7 @@ export function createAccountDeleteDeps(
       }
       return parseDeleteRpc(data);
     },
-    async retireAuthUser(accountId: string) {
+    async retireAuthUser(accountId: string, opts = {}) {
       const admin = requireAdmin();
       const retiredEmail = `deleted.${accountId.replace(/-/g, '')}@deleted.botore.internal`;
       const updated = await admin.auth.admin.updateUserById(accountId, {
@@ -188,10 +203,22 @@ export function createAccountDeleteDeps(
       if (updated.error) {
         return { ok: false, message: updated.error.message };
       }
-      if (typeof admin.auth.admin.signOut === 'function') {
-        await admin.auth.admin.signOut(accountId, 'global');
+
+      // M2: revoke sessions only when we have the caller's access JWT (JWT path).
+      // Code path: ban blocks refresh; access tokens expire (~1h). Do not pass a
+      // user id to signOut — auth-js treats the first arg as a JWT.
+      let sessionsRevoked = false;
+      const accessJwt = opts.accessJwt?.trim() ?? '';
+      if (accessJwt && typeof admin.auth.admin.signOut === 'function') {
+        try {
+          const signedOut = await admin.auth.admin.signOut(accessJwt, 'global');
+          sessionsRevoked = !signedOut.error;
+        } catch {
+          sessionsRevoked = false;
+        }
       }
-      return { ok: true };
+
+      return { ok: true, sessionsRevoked };
     },
     sha256Hex,
   };

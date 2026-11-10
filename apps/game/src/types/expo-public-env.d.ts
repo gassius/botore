@@ -77,5 +77,10 @@ declare namespace NodeJS {
      * Never commit a real value. Ignored on native runtimes.
      */
     EXPO_PUBLIC_WEB_PREVIEW_DEV_PASSWORD?: string;
+    /**
+     * R5 public `/account/delete` fallback mailto when the player has no
+     * in-app deletion code (Play data-deletion URL). Ops inbox only.
+     */
+    EXPO_PUBLIC_ACCOUNT_DELETION_SUPPORT_EMAIL?: string;
   }
 }

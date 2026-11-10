@@ -240,6 +240,16 @@ export async function mintSessionForPlatformIdentity(
       };
     }
 
+    // M1 fail-closed: a DB-only delete (or auth_retire_failed) can leave the
+    // Auth user live on the synthetic email. Never re-link or mint for it.
+    if (await isAccountDeleted(admin, userId)) {
+      return {
+        ok: false,
+        code: 'account_deleted',
+        message: 'This account was deleted and cannot receive a new session',
+      };
+    }
+
     if (!accountId) {
       await ensureAccountRow(admin, userId);
       accountId = userId;
