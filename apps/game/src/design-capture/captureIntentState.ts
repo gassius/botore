@@ -1,9 +1,6 @@
 import type { FirstRunRoute } from '../first-run/routes';
 import { isFirstRunRoute } from '../first-run/routes';
-import {
-  type DesignCaptureRankingScenario,
-  parseDesignCaptureRankingScenario,
-} from './captureEnv';
+import { type DesignCaptureRankingScenario, parseDesignCaptureRankingScenario } from './captureEnv';
 
 /**
  * Pure in-memory capture intent state (no react-native).
