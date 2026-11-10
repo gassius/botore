@@ -59,11 +59,7 @@ export function StableScreen(props: {
             testID="stable-find-opponent"
           />
           {props.onSettings ? (
-            <SecondaryButton
-              label="Settings"
-              onPress={props.onSettings}
-              testID="stable-settings"
-            />
+            <SecondaryButton label="Settings" onPress={props.onSettings} testID="stable-settings" />
           ) : null}
           {failureKind === 'offline' || loadout.hydration === 'unavailable' ? (
             <SecondaryButton
