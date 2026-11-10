@@ -55,6 +55,11 @@ Bytes: `supabase/seed/atlas/v1/` (valid silent AAC `.m4a`, 1×1 PNG). No real ar
 
 `backend_health_snapshot().checks.storage.proof_pack_ok` evaluates the seeded **`v1`** proof pack (`proof_version`), not chronological `latest_version`. Later publishes (race fixtures, ops drafts) must not flip the gate.
 
+Hosted Development does not auto-run `supabase/seed.sql` or
+`scripts/seed-atlas-storage.mjs` on `db push`. Run both after migrations or
+health stays not-ok / Edge `/health` **503**. Runbook:
+`docs/backend/verify.md` § Hosted Development bootstrap.
+
 ## Client loader (F6)
 
 Expo on-demand download + device cache for catalogue / arena / FX packs, with

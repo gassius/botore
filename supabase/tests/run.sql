@@ -2383,3 +2383,131 @@ begin
 
   raise notice 'TEST-OK R5 account deletion';
 end $$;
+
+-- =========================================================================
+-- B4: RPC grant lockdown + pinned search_path (0025)
+-- =========================================================================
+do $$
+declare
+  r record;
+  v_cfg text;
+  v_fn_count int := 0;
+  v_path_count int := 0;
+  v_public_exec boolean;
+begin
+  -- Atlas helpers: service_role EXECUTE only --------------------------------
+  for r in
+    select p.oid, p.proname, pg_get_function_identity_arguments(p.oid) as args,
+           coalesce(p.proacl, acldefault('f', p.proowner)) as acl
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in (
+         'atlas_lock_versions',
+         'atlas_version_status',
+         'atlas_storage_objects_guard',
+         'atlas_manifest_entries_immutability'
+       )
+     order by p.proname, 3
+  loop
+    v_fn_count := v_fn_count + 1;
+    select exists (
+      select 1
+        from aclexplode(r.acl) a
+       where a.grantee = 0
+         and a.privilege_type = 'EXECUTE'
+    ) into v_public_exec;
+    perform tests.assert(
+      not v_public_exec,
+      format('PUBLIC must not EXECUTE %s(%s)', r.proname, r.args)
+    );
+    perform tests.assert(
+      not has_function_privilege('anon', r.oid, 'EXECUTE'),
+      format('anon must not EXECUTE %s(%s)', r.proname, r.args)
+    );
+    perform tests.assert(
+      not has_function_privilege('authenticated', r.oid, 'EXECUTE'),
+      format('authenticated must not EXECUTE %s(%s)', r.proname, r.args)
+    );
+    perform tests.assert(
+      has_function_privilege('service_role', r.oid, 'EXECUTE'),
+      format('service_role must EXECUTE %s(%s)', r.proname, r.args)
+    );
+  end loop;
+  perform tests.assert(v_fn_count = 4, format('expected 4 atlas helpers, got %s', v_fn_count));
+
+  -- prepare_fight_context: authenticated + service_role; not PUBLIC/anon ----
+  perform tests.assert(
+    has_function_privilege(
+      'authenticated',
+      'public.prepare_fight_context(uuid, text)',
+      'EXECUTE'
+    ),
+    'authenticated EXECUTE prepare_fight_context (Confirm eligibility)'
+  );
+  perform tests.assert(
+    has_function_privilege(
+      'service_role',
+      'public.prepare_fight_context(uuid, text)',
+      'EXECUTE'
+    ),
+    'service_role EXECUTE prepare_fight_context (combat-v1)'
+  );
+  perform tests.assert(
+    not has_function_privilege(
+      'anon',
+      'public.prepare_fight_context(uuid, text)',
+      'EXECUTE'
+    ),
+    'anon must not EXECUTE prepare_fight_context'
+  );
+  select exists (
+    select 1
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+     where n.nspname = 'public'
+       and p.proname = 'prepare_fight_context'
+       and pg_get_function_identity_arguments(p.oid) = 'uuid, text'
+       and a.grantee = 0
+       and a.privilege_type = 'EXECUTE'
+  ) into v_public_exec;
+  perform tests.assert(
+    not v_public_exec,
+    'PUBLIC must not EXECUTE prepare_fight_context'
+  );
+
+  -- Pinned search_path on advisor mutable set + grant-set re-assert ---------
+  for r in
+    select p.oid, p.proname, pg_get_function_identity_arguments(p.oid) as args,
+           p.proconfig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in (
+         '_final_hp_from_replay',
+         '_outbox_validate_row',
+         'atlas_versions_immutability',
+         'battle_participant_pin_atlas_version',
+         'atlas_storage_prefix',
+         'atlas_lock_versions',
+         'atlas_version_status',
+         'atlas_storage_objects_guard',
+         'atlas_manifest_entries_immutability',
+         'prepare_fight_context'
+       )
+  loop
+    v_path_count := v_path_count + 1;
+    v_cfg := array_to_string(r.proconfig, ',');
+    perform tests.assert(
+      v_cfg is not null and v_cfg ~* 'search_path=',
+      format('%s(%s) must pin search_path (proconfig=%s)', r.proname, r.args, coalesce(v_cfg, '<null>'))
+    );
+  end loop;
+  perform tests.assert(
+    v_path_count = 10,
+    format('expected 10 search_path-pinned functions, got %s', v_path_count)
+  );
+
+  raise notice 'TEST-OK B4 RPC grants + search_path harden';
+end $$;

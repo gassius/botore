@@ -94,10 +94,14 @@ VM. **Supabase Infra** (or Carlos) must run against the **Development** project:
 ```bash
 # From repo root, linked to Development (or with --project-ref <dev-ref>)
 pnpm exec supabase db push
-# applies supabase/migrations/0023_player_identities.sql
+# applies supabase/migrations/0023_player_identities.sql (+ later)
 
-pnpm exec supabase functions deploy platform-auth --no-verify-jwt
+# Prefer deploying ALL functions via CLI (multi-file layout). Do not use the
+# Dashboard esbuild-bundle deploy for platform-auth / combat-v1.
+pnpm exec supabase functions deploy --project-ref yrrytppmkykzhwelqmcs --yes
+# Or single: pnpm exec supabase functions deploy platform-auth --project-ref …
 # config.toml already has [functions.platform-auth] verify_jwt = false
+# CI: .github/workflows/deploy-edge-functions.yml
 ```
 
 Confirm after deploy:

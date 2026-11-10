@@ -26,4 +26,10 @@ That script uploads through the Storage API, verifies downloads (manifest +
 image + audio), refuses publish when paths are missing, then calls
 `publish_atlas_version('v1')`. `infra/db-reset.sh` and CI run it automatically.
 
+**Hosted Development** (`yrrytppmkykzhwelqmcs`): `db push` does not run
+`supabase/seed.sql` or this upload. After migrations, run the parts catalogue
+seed (`psql … -f supabase/seed.sql`) then this script with project
+`SUPABASE_URL` + service role key. Health stays 503 until both succeed. See
+`docs/backend/verify.md` § Hosted Development bootstrap.
+
 These files are **not** final art or audio. `budgets_final` stays false.
