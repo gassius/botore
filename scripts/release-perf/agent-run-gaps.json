@@ -1,0 +1,34 @@
+{
+  "ticket": "1amjtrey7v4",
+  "ticketName": "R1: Native release-build acceptance measure (F12 residual)",
+  "agentUrl": "https://cursor.com/agents/bc-2c51e721-fa34-579e-8df7-f82b54b94cc5",
+  "tipShaAtScaffold": null,
+  "easProfile": "release-perf",
+  "envelopePreferred": "live_sealed",
+  "device": {
+    "android": "none_in_agent_vm",
+    "ios": "none_in_agent_vm",
+    "adb": false,
+    "usbBus": false
+  },
+  "binaryProduced": false,
+  "botorePerfCaptured": false,
+  "verdictVsProposedThresholds": "not_measured",
+  "skiaFollowOnOpened": false,
+  "costLedger": {
+    "edgeFunctionCpuOrInvocations": "unknown",
+    "storageOrCdnEgress": "unknown",
+    "paidMediaGeneration": "none this ticket",
+    "easBuildMinutes": "unknown",
+    "physicalDeviceTime": "unknown",
+    "supervisionOrEvaluationTime": "unknown"
+  },
+  "gaps": [
+    "No physical Android phone or emulator in this cloud-agent VM",
+    "adb / eas-cli not installed in the VM PATH for a live measure",
+    "No release-perf APK built (EAS minutes unknown ≠ zero)",
+    "Thresholds remain proposed — need Carlos agreement before pass/fail",
+    "iOS not reachable from this Linux VM (optional record for Carlos runner)"
+  ],
+  "howCarlosOrCiShouldRun": "See scripts/release-perf/README.md and docs/architecture/android-release-perf.md § Measurement protocol"
+}

@@ -1,0 +1,67 @@
+{
+  "$comment": "Fill one results JSON per tip measure. Copy to artifacts/release-perf/results-<tipSha>.json. unknown ≠ zero.",
+  "ticket": "1amjtrey7v4",
+  "ticketName": "R1: Native release-build acceptance measure (F12 residual)",
+  "tipSha": null,
+  "branch": null,
+  "prUrl": null,
+  "binary": {
+    "easProfile": "release-perf",
+    "platform": "android",
+    "artifactUrlOrPath": null,
+    "builtAt": null,
+    "expoPublicPerfSample": "1",
+    "supabasePublicEnvBaked": null,
+    "allowDevScaffold": false
+  },
+  "device": {
+    "serial": null,
+    "manufacturer": null,
+    "model": null,
+    "androidRelease": null,
+    "sdk": null,
+    "refreshHz": null,
+    "notes": null
+  },
+  "iosDevice": {
+    "recorded": false,
+    "model": null,
+    "osVersion": null,
+    "notes": "Optional; record if reachable. Not a substitute for Android measure."
+  },
+  "envelope": {
+    "preferred": "live_sealed",
+    "used": null,
+    "labelHonestlyIfFixture": true,
+    "replayChecksum": null,
+    "battleId": null
+  },
+  "passes": {
+    "soundOnWarm": null,
+    "soundOnCold": null,
+    "mutedWarm": null,
+    "mutedCold": null,
+    "reducedMotionSoundOn": null,
+    "reducedMotionMuted": null
+  },
+  "verdictVsProposedThresholds": {
+    "thresholdsAgreedByCarlos": false,
+    "overall": "not_measured",
+    "skiaFollowOnOpened": false,
+    "notes": "Do not treat numbers as pass/fail until Carlos agrees the proposed table."
+  },
+  "costLedger": {
+    "edgeFunctionCpuOrInvocations": "unknown",
+    "storageOrCdnEgress": "unknown",
+    "paidMediaGeneration": "none this ticket",
+    "easBuildMinutes": "unknown",
+    "physicalDeviceTime": "unknown",
+    "supervisionOrEvaluationTime": "unknown"
+  },
+  "artifacts": {
+    "logcatPaths": [],
+    "botorePerfJsonPaths": [],
+    "deviceIdPaths": []
+  },
+  "gaps": []
+}

@@ -52,10 +52,11 @@ Native design-review captures (C7): Android/iOS stills + short clips for UI
 supervisor review — `docs/architecture/native-design-captures.md` (not web
 preview; not pixel-exact E2E).
 
-Android release-build phone perf (F12): proposed thresholds, measurement
-protocol, parked native acceptance checks, and cost ledger —
-`docs/architecture/android-release-perf.md`. Agree limits on ClickUp before
-treating device numbers as acceptance; Expo web is not a substitute.
+Android release-build phone perf (F12 → R1): proposed thresholds, measurement
+protocol, EAS `release-perf` harness, parked native acceptance checks, and
+cost ledger — `docs/architecture/android-release-perf.md` +
+`scripts/release-perf/`. Agree limits on ClickUp before treating device
+numbers as acceptance; Expo web is not a substitute.
 
 This checkout still contains leftover Fastify `apps/api` and `apps/worker`.
 Do not extend them. Target path: client → Edge Function → Postgres function
