@@ -160,14 +160,24 @@ export function GarageSessionProvider(props: {
     }
     setBooting(true);
     setAuthBootError(null);
-    const result = await runSilentFirstLaunchAuth(auth);
-    if (!result.ok) {
-      setAuthBootError({ code: result.code, message: result.message });
+    try {
+      const result = await runSilentFirstLaunchAuth(auth);
+      if (!result.ok) {
+        setAuthBootError({ code: result.code, message: result.message });
+        setBooting(false);
+        return;
+      }
+      setSession(result.session);
+      await hydrate();
+    } catch (err) {
+      // Defense in depth: never let an unexpected throw on the C12 silent-auth
+      // path become an unhandled Hermes fatal (release splash→close).
+      setAuthBootError({
+        code: 'silent_auth_exception',
+        message: err instanceof Error ? err.message : String(err),
+      });
       setBooting(false);
-      return;
     }
-    setSession(result.session);
-    await hydrate();
   }, [auth, hydrate]);
 
   useEffect(() => {

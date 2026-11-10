@@ -1,0 +1,109 @@
+# Release-boot smoke — install apps/game assembleRelease APK on an emulator and
+# assert the process stays alive past splash (C12 silent-auth path).
+#
+# Not the design-capture workflow: DESIGN_CAPTURE is intentionally unset so
+# collectPlatformProof / device-fallback silent auth runs.
+#
+# reactivecircus/android-emulator-runner runs each `script:` newline in its own
+# `sh -c` — keep `script:` as a single line that invokes the committed bash job.
+name: Android release boot smoke
+
+on:
+  pull_request:
+    paths:
+      - 'apps/game/**'
+      - 'scripts/native-capture/**'
+      - '.github/workflows/android-release-boot-smoke.yml'
+      - 'packages/replay/**'
+      - 'packages/rng/**'
+      - 'packages/domain/**'
+      - 'packages/combat-engine/**'
+      - 'packages/contracts/**'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/game/**'
+      - 'scripts/native-capture/**'
+      - '.github/workflows/android-release-boot-smoke.yml'
+
+concurrency:
+  group: android-boot-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CAPTURE_API_LEVEL: '34'
+  EXPO_USE_COMMUNITY_AUTOLINKING: '0'
+  CI: '1'
+  SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+  EXPO_PUBLIC_CRASH_REPORTING: '0'
+  # Placeholder public env so silent auth path is exercised (not design-capture).
+  EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co'
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.smoke'
+
+jobs:
+  android-release-boot-smoke:
+    name: Android release boot smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-boot-smoke-${{ hashFiles('**/gradle-wrapper.properties', 'apps/game/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-boot-smoke-
+
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: ${{ runner.os }}-avd-${{ env.CAPTURE_API_LEVEL }}-x86_64-pixel6-boot-smoke
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+
+      - name: Build game workspace deps (dist/ for Metro)
+        run: pnpm --filter @botore/game^... run build
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Release APK boot smoke on emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        with:
+          api-level: ${{ env.CAPTURE_API_LEVEL }}
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: ${{ steps.avd-cache.outputs.cache-hit != 'true' }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          # ONE LINE ONLY — action splits newlines into separate sh -c invocations.
+          script: bash scripts/native-capture/ci-android-release-boot-smoke.sh
