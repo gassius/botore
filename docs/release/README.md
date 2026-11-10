@@ -3,11 +3,11 @@
 In-repo drafts for App Store / Play listing basics **before** wide
 TestFlight / Play internal testing beyond engineering builds.
 
-| Doc | Purpose |
-| --- | ------- |
-| [`checklist.md`](./checklist.md) | Pre-submit release checklist (links R2 credentials as Carlos-owned) |
-| [`store-listing.md`](./store-listing.md) | Listing copy + native screenshots pipeline |
-| [`store-questionnaires.md`](./store-questionnaires.md) | Support, age rating, Apple privacy / Play data-safety drafts |
+| Doc                                                    | Purpose                                                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------- |
+| [`checklist.md`](./checklist.md)                       | Pre-submit release checklist (links R2 credentials as Carlos-owned) |
+| [`store-listing.md`](./store-listing.md)               | Listing copy + native screenshots pipeline                          |
+| [`store-questionnaires.md`](./store-questionnaires.md) | Support, age rating, Apple privacy / Play data-safety drafts        |
 
 **Privacy (shipped R6):** player-facing `/privacy` + engineering notes in
 [`docs/legal/privacy-policy.md`](../legal/privacy-policy.md). Account

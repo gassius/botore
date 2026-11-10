@@ -10,13 +10,13 @@ Ticket: [R4](https://app.clickup.com/t/1amjtrey7vd). Related: [R2](https://app.c
 
 ## Identity (config already in repo)
 
-| Field | Value today | Owner |
-| ----- | ----------- | ----- |
-| App display name | `Botore` (`apps/game/app.json` → `expo.name`) | Engineering |
-| Expo slug | `botore-game` | Engineering |
-| iOS bundle id | `com.botore.game` | Engineering (stable until product renames) |
-| Android package | `com.botore.game` | Engineering (stable until product renames) |
-| App version | `0.1.0` (bump for store builds as needed) | Engineering |
+| Field            | Value today                                   | Owner                                      |
+| ---------------- | --------------------------------------------- | ------------------------------------------ |
+| App display name | `Botore` (`apps/game/app.json` → `expo.name`) | Engineering                                |
+| Expo slug        | `botore-game`                                 | Engineering                                |
+| iOS bundle id    | `com.botore.game`                             | Engineering (stable until product renames) |
+| Android package  | `com.botore.game`                             | Engineering (stable until product renames) |
+| App version      | `0.1.0` (bump for store builds as needed)     | Engineering                                |
 
 Do **not** invent a new bundle / package id for listing drafts.
 
@@ -28,24 +28,24 @@ signing. Full ops checklist:
 **No secret values in git.** Real `projectId` / signing still need Carlos’s
 Expo / Apple / Play accounts.
 
-| Item | Placeholder / where it will live | Status |
-| ---- | -------------------------------- | ------ |
-| EAS `projectId` | `apps/game/app.json` → `extra.eas.projectId` placeholder `REPLACE_WITH_EAS_PROJECT_ID_VIA_EAS_INIT` until `eas init` | **Blocked on Carlos Expo account** |
-| Apple Developer Team ID | Apple Developer → Membership (Carlos) | **Blocked on Carlos** |
-| Apple distribution cert / provisioning | EAS credentials store (Carlos-linked Apple account) | **Blocked on Carlos** |
-| App Store Connect app record | ASC for `com.botore.game` | **Blocked on Carlos** |
-| Play Console app + signing key | Play Console / Play App Signing (Carlos) | **Blocked on Carlos** |
-| EAS production / submit dry-run | `eas.json` `production` (store) + `submit.production` (Play internal draft) | **Blocked on Carlos credentials** |
-| Supabase public URL + anon key (preview vs production) | EAS env for playable profiles — never service-role | Documented in R2 checklist; values stay in EAS / host secrets |
+| Item                                                   | Placeholder / where it will live                                                                                     | Status                                                        |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| EAS `projectId`                                        | `apps/game/app.json` → `extra.eas.projectId` placeholder `REPLACE_WITH_EAS_PROJECT_ID_VIA_EAS_INIT` until `eas init` | **Blocked on Carlos Expo account**                            |
+| Apple Developer Team ID                                | Apple Developer → Membership (Carlos)                                                                                | **Blocked on Carlos**                                         |
+| Apple distribution cert / provisioning                 | EAS credentials store (Carlos-linked Apple account)                                                                  | **Blocked on Carlos**                                         |
+| App Store Connect app record                           | ASC for `com.botore.game`                                                                                            | **Blocked on Carlos**                                         |
+| Play Console app + signing key                         | Play Console / Play App Signing (Carlos)                                                                             | **Blocked on Carlos**                                         |
+| EAS production / submit dry-run                        | `eas.json` `production` (store) + `submit.production` (Play internal draft)                                          | **Blocked on Carlos credentials**                             |
+| Supabase public URL + anon key (preview vs production) | EAS env for playable profiles — never service-role                                                                   | Documented in R2 checklist; values stay in EAS / host secrets |
 
 Engineering builds may still use `design-review` / `development` profiles with
 `withoutCredentials: true` where configured — those are **not** store tracks.
 
 ## Privacy + deletion URLs (R5 / R6 shipped)
 
-| Surface | Path | Absolute URL |
-| ------- | ---- | ------------ |
-| Privacy policy | `/privacy` | `{EXPO_PUBLIC_PUBLIC_WEB_ORIGIN}/privacy` |
+| Surface          | Path              | Absolute URL                                     |
+| ---------------- | ----------------- | ------------------------------------------------ |
+| Privacy policy   | `/privacy`        | `{EXPO_PUBLIC_PUBLIC_WEB_ORIGIN}/privacy`        |
 | Account deletion | `/account/delete` | `{EXPO_PUBLIC_PUBLIC_WEB_ORIGIN}/account/delete` |
 
 - In-repo draft / engineering notes: [`docs/legal/privacy-policy.md`](../legal/privacy-policy.md)

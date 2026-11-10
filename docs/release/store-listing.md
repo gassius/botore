@@ -70,11 +70,11 @@ Carlos / Botore legal entity as registered in ASC / Play Console (R2).
 
 Use committed launch assets (C6) — do not invent new marketing art here:
 
-| Asset | Path |
-| ----- | ---- |
-| iOS icon 1024 | `apps/game/assets/launch-v001/icon/icon-ios-1024.png` |
-| Android adaptive | `apps/game/assets/launch-v001/icon/adaptive-*.png` |
-| Splash | `apps/game/assets/launch-v001/splash/` |
+| Asset            | Path                                                  |
+| ---------------- | ----------------------------------------------------- |
+| iOS icon 1024    | `apps/game/assets/launch-v001/icon/icon-ios-1024.png` |
+| Android adaptive | `apps/game/assets/launch-v001/icon/adaptive-*.png`    |
+| Splash           | `apps/game/assets/launch-v001/splash/`                |
 
 ## Screenshots pipeline (native only)
 
@@ -122,21 +122,21 @@ CI optional: `.github/workflows/native-design-captures.yml` uploads
 
 ### Store console sizes (Carlos fills exact slots)
 
-| Store | Typical phone slots |
-| ----- | ------------------- |
+| Store     | Typical phone slots                                                                   |
+| --------- | ------------------------------------------------------------------------------------- |
 | App Store | 6.7" and 6.5" (or current ASC required sizes) — export from iPhone Simulator / device |
-| Play | Phone screenshots 16:9 or 9:16 per Play Console guidance |
+| Play      | Phone screenshots 16:9 or 9:16 per Play Console guidance                              |
 
 Do **not** upscale web captures into these slots. Tablet screenshots optional
 (`supportsTablet: true` today) — skip until Carlos asks.
 
 ### Honesty rules (same as C7)
 
-| Acceptable | Not acceptable |
-| ---------- | -------------- |
-| Android emulator / device PNG | Expo web / Chromium phone frame |
-| iOS Simulator / device PNG | Unlabeled DEV-fixture stills as production |
-| Tip SHA + route in filenames | Claiming live fight when using golden fixture |
+| Acceptable                    | Not acceptable                                |
+| ----------------------------- | --------------------------------------------- |
+| Android emulator / device PNG | Expo web / Chromium phone frame               |
+| iOS Simulator / device PNG    | Unlabeled DEV-fixture stills as production    |
+| Tip SHA + route in filenames  | Claiming live fight when using golden fixture |
 
 ## Related
 

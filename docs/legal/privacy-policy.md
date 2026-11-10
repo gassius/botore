@@ -112,12 +112,12 @@ processors (Supabase, Sentry, Vercel, Apple/Google as identity providers).
 
 R4 drafts (listing copy, screenshots pipeline, support / age / data-safety):
 
-| Doc | Path |
-| --- | ---- |
-| Release index | [`docs/release/README.md`](../release/README.md) |
-| Pre-submit checklist | [`docs/release/checklist.md`](../release/checklist.md) |
-| Listing + native screenshots | [`docs/release/store-listing.md`](../release/store-listing.md) |
-| Questionnaires | [`docs/release/store-questionnaires.md`](../release/store-questionnaires.md) |
+| Doc                                     | Path                                                                                               |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Release index                           | [`docs/release/README.md`](../release/README.md)                                                   |
+| Pre-submit checklist                    | [`docs/release/checklist.md`](../release/checklist.md)                                             |
+| Listing + native screenshots            | [`docs/release/store-listing.md`](../release/store-listing.md)                                     |
+| Questionnaires                          | [`docs/release/store-questionnaires.md`](../release/store-questionnaires.md)                       |
 | R2 EAS / signing (Carlos-owned secrets) | [`docs/architecture/eas-production-credentials.md`](../architecture/eas-production-credentials.md) |
 
 ## Contact
