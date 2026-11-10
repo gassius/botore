@@ -5,11 +5,13 @@
 # Holds launch-title via Documents botore-cold-start-intent.json (skips design-
 # capture auto sign-in).
 #
-# PRIMARY frames: timed `simctl io screenshot` burst. On GHA each shot is ~2s,
-# and launching async races SpringBoard — so we:
-#   1) kick launch in the background
-#   2) poll screenshots, discarding frames until graphiteShare ≥ splash gate
-#      (native splash #302D27), never keeping SpringBoard for assert
+# PRIMARY frames: timed `simctl io screenshot` burst. On GHA, `simctl launch`
+# can take >40s after a fresh install. Sync-only launch then screenshot races
+# the hold-title release (title-only strip: graphite still high, frames identical).
+# Async-only launch raced the other way (SpringBoard-only). Hybrid:
+#   1) kick launch in the background (long timeout)
+#   2) immediately poll screenshots, discarding SpringBoard until graphiteShare
+#      ≥ splash gate (native splash #302D27 held by preventAutoHide + hold dwell)
 #   3) once splash is seen, continue bursting for the title transition window
 # Hard-fail if splash never appears or we get fewer than 2 kept frames.
 #
@@ -20,13 +22,17 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 OUT_DIR="${DEFAULT_OUT_DIR}"
 UDID="booted"
-# Wall-clock after splash is seen (title silhouette under hold-title).
-SECONDS_N="${CAPTURE_COLD_START_SEC:-24}"
-# Max wait for first splash graphite frame (SpringBoard discard window).
-SPLASH_WAIT_SEC="${CAPTURE_COLD_SPLASH_WAIT_SEC:-40}"
+# Wall-clock after splash is seen — must span remaining hold (≥60s when CI-baked)
+# into the title silhouette. Default 75s covers hold release after early splash.
+SECONDS_N="${CAPTURE_COLD_START_SEC:-75}"
+# Max wait for first splash graphite frame after launch is kicked (SpringBoard discard).
+# Covers slow GHA `simctl launch` plus a cushion for the first native-splash paint.
+SPLASH_WAIT_SEC="${CAPTURE_COLD_SPLASH_WAIT_SEC:-120}"
+# Fresh-install `simctl launch` on GHA often exceeds 40s.
+LAUNCH_TIMEOUT_SEC="${CAPTURE_COLD_LAUNCH_TIMEOUT_SEC:-90}"
 BUNDLE_ID="${CAPTURE_IOS_BUNDLE:-${BUNDLE_IOS}}"
 SIMCTL_TIMEOUT_SEC="${CAPTURE_SIMCTL_TIMEOUT_SEC:-20}"
-FRAME_MAX="${CAPTURE_COLD_FRAME_COUNT:-16}"
+FRAME_MAX="${CAPTURE_COLD_FRAME_COUNT:-40}"
 # Match assert-cold-start-transition default min graphite (12%).
 SPLASH_MIN_GRAPHITE="${CAPTURE_COLD_MIN_GRAPHITE:-0.12}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -97,7 +103,7 @@ graphite_of() {
   node "${SCRIPT_DIR}/graphite-share.mjs" "$1" 2>/dev/null || echo "0"
 }
 
-echo "ios-cold-start-capture: splash→title udid=${UDID} splash_wait=${SPLASH_WAIT_SEC}s title_sec=${SECONDS_N} max_frames=${FRAME_MAX}" >&2
+echo "ios-cold-start-capture: splash→title udid=${UDID} launch_timeout=${LAUNCH_TIMEOUT_SEC}s splash_wait=${SPLASH_WAIT_SEC}s title_sec=${SECONDS_N} max_frames=${FRAME_MAX}" >&2
 
 simctl_budget xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
 sleep 0.3
@@ -107,20 +113,50 @@ plant_hold_title || true
 osascript -e 'tell application "Simulator" to activate' >/dev/null 2>&1 || true
 
 LAUNCH_LOG="$(mktemp "${OUT_DIR}/.cold-launch.XXXXXX.log")"
-set +e
-xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >"${LAUNCH_LOG}" 2>&1 &
-LAUNCH_PID=$!
-set -e
-echo "cold-start launch kicked (pid=${LAUNCH_PID})" >&2
+echo "cold-start: launching ${BUNDLE_ID} (async + parallel splash poll, launch_timeout ${LAUNCH_TIMEOUT_SEC}s)…" >&2
+
+# Hybrid: kick launch in the background so screenshots can catch native splash
+# while `simctl launch` is still returning on a slow GHA install.
+LAUNCH_PID=""
+if command -v timeout >/dev/null 2>&1; then
+  timeout "${LAUNCH_TIMEOUT_SEC}" xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >"${LAUNCH_LOG}" 2>&1 &
+  LAUNCH_PID=$!
+else
+  xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >"${LAUNCH_LOG}" 2>&1 &
+  LAUNCH_PID=$!
+fi
 
 TMP_SHOT="$(mktemp "${OUT_DIR}/.cold-shot.XXXXXX.png")"
+LAST_PRESPLASH="${PREFIX}-last-presplash.png"
 splash_deadline="$(python3 -c "import time; print(time.time() + float('${SPLASH_WAIT_SEC}'))")"
 splash_seen=0
 i=0
 discarded=0
+relaunch_at="$(python3 -c "import time; print(time.time() + 12)")"
 
-echo "cold-start: waiting for splash graphite≥${SPLASH_MIN_GRAPHITE} (discard SpringBoard)" >&2
+reap_launch() {
+  if [[ -z "${LAUNCH_PID}" ]]; then
+    return 0
+  fi
+  if ! kill -0 "${LAUNCH_PID}" >/dev/null 2>&1; then
+    wait "${LAUNCH_PID}" >/dev/null 2>&1 || true
+    LAUNCH_PID=""
+  fi
+}
+
 while python3 -c "import time,sys; sys.exit(0 if time.time() < float('${splash_deadline}') else 1)"; do
+  reap_launch
+
+  # Periodic relaunch (idempotent) + bring Simulator forward — GHA sometimes
+  # leaves SpringBoard composited after a slow first launch. Skip while the
+  # initial launch process is still running.
+  if [[ -z "${LAUNCH_PID}" ]] \
+    && python3 -c "import time,sys; sys.exit(0 if time.time() >= float('${relaunch_at}') else 1)"; then
+    xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >>"${LAUNCH_LOG}" 2>&1 || true
+    osascript -e 'tell application "Simulator" to activate' >/dev/null 2>&1 || true
+    relaunch_at="$(python3 -c "import time; print(time.time() + 12)")"
+  fi
+
   rm -f "${TMP_SHOT}" >/dev/null 2>&1 || true
   if ! xcrun simctl io "${UDID}" screenshot "${TMP_SHOT}" >/dev/null 2>&1 \
     || [[ ! -s "${TMP_SHOT}" ]]; then
@@ -132,6 +168,7 @@ while python3 -c "import time,sys; sys.exit(0 if time.time() < float('${splash_d
   g_ok="$(python3 -c "print(1 if float('${g}') >= float('${SPLASH_MIN_GRAPHITE}') else 0)")"
   if [[ "${g_ok}" != "1" ]]; then
     discarded=$((discarded + 1))
+    cp "${TMP_SHOT}" "${LAST_PRESPLASH}" >/dev/null 2>&1 || true
     echo "cold-start discard SpringBoard/pre-splash frame graphite=${g} (discarded=${discarded})" >&2
     continue
   fi
@@ -146,17 +183,31 @@ while python3 -c "import time,sys; sys.exit(0 if time.time() < float('${splash_d
   break
 done
 
+# Finish / log the background launch once splash is seen (or timed out).
+if [[ -n "${LAUNCH_PID}" ]]; then
+  set +e
+  wait "${LAUNCH_PID}"
+  launch_rc=$?
+  set -e
+  LAUNCH_PID=""
+else
+  launch_rc=0
+fi
+if [[ -s "${LAUNCH_LOG}" ]]; then
+  echo "cold-start launch log (rc=${launch_rc}):" >&2
+  cat "${LAUNCH_LOG}" >&2 || true
+fi
+
 if [[ "${splash_seen}" != "1" ]]; then
   echo "error: native splash #302D27 never appeared within ${SPLASH_WAIT_SEC}s (discarded ${discarded} pre-splash frames)" >&2
-  set +e
-  wait "${LAUNCH_PID}" 2>/dev/null
-  set -e
-  [[ -s "${LAUNCH_LOG}" ]] && cat "${LAUNCH_LOG}" >&2 || true
+  [[ -s "${LAST_PRESPLASH}" ]] && echo "presplash diagnostic: ${LAST_PRESPLASH}" >&2 || true
   rm -f "${LAUNCH_LOG}" "${TMP_SHOT}" >/dev/null 2>&1 || true
   exit 1
 fi
 
 # Continue bursting for title silhouette transition under hold-title.
+# GarageRoot keeps native splash ≥ COLD_START_NATIVE_SPLASH_MIN_MS after hold
+# is known, then hides to reveal LaunchTitleScreen — capture that change.
 title_deadline="$(python3 -c "import time; print(time.time() + float('${SECONDS_N}'))")"
 echo "cold-start title burst: wall_sec=${SECONDS_N} from splash (max_frames=${FRAME_MAX})" >&2
 while python3 -c "import time,sys; sys.exit(0 if time.time() < float('${title_deadline}') else 1)"; do
@@ -176,15 +227,8 @@ while python3 -c "import time,sys; sys.exit(0 if time.time() < float('${title_de
   i=$((i + 1))
 done
 
-set +e
-wait "${LAUNCH_PID}" 2>/dev/null
-launch_rc=$?
-set -e
-if [[ -s "${LAUNCH_LOG}" ]]; then
-  echo "cold-start launch log (rc=${launch_rc}):" >&2
-  cat "${LAUNCH_LOG}" >&2 || true
-fi
 rm -f "${LAUNCH_LOG}" "${TMP_SHOT}" >/dev/null 2>&1 || true
+rm -f "${LAST_PRESPLASH}" >/dev/null 2>&1 || true
 
 extracted=0
 for f in "${PREFIX}"-frame*.png; do

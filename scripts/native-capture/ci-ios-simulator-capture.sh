@@ -23,6 +23,7 @@ WELCOME="${CAPTURE_WELCOME:-1}"
 export EXPO_PUBLIC_DESIGN_CAPTURE="${EXPO_PUBLIC_DESIGN_CAPTURE:-1}"
 export EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE="${EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE:-Stable}"
 export EXPO_USE_COMMUNITY_AUTOLINKING="${EXPO_USE_COMMUNITY_AUTOLINKING:-0}"
+export_sentry_skip_upload_for_capture
 # Bake welcome defaults into the Release bundle when enabled.
 if [[ "${WELCOME}" == "1" || "${WELCOME}" == "true" ]]; then
   export EXPO_PUBLIC_DESIGN_CAPTURE_PAINT="${EXPO_PUBLIC_DESIGN_CAPTURE_PAINT:-petrol}"

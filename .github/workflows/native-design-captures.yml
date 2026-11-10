@@ -58,6 +58,8 @@ env:
   # Never use RN community autolinking — PackageList would import nonexistent expo.core.*.
   EXPO_USE_COMMUNITY_AUTOLINKING: '0'
   CI: '1'
+  # R3: capture CI has no Sentry org secrets — skip source-map / debug-symbol upload.
+  SENTRY_DISABLE_AUTO_UPLOAD: 'true'
 
 jobs:
   android-emulator-captures:
@@ -126,6 +128,12 @@ jobs:
         env:
           # C7c AC: real cold-start on the live-fight path (workflow PR default stays 0).
           CAPTURE_COLD_START: '1'
+          # Match baked EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=60000 + title frames.
+          CAPTURE_COLD_START_SEC: '75'
+          CAPTURE_COLD_FRAME_COUNT: '28'
+          CAPTURE_COLD_FRAME_INTERVAL_MS: '2500'
+          CAPTURE_COLD_START_BUDGET_SEC: '180'
+          EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS: '60000'
         with:
           api-level: ${{ env.CAPTURE_API_LEVEL }}
           arch: x86_64
@@ -305,10 +313,15 @@ jobs:
           CAPTURE_BOOT_SEC: '12'
           CAPTURE_IOS_SKIP_PREBUILD: '1'
           CAPTURE_COLD_START: '1'
-          # ~2s/simctl screenshot on GHA; 24s ≈ 10–12 frames covering splash→title.
-          CAPTURE_COLD_START_SEC: '24'
-          CAPTURE_COLD_START_BUDGET_SEC: '180'
+          # Title burst after splash gate — must span remaining ≥60s splash hold.
+          CAPTURE_COLD_START_SEC: '75'
+          CAPTURE_COLD_FRAME_COUNT: '40'
+          # Fresh-install simctl launch often >40s on GHA; hybrid launch+splash poll.
+          CAPTURE_COLD_LAUNCH_TIMEOUT_SEC: '90'
+          CAPTURE_COLD_SPLASH_WAIT_SEC: '120'
+          CAPTURE_COLD_START_BUDGET_SEC: '300'
           CAPTURE_REMOTE_SUPABASE: '1'
+          EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS: '60000'
         run: |
           set -euo pipefail
           set -a

@@ -9,11 +9,15 @@ publicHoistPattern:
   - '*expo-modules-core*'
   - '*expo-modules-autolinking*'
   - '*babel-preset-expo*'
+  # R3: iOS sentry-xcode.sh require.resolve('@sentry/cli/package.json') from apps/game.
+  - '*@sentry/cli*'
 
 # pnpm 10+ blocks dependency build scripts by default.
 # This is the explicit allowlist (pnpm >= 11 schema: allowBuilds.<name>: true).
 allowBuilds:
   '@next/swc-linux-x64-gnu': set this to true or false
+  # Needed by @sentry/react-native for EAS/native source-map + debug-symbol upload (R3).
+  '@sentry/cli': true
   esbuild: true
   sharp: true
   unrs-resolver: true

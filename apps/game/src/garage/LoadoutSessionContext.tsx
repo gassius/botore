@@ -32,6 +32,12 @@ export type GarageSessionContextValue = {
   readonly booting: boolean;
   /** Design-capture cold-start: hold launch-title silhouette (skip auto sign-in). */
   readonly coldStartHoldTitle: boolean;
+  /**
+   * True once the cold-start Documents probe finished (or design-capture is off).
+   * GarageRoot must not hide the native splash until this is true — otherwise the
+   * boot title path can release splash before hold-title engages (iOS title-only strip).
+   */
+  readonly coldStartIntentReady: boolean;
   readonly loadout: LoadoutPreviewState;
   readonly canProgress: boolean;
   signIn: (
@@ -59,6 +65,7 @@ export function GarageSessionProvider(props: {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [booting, setBooting] = useState(true);
   const [coldStartHoldTitle, setColdStartHoldTitle] = useState(false);
+  const [coldStartIntentReady, setColdStartIntentReady] = useState(() => !isDesignCaptureEnabled());
   const [loadout, setLoadout] = useState<LoadoutPreviewState>(() =>
     createUnavailableLoadoutState(),
   );
@@ -135,14 +142,31 @@ export function GarageSessionProvider(props: {
   }, [hydrate]);
 
   // Detect cold-start hold-title ASAP so we never flash "Opening garage…" / AuthEntry.
+  // Always mark intentReady when the probe settles — including hold=false — so splash
+  // release is not gated forever when the marker file is absent.
   useEffect(() => {
-    if (!isDesignCaptureEnabled()) return;
-    void isColdStartHoldTitle().then((hold) => {
-      if (!hold) return;
-      setColdStartHoldTitle(true);
-      setBooting(false);
-      console.log('BOTORE_CAPTURE_COLD_START_HOLD_TITLE:1');
-    });
+    if (!isDesignCaptureEnabled()) {
+      setColdStartIntentReady(true);
+      return;
+    }
+    let mounted = true;
+    void isColdStartHoldTitle()
+      .then((hold) => {
+        if (!mounted) return;
+        if (hold) {
+          setColdStartHoldTitle(true);
+          setBooting(false);
+          console.log('BOTORE_CAPTURE_COLD_START_HOLD_TITLE:1');
+        }
+        setColdStartIntentReady(true);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setColdStartIntentReady(true);
+      });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   /**
@@ -162,10 +186,12 @@ export function GarageSessionProvider(props: {
     void (async () => {
       if (await isColdStartHoldTitle()) {
         setColdStartHoldTitle(true);
+        setColdStartIntentReady(true);
         console.log('BOTORE_CAPTURE_COLD_START_HOLD_TITLE:1');
         return;
       }
       setColdStartHoldTitle(false);
+      setColdStartIntentReady(true);
       const creds = designCaptureCredentials();
       const result = await auth.signInWithPassword({
         email: creds.email,
@@ -191,6 +217,7 @@ export function GarageSessionProvider(props: {
       session,
       booting,
       coldStartHoldTitle,
+      coldStartIntentReady,
       loadout,
       canProgress: loadout.hydration === 'ready' && loadout.confirmedLoadout !== null,
       signIn: async (email, password) => {
@@ -262,7 +289,7 @@ export function GarageSessionProvider(props: {
         return true;
       },
     }),
-    [auth, session, booting, coldStartHoldTitle, loadout, hydrate, loadouts],
+    [auth, session, booting, coldStartHoldTitle, coldStartIntentReady, loadout, hydrate, loadouts],
   );
 
   return (

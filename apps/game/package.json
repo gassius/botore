@@ -28,6 +28,8 @@
     "@botore/rng": "workspace:*",
     "@botore/test-fixtures": "workspace:*",
     "@expo/metro-runtime": "~4.0.1",
+    "@sentry/cli": "2.42.4",
+    "@sentry/react-native": "~6.10.0",
     "expo": "^52.0.0",
     "expo-asset": "~11.0.5",
     "expo-av": "~15.0.2",

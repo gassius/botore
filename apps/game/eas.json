@@ -8,7 +8,9 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_DESIGN_CAPTURE": "1",
-        "EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD": "1"
+        "EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD": "1",
+        "EXPO_PUBLIC_CRASH_REPORTING": "0",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "android": {
         "buildType": "apk",
@@ -22,7 +24,9 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD": "1"
+        "EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD": "1",
+        "EXPO_PUBLIC_CRASH_REPORTING": "0",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "android": {
         "buildType": "apk",
@@ -34,6 +38,10 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_CRASH_REPORTING": "1",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "android": {
         "buildType": "apk"
       },
@@ -55,7 +63,11 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_CRASH_REPORTING": "1",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
     }
   },
   "submit": {

@@ -22,7 +22,27 @@ import { GarageSessionProvider, useGarageSession } from './LoadoutSessionContext
 
 /** Minimum time the silhouette title stays visible after the bitmap loads. */
 const TITLE_MIN_DISPLAY_MS = 900;
-/** Absolute cap so a stalled hydrate / missing bitmap cannot pin the native splash. */
+
+/**
+ * Design-capture cold-start hold after hold-title is known.
+ * Default 8s (local). CI live-fight bakes EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS
+ * ≥60s so GHA SpringBoard compositing (~40s) cannot outlast native splash —
+ * otherwise screenshots only ever see title (iOS ~77% graphite) or splash-only
+ * (Android ~98%) strips.
+ * Must stay shorter than {@link COLD_START_SPLASH_SAFETY_MS}.
+ */
+function readColdStartSplashHoldMs(
+  raw: string | undefined = process.env.EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS,
+): number {
+  const n = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+  if (Number.isFinite(n) && n >= 1000) return Math.floor(n);
+  return 8000;
+}
+
+export const COLD_START_NATIVE_SPLASH_MIN_MS = readColdStartSplashHoldMs();
+/** Hold-title absolute escape — always longer than the min dwell. */
+const COLD_START_SPLASH_SAFETY_MS = COLD_START_NATIVE_SPLASH_MIN_MS + 30_000;
+/** Normal boot absolute cap so a stalled hydrate cannot pin the native splash. */
 const NATIVE_SPLASH_SAFETY_MS = 4000;
 
 // Hold the native launch screen until the in-app title image is ready (or safety fires).
@@ -45,13 +65,20 @@ function hideNativeSplash(): void {
  * LaunchTitleScreen via coldStartHoldTitle so CI can assert splash→title.
  */
 function GarageRootInner(): React.ReactElement {
-  const { booting, session, coldStartHoldTitle, authKind } = useGarageSession();
+  const { booting, session, coldStartHoldTitle, coldStartIntentReady, authKind } =
+    useGarageSession();
   const [titleImageReady, setTitleImageReady] = useState(false);
   const [titleDwellDone, setTitleDwellDone] = useState(false);
+  const [holdSplashMinDone, setHoldSplashMinDone] = useState(!isDesignCaptureEnabled());
   const [captureFailClosed, setCaptureFailClosed] = useState(
     () => isDesignCaptureFailClosedEnabled() || peekCaptureIntent().failClosed === true,
   );
   const nativeHiddenRef = useRef(false);
+  const coldStartHoldTitleRef = useRef(coldStartHoldTitle);
+  const coldStartIntentReadyRef = useRef(coldStartIntentReady);
+  coldStartHoldTitleRef.current = coldStartHoldTitle;
+  coldStartIntentReadyRef.current = coldStartIntentReady;
+
   const misconfigured = useMemo(() => {
     // Design-capture evidence still / bake-time fail-closed override.
     if (captureFailClosed || isDesignCaptureFailClosedEnabled()) return true;
@@ -90,47 +117,110 @@ function GarageRootInner(): React.ReactElement {
     hideNativeSplash();
   }, []);
 
-  const onTitleLoad = useCallback(() => {
-    setTitleImageReady(true);
+  /**
+   * Hide native splash only when it is safe for the current boot path:
+   * - design-capture: wait until cold-start intent probe finished
+   * - hold-title: also wait for min splash dwell + title bitmap (via caller)
+   * - normal: release as soon as the boot title bitmap is ready
+   */
+  const maybeReleaseNativeSplash = useCallback(() => {
+    if (!coldStartIntentReadyRef.current) return;
+    if (coldStartHoldTitleRef.current) {
+      // Hold path releases explicitly after min dwell + image ready.
+      return;
+    }
     releaseNativeSplash();
   }, [releaseNativeSplash]);
+
+  const onTitleLoad = useCallback(() => {
+    setTitleImageReady(true);
+    maybeReleaseNativeSplash();
+  }, [maybeReleaseNativeSplash]);
 
   const onTitleError = useCallback(() => {
     // Bitmap failed — drop native splash and skip the dwell so auth can proceed.
     setTitleImageReady(true);
     setTitleDwellDone(true);
-    releaseNativeSplash();
+    setHoldSplashMinDone(true);
+    if (coldStartIntentReadyRef.current && !coldStartHoldTitleRef.current) {
+      releaseNativeSplash();
+    }
   }, [releaseNativeSplash]);
+
+  // Design-capture hold-title: keep native splash for CI, then reveal silhouette.
+  useEffect(() => {
+    if (!coldStartHoldTitle || !coldStartIntentReady) return;
+    const handle = setTimeout(() => {
+      setHoldSplashMinDone(true);
+    }, COLD_START_NATIVE_SPLASH_MIN_MS);
+    return () => {
+      clearTimeout(handle);
+    };
+  }, [coldStartHoldTitle, coldStartIntentReady]);
+
+  useEffect(() => {
+    if (!coldStartHoldTitle) return;
+    if (!holdSplashMinDone || !titleImageReady) return;
+    releaseNativeSplash();
+  }, [coldStartHoldTitle, holdSplashMinDone, titleImageReady, releaseNativeSplash]);
 
   // Short minimum display once the silhouette has loaded (covers cold start → AuthEntry).
   useEffect(() => {
     if (!titleImageReady || titleDwellDone) return;
+    if (coldStartHoldTitle) return; // hold path stays on LaunchTitleScreen
     const handle = setTimeout(() => {
       setTitleDwellDone(true);
     }, TITLE_MIN_DISPLAY_MS);
     return () => {
       clearTimeout(handle);
     };
-  }, [titleImageReady, titleDwellDone]);
+  }, [titleImageReady, titleDwellDone, coldStartHoldTitle]);
 
-  // Safety: never leave the native splash up if boot stalls or title never loads.
+  // Safety: never leave the native splash up forever — but do NOT defeat hold-title dwell.
   useEffect(() => {
+    if (isDesignCaptureEnabled() && !coldStartIntentReady) {
+      // Probe still running — keep splash; hold/normal safety arms after probe.
+      return;
+    }
+    if (coldStartHoldTitle) {
+      const handle = setTimeout(() => {
+        setTitleImageReady(true);
+        setHoldSplashMinDone(true);
+        setTitleDwellDone(true);
+        releaseNativeSplash();
+      }, COLD_START_SPLASH_SAFETY_MS);
+      return () => {
+        clearTimeout(handle);
+      };
+    }
     const handle = setTimeout(() => {
       setTitleImageReady(true);
       setTitleDwellDone(true);
+      setHoldSplashMinDone(true);
       releaseNativeSplash();
     }, NATIVE_SPLASH_SAFETY_MS);
     return () => {
       clearTimeout(handle);
     };
-  }, [releaseNativeSplash]);
+  }, [coldStartHoldTitle, coldStartIntentReady, releaseNativeSplash]);
 
   // C7c design-capture cold-start: hold launch-title (skip AuthEntry / auto sign-in).
+  // Mount title under the native splash; release only after min dwell + onLoad.
   if (coldStartHoldTitle) {
-    return <LaunchTitleScreen />;
+    return (
+      <LaunchTitleScreen
+        onImageLoad={() => {
+          setTitleImageReady(true);
+        }}
+        onImageError={() => {
+          setTitleImageReady(true);
+          // Still honor min dwell so CI can capture splash before title/error UI.
+        }}
+      />
+    );
   }
 
-  const showTitle = booting || !titleImageReady || !titleDwellDone;
+  const showTitle = booting || !titleImageReady || !titleDwellDone || !coldStartIntentReady;
 
   if (showTitle) {
     return (
