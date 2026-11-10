@@ -23,6 +23,7 @@ export CAPTURE_DEVICE="${CAPTURE_DEVICE:-pixel_6}"
 
 export EXPO_PUBLIC_DESIGN_CAPTURE="${EXPO_PUBLIC_DESIGN_CAPTURE:-1}"
 export EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE="${EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE:-Stable}"
+export_sentry_skip_upload_for_capture
 
 echo "ci-android-emulator-capture: tip=$(git rev-parse --short HEAD 2>/dev/null || echo unknown) routes=${ROUTES}" >&2
 

@@ -65,8 +65,16 @@ proven against a live dashboard — mark that proof **unknown**, not done.
 ## Symbolication / source maps (EAS)
 
 - Config plugin `@sentry/react-native/expo` hooks iOS/Android release builds to
-  upload JS source maps and native debug symbols when `SENTRY_AUTH_TOKEN` is
-  present.
+  upload JS source maps and native debug symbols when upload is enabled **and**
+  `SENTRY_AUTH_TOKEN` is present.
+- **Default:** every EAS profile sets `SENTRY_DISABLE_AUTO_UPLOAD=true` so
+  design-capture CI and credential-less builds do **not** fail on missing org /
+  auth token. Native capture scripts also export this (plus a no-op
+  `SENTRY_CLI_EXECUTABLE`) because `sentry-xcode.sh` resolves `@sentry/cli`
+  before the disable check.
+- **When Carlos provisions secrets:** remove `SENTRY_DISABLE_AUTO_UPLOAD` (or
+  set it to `false`) on `preview` / `production` only, keep
+  `SENTRY_AUTH_TOKEN` + org/project set, then rebuild so maps upload.
 - Metro Debug IDs come from `@sentry/react-native/metro` (`metro.config.js`).
 - After `eas update`, upload OTA maps separately if used:
   `npx sentry-expo-upload-sourcemaps dist` (needs `SENTRY_ORG`,

@@ -53,6 +53,18 @@ describe('R3 crash reporting policy', () => {
     expect(eas.build.production?.env?.EXPO_PUBLIC_CRASH_REPORTING).toBe('1');
   });
 
+  it('disables Sentry auto-upload by default so CI builds without secrets succeed', () => {
+    const eas = JSON.parse(readFileSync(easSourcePath, 'utf8')) as {
+      build: Record<string, { env?: Record<string, string> }>;
+    };
+    for (const profile of ['design-review', 'development', 'preview', 'production'] as const) {
+      expect(eas.build[profile]?.env?.SENTRY_DISABLE_AUTO_UPLOAD).toBe('true');
+    }
+    const lib = readFileSync(join(process.cwd(), '../../scripts/native-capture/lib.sh'), 'utf8');
+    expect(lib).toContain('export_sentry_skip_upload_for_capture');
+    expect(lib).toContain('SENTRY_DISABLE_AUTO_UPLOAD=true');
+  });
+
   it('stays off without a DSN even when flag is on', () => {
     expect(
       isCrashReportingEnabled({

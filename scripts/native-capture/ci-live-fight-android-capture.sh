@@ -21,6 +21,8 @@ ARCHS="${CAPTURE_RN_ARCHITECTURES:-x86_64}"
 # Workflow CAPTURE_CLIPS can still override to false.
 export CAPTURE_CLIPS="${CAPTURE_CLIPS:-true}"
 
+export_sentry_skip_upload_for_capture
+
 echo "ci-live-fight-android-capture: tip=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" >&2
 
 # --- Supabase local stack -----------------------------------------------------

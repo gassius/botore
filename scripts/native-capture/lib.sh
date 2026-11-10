@@ -96,6 +96,17 @@ write_manifest_line() {
   printf '%s=%s\n' "${key}" "${value}" >>"${manifest}"
 }
 
+# R3 — design-capture / CI release builds never require Sentry org secrets.
+# sentry-xcode.sh resolves @sentry/cli *before* checking SENTRY_DISABLE_AUTO_UPLOAD,
+# so also pin SENTRY_CLI_EXECUTABLE to a no-op when skipping upload.
+export_sentry_skip_upload_for_capture() {
+  export SENTRY_DISABLE_AUTO_UPLOAD=true
+  if [[ -z "${SENTRY_CLI_EXECUTABLE:-}" ]]; then
+    export SENTRY_CLI_EXECUTABLE="$(command -v true)"
+  fi
+  echo "sentry upload skipped for capture (SENTRY_DISABLE_AUTO_UPLOAD=true)" >&2
+}
+
 # Assert the Android package is running and resumed in the foreground.
 # Status noise must go to stderr so $(screencap) only captures the file path.
 android_assert_app_foreground() {

@@ -58,6 +58,8 @@ env:
   # Never use RN community autolinking — PackageList would import nonexistent expo.core.*.
   EXPO_USE_COMMUNITY_AUTOLINKING: '0'
   CI: '1'
+  # R3: capture CI has no Sentry org secrets — skip source-map / debug-symbol upload.
+  SENTRY_DISABLE_AUTO_UPLOAD: 'true'
 
 jobs:
   android-emulator-captures:

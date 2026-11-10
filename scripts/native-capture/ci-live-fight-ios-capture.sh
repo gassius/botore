@@ -21,6 +21,8 @@ mkdir -p "${OUT_DIR}"
 BUNDLE_ID="${CAPTURE_IOS_BUNDLE:-${BUNDLE_IOS}}"
 DEVICE_CANDIDATES="${CAPTURE_IOS_DEVICE:-iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14}"
 
+export_sentry_skip_upload_for_capture
+
 echo "ci-live-fight-ios-capture: tip=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" >&2
 
 write_game_env_from_remote() {
