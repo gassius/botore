@@ -217,19 +217,46 @@ if [[ -z "${WORKSPACE}" || ! -d "${WORKSPACE}" ]]; then
   echo "error: no app *.xcworkspace under apps/game/ios" >&2
   exit 1
 fi
-SCHEME="${CAPTURE_IOS_SCHEME:-BotoreGameClient}"
+WORKSPACE_BASE="$(basename "${WORKSPACE}" .xcworkspace)"
+# Prefer BotoreGameClient (legacy Expo name) or workspace base (Botore after
+# app rename). Never take the first xcodebuild -list entry — CocoaPods lists
+# boost/hermes/etc. first (R6 CI: scheme=boost → no .app).
+SCHEME="${CAPTURE_IOS_SCHEME:-}"
 SCHEME_LIST="$(
   xcodebuild -list -workspace "${WORKSPACE}" 2>/dev/null \
     | awk '/Schemes:/{f=1;next} /^$/{f=0} f&&NF{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}'
 )"
-if ! echo "${SCHEME_LIST}" | grep -qx "${SCHEME}"; then
+echo "available schemes:" >&2
+echo "${SCHEME_LIST}" | sed 's/^/  /' >&2 || true
+
+if [[ -n "${SCHEME}" ]] && ! echo "${SCHEME_LIST}" | grep -qx "${SCHEME}"; then
+  echo "warn: CAPTURE_IOS_SCHEME='${SCHEME}' not in workspace; resolving…" >&2
+  SCHEME=''
+fi
+if [[ -z "${SCHEME}" ]]; then
   if echo "${SCHEME_LIST}" | grep -qx 'BotoreGameClient'; then
     SCHEME='BotoreGameClient'
+  elif echo "${SCHEME_LIST}" | grep -qx "${WORKSPACE_BASE}"; then
+    SCHEME="${WORKSPACE_BASE}"
+  elif echo "${SCHEME_LIST}" | grep -qx 'Botore'; then
+    SCHEME='Botore'
   else
-    SCHEME="$(echo "${SCHEME_LIST}" | head -n 1)"
+    SCHEME="$(
+      echo "${SCHEME_LIST}" \
+        | grep -Eiv '^(Pods-|boost|hermes|React|Yoga|fmt|glog|SocketRocket|FBLazyVector|RCT|DoubleConversion)' \
+        | head -n 1 || true
+    )"
   fi
 fi
-echo "using scheme=${SCHEME}" >&2
+if [[ -z "${SCHEME}" ]]; then
+  echo "error: could not resolve app scheme for ${WORKSPACE_BASE}" >&2
+  exit 1
+fi
+if ! echo "${SCHEME_LIST}" | grep -qx "${SCHEME}"; then
+  echo "error: scheme '${SCHEME}' not in workspace scheme list" >&2
+  exit 1
+fi
+echo "using workspace=$(basename "${WORKSPACE}") scheme=${SCHEME}" >&2
 
 pick_ios_device() {
   local available

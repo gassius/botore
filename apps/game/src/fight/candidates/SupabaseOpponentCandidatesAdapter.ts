@@ -211,7 +211,12 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         });
         return {
           ok: false,
-          code: resolved === 'unauthenticated' ? resolved : err.code === '42501' ? 'forbidden' : resolved,
+          code:
+            resolved === 'unauthenticated'
+              ? resolved
+              : err.code === '42501'
+                ? 'forbidden'
+                : resolved,
           message: err.message ?? err.details ?? `Eligibility check failed (${res.status})`,
         };
       }
