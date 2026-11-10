@@ -26,6 +26,7 @@ describe('captureIntentState merge + consume', () => {
       battleId: null,
       rankingScenario: null,
       failClosed: null,
+      poseCompare: null,
     });
   });
 
@@ -45,6 +46,7 @@ describe('captureIntentState merge + consume', () => {
       battleId: null,
       rankingScenario: null,
       failClosed: null,
+      poseCompare: null,
     });
   });
 
@@ -66,6 +68,7 @@ describe('captureIntentState merge + consume', () => {
       battleId: '11780c0f-39b3-41fc-b364-64a2769ef013',
       rankingScenario: 'live',
       failClosed: null,
+      poseCompare: null,
     });
     expect(consumeCaptureRoute()).toBeNull();
   });
@@ -73,5 +76,10 @@ describe('captureIntentState merge + consume', () => {
   it('accepts failClosed for C8 blocked-UI evidence', () => {
     mergeCaptureFileIntent({ failClosed: true });
     expect(peekCaptureIntent().failClosed).toBe(true);
+  });
+
+  it('accepts poseCompare for C11 heavy-hit stills', () => {
+    mergeCaptureFileIntent({ poseCompare: 'quick-vs-heavy' });
+    expect(peekCaptureIntent().poseCompare).toBe('quick-vs-heavy');
   });
 });

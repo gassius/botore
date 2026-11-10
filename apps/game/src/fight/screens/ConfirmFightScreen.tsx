@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import type { MotionPose } from '../../assembler';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
+import {
+  isDesignCaptureEnabled,
+  readDesignCapturePoseCompare,
+} from '../../design-capture/captureEnv';
+import { peekCaptureIntent } from '../../design-capture/captureIntentState';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import {
   Nameplate,
@@ -13,6 +19,15 @@ import {
 import { isServerPlaybackReady } from '../../replay/serverPlayback';
 import { computeConfirmFightControls, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
+
+/** Design-capture only: near quick hit + far heavy hit (C11). */
+function capturePosePair(): { near: MotionPose; far: MotionPose } | null {
+  if (!isDesignCaptureEnabled()) return null;
+  const fromIntent = peekCaptureIntent().poseCompare;
+  const fromEnv = readDesignCapturePoseCompare();
+  if (fromIntent !== 'quick-vs-heavy' && fromEnv !== 'quick-vs-heavy') return null;
+  return { near: 'attack', far: 'heavy_attack' };
+}
 
 /** ConfirmFight domain — mounts into shell ConfirmFight slot; starts combat-v1. */
 export function ConfirmFightScreen(props: {
@@ -49,6 +64,9 @@ export function ConfirmFightScreen(props: {
     submit.status === 'error' && submit.allowancesRemaining !== undefined
       ? submit.allowancesRemaining
       : (eligAllowances ?? allowancesFromList);
+  const posePair = capturePosePair();
+  const nearPose: MotionPose = posePair?.near ?? 'idle';
+  const farPose: MotionPose = posePair?.far ?? 'idle';
 
   useEffect(() => {
     let cancelled = false;
@@ -203,7 +221,7 @@ export function ConfirmFightScreen(props: {
               weaponId={confirmed.weapon}
               size={160}
               reducedMotion
-              motionPose="idle"
+              motionPose={nearPose}
               label="You"
               testID="confirm-you"
             />
@@ -221,7 +239,7 @@ export function ConfirmFightScreen(props: {
               weaponId={selected.loadout.weapon}
               size={140}
               reducedMotion
-              motionPose="idle"
+              motionPose={farPose}
               label={selected.displayName}
               testID="confirm-opponent"
             />

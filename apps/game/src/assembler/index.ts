@@ -36,6 +36,13 @@ export {
   listWorkshopFrameGaps,
 } from './workshopFrameAdapter';
 export { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from './workshopFramePin';
+export {
+  MOTION_POSES,
+  isHeavyMotionPose,
+  isMotionPose,
+  motionPoseFromSealedAttack,
+} from './motionPoseMapping';
+export type { HeavyAttackPhase, SealedAttackKind } from './motionPoseMapping';
 export type {
   AssembledBot,
   AssembledLayer,

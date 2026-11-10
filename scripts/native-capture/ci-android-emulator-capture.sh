@@ -36,6 +36,7 @@ pnpm --filter @botore/game^... run build
 cat >"${REPO_ROOT}/apps/game/.env" <<EOF
 EXPO_PUBLIC_DESIGN_CAPTURE=${EXPO_PUBLIC_DESIGN_CAPTURE}
 EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE=${EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE}
+EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE=${EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE:-1}
 EOF
 
 # Always clean-prebuild so settings.gradle keeps useExpoModules() +
@@ -61,6 +62,7 @@ echo "assembleRelease (bundle-embedded, debug-signed)…" >&2
   # Ensure Gradle/Metro see the same public env the .env file carries.
   EXPO_PUBLIC_DESIGN_CAPTURE="${EXPO_PUBLIC_DESIGN_CAPTURE}" \
     EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE="${EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE}" \
+    EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE="${EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE:-1}" \
     EXPO_USE_COMMUNITY_AUTOLINKING=0 \
     ./gradlew assembleRelease \
     -PreactNativeArchitectures="${ARCHS}" \

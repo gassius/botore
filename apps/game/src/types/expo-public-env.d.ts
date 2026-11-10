@@ -37,6 +37,11 @@ declare namespace NodeJS {
      */
     EXPO_PUBLIC_DESIGN_CAPTURE_FAIL_CLOSED?: string;
     /**
+     * C11: ConfirmFight dual-fighter quick vs heavy pose stills under design-capture.
+     * Never for store builds.
+     */
+    EXPO_PUBLIC_DESIGN_CAPTURE_POSE_COMPARE?: string;
+    /**
      * R3 Sentry public DSN. When unset, crash reporting stays disabled
      * (local Metro needs no cloud account).
      */

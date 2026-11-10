@@ -7,7 +7,7 @@ import {
   isDesignCaptureEnabled,
   parseDesignCaptureUrl,
 } from './captureEnv';
-import { consumeCaptureRoute, peekCaptureIntent } from './captureIntentState';
+import { consumeCaptureRoute, mergeIntent, peekCaptureIntent } from './captureIntentState';
 import { armDesignCaptureIntentListener } from './pendingCaptureIntent';
 import { consumeCaptureIntentFile, loadCaptureIntentFile } from './readCaptureIntentFile';
 
@@ -75,6 +75,19 @@ export function useDesignCaptureDeepLink(): void {
       if (!url) return;
       const parsed = parseDesignCaptureUrl(url);
       applyPaintWeaponMute(parsed);
+      if (parsed.poseCompare) {
+        // Persist for ConfirmFight / capture consumers (peekCaptureIntent).
+        mergeIntent({
+          route: parsed.route,
+          paintId: parsed.paintId,
+          weaponId: parsed.weaponId,
+          mute: parsed.mute,
+          battleId: null,
+          rankingScenario: parsed.rankingScenario,
+          failClosed: parsed.failClosed,
+          poseCompare: parsed.poseCompare,
+        });
+      }
       applyRouteIfNew(parsed.route, false);
     };
 

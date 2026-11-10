@@ -36,6 +36,7 @@ function applyUrl(url: string | null): void {
     battleId: null,
     rankingScenario: parsed.rankingScenario,
     failClosed: parsed.failClosed,
+    poseCompare: parsed.poseCompare,
   });
 }
 

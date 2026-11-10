@@ -1,6 +1,11 @@
 import type { FirstRunRoute } from '../first-run/routes';
 import { isFirstRunRoute } from '../first-run/routes';
-import { type DesignCaptureRankingScenario, parseDesignCaptureRankingScenario } from './captureEnv';
+import {
+  type DesignCapturePoseCompare,
+  type DesignCaptureRankingScenario,
+  parseDesignCapturePoseCompare,
+  parseDesignCaptureRankingScenario,
+} from './captureEnv';
 
 /**
  * Pure in-memory capture intent state (no react-native).
@@ -18,6 +23,8 @@ export type CaptureIntent = {
   rankingScenario: DesignCaptureRankingScenario | null;
   /** C8: force PlayableMisconfiguredScreen for blocked-UI evidence. */
   failClosed: boolean | null;
+  /** C11: dual-fighter quick vs heavy pose stills (design-capture only). */
+  poseCompare: DesignCapturePoseCompare | null;
 };
 
 const EMPTY: CaptureIntent = {
@@ -28,6 +35,7 @@ const EMPTY: CaptureIntent = {
   battleId: null,
   rankingScenario: null,
   failClosed: null,
+  poseCompare: null,
 };
 
 let intent: CaptureIntent = { ...EMPTY };
@@ -45,6 +53,7 @@ export function mergeIntent(next: CaptureIntent): void {
     battleId: next.battleId ?? intent.battleId,
     rankingScenario: next.rankingScenario ?? intent.rankingScenario,
     failClosed: next.failClosed ?? intent.failClosed,
+    poseCompare: next.poseCompare ?? intent.poseCompare,
   };
 }
 
@@ -58,6 +67,7 @@ export function mergeCaptureFileIntent(raw: {
   rankingScenario?: string | null;
   ranking?: string | null;
   failClosed?: boolean | null;
+  poseCompare?: string | null;
 }): void {
   const route = typeof raw.route === 'string' && isFirstRunRoute(raw.route) ? raw.route : null;
   mergeIntent({
@@ -70,6 +80,7 @@ export function mergeCaptureFileIntent(raw: {
       raw.rankingScenario ?? raw.ranking ?? undefined,
     ),
     failClosed: typeof raw.failClosed === 'boolean' ? raw.failClosed : null,
+    poseCompare: parseDesignCapturePoseCompare(raw.poseCompare),
   });
 }
 
