@@ -38,6 +38,8 @@ write_game_env_from_remote() {
     echo "EXPO_PUBLIC_DESIGN_CAPTURE=1"
     echo "EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT=1"
     echo "EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE=Stable"
+    # Outlast GHA SpringBoard (~40s) so hybrid capture still sees native splash.
+    echo "EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS:-60000}"
   } >"${REPO_ROOT}/apps/game/.env"
   export SUPABASE_URL="${url}"
   echo "using remote Supabase tunnel: ${url}" >&2
@@ -159,6 +161,10 @@ export EXPO_PUBLIC_DESIGN_CAPTURE=1
 export EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT=1
 export EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE=Stable
 export EXPO_USE_COMMUNITY_AUTOLINKING=0
+export EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS="${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS:-60000}"
+if ! grep -q '^EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=' "${REPO_ROOT}/apps/game/.env" 2>/dev/null; then
+  echo "EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS}" >>"${REPO_ROOT}/apps/game/.env"
+fi
 
 if [[ -z "${EXPO_PUBLIC_SUPABASE_URL:-}" || -z "${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}" ]]; then
   echo "error: live fight .env missing EXPO_PUBLIC_SUPABASE_*" >&2
@@ -277,6 +283,7 @@ echo "xcodebuild Release (live-fight env)…" >&2
   export EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE=Stable
   export EXPO_PUBLIC_SUPABASE_URL="${EXPO_PUBLIC_SUPABASE_URL}"
   export EXPO_PUBLIC_SUPABASE_ANON_KEY="${EXPO_PUBLIC_SUPABASE_ANON_KEY}"
+  export EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS="${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS}"
   export EXPO_USE_COMMUNITY_AUTOLINKING=0
   export NODE_BINARY="${NODE_BINARY:-$(command -v node)}"
   xcodebuild \

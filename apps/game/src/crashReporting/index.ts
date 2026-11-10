@@ -1,3 +1,4 @@
+export { bootstrapCrashReporting } from './bootstrap';
 export {
   FORCED_CRASH_TEST_MESSAGE,
   forceCrashReportingTestError,

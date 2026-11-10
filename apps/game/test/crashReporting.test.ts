@@ -37,8 +37,7 @@ describe('R3 crash reporting policy', () => {
   it('wires entry + Metro Sentry serializer without requiring local DSN', () => {
     const index = readFileSync(indexSourcePath, 'utf8');
     const metro = readFileSync(metroSourcePath, 'utf8');
-    expect(index).toContain('initCrashReporting');
-    expect(index).toContain('wrapRootComponent');
+    expect(index).toContain('bootstrapCrashReporting');
     expect(metro).toContain('getSentryExpoConfig');
     expect(metro).toContain('m4a');
   });

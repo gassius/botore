@@ -51,5 +51,11 @@ declare namespace NodeJS {
      * Never bake into store production.
      */
     EXPO_PUBLIC_CRASH_REPORTING_FORCE_TEST?: string;
+    /**
+     * Design-capture cold-start: native splash hold ms after hold-title is known.
+     * CI live-fight bakes ≥60000 so GHA SpringBoard cannot outlast splash.
+     * Unset → 8000.
+     */
+    EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS?: string;
   }
 }

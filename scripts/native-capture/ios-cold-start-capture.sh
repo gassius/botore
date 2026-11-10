@@ -22,8 +22,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 OUT_DIR="${DEFAULT_OUT_DIR}"
 UDID="booted"
-# Wall-clock after splash is seen (title silhouette under hold-title).
-SECONDS_N="${CAPTURE_COLD_START_SEC:-24}"
+# Wall-clock after splash is seen — must span remaining hold (≥60s when CI-baked)
+# into the title silhouette. Default 75s covers hold release after early splash.
+SECONDS_N="${CAPTURE_COLD_START_SEC:-75}"
 # Max wait for first splash graphite frame after launch is kicked (SpringBoard discard).
 # Covers slow GHA `simctl launch` plus a cushion for the first native-splash paint.
 SPLASH_WAIT_SEC="${CAPTURE_COLD_SPLASH_WAIT_SEC:-120}"
@@ -31,7 +32,7 @@ SPLASH_WAIT_SEC="${CAPTURE_COLD_SPLASH_WAIT_SEC:-120}"
 LAUNCH_TIMEOUT_SEC="${CAPTURE_COLD_LAUNCH_TIMEOUT_SEC:-90}"
 BUNDLE_ID="${CAPTURE_IOS_BUNDLE:-${BUNDLE_IOS}}"
 SIMCTL_TIMEOUT_SEC="${CAPTURE_SIMCTL_TIMEOUT_SEC:-20}"
-FRAME_MAX="${CAPTURE_COLD_FRAME_COUNT:-16}"
+FRAME_MAX="${CAPTURE_COLD_FRAME_COUNT:-40}"
 # Match assert-cold-start-transition default min graphite (12%).
 SPLASH_MIN_GRAPHITE="${CAPTURE_COLD_MIN_GRAPHITE:-0.12}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

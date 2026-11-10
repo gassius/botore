@@ -22,15 +22,26 @@ import { GarageSessionProvider, useGarageSession } from './LoadoutSessionContext
 
 /** Minimum time the silhouette title stays visible after the bitmap loads. */
 const TITLE_MIN_DISPLAY_MS = 900;
+
 /**
- * Design-capture cold-start hold: keep the *native* splash up this long after
- * hold-title is known so CI can screenshot splash, then hide to reveal the
- * in-app title silhouette (must outlast GHA ~2s/frame burst).
- * Must be shorter than COLD_START_SPLASH_SAFETY_MS.
+ * Design-capture cold-start hold after hold-title is known.
+ * Default 8s (local). CI live-fight bakes EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS
+ * ≥60s so GHA SpringBoard compositing (~40s) cannot outlast native splash —
+ * otherwise screenshots only ever see title (iOS ~77% graphite) or splash-only
+ * (Android ~98%) strips.
+ * Must stay shorter than {@link COLD_START_SPLASH_SAFETY_MS}.
  */
-export const COLD_START_NATIVE_SPLASH_MIN_MS = 8000;
-/** Hold-title absolute escape — never shorter than the min dwell. */
-const COLD_START_SPLASH_SAFETY_MS = 20_000;
+function readColdStartSplashHoldMs(
+  raw: string | undefined = process.env.EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS,
+): number {
+  const n = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+  if (Number.isFinite(n) && n >= 1000) return Math.floor(n);
+  return 8000;
+}
+
+export const COLD_START_NATIVE_SPLASH_MIN_MS = readColdStartSplashHoldMs();
+/** Hold-title absolute escape — always longer than the min dwell. */
+const COLD_START_SPLASH_SAFETY_MS = COLD_START_NATIVE_SPLASH_MIN_MS + 30_000;
 /** Normal boot absolute cap so a stalled hydrate cannot pin the native splash. */
 const NATIVE_SPLASH_SAFETY_MS = 4000;
 

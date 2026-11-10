@@ -82,6 +82,17 @@ export EXPO_PUBLIC_DESIGN_CAPTURE=1
 export EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT=1
 export EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE=Stable
 export EXPO_USE_COMMUNITY_AUTOLINKING=0
+# Native splash must outlast emulator/SpringBoard compositing (~40s+ on GHA).
+export EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS="${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS:-60000}"
+if ! grep -q '^EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=' "${REPO_ROOT}/apps/game/.env" 2>/dev/null; then
+  echo "EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS}" >>"${REPO_ROOT}/apps/game/.env"
+else
+  # Keep a single bake value (prepare-live-fight may have rewritten .env).
+  tmp_env="$(mktemp)"
+  grep -v '^EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=' "${REPO_ROOT}/apps/game/.env" >"${tmp_env}"
+  echo "EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS}" >>"${tmp_env}"
+  mv "${tmp_env}" "${REPO_ROOT}/apps/game/.env"
+fi
 
 if [[ -z "${EXPO_PUBLIC_SUPABASE_URL:-}" || -z "${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}" ]]; then
   echo "error: live fight .env missing EXPO_PUBLIC_SUPABASE_*" >&2
@@ -112,6 +123,7 @@ echo "assembleRelease (live fight env)…" >&2
     EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE=Stable \
     EXPO_PUBLIC_SUPABASE_URL="${EXPO_PUBLIC_SUPABASE_URL}" \
     EXPO_PUBLIC_SUPABASE_ANON_KEY="${EXPO_PUBLIC_SUPABASE_ANON_KEY}" \
+    EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS="${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS}" \
     EXPO_USE_COMMUNITY_AUTOLINKING=0 \
     ./gradlew assembleRelease \
     -x lintVitalRelease \
@@ -132,16 +144,19 @@ adb install -r "${APK}"
 # C7c: real cold-start splash→title before live-fight stills (budgeted).
 if [[ "${CAPTURE_COLD_START:-0}" == "1" || "${CAPTURE_COLD_START:-0}" == "true" ]]; then
   echo "cold-start splash→title capture…" >&2
+  # Span past baked splash hold (default 60s) into title silhouette.
+  export CAPTURE_COLD_FRAME_COUNT="${CAPTURE_COLD_FRAME_COUNT:-28}"
+  export CAPTURE_COLD_FRAME_INTERVAL_MS="${CAPTURE_COLD_FRAME_INTERVAL_MS:-2500}"
   set +e
   if command -v timeout >/dev/null 2>&1; then
-    timeout "${CAPTURE_COLD_START_BUDGET_SEC:-120}" \
+    timeout "${CAPTURE_COLD_START_BUDGET_SEC:-180}" \
       "${SCRIPT_DIR}/android-cold-start-capture.sh" \
       --out "${OUT_DIR}" \
-      --seconds "${CAPTURE_COLD_START_SEC:-8}"
+      --seconds "${CAPTURE_COLD_START_SEC:-75}"
   else
     "${SCRIPT_DIR}/android-cold-start-capture.sh" \
       --out "${OUT_DIR}" \
-      --seconds "${CAPTURE_COLD_START_SEC:-8}"
+      --seconds "${CAPTURE_COLD_START_SEC:-75}"
   fi
   cold_rc=$?
   set -e

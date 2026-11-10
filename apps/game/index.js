@@ -1,8 +1,6 @@
 import { registerRootComponent } from 'expo';
 import App from './App';
-import { initCrashReporting, wrapRootComponent } from './src/crashReporting';
+import { bootstrapCrashReporting } from './src/crashReporting/bootstrap';
 
-// R3: production / playable profiles only; no-op for local Metro without DSN.
-initCrashReporting();
-
-registerRootComponent(wrapRootComponent(App));
+// R3: production / playable only when DSN+gate allow; design-capture skips Sentry load.
+registerRootComponent(bootstrapCrashReporting(App));

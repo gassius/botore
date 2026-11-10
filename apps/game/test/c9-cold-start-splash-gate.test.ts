@@ -19,26 +19,30 @@ describe('C9 cold-start splash→title gate', () => {
 
   it('hold-title dwell outlasts the normal safety cap (safety must not defeat hold)', () => {
     const root = readFileSync(join(gameRoot, 'src/garage/GarageRoot.tsx'), 'utf8');
-    const minMatch = root.match(/COLD_START_NATIVE_SPLASH_MIN_MS\s*=\s*(\d+)/);
-    const holdSafetyMatch = root.match(/COLD_START_SPLASH_SAFETY_MS\s*=\s*([\d_]+)/);
+    expect(root).toContain('EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS');
+    expect(root).toContain('readColdStartSplashHoldMs');
+    expect(root).toContain('COLD_START_NATIVE_SPLASH_MIN_MS');
+    expect(root).toContain('COLD_START_SPLASH_SAFETY_MS');
     const normalSafetyMatch = root.match(/NATIVE_SPLASH_SAFETY_MS\s*=\s*(\d+)/);
-    expect(minMatch?.[1], 'missing COLD_START_NATIVE_SPLASH_MIN_MS').toBeTruthy();
-    expect(holdSafetyMatch?.[1], 'missing COLD_START_SPLASH_SAFETY_MS').toBeTruthy();
     expect(normalSafetyMatch?.[1], 'missing NATIVE_SPLASH_SAFETY_MS').toBeTruthy();
-    const minMs = Number(minMatch?.[1] ?? '0');
-    const holdSafetyMs = Number((holdSafetyMatch?.[1] ?? '0').replace(/_/g, ''));
     const normalSafetyMs = Number(normalSafetyMatch?.[1] ?? '0');
-    // CI screenshots need several seconds of native splash after hold is known.
-    expect(minMs).toBeGreaterThanOrEqual(8000);
-    // Hold absolute escape must never fire before the min dwell completes.
-    expect(holdSafetyMs).toBeGreaterThan(minMs);
-    // Normal boot safety stays short; hold path must not reuse it as the only timer.
-    expect(normalSafetyMs).toBeLessThan(minMs);
-    // Safety effect must gate on coldStartHoldTitle / coldStartIntentReady.
+    // Default hold is 8s; CI bakes ≥60s via EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS.
+    expect(root).toMatch(/return 8000/);
+    expect(root).toContain('COLD_START_NATIVE_SPLASH_MIN_MS + 30_000');
+    expect(normalSafetyMs).toBeLessThan(8000);
     expect(root).toMatch(
       /coldStartHoldTitle[\s\S]*COLD_START_SPLASH_SAFETY_MS[\s\S]*NATIVE_SPLASH_SAFETY_MS/,
     );
     expect(root).toMatch(/isDesignCaptureEnabled\(\)\s*&&\s*!coldStartIntentReady/);
+  });
+
+  it('lazy-loads Sentry so design-capture boots skip native SDK cost', () => {
+    const index = readFileSync(join(gameRoot, 'index.js'), 'utf8');
+    const boot = readFileSync(join(gameRoot, 'src/crashReporting/bootstrap.ts'), 'utf8');
+    expect(index).toContain('bootstrapCrashReporting');
+    expect(boot).toContain('isCrashReportingEnabled');
+    expect(boot).toMatch(/require\('\.\/initCrashReporting'\)/);
+    expect(boot).not.toMatch(/from '@sentry\/react-native'/);
   });
 
   it('exposes coldStartIntentReady from the garage session', () => {
