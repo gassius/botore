@@ -43,12 +43,12 @@ with v002 assets** (`must_not_mix_versions`).
 parallel event-driven `kitPoseKey` prop. Stable / Customise / fight keep one
 `BotAssembler` API.
 
-| `MotionPose` | Kit pose key | Sealed source |
-| --- | --- | --- |
-| `idle` / `dodge` / `hit` / `defeat` | same name | matching animation commands |
-| `attack` | `quick_attack` | `attack_selected.attack: 'basic'` |
-| `heavy_windup` | `heavy_windup` | `attack_selected.attack: 'weapon'` (windup beat) |
-| `heavy_attack` | `heavy_attack` | `attack_selected.attack: 'weapon'` (strike beat) |
+| `MotionPose`                        | Kit pose key   | Sealed source                                    |
+| ----------------------------------- | -------------- | ------------------------------------------------ |
+| `idle` / `dodge` / `hit` / `defeat` | same name      | matching animation commands                      |
+| `attack`                            | `quick_attack` | `attack_selected.attack: 'basic'`                |
+| `heavy_windup`                      | `heavy_windup` | `attack_selected.attack: 'weapon'` (windup beat) |
+| `heavy_attack`                      | `heavy_attack` | `attack_selected.attack: 'weapon'` (strike beat) |
 
 Helpers: `motionPoseFromSealedAttack`, `MOTION_POSE_TO_KIT`. Replay compiles one
 sealed weapon attack into windup then strike presentation commands (SFX on
