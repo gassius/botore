@@ -257,7 +257,9 @@ jobs:
           set -euo pipefail
           brew install ffmpeg || true
           command -v ffmpeg
+          command -v ffprobe
           ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
 
       # prebuild --clean wipes ios/; use --no-install so pods are not installed yet.
       # Restore CocoaPods/DerivedData AFTER prebuild, then pod install once (C7c PRR P2).
