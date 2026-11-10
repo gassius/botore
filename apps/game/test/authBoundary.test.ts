@@ -106,6 +106,32 @@ describe('F8 auth / ownership seams', () => {
     expect(cleared).toBeNull();
   });
 
+  it('keeps stored session when refresh throws offline', async () => {
+    const auth = new SupabaseAuthAdapter({
+      url: 'http://127.0.0.1:54321',
+      anonKey: 'anon-test-key',
+    });
+    const clock = 1_700_000_000;
+    auth.nowSeconds = () => clock;
+    auth.setSessionForTests({
+      accessToken: 'near-expiry-access',
+      refreshToken: 'keep-me',
+      userId: 'user-1',
+      email: 'pilot@botore.local',
+      expiresAt: clock + 30,
+    });
+
+    const fetchMock = vi.fn(async () => {
+      throw new TypeError('Network request failed');
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const kept = await auth.getSession();
+    expect(kept?.accessToken).toBe('near-expiry-access');
+    expect(kept?.refreshToken).toBe('keep-me');
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
   it('maps Oxide/Petrol UI aliases to F1 catalogue ids without expansion', () => {
     expect(paintCatalogueId('oxide')).toBe('paint-crimson');
     expect(paintCatalogueId('petrol')).toBe('paint-cobalt');

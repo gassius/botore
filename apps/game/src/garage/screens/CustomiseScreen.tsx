@@ -79,7 +79,11 @@ export function CustomiseScreen(props: {
     }
     if (loadout.dirty) {
       void onSave();
+      return;
     }
+    // Offline while ready + clean (forced capture, or error after discard):
+    // Retry must still do something — re-hydrate from the server.
+    void retryHydration();
   };
 
   if (!canProgress || !preview || !loadout.confirmedLoadout) {

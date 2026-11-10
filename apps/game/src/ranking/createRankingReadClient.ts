@@ -29,7 +29,7 @@ export function createRankingReadClient(input: CreateRankingReadClientInput = {}
   if (scenario === 'error') {
     return new FixtureRankingReadAdapter({
       scenario: 'error',
-      errorMessage: 'Design-capture ranking error state',
+      errorMessage: 'Could not load ranking.',
     });
   }
   if (scenario === 'offline') {

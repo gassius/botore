@@ -1,3 +1,4 @@
+import { resolveTransportFailureCode } from '../../session-failure';
 import type { FightRequestResult, FightSuccess } from './types';
 
 type ErrBody = {
@@ -55,15 +56,12 @@ export function parseCombatError(
   body: ErrBody,
 ): Extract<FightRequestResult, { ok: false }> {
   const message = body.error ?? body.message ?? `Fight request failed (${status})`;
-  // Lazy import avoided — keep combat parse free of RN; resolve locally for 401.
   const rawCode = body.code ?? `http_${status}`;
-  const code =
-    status === 401 ||
-    rawCode === 'unauthenticated' ||
-    rawCode === 'PGRST301' ||
-    /jwt.*expir/i.test(message)
-      ? 'unauthenticated'
-      : rawCode;
+  const code = resolveTransportFailureCode({
+    code: rawCode,
+    message,
+    httpStatus: status,
+  });
   return {
     ok: false,
     code,

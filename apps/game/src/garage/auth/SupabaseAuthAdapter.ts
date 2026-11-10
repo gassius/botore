@@ -131,17 +131,22 @@ export class SupabaseAuthAdapter implements AuthPort {
       });
       const body = (await res.json().catch(() => ({}))) as TokenResponse;
       if (!res.ok || !body.access_token || !body.user?.id) {
-        this.session = null;
-        await this.persist();
-        return null;
+        // Clear only on real auth rejection (4xx). Keep the stored session on
+        // transient 5xx so airplane-mode / flaky refresh does not look expired.
+        if (res.status >= 400 && res.status < 500) {
+          this.session = null;
+          await this.persist();
+          return null;
+        }
+        return this.session;
       }
       this.session = this.toSession(body, this.session?.email ?? body.user.email ?? null);
       await this.persist();
       return this.session;
     } catch {
-      this.session = null;
-      await this.persist();
-      return null;
+      // Transport failure (offline) — keep refresh token so C10 shows offline,
+      // not "Session expired", and a later retry can refresh.
+      return this.session;
     }
   }
 

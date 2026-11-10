@@ -49,7 +49,7 @@ export function peekCaptureIntent(): CaptureIntent {
   return { ...intent };
 }
 
-export function mergeIntent(next: CaptureIntent): void {
+export function mergeIntent(next: Partial<CaptureIntent>): void {
   intent = {
     route: next.route ?? intent.route,
     paintId: next.paintId ?? intent.paintId,
@@ -59,7 +59,9 @@ export function mergeIntent(next: CaptureIntent): void {
     rankingScenario: next.rankingScenario ?? intent.rankingScenario,
     failClosed: next.failClosed ?? intent.failClosed,
     poseCompare: next.poseCompare ?? intent.poseCompare,
-    sessionFailure: next.sessionFailure ?? intent.sessionFailure,
+    // null must clear — sequential capture stills replace the prior override.
+    // Omit (undefined) keeps the previous value for unrelated file merges.
+    sessionFailure: next.sessionFailure === undefined ? intent.sessionFailure : next.sessionFailure,
   };
 }
 
@@ -88,7 +90,10 @@ export function mergeCaptureFileIntent(raw: {
     ),
     failClosed: typeof raw.failClosed === 'boolean' ? raw.failClosed : null,
     poseCompare: parseDesignCapturePoseCompare(raw.poseCompare),
-    sessionFailure: parseDesignCaptureSessionFailure(raw.sessionFailure),
+    // Only touch sessionFailure when the file names it — omit keeps prior override.
+    ...(raw.sessionFailure !== undefined
+      ? { sessionFailure: parseDesignCaptureSessionFailure(raw.sessionFailure) }
+      : {}),
   });
 }
 

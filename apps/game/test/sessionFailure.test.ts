@@ -14,6 +14,13 @@ import {
 import { DEFAULT_CONFIRMED_LOADOUT, withUpdatedPaint } from '../src/garage/loadout/proofCatalogue';
 import { applyRankingLoadResult, createInitialRankingSession } from '../src/ranking/rankingSession';
 import { parseDesignCaptureSessionFailure, parseDesignCaptureUrl } from '../src/design-capture';
+import {
+  mergeIntent,
+  peekCaptureIntent,
+  resetCaptureIntentForTests,
+} from '../src/design-capture/captureIntentState';
+import { parseCombatError } from '../src/fight/request/parseCombatResponse';
+import { FixtureRankingReadAdapter } from '../src/ranking/adapters/FixtureRankingReadAdapter';
 
 describe('C10 session failure classification', () => {
   it('classifies network / offline codes', () => {
@@ -130,5 +137,42 @@ describe('C10 design-capture sessionFailure', () => {
         envRaw: 'offline',
       }),
     ).toBe('offline');
+  });
+
+  it('clears sticky sessionFailure when deep-link override is null', () => {
+    resetCaptureIntentForTests();
+    mergeIntent({ sessionFailure: 'auth_expired' });
+    expect(peekCaptureIntent().sessionFailure).toBe('auth_expired');
+    mergeIntent({ sessionFailure: 'offline' });
+    expect(peekCaptureIntent().sessionFailure).toBe('offline');
+    mergeIntent({ sessionFailure: null });
+    expect(peekCaptureIntent().sessionFailure).toBeNull();
+    mergeIntent({ sessionFailure: 'auth_expired' });
+    mergeIntent({ paintId: 'petrol' });
+    expect(peekCaptureIntent().sessionFailure).toBe('auth_expired');
+    resetCaptureIntentForTests();
+  });
+
+  it('uses player-facing fixture messages for offline/auth ranking', async () => {
+    const offline = new FixtureRankingReadAdapter({ scenario: 'offline' });
+    await expect(offline.list()).rejects.toMatchObject({
+      code: 'network_error',
+      message: SESSION_FAILURE_COPY.offline.detail,
+    });
+    const auth = new FixtureRankingReadAdapter({ scenario: 'auth_expired' });
+    await expect(auth.list()).rejects.toMatchObject({
+      code: 'unauthenticated',
+      message: SESSION_FAILURE_COPY.auth_expired.detail,
+    });
+  });
+});
+
+describe('C10 parseCombatError shares transport classifier', () => {
+  it('maps 401 / JWT through resolveTransportFailureCode', () => {
+    expect(parseCombatError(401, { message: 'JWT expired' }).code).toBe('unauthenticated');
+    expect(parseCombatError(503, { code: 'network_error', message: 'upstream' }).code).toBe(
+      'network_error',
+    );
+    expect(parseCombatError(429, { code: 'allowance_exhausted' }).code).toBe('allowance_exhausted');
   });
 });
