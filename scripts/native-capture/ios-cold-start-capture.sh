@@ -33,6 +33,16 @@ LAUNCH_TIMEOUT_SEC="${CAPTURE_COLD_LAUNCH_TIMEOUT_SEC:-90}"
 BUNDLE_ID="${CAPTURE_IOS_BUNDLE:-${BUNDLE_IOS}}"
 SIMCTL_TIMEOUT_SEC="${CAPTURE_SIMCTL_TIMEOUT_SEC:-20}"
 FRAME_MAX="${CAPTURE_COLD_FRAME_COUNT:-40}"
+# Pace title-burst frames across SECONDS_N. Without this, a fast simctl burst
+# exhausts FRAME_MAX (~50s) while CI still holds native splash (≥60s) → splash-
+# only strip (identical ~97% graphite). Android already uses INTERVAL_MS.
+if [[ -n "${CAPTURE_COLD_FRAME_INTERVAL_MS:-}" ]]; then
+  FRAME_INTERVAL_MS="${CAPTURE_COLD_FRAME_INTERVAL_MS}"
+else
+  FRAME_INTERVAL_MS="$(
+    python3 -c "print(int(max(350, 1000 * float('${SECONDS_N}') / max(1, int('${FRAME_MAX}') - 1))))"
+  )"
+fi
 # Match assert-cold-start-transition default min graphite (12%).
 SPLASH_MIN_GRAPHITE="${CAPTURE_COLD_MIN_GRAPHITE:-0.12}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -103,7 +113,7 @@ graphite_of() {
   node "${SCRIPT_DIR}/graphite-share.mjs" "$1" 2>/dev/null || echo "0"
 }
 
-echo "ios-cold-start-capture: splash→title udid=${UDID} launch_timeout=${LAUNCH_TIMEOUT_SEC}s splash_wait=${SPLASH_WAIT_SEC}s title_sec=${SECONDS_N} max_frames=${FRAME_MAX}" >&2
+echo "ios-cold-start-capture: splash→title udid=${UDID} launch_timeout=${LAUNCH_TIMEOUT_SEC}s splash_wait=${SPLASH_WAIT_SEC}s title_sec=${SECONDS_N} max_frames=${FRAME_MAX} interval_ms=${FRAME_INTERVAL_MS}" >&2
 
 simctl_budget xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
 sleep 0.3
@@ -208,12 +218,15 @@ fi
 # Continue bursting for title silhouette transition under hold-title.
 # GarageRoot keeps native splash ≥ COLD_START_NATIVE_SPLASH_MIN_MS after hold
 # is known, then hides to reveal LaunchTitleScreen — capture that change.
+# Pace frames so the burst spans SECONDS_N (must cross CI's ≥60s splash hold).
 title_deadline="$(python3 -c "import time; print(time.time() + float('${SECONDS_N}'))")"
-echo "cold-start title burst: wall_sec=${SECONDS_N} from splash (max_frames=${FRAME_MAX})" >&2
+pace_sec="$(python3 -c "print(float('${FRAME_INTERVAL_MS}') / 1000.0)")"
+echo "cold-start title burst: wall_sec=${SECONDS_N} from splash (max_frames=${FRAME_MAX} pace=${pace_sec}s)" >&2
 while python3 -c "import time,sys; sys.exit(0 if time.time() < float('${title_deadline}') else 1)"; do
   if [[ "${i}" -ge "${FRAME_MAX}" ]]; then
     break
   fi
+  frame_started="$(python3 -c "import time; print(time.time())")"
   frame="${PREFIX}-frame$(printf '%02d' "${i}").png"
   if xcrun simctl io "${UDID}" screenshot "${frame}" >/dev/null 2>&1 \
     && [[ -s "${frame}" ]]; then
@@ -225,6 +238,14 @@ while python3 -c "import time,sys; sys.exit(0 if time.time() < float('${title_de
     rm -f "${frame}" >/dev/null 2>&1 || true
   fi
   i=$((i + 1))
+  # Sleep the remainder of the pace interval (screenshot time counts).
+  python3 -c "
+import time, sys
+elapsed = time.time() - float('${frame_started}')
+remain = float('${pace_sec}') - elapsed
+if remain > 0:
+    time.sleep(remain)
+"
 done
 
 rm -f "${LAUNCH_LOG}" "${TMP_SHOT}" >/dev/null 2>&1 || true
