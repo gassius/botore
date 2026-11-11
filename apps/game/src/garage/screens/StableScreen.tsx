@@ -21,6 +21,9 @@ import { paintUiAlias, weaponUiAlias } from '../loadout/proofCatalogue';
 import { useGarageSession } from '../LoadoutSessionContext';
 import { DeleteAccountScreen } from './DeleteAccountScreen';
 
+/** Compact Stable hero — full kit visible on iPhone 16 (390×844) without scrolling. */
+const STABLE_BOT_SIZE = 200;
+
 /** Stable domain — mounts into shell Stable slot; does not own routes. */
 export function StableScreen(props: {
   onCustomise: () => void;
@@ -31,6 +34,7 @@ export function StableScreen(props: {
   const forced = useForcedSessionFailure();
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const confirmed = loadout.confirmedLoadout;
   const weapon = confirmed ? weaponUiAlias(confirmed.weapon) : 'sword';
   const displayName = playerFacingDisplayName(loadout.displayName);
@@ -59,10 +63,52 @@ export function StableScreen(props: {
     return <PrivacyPolicyScreen onBack={() => setShowPrivacy(false)} />;
   }
 
-  return (
-    <ScreenChrome
-      testID="slot-stable"
-      footer={
+  const retryFooter =
+    failureKind === 'offline' || loadout.hydration === 'unavailable' ? (
+      <SecondaryButton
+        label={
+          failureKind === 'offline'
+            ? sessionFailureCopy('offline').actionLabel
+            : failureKind === 'auth_expired'
+              ? sessionFailureCopy('auth_expired').actionLabel
+              : 'Retry load'
+        }
+        onPress={() => {
+          if (failureKind === 'auth_expired') {
+            void signOut();
+            return;
+          }
+          void retryHydration();
+        }}
+        testID="stable-retry-hydration"
+      />
+    ) : null;
+
+  // Primary stack stays short on iPhone: Settings / Privacy / Delete live under More.
+  const footer = (
+    <View style={styles.footerCompact}>
+      {moreOpen ? (
+        <>
+          {props.onSettings ? (
+            <SecondaryButton label="Settings" onPress={props.onSettings} testID="stable-settings" />
+          ) : null}
+          <SecondaryButton
+            label="Privacy policy"
+            onPress={() => setShowPrivacy(true)}
+            testID="stable-privacy-policy"
+          />
+          <SecondaryButton
+            label="Delete account"
+            onPress={() => setShowDeleteAccount(true)}
+            testID="stable-delete-account"
+          />
+          <SecondaryButton
+            label="Back"
+            onPress={() => setMoreOpen(false)}
+            testID="stable-more-back"
+          />
+        </>
+      ) : (
         <>
           <SecondaryButton
             label="Customise"
@@ -76,38 +122,8 @@ export function StableScreen(props: {
             disabled={!canProgress || !props.onFindOpponent}
             testID="stable-find-opponent"
           />
-          {props.onSettings ? (
-            <SecondaryButton label="Settings" onPress={props.onSettings} testID="stable-settings" />
-          ) : null}
-          {failureKind === 'offline' || loadout.hydration === 'unavailable' ? (
-            <SecondaryButton
-              label={
-                failureKind === 'offline'
-                  ? sessionFailureCopy('offline').actionLabel
-                  : failureKind === 'auth_expired'
-                    ? sessionFailureCopy('auth_expired').actionLabel
-                    : 'Retry load'
-              }
-              onPress={() => {
-                if (failureKind === 'auth_expired') {
-                  void signOut();
-                  return;
-                }
-                void retryHydration();
-              }}
-              testID="stable-retry-hydration"
-            />
-          ) : null}
-          <SecondaryButton
-            label="Privacy policy"
-            onPress={() => setShowPrivacy(true)}
-            testID="stable-privacy-policy"
-          />
-          <SecondaryButton
-            label="Delete account"
-            onPress={() => setShowDeleteAccount(true)}
-            testID="stable-delete-account"
-          />
+          {retryFooter}
+          <SecondaryButton label="More" onPress={() => setMoreOpen(true)} testID="stable-more" />
           <SecondaryButton
             label="Sign out"
             onPress={() => {
@@ -116,106 +132,130 @@ export function StableScreen(props: {
             testID="stable-sign-out"
           />
         </>
-      }
-    >
-      <BrandWordmark width={180} />
-      <ScreenHeader title="Stable" />
-      <Nameplate name={displayName} badge="You" testID="stable-nameplate" />
-
-      {failureKind ? (
-        <SessionFailureBanner
-          kind={failureKind}
-          {...(loadout.lastError ? { detail: loadout.lastError } : {})}
-          testID={`stable-session-${failureKind}`}
-        />
-      ) : loadout.hydration === 'unavailable' ? (
-        <StatusErrorBanner
-          title="Equipped loadout unavailable"
-          detail={
-            loadout.lastError ??
-            'Could not load the server-confirmed loadout. Save and fight stay blocked until this succeeds.'
-          }
-          testID="stable-hydration-error"
-        />
-      ) : (
-        <Text style={styles.equipped} allowFontScaling>
-          Equipped
-        </Text>
       )}
+    </View>
+  );
 
-      {confirmed ? (
-        <>
-          {/* Single assembler mount: BotAssemblerSlot → F7 apps/game/src/assembler (kit v002). */}
-          <BotAssemblerSlot
-            loadout={{
-              chassisId: confirmed.chassis,
-              paintId: confirmed.paint,
-              weaponId: confirmed.weapon,
-            }}
-            facing="right"
-            paintId={confirmed.paint}
-            weaponId={confirmed.weapon}
-            motionPose="idle"
-            label="Equipped bot"
-            testID="stable-bot"
+  return (
+    <ScreenChrome testID="slot-stable" scroll={false} footer={footer}>
+      <View style={styles.bodyCompact}>
+        <BrandWordmark width={140} />
+        <ScreenHeader title="Stable" />
+        <Nameplate name={displayName} badge="You" testID="stable-nameplate" />
+
+        {failureKind ? (
+          <SessionFailureBanner
+            kind={failureKind}
+            {...(loadout.lastError ? { detail: loadout.lastError } : {})}
+            testID={`stable-session-${failureKind}`}
           />
-          <View style={styles.row}>
-            <WeaponGlyphSlot
-              id={weapon}
-              label={weapon}
-              selected
-              onPress={() => undefined}
-              testID="stable-weapon"
-            />
-            <View style={styles.paintChip}>
-              <Text style={styles.paintLabel} allowFontScaling>
-                Paint: {paintUiAlias(confirmed.paint)}
-              </Text>
+        ) : loadout.hydration === 'unavailable' ? (
+          <StatusErrorBanner
+            title="Equipped loadout unavailable"
+            detail={
+              loadout.lastError ??
+              'Could not load the server-confirmed loadout. Save and fight stay blocked until this succeeds.'
+            }
+            testID="stable-hydration-error"
+          />
+        ) : (
+          <Text style={styles.equipped} allowFontScaling>
+            Equipped
+          </Text>
+        )}
+
+        {confirmed ? (
+          <>
+            {/* Single assembler mount: BotAssemblerSlot → F7 apps/game/src/assembler (kit v002). */}
+            <View style={styles.hero}>
+              <BotAssemblerSlot
+                loadout={{
+                  chassisId: confirmed.chassis,
+                  paintId: confirmed.paint,
+                  weaponId: confirmed.weapon,
+                }}
+                facing="right"
+                paintId={confirmed.paint}
+                weaponId={confirmed.weapon}
+                motionPose="idle"
+                size={STABLE_BOT_SIZE}
+                label="Equipped bot"
+                testID="stable-bot"
+              />
             </View>
-          </View>
-        </>
-      ) : (
-        <Text style={styles.note} allowFontScaling testID="stable-no-confirmed">
-          No confirmed equipment is shown until hydration succeeds.
-        </Text>
-      )}
+            <View style={styles.row}>
+              <WeaponGlyphSlot
+                id={weapon}
+                label={weapon}
+                selected
+                onPress={() => undefined}
+                testID="stable-weapon"
+              />
+              <View style={styles.paintChip}>
+                <Text style={styles.paintLabel} allowFontScaling>
+                  Paint: {paintUiAlias(confirmed.paint)}
+                </Text>
+              </View>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.note} allowFontScaling testID="stable-no-confirmed">
+            No confirmed equipment is shown until hydration succeeds.
+          </Text>
+        )}
+      </View>
     </ScreenChrome>
   );
 }
 
 const styles = StyleSheet.create({
+  bodyCompact: {
+    flex: 1,
+    gap: 8,
+    minHeight: 0,
+  },
+  hero: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerCompact: {
+    gap: 6,
+  },
   equipped: {
     alignSelf: 'center',
     fontWeight: '800',
-    fontSize: 12,
+    fontSize: 11,
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: garageTag.mustard,
   },
   row: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     alignItems: 'stretch',
   },
   paintChip: {
     flex: 1,
-    minHeight: garageTag.touchMin,
+    minHeight: garageTag.touchFloor,
     borderWidth: garageTag.outline,
     borderColor: garageTag.graphite,
     borderRadius: garageTag.cutCorner,
     backgroundColor: garageTag.cream,
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     gap: 2,
   },
   paintLabel: {
     fontWeight: '800',
     textTransform: 'uppercase',
     color: garageTag.graphite,
-    fontSize: 13,
+    fontSize: 12,
   },
   note: {
-    marginTop: 8,
+    marginTop: 4,
     fontSize: 12,
     color: garageTag.steel,
   },

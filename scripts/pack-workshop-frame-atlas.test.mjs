@@ -4,7 +4,7 @@
  * Run: node --test scripts/pack-workshop-frame-atlas.test.mjs
  */
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -17,6 +17,7 @@ import {
   workshopFrameKitPackPairs,
   WORKSHOP_FRAME_ATLAS_VERSION,
 } from './workshop-frame-atlas-recipe.mjs';
+import { assertWorkshopFramePackTarget } from './pack-workshop-frame-atlas.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -53,6 +54,50 @@ test('pack pairs cover body+weapon oxide/petrol/materials/mask', () => {
   assert.ok(pairs.some((p) => p.atlasRelative === 'parts/weapon-sword/mask.png'));
   assert.ok(!pairs.some((p) => p.atlasRelative.includes('weapon_sword')));
   assert.ok(!pairs.some((p) => p.atlasRelative.includes('/v001/')));
+});
+
+test('pack target guard refuses non-v2 and v1 out dir', () => {
+  const v1 = join(ROOT, 'supabase/seed/atlas/v1');
+  assert.throws(
+    () => assertWorkshopFramePackTarget('v1', join(ROOT, 'supabase/seed/atlas/v1'), v1),
+    {
+      message: /refusing ATLAS_VERSION=v1/,
+    },
+  );
+  assert.throws(() => assertWorkshopFramePackTarget(WORKSHOP_FRAME_ATLAS_VERSION, v1, v1), {
+    message: /refusing to wipe committed v1 seed/,
+  });
+  assert.doesNotThrow(() =>
+    assertWorkshopFramePackTarget(
+      WORKSHOP_FRAME_ATLAS_VERSION,
+      join(ROOT, 'supabase/seed/atlas/v2'),
+      v1,
+    ),
+  );
+});
+
+test('pack script refuses ATLAS_VERSION=v1 before wiping committed v1 seed', () => {
+  const v1Manifest = join(ROOT, 'supabase/seed/atlas/v1/manifest.json');
+  const v1Tap = join(ROOT, 'supabase/seed/atlas/v1/base/audio/ui-tap.m4a');
+  assert.ok(existsSync(v1Manifest), 'committed v1 manifest present');
+  assert.ok(existsSync(v1Tap), 'committed v1 payload present');
+  const beforeManifest = readFileSync(v1Manifest);
+  const beforeTap = readFileSync(v1Tap);
+  const r = spawnSync(process.execPath, [join(ROOT, 'scripts/pack-workshop-frame-atlas.mjs')], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      ATLAS_VERSION: 'v1',
+      // Intentionally omit ATLAS_SEED_DIR so OUT_DIR would be supabase/seed/atlas/v1.
+    },
+    encoding: 'utf8',
+  });
+  assert.notEqual(r.status, 0, 'must exit non-zero');
+  assert.match(`${r.stderr}\n${r.stdout}`, /ATLAS-PACK-FAIL.*refusing ATLAS_VERSION=v1/);
+  assert.ok(existsSync(v1Manifest), 'v1 manifest must survive');
+  assert.ok(existsSync(v1Tap), 'v1 payload must survive');
+  assert.deepEqual(readFileSync(v1Manifest), beforeManifest);
+  assert.deepEqual(readFileSync(v1Tap), beforeTap);
 });
 
 test('pack script materializes hyphenated atlas tree from kit-v002', () => {

@@ -14,7 +14,7 @@
  *     ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 import {
@@ -35,6 +35,22 @@ const STORE_KIT_DIR =
 function fail(msg) {
   console.error(`ATLAS-PACK-FAIL ${msg}`);
   process.exit(1);
+}
+
+/**
+ * Hard guard before any delete: this packer only materializes workshop-frame v2.
+ * A leftover `ATLAS_VERSION=v1` from seed scripts used to rmSync the committed
+ * supabase/seed/atlas/v1 tree.
+ */
+export function assertWorkshopFramePackTarget(version, outDir, v1Dir = V1_DIR) {
+  if (version !== WORKSHOP_FRAME_ATLAS_VERSION) {
+    throw new Error(
+      `refusing ATLAS_VERSION=${version}; pack-workshop-frame-atlas only writes ${WORKSHOP_FRAME_ATLAS_VERSION}`,
+    );
+  }
+  if (resolve(outDir) === resolve(v1Dir)) {
+    throw new Error(`refusing to wipe committed v1 seed at ${v1Dir}`);
+  }
 }
 
 function resolveKitDir() {
@@ -142,8 +158,10 @@ function buildManifestJson(pairs) {
 }
 
 function main() {
-  if (VERSION !== WORKSHOP_FRAME_ATLAS_VERSION && !process.env.ATLAS_VERSION) {
-    fail(`expected ${WORKSHOP_FRAME_ATLAS_VERSION}`);
+  try {
+    assertWorkshopFramePackTarget(VERSION, OUT_DIR, V1_DIR);
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
   }
   if (!existsSync(V1_DIR)) fail(`v1 seed dir missing: ${V1_DIR}`);
 
@@ -186,4 +204,8 @@ function main() {
   console.log(`ATLAS-PACK-OK ${VERSION} kit=${kitDir} pairs=${pairs.length} out=${OUT_DIR}`);
 }
 
-main();
+const isDirectRun =
+  process.argv[1] && resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1]);
+if (isDirectRun) {
+  main();
+}

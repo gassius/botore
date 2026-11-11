@@ -82,7 +82,13 @@ ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
 Hosted Botore Development publish needs Carlos’s project URL + service-role
 key (never commit). See `supabase/seed/atlas/v2/README.md`.
 
-First-run loadouts pin **`v2`**. Fight still records
+**Hosted order:** pack + `ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs`
+(upload + `publish_atlas_version('v2')`) **before** seeding or pinning any
+hosted loadout to `v2`. Migration `0026` leaves `v2` as draft until that
+publish; pinning early makes authenticated `save_bot_loadout` fail with
+`unpublished_atlas_version`.
+
+First-run loadouts pin **`v2`** (local/CI after publish). Fight still records
 `battle_participants.atlas_version` from the sealed loadout; offline
 same-version cache continues to work.
 
