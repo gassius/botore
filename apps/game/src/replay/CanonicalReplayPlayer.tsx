@@ -20,7 +20,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { ACTIVE_TRIAL_AUDIO_ASSET_VERSION } from '../audio';
 import { useTrialReplayAudio } from '../audio/useTrialReplayAudio';
 import { BotAssembler } from '../assembler';
 import {
@@ -466,8 +465,7 @@ export const CanonicalReplayPlayer = forwardRef<
           <Text style={styles.unavailableTitle}>Historical media unavailable</Text>
           <Text style={styles.unavailableBody}>{media.unavailableReason}</Text>
           <Text style={styles.metaMuted}>
-            Stored env {media.environmentVersion} · kit {media.kitVersion} — not substituted with
-            active pack.
+            Stored arena media for this fight is not available in this build.
           </Text>
         </View>
       </View>
@@ -480,16 +478,13 @@ export const CanonicalReplayPlayer = forwardRef<
         <Text style={styles.metaBadge} testID={`${testID}-source`}>
           {result.label === 'DEV' ? 'DEV recorded fixture' : 'Server confirmed'}
         </Text>
-        <Text style={styles.metaMuted} testID={`${testID}-media`}>
-          env {media.environmentVersion} · kit {media.kitVersion} · audio{' '}
-          {ACTIVE_TRIAL_AUDIO_ASSET_VERSION}
-          {media.usesStoredVersions ? ' · stored refs' : ''}
-          {muted ? ' · muted' : ''}
-          {reducedMotion ? ' · reduced-motion' : ''}
-        </Text>
-        <Text style={styles.metaMuted} testID={`${testID}-builds`}>
-          A {nearLoadout.paint}/{nearLoadout.weapon} · D {farLoadout.paint}/{farLoadout.weapon}
-        </Text>
+        {muted || reducedMotion ? (
+          <Text style={styles.metaMuted} testID={`${testID}-media`}>
+            {[muted ? 'muted' : null, reducedMotion ? 'reduced-motion' : null]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+        ) : null}
       </View>
 
       {/* Flexible stage viewport — measured after chrome reservation via flex. */}
@@ -558,7 +553,11 @@ export const CanonicalReplayPlayer = forwardRef<
             />
             {presentation.banner ? (
               <Text style={styles.banner} testID={`${testID}-banner`}>
-                {presentation.banner}
+                {presentation.banner === nearFighter.characterId
+                  ? playerFacingDisplayName(nearFighter.displayName)
+                  : presentation.banner === farFighter.characterId
+                    ? playerFacingDisplayName(farFighter.displayName)
+                    : playerFacingDisplayName(presentation.banner)}
               </Text>
             ) : null}
           </RepairYardArena>

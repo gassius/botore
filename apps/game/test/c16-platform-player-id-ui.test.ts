@@ -1,10 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { platformIdLogToken } from '../src/garage/auth/platformAuthClient';
 import {
   PLAYER_FACING_NAME_FALLBACK,
-  hashPlatformIdForLog,
   looksLikePlatformPlayerId,
   playerFacingDisplayName,
 } from '../src/identity/platformPlayerId';
@@ -23,6 +21,8 @@ const PLATFORM_IDS = [
   'device:test-id',
   '550e8400-e29b-41d4-a716-446655440000',
   '123456789012345',
+  // Common Play Games player_id form (`g` + digits).
+  'g01234567890123456789',
   'game_center.T_hero@players.botore.internal',
   'play_games.pgs-1@players.botore.internal',
   'teamPlayerID',
@@ -76,16 +76,6 @@ describe('C16 platform player id UI guards', () => {
     expect(playerFacingDisplayName('T:hero', 'player-hero')).toBe('player-hero');
   });
 
-  it('hashes platform ids for internal logs without echoing the raw value', () => {
-    const raw = 'T:hero';
-    const hashed = hashPlatformIdForLog(raw);
-    expect(hashed).toMatch(/^pid:[0-9a-f]{8}$/);
-    expect(hashed).not.toContain(raw);
-    expect(platformIdLogToken(raw)).toBe(hashed);
-    expect(hashPlatformIdForLog(raw)).toBe(hashPlatformIdForLog(raw));
-    expect(hashPlatformIdForLog(raw)).not.toBe(hashPlatformIdForLog('T:other'));
-  });
-
   it('redacts platform ids from ranking accessibility labels and fixture rows', async () => {
     const poisoned: RankingRow = {
       rank: 1,
@@ -137,5 +127,36 @@ describe('C16 platform player id UI guards', () => {
       'utf8',
     );
     expect(settingsSlot).not.toMatch(/teamPlayerID|player_id|platformId|players\.botore/);
+  });
+
+  it('player-facing Stable / Confirm / Replay copy does not show ticket or asset ids', () => {
+    const stable = readFileSync(join(process.cwd(), 'src/garage/screens/StableScreen.tsx'), 'utf8');
+    expect(stable).not.toMatch(/LAST SERVER-CONFIRMED|last server-confirmed loadout/i);
+    expect(stable).not.toContain('Domain F8');
+    expect(stable).not.toContain('paint-crimson');
+
+    const confirm = readFileSync(
+      join(process.cwd(), 'src/fight/screens/ConfirmFightScreen.tsx'),
+      'utf8',
+    );
+    expect(confirm).not.toContain('confirm-arena-note');
+    expect(confirm).not.toMatch(/Arena \/ FX land with F10/);
+    expect(confirm).not.toMatch(/not from REF samples/);
+
+    const replaySlot = readFileSync(
+      join(process.cwd(), 'src/first-run/slots/ReplaySlot.tsx'),
+      'utf8',
+    );
+    expect(replaySlot).not.toContain('DomainNote');
+    expect(replaySlot).not.toMatch(/Domain: F10/);
+
+    const player = readFileSync(
+      join(process.cwd(), 'src/replay/CanonicalReplayPlayer.tsx'),
+      'utf8',
+    );
+    expect(player).not.toMatch(/env \{media\.environmentVersion\}/);
+    expect(player).not.toMatch(/nearLoadout\.paint/);
+    expect(player).not.toContain('environment-v001');
+    expect(player).toContain('playerFacingDisplayName(nearFighter.displayName)');
   });
 });

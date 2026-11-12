@@ -269,10 +269,6 @@ export function ConfirmFightScreen(props: {
         </View>
       )}
 
-      <Text style={styles.arenaNote} allowFontScaling testID="confirm-arena-note">
-        Arena / FX land with F10 replay — Confirm shows both assembled bots only.
-      </Text>
-
       {eligLoading ? (
         <View style={styles.eligRow}>
           <ActivityIndicator color={garageTag.mustard} />
@@ -342,11 +338,6 @@ export function ConfirmFightScreen(props: {
           testID="confirm-misconfigured"
         />
       ) : null}
-
-      <Text style={styles.note} allowFontScaling>
-        XP, cost, and outcomes come from combat-v1 after the request — not from REF samples.
-        {fightKind === 'dev' ? ' · DEV adapters active until public Supabase env is set.' : ''}
-      </Text>
     </ScreenChrome>
   );
 }
@@ -378,14 +369,6 @@ const styles = StyleSheet.create({
     gap: 6,
     zIndex: 1,
   },
-  arenaNote: {
-    textAlign: 'center',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    color: garageTag.steel,
-  },
   cost: {
     textAlign: 'center',
     fontWeight: '800',
@@ -399,11 +382,5 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  note: {
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: '600',
-    color: garageTag.steel,
   },
 });

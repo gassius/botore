@@ -139,7 +139,7 @@ export function StableScreen(props: {
         />
       ) : (
         <Text style={styles.equipped} allowFontScaling>
-          EQUIPPED — last server-confirmed loadout
+          Equipped
         </Text>
       )}
 
@@ -171,9 +171,6 @@ export function StableScreen(props: {
               <Text style={styles.paintLabel} allowFontScaling>
                 Paint: {paintUiAlias(confirmed.paint)}
               </Text>
-              <Text style={styles.paintMeta} allowFontScaling>
-                {confirmed.paint}
-              </Text>
             </View>
           </View>
         </>
@@ -182,10 +179,6 @@ export function StableScreen(props: {
           No confirmed equipment is shown until hydration succeeds.
         </Text>
       )}
-
-      <Text style={styles.note} allowFontScaling>
-        Domain F8 · chrome from shell garage-tag · assembler via BotAssemblerSlot (F7 kit v002)
-      </Text>
     </ScreenChrome>
   );
 }
@@ -220,11 +213,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: garageTag.graphite,
     fontSize: 13,
-  },
-  paintMeta: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: garageTag.steel,
   },
   note: {
     marginTop: 8,

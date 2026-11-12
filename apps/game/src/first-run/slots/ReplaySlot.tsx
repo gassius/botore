@@ -15,7 +15,6 @@ import {
   CanonicalReplayPlayer,
   type CanonicalReplayPlayerHandle,
 } from '../../replay/CanonicalReplayPlayer';
-import { formatOutcomeLine } from '../../replay/confirmedResult';
 import {
   FX_CAPTURE_HOLD_MS,
   FX_CAPTURE_HOLD_SETTLE_MS,
@@ -32,7 +31,6 @@ import { initialPlaybackUi, type PlaybackUiState } from '../../replay/playbackCo
 import { isLiveFightCaptureEnabled } from '../../design-capture';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
 import { useFirstRun } from '../FirstRunContext';
-import { DomainNote } from './DomainNote';
 
 /**
  * Shell Replay slot — F10 domain player inside Garage Tag chrome.
@@ -42,7 +40,7 @@ import { DomainNote } from './DomainNote';
 export function ReplaySlot(): React.ReactElement {
   const { goBack, goNext, muted, toggleMute, musicEnabled, effectsEnabled, reducedMotion } =
     useFirstRun();
-  const { lastFight, fightKind } = useFightSession();
+  const { lastFight } = useFightSession();
   const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
   const fxHoldRef = useRef<FxCaptureHoldState>(initialFxCaptureHoldState());
   const fxHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -117,13 +115,6 @@ export function ReplaySlot(): React.ReactElement {
           detail={resolution.message}
           testID="replay-blocked"
         />
-        <DomainNote
-          text={
-            fightKind === 'dev' || fightKind === 'unavailable'
-              ? 'Domain: F10 · blocked — live combat-v1 required; DEV golden is not first-run playback.'
-              : `Domain: F10 · blocked (${resolution.reason}) — no fixture playback.`
-          }
-        />
       </ScreenChrome>
     );
   }
@@ -181,9 +172,6 @@ export function ReplaySlot(): React.ReactElement {
           playerRef.current?.replay();
         }}
         testID="replay-controls"
-      />
-      <DomainNote
-        text={`Domain: F10 · server-confirmed replay · ${formatOutcomeLine(confirmed.outcome)} · builds ${confirmed.builds.attacker.paint}/${confirmed.builds.attacker.weapon}`}
       />
     </ScreenChrome>
   );
