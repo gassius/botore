@@ -54,6 +54,9 @@ jobs:
       - name: Architecture boundary check
         run: node scripts/check-boundaries.mjs
 
+      - name: Edge Functions multi-file layout gate
+        run: node scripts/check-edge-multifile-layout.mjs
+
       - name: Secret scan
         run: bash scripts/scan-secrets.sh
 

@@ -26,6 +26,51 @@ pnpm exec supabase functions serve   # live /health + /combat-v1
 Postgres: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`  
 API gateway: `http://127.0.0.1:54321`
 
+`pnpm db:reset` applies `supabase/seed.sql` (parts catalogue + proof characters)
+and runs `scripts/seed-atlas-storage.mjs` via `infra/db-reset.sh`. Until both
+land, `backend_health_snapshot` / Edge `/health` stay **not ok** (HTTP **503**
+when Edge is served).
+
+## Hosted Development bootstrap (`yrrytppmkykzhwelqmcs`)
+
+`[db.seed]` / `supabase/seed.sql` run on **local `db reset` only** — hosted
+`db push` does **not** seed the parts catalogue or proof accounts. Atlas
+payloads are never fabricated by SQL. After applying migrations on
+Development, Infra must run:
+
+```bash
+# 1) Migrations (no seed)
+pnpm exec supabase db push --project-ref yrrytppmkykzhwelqmcs
+
+# 2) Parts catalogue + proof characters / loadouts (same SQL as local seed)
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/seed.sql
+
+# 3) Upload atlas/v1 placeholders + publish (Storage API)
+export SUPABASE_URL=https://yrrytppmkykzhwelqmcs.supabase.co
+# SUPABASE_SERVICE_ROLE_KEY from project settings
+node scripts/seed-atlas-storage.mjs
+```
+
+Health stays **503 / not ok** until steps 2–3 succeed (`parts_catalogue`
+proof counts + published atlas `v1`). Details:
+[`docs/architecture/atlas.md`](../architecture/atlas.md),
+[`supabase/seed/atlas/README.md`](../../supabase/seed/atlas/README.md).
+
+## Edge Function deploy (multi-file)
+
+Deploy with the CLI so the Deno multi-file tree is preserved:
+
+```bash
+pnpm exec supabase functions deploy --project-ref yrrytppmkykzhwelqmcs --yes
+```
+
+CI: `.github/workflows/deploy-edge-functions.yml` (push to `main` under
+`supabase/functions/**`, or `workflow_dispatch`). Requires repo secrets
+`SUPABASE_ACCESS_TOKEN` + `SUPABASE_PROJECT_REF`. Do **not** use the Dashboard
+“bundle with esbuild” deploy for `combat-v1` / `platform-auth` (or peers) —
+that collapses relative imports. Layout gate:
+`node scripts/check-edge-multifile-layout.mjs`.
+
 ## Health snapshot
 
 SQL (always available after `db:reset`):

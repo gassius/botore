@@ -32,12 +32,12 @@ there is no account-id argument. No new table grants to `authenticated`.
 
 ## Already-sanctioned companions
 
-| Surface                                          | Use                                                                                                                                                                                                                         |
-| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `current_bot_loadouts`                           | Confirmed loadout once `characterId` is known. RLS uses `0021` SECURITY DEFINER helpers (`bot_character_owned_by_caller` / `bot_character_is_system_opponent`) so loadout reads do not need `GRANT SELECT` on `characters`. |
-| `save_bot_loadout`                               | Persist loadout                                                                                                                                                                                                             |
-| `prepare_fight_context(account_id, opponent_id)` | Eligibility + sealed builds (after opponent chosen)                                                                                                                                                                         |
-| `combat-v1` Edge                                 | Fight compute + persist                                                                                                                                                                                                     |
+| Surface                                          | Use                                                                                                                                                                                                                                             |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `current_bot_loadouts`                           | Confirmed loadout once `characterId` is known. RLS uses `0021` SECURITY DEFINER helpers (`bot_character_owned_by_caller` / `bot_character_is_system_opponent`) so loadout reads do not need `GRANT SELECT` on `characters`.                     |
+| `save_bot_loadout`                               | Persist loadout                                                                                                                                                                                                                                 |
+| `prepare_fight_context(account_id, opponent_id)` | Eligibility + sealed builds (after opponent chosen). **EXECUTE:** `authenticated` (own `auth.uid()`) + `service_role` (`combat-v1`). PUBLIC/anon revoked (B4 / migration `0025`). Kept client-callable for Confirm eligibility — not Edge-only. |
+| `combat-v1` Edge                                 | Fight compute + persist                                                                                                                                                                                                                         |
 
 ## Client call sites
 
