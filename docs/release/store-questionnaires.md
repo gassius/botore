@@ -11,16 +11,18 @@ Ticket: [R4](https://app.clickup.com/t/1amjtrey7vd). Privacy source of truth:
 
 ## Support URL / email (placeholders)
 
-| Field                | Draft value                                                                                   | Notes                                                                                                                                     |
-| -------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Support URL          | `{EXPO_PUBLIC_PUBLIC_WEB_ORIGIN}/privacy` (temporary) or a dedicated support page once hosted | Prefer a public, SSO-free URL                                                                                                             |
-| Support email        | `REPLACE_WITH_SUPPORT_INBOX`                                                                  | Carlos picks the real inbox; bake as `EXPO_PUBLIC_ACCOUNT_DELETION_SUPPORT_EMAIL` on the public web host for Play no-code deletion mailto |
-| Marketing URL        | optional — omit until marketing site exists                                                   | Non-goal for R4                                                                                                                           |
-| Privacy Policy URL   | `{EXPO_PUBLIC_PUBLIC_WEB_ORIGIN}/privacy`                                                     | Required                                                                                                                                  |
-| Account deletion URL | `{EXPO_PUBLIC_PUBLIC_WEB_ORIGIN}/account/delete`                                              | Play data-deletion / account deletion                                                                                                     |
+| Field                | Draft value                                      | Notes                                                                                                                                                                                                                                  |
+| -------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Support URL          | `{EXPO_PUBLIC_PUBLIC_WEB_ORIGIN}/account/delete` | Must be a page that **shows** the support email (not `/privacy`). Public delete “No code?” path displays `REPLACE_WITH_SUPPORT_INBOX` once baked as `EXPO_PUBLIC_ACCOUNT_DELETION_SUPPORT_EMAIL`. Optional later: dedicated `/support` |
+| Support email        | `REPLACE_WITH_SUPPORT_INBOX`                     | Carlos picks the real inbox; bake as `EXPO_PUBLIC_ACCOUNT_DELETION_SUPPORT_EMAIL` on the public web host for Play no-code deletion mailto                                                                                              |
+| Marketing URL        | optional — omit until marketing site exists      | Non-goal for R4                                                                                                                                                                                                                        |
+| Privacy Policy URL   | `{EXPO_PUBLIC_PUBLIC_WEB_ORIGIN}/privacy`        | Required — privacy notice only; do **not** reuse as Support URL                                                                                                                                                                        |
+| Account deletion URL | `{EXPO_PUBLIC_PUBLIC_WEB_ORIGIN}/account/delete` | Play data-deletion / account deletion (same origin as Support URL until `/support` exists)                                                                                                                                             |
 
 Until the custom domain is attached, leave console fields as drafts — do not
-point reviewers at SSO-gated `*.vercel.app`.
+point reviewers at SSO-gated `*.vercel.app`. Before store submission, open the
+Support URL in a private window and confirm the real support email is visible
+(not an unset/placeholder ops note).
 
 ## Age rating — App Store (draft)
 
@@ -102,15 +104,15 @@ Supabase (Auth, DB, Edge), Sentry (crashes when enabled), Vercel (hosts
 
 ### Data types collected (Play)
 
-| Type                           | Collected                                                         | Shared                                       | Required / optional | Purpose                                              |
-| ------------------------------ | ----------------------------------------------------------------- | -------------------------------------------- | ------------------- | ---------------------------------------------------- |
-| Name                           | Yes (display name)                                                | No (not shared with other companies for ads) | App functionality   | Account / garage                                     |
-| User IDs                       | Yes (account + Game Center / Play Games platform ids server-side) | No ads                                       | App functionality   | Sign-in                                              |
-| App activity / gameplay        | Yes                                                               | No ads                                       | App functionality   | Fights, ranking, ledgers                             |
-| Crash logs                     | Yes when Sentry enabled                                           | Shared with Sentry as processor              | App functionality   | Stability                                            |
-| Device IDs (ANDROID_ID / IDFV) | **No** for auth fallback                                          | —                                            | —                   | Device-fallback uses a random UUID in secure storage |
-| Approximate location           | No                                                                |                                              |                     |                                                      |
-| Financial info                 | No (no IAP in this build)                                         |                                              |                     |                                                      |
+| Type                           | Collected                                                         | Shared                                        | Required / optional | Purpose                                              |
+| ------------------------------ | ----------------------------------------------------------------- | --------------------------------------------- | ------------------- | ---------------------------------------------------- |
+| Name                           | Yes (display name)                                                | No (not shared with other companies for ads)  | App functionality   | Account / garage                                     |
+| User IDs                       | Yes (account + Game Center / Play Games platform ids server-side) | No ads                                        | App functionality   | Sign-in                                              |
+| App activity / gameplay        | Yes                                                               | No ads                                        | App functionality   | Fights, ranking, ledgers                             |
+| Crash logs                     | Yes when Sentry enabled                                           | No (Sentry is a service provider / processor) | App functionality   | Stability                                            |
+| Device IDs (ANDROID_ID / IDFV) | **No** for auth fallback                                          | —                                             | —                   | Device-fallback uses a random UUID in secure storage |
+| Approximate location           | No                                                                |                                               |                     |                                                      |
+| Financial info                 | No (no IAP in this build)                                         |                                               |                     |                                                      |
 
 If a production binary ships **without** `EXPO_PUBLIC_SENTRY_DSN`, answer
 crash logs **No** for that release and update the form when crash reporting

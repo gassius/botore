@@ -107,12 +107,12 @@ node scripts/native-capture/check-capture-env.mjs --platform android
 # Walk first-run routes on a live Android emulator/device
 ./scripts/native-capture/run-design-capture.sh \
   --platform android \
-  --routes Stable,Customise,Confirm,Replay,Ranking
+  --routes Stable,Customise,ConfirmFight,Replay,Ranking
 
 # iOS Simulator (macOS)
 ./scripts/native-capture/run-design-capture.sh \
   --platform ios \
-  --routes Stable,Customise,Replay,Ranking
+  --routes Stable,Customise,ConfirmFight,Replay,Ranking
 ```
 
 Artifacts: `artifacts/native-captures/` (gitignored) + `manifest-*.txt`.

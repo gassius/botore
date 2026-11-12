@@ -65,6 +65,9 @@ Engineering builds may still use `design-review` / `development` profiles with
 - [ ] Set support email / URL (placeholders in questionnaires — Carlos picks
       the real inbox; bake `EXPO_PUBLIC_ACCOUNT_DELETION_SUPPORT_EMAIL` on the
       public web host)
+- [ ] Support URL shows the real `REPLACE_WITH_SUPPORT_INBOX` contact before
+      submission (page that displays the email — e.g. `/account/delete` no-code
+      support path — **not** `/privacy`)
 
 ## Crash reporting (R3 scaffold)
 
