@@ -91,6 +91,11 @@ export type PlatformAuthAdmin = {
       ) => Promise<{ data: unknown; error: { message: string } | null }>;
     };
   };
+  /** service_role RPCs (B5 ensure_player_character). */
+  rpc: (
+    fn: string,
+    args?: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
 };
 
 /** Server-only synthetic mailbox — never shown as a player login. */
@@ -139,6 +144,67 @@ export async function ensureAccountRow(admin: PlatformAuthAdmin, accountId: stri
   }
 }
 
+export type EnsurePlayerCharacterResult =
+  | {
+      readonly ok: true;
+      readonly created: boolean;
+      readonly characterId: string;
+      readonly displayName: string;
+    }
+  | { readonly ok: false; readonly code: string; readonly message: string };
+
+/**
+ * B5: idempotent player character + starter loadout via DB RPC.
+ * Must run after accounts row exists; service_role only.
+ */
+export async function ensurePlayerCharacterForAccount(
+  admin: PlatformAuthAdmin,
+  accountId: string,
+): Promise<EnsurePlayerCharacterResult> {
+  const { data, error } = await admin.rpc('ensure_player_character', {
+    p_account_id: accountId,
+  });
+  if (error) {
+    return { ok: false, code: 'ensure_player_character_failed', message: error.message };
+  }
+  if (!data || typeof data !== 'object') {
+    return {
+      ok: false,
+      code: 'ensure_player_character_failed',
+      message: 'ensure_player_character returned empty body',
+    };
+  }
+  const body = data as Record<string, unknown>;
+  if (body.ok !== true) {
+    return {
+      ok: false,
+      code: typeof body.code === 'string' ? body.code : 'ensure_player_character_failed',
+      message:
+        typeof body.message === 'string'
+          ? body.message
+          : 'ensure_player_character returned ok:false',
+    };
+  }
+  const characterId = typeof body.characterId === 'string' ? body.characterId : '';
+  const displayName = typeof body.displayName === 'string' ? body.displayName : characterId;
+  if (!characterId) {
+    return {
+      ok: false,
+      code: 'ensure_player_character_failed',
+      message: 'ensure_player_character missing characterId',
+    };
+  }
+  return {
+    ok: true,
+    created: body.created === true,
+    characterId,
+    displayName,
+  };
+}
+
+export type InsertIdentityResult =
+  { readonly ok: true } | { readonly ok: false; readonly code: string; readonly message: string };
+
 export async function insertIdentity(
   admin: PlatformAuthAdmin,
   input: {
@@ -147,14 +213,122 @@ export async function insertIdentity(
     platformId: string;
     linkedAt?: string | null;
   },
-): Promise<void> {
+): Promise<InsertIdentityResult> {
   const { error } = await admin.from('player_identities').insert({
     account_id: input.accountId,
     provider: input.provider,
     platform_id: input.platformId,
     linked_at: input.linkedAt ?? null,
   });
-  if (error) throw new Error(error.message);
+  if (!error) return { ok: true };
+  if (!/duplicate|unique/i.test(error.message)) {
+    return { ok: false, code: 'identity_insert_failed', message: error.message };
+  }
+  // Concurrent mint: unique (provider, platform_id) race — continue only when
+  // the winning row already points at this account; else progress would split.
+  const existing = await lookupIdentity(admin, input.provider, input.platformId);
+  if (!existing || existing.account_id !== input.accountId) {
+    return {
+      ok: false,
+      code: 'session_account_mismatch',
+      message: `identity ${existing?.account_id ?? 'missing'} !== ${input.accountId}`,
+    };
+  }
+  return { ok: true };
+}
+
+function isTransientVerifyFailure(message: string | undefined): boolean {
+  if (!message) return true;
+  return /otp|token|expired|invalid|403|forbidden|already|used|verify/i.test(message);
+}
+
+type LinkedMagic = {
+  readonly userId: string;
+  readonly hashedToken: string;
+};
+
+async function generateMagicLink(
+  admin: PlatformAuthAdmin,
+  email: string,
+): Promise<
+  | { readonly ok: true; readonly link: LinkedMagic }
+  | { readonly ok: false; readonly message: string }
+> {
+  const link = await admin.auth.admin.generateLink({ type: 'magiclink', email });
+  if (link.error || !link.data.user?.id) {
+    return { ok: false, message: link.error?.message ?? 'generateLink failed' };
+  }
+  const hashed = link.data.properties?.hashed_token;
+  if (!hashed) {
+    return { ok: false, message: 'generateLink missing hashed_token' };
+  }
+  return { ok: true, link: { userId: link.data.user.id, hashedToken: hashed } };
+}
+
+/**
+ * verifyOtp with one fresh-link retry. Concurrent platform-auth calls for the
+ * same identity can race: the first verifyOtp consumes the hashed token and the
+ * second surfaces as 403 / invalid. A fresh generateLink recovers.
+ */
+export async function verifyOtpWithRetry(
+  admin: PlatformAuthAdmin,
+  email: string,
+  first: LinkedMagic,
+): Promise<
+  | {
+      readonly ok: true;
+      readonly userId: string;
+      readonly session: {
+        readonly accessToken: string;
+        readonly refreshToken: string;
+        readonly expiresAt: number | null;
+        readonly email: string;
+      };
+    }
+  | { readonly ok: false; readonly code: string; readonly message: string }
+> {
+  const verify = async (hashedToken: string) => {
+    const verified = await admin.auth.verifyOtp({
+      type: 'magiclink',
+      token_hash: hashedToken,
+    });
+    const session = verified.data.session;
+    if (verified.error || !session?.access_token || !session.refresh_token || !session.user?.id) {
+      return {
+        ok: false as const,
+        message: verified.error?.message ?? 'verifyOtp failed',
+      };
+    }
+    return {
+      ok: true as const,
+      userId: session.user.id,
+      session: {
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token,
+        expiresAt: session.expires_at ?? null,
+        email: session.user.email ?? email,
+      },
+    };
+  };
+
+  const primary = await verify(first.hashedToken);
+  if (primary.ok) {
+    return { ok: true, userId: primary.userId, session: primary.session };
+  }
+
+  if (!isTransientVerifyFailure(primary.message)) {
+    return { ok: false, code: 'session_verify_failed', message: primary.message };
+  }
+
+  const retryLink = await generateMagicLink(admin, email);
+  if (!retryLink.ok) {
+    return { ok: false, code: 'session_link_failed', message: retryLink.message };
+  }
+  const secondary = await verify(retryLink.link.hashedToken);
+  if (!secondary.ok) {
+    return { ok: false, code: 'session_verify_failed', message: secondary.message };
+  }
+  return { ok: true, userId: secondary.userId, session: secondary.session };
 }
 
 /**
@@ -218,27 +392,11 @@ export async function mintSessionForPlatformIdentity(
       ? await resolveMintEmailForAccount(admin, accountId, input.provider, input.platformId)
       : syntheticEmailFor(input.provider, input.platformId);
 
-    const link = await admin.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-    });
-    if (link.error || !link.data.user?.id) {
-      return {
-        ok: false,
-        code: 'session_link_failed',
-        message: link.error?.message ?? 'generateLink failed',
-      };
+    const linked = await generateMagicLink(admin, email);
+    if (!linked.ok) {
+      return { ok: false, code: 'session_link_failed', message: linked.message };
     }
-
-    const userId = link.data.user.id;
-    const hashed = link.data.properties?.hashed_token;
-    if (!hashed) {
-      return {
-        ok: false,
-        code: 'session_link_failed',
-        message: 'generateLink missing hashed_token',
-      };
-    }
+    const userId = linked.link.userId;
 
     // M1 fail-closed: a DB-only delete (or auth_retire_failed) can leave the
     // Auth user live on the synthetic email. Never re-link or mint for it.
@@ -263,12 +421,15 @@ export async function mintSessionForPlatformIdentity(
     }
 
     if (!existing) {
-      await insertIdentity(admin, {
+      const inserted = await insertIdentity(admin, {
         accountId,
         provider: input.provider,
         platformId: input.platformId,
         linkedAt: input.fallbackDeviceId ? new Date().toISOString() : null,
       });
+      if (!inserted.ok) {
+        return { ok: false, code: inserted.code, message: inserted.message };
+      }
     }
 
     // If platform signed in and fallback was provided, ensure fallback row
@@ -276,29 +437,45 @@ export async function mintSessionForPlatformIdentity(
     if (input.fallbackDeviceId && input.provider !== 'device_fallback') {
       const fallback = await lookupIdentity(admin, 'device_fallback', input.fallbackDeviceId);
       if (!fallback) {
-        await insertIdentity(admin, {
+        const linkedFallback = await insertIdentity(admin, {
           accountId,
           provider: 'device_fallback',
           platformId: input.fallbackDeviceId,
           linkedAt: new Date().toISOString(),
         });
+        if (!linkedFallback.ok) {
+          return {
+            ok: false,
+            code: linkedFallback.code,
+            message: linkedFallback.message,
+          };
+        }
       }
     }
 
-    const verified = await admin.auth.verifyOtp({
-      type: 'magiclink',
-      token_hash: hashed,
-    });
-    const session = verified.data.session;
-    if (verified.error || !session?.access_token || !session.refresh_token || !session.user?.id) {
-      return {
-        ok: false,
-        code: 'session_verify_failed',
-        message: verified.error?.message ?? 'verifyOtp failed',
-      };
+    // B5: provision before verify so a raced second verify still leaves a
+    // playable account. Fail closed only for brand-new accounts; returning
+    // players still mint — get_owned_character auto-provisions on Retry Load.
+    const ensured = await ensurePlayerCharacterForAccount(admin, accountId);
+    if (!ensured.ok) {
+      if (created) {
+        return {
+          ok: false,
+          code: ensured.code,
+          message: ensured.message,
+        };
+      }
+      console.warn(
+        `platform-auth ensure_player_character skipped for returning account ${accountId}: ${ensured.code} ${ensured.message}`,
+      );
     }
 
-    if (session.user.id !== accountId) {
+    const verified = await verifyOtpWithRetry(admin, email, linked.link);
+    if (!verified.ok) {
+      return { ok: false, code: verified.code, message: verified.message };
+    }
+
+    if (verified.userId !== accountId) {
       return {
         ok: false,
         code: 'session_account_mismatch',
@@ -310,11 +487,11 @@ export async function mintSessionForPlatformIdentity(
       ok: true,
       created,
       session: {
-        accessToken: session.access_token,
-        refreshToken: session.refresh_token,
-        expiresAt: session.expires_at ?? null,
-        userId: session.user.id,
-        email: session.user.email ?? email,
+        accessToken: verified.session.accessToken,
+        refreshToken: verified.session.refreshToken,
+        expiresAt: verified.session.expiresAt,
+        userId: verified.userId,
+        email: verified.session.email,
       },
     };
   } catch (err) {
