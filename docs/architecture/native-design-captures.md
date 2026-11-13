@@ -151,12 +151,17 @@ Workflow: `.github/workflows/native-design-captures.yml`
   for custom schemes on iOS 18 Simulator — SpringBoard shows “Open in …?” and
   stills capture that dialog instead of the app. CI asserts route PNGs are
   meaningfully distinct (≥0.5% pixel diff, not status-bar clock ticks).
-  **C7c:** iOS job runs `ci-live-fight-ios-capture.sh` (Colima + local Supabase
-  combat-v1) for garage / confirm / replay-impact / result stills with server
-  fight proof in Documents — no faked markers, no table grants. CocoaPods +
-  DerivedData are cached; `CAPTURE_COLD_START` defaults off on `pull_request`
-  for the design path and is forced on for live-fight AC. Cold-start is
-  wall-clock budgeted (`timeout` + `trap` on `recordVideo`) and asserts
+  **C7c:** iOS live-fight uses Ubuntu Supabase + Cloudflare quick tunnel
+  (`ios-live-fight-backend`) in parallel with the macos Simulator job. Tunnel
+  and done-marker artifacts are **attempt-scoped**
+  (`…-${{ github.sha }}-${{ github.run_attempt }}`) so a prior attempt’s
+  `if: always()` done marker cannot stop keepalive and kill the tunnel mid
+  build. When re-running failed jobs, always include **iOS live-fight backend
+  (tunnel)** with **iOS Simulator captures** — otherwise iOS waits for a
+  missing attempt-scoped tunnel artifact. CocoaPods + DerivedData are cached;
+  `CAPTURE_COLD_START` defaults off on `pull_request` for the design path and
+  is forced on for live-fight AC. Cold-start is wall-clock budgeted
+  (`timeout` + `trap` on `recordVideo`) and asserts
   `#302D27` splash → distinct title frames via
   `assert-cold-start-transition.mjs`.
 - Android live-fight (`ci-live-fight-android-capture.sh`) also records cold-start

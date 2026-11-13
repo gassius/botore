@@ -9,8 +9,14 @@ source "${SCRIPT_DIR}/lib.sh"
 cd "${REPO_ROOT}"
 
 TIP_SHA="$(git rev-parse HEAD)"
-DONE_NAME="ios-live-fight-done-${TIP_SHA}"
+# Scope by run attempt so a prior failed attempt's done marker (uploaded with
+# if: always()) cannot stop keepalive on the next re-run of this workflow run.
+RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-1}"
+DONE_NAME="ios-live-fight-done-${TIP_SHA}-${RUN_ATTEMPT}"
 KEEPALIVE_MIN="${CAPTURE_BACKEND_KEEPALIVE_MIN:-100}"
+# Ignore done artifacts created before this keepalive started (stale same-name).
+KEEPALIVE_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+export KEEPALIVE_STARTED_AT
 
 if [[ -f /tmp/botore-ios-backend.env ]]; then
   set -a
@@ -59,7 +65,14 @@ download_done() {
         let s=""; process.stdin.on("data",d=>s+=d); process.stdin.on("end",()=>{
           try {
             const j=JSON.parse(s);
-            const a=(j.artifacts||[]).find(x=>x.name===process.argv[1] && !x.expired);
+            const name=process.argv[1];
+            const startedMs=Date.parse(process.env.KEEPALIVE_STARTED_AT||"")||0;
+            const a=(j.artifacts||[]).find((x)=>{
+              if(x.name!==name || x.expired) return false;
+              const created=Date.parse(x.created_at||"")||0;
+              // Allow small clock skew; reject markers from earlier attempts.
+              return created + 5000 >= startedMs;
+            });
             if(a) process.stdout.write(String(a.id));
           } catch {}
         });
@@ -76,7 +89,7 @@ fi
 
 ensure_functions_serve
 
-echo "keepalive up to ${KEEPALIVE_MIN}m waiting for artifact ${DONE_NAME}…" >&2
+echo "keepalive up to ${KEEPALIVE_MIN}m waiting for artifact ${DONE_NAME} (started ${KEEPALIVE_STARTED_AT})…" >&2
 for i in $(seq 1 "${KEEPALIVE_MIN}"); do
   if download_done; then
     echo "iOS signaled done (${DONE_NAME}) after ${i}m — shutting down" >&2
