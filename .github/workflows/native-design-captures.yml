@@ -356,6 +356,8 @@ jobs:
           # Title burst after splash gate — must span remaining ≥60s splash hold.
           CAPTURE_COLD_START_SEC: '75'
           CAPTURE_COLD_FRAME_COUNT: '40'
+          # Pace frames (ms). Unpaced bursts exhaust FRAME_MAX ~50s → splash-only strip.
+          CAPTURE_COLD_FRAME_INTERVAL_MS: '2000'
           # Fresh-install simctl launch often >40s on GHA; hybrid launch+splash poll.
           CAPTURE_COLD_LAUNCH_TIMEOUT_SEC: '90'
           CAPTURE_COLD_SPLASH_WAIT_SEC: '120'

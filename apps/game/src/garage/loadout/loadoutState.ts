@@ -1,4 +1,5 @@
 import type { GarageLoadout } from './loadoutTypes';
+import { PROOF_ATLAS_VERSION } from './proofCatalogue';
 
 export type HydrationStatus = 'ready' | 'unavailable';
 
@@ -47,7 +48,7 @@ export function createUnavailableLoadoutState(input?: {
     confirmedLoadout: null,
     pendingLoadout: null,
     confirmedVersionId: null,
-    atlasVersion: input?.atlasVersion ?? 'v1',
+    atlasVersion: input?.atlasVersion ?? PROOF_ATLAS_VERSION,
     dirty: false,
     saving: false,
     saveRequestLoadout: null,
@@ -72,7 +73,7 @@ export function createLoadoutPreviewState(input: {
     confirmedLoadout: input.confirmedLoadout,
     pendingLoadout: input.confirmedLoadout,
     confirmedVersionId: input.confirmedVersionId ?? null,
-    atlasVersion: input.atlasVersion ?? 'v1',
+    atlasVersion: input.atlasVersion ?? PROOF_ATLAS_VERSION,
     dirty: false,
     saving: false,
     saveRequestLoadout: null,

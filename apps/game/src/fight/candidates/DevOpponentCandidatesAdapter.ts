@@ -1,4 +1,7 @@
-import { DEFAULT_CONFIRMED_LOADOUT } from '../../garage/loadout/proofCatalogue';
+import {
+  DEFAULT_CONFIRMED_LOADOUT,
+  PROOF_ATLAS_VERSION,
+} from '../../garage/loadout/proofCatalogue';
 import { DevFightBackendState, getSharedDevFightBackend } from '../dev/DevFightBackendState';
 import type { OpponentCandidatesPort } from './OpponentCandidatesPort';
 import type { ListCandidatesResult, OpponentCandidate, PrepareEligibilityResult } from './types';
@@ -14,7 +17,7 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
       soundTags: ['chassis.light', 'weapon.sword'],
     },
     loadoutVersionId: 'dev-opp-sir',
-    atlasVersion: 'v1',
+    atlasVersion: PROOF_ATLAS_VERSION,
   },
   {
     characterId: 'opp-dex-bot',
@@ -26,7 +29,7 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
       soundTags: ['chassis.light', 'weapon.dagger'],
     },
     loadoutVersionId: 'dev-opp-dex',
-    atlasVersion: 'v1',
+    atlasVersion: PROOF_ATLAS_VERSION,
   },
   {
     characterId: 'opp-hp-bot',
@@ -38,7 +41,7 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
       soundTags: ['chassis.light', 'weapon.axe'],
     },
     loadoutVersionId: 'dev-opp-hp',
-    atlasVersion: 'v1',
+    atlasVersion: PROOF_ATLAS_VERSION,
   },
 ];
 

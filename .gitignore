@@ -18,6 +18,10 @@ supabase/.branches/
 supabase/.temp/
 supabase/.runtime/
 
+# Generated atlas/v2 pack bytes (from pack-workshop-frame-atlas.mjs)
+supabase/seed/atlas/v2/**
+!supabase/seed/atlas/v2/README.md
+
 # Editors / OS
 .DS_Store
 .idea/

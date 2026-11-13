@@ -4,12 +4,14 @@ import {
   AtlasPackLoader,
   BASE_AUDIO_ROLES,
   BUNDLED_BASE_AUDIO_PATHS,
+  WORKSHOP_FRAME_ATLAS_VERSION,
   WORKSHOP_FRAME_KIT,
   atlasPathForWorkshopKitFile,
   cacheIndexPath,
   cacheIndexTmpPath,
   createMemoryPackFileStore,
   createUriMapBundledBasePack,
+  ensureStableFightPacks,
   findPartAudioUri,
   isBundledBaseAudioPath,
   isWorkshopFrameAtlasPath,
@@ -277,6 +279,7 @@ describe('atlas pack loader (F6)', () => {
   });
 
   it('maps F7 paint/weapon aliases onto F5 catalogue ids and kit-v002 atlas paths', () => {
+    expect(WORKSHOP_FRAME_ATLAS_VERSION).toBe('v2');
     expect(WORKSHOP_FRAME_KIT.kitVersion).toBe('v002');
     expect(WORKSHOP_FRAME_KIT.compatibleFamily).toBe('workshop-frame-v002');
     expect(resolvePaintToken('oxide')).toBe('oxide');
@@ -316,20 +319,35 @@ describe('atlas pack loader (F6)', () => {
   });
 
   it('selects workshop-frame kit-v002 entries via F5 partId without a second schema', () => {
-    const version = 'v1';
+    const version = WORKSHOP_FRAME_ATLAS_VERSION;
     const kitPath = 'parts/torso/oxide.png';
+    const weaponPath = 'parts/weapon-sword/oxide.png';
     const staleV001 = 'kits/workshop-frame/v001/parts/torso-oxide.png';
     const manifest: AtlasManifestResponse = {
       ...sampleManifest(version),
+      version,
+      prefix: `${version}/`,
       entries: [
-        ...sampleManifest(version).entries,
+        ...sampleManifest(version).entries.map((e) => ({
+          ...e,
+          storagePath: `${version}/${e.path}`,
+        })),
         {
-          assetKey: 'kits.workshop-frame.torso.oxide',
+          assetKey: 'parts.torso.oxide',
           kind: 'image',
           partId: 'torso',
-          role: 'composited',
+          role: 'oxide',
           path: kitPath,
           storagePath: `${version}/${kitPath}`,
+          soundTags: [],
+        },
+        {
+          assetKey: 'parts.weapon-sword.oxide',
+          kind: 'image',
+          partId: 'weapon-sword',
+          role: 'oxide',
+          path: weaponPath,
+          storagePath: `${version}/${weaponPath}`,
           soundTags: [],
         },
         {
@@ -350,7 +368,106 @@ describe('atlas pack loader (F6)', () => {
       includeFx: false,
     });
     expect(selected.some((e) => e.path === kitPath)).toBe(true);
+    expect(selected.some((e) => e.path === weaponPath)).toBe(true);
     expect(selected.some((e) => e.path === staleV001)).toBe(false);
+  });
+
+  it('ensureStableFightPacks unions stable+fight partIds and reuses same-version cache', async () => {
+    const version = WORKSHOP_FRAME_ATLAS_VERSION;
+    const torsoPath = 'parts/torso/oxide.png';
+    const manifest: AtlasManifestResponse = {
+      ...sampleManifest(version),
+      version,
+      prefix: `${version}/`,
+      entries: [
+        {
+          assetKey: 'parts.torso.oxide',
+          kind: 'image',
+          partId: 'torso',
+          role: 'oxide',
+          path: torsoPath,
+          storagePath: `${version}/${torsoPath}`,
+          soundTags: [],
+        },
+        {
+          assetKey: 'parts.weapon-axe.sprite',
+          kind: 'image',
+          partId: 'weapon-axe',
+          role: 'sprite',
+          path: 'parts/weapon-axe/sprite.png',
+          storagePath: `${version}/parts/weapon-axe/sprite.png`,
+          soundTags: [],
+        },
+        {
+          assetKey: 'fx.hit',
+          kind: 'image',
+          partId: null,
+          role: 'hit',
+          path: 'fx/hit.png',
+          storagePath: `${version}/fx/hit.png`,
+          soundTags: [],
+        },
+      ],
+    };
+    const downloadObject = vi.fn(async (storagePath: string) => encodeUtf8(storagePath));
+    const store = createMemoryPackFileStore();
+    const bundled = createUriMapBundledBasePack({ hit: 'bundle://hit' });
+    const transport = {
+      fetchManifest: vi.fn(async () => manifest),
+      downloadObject,
+    };
+    const loader = new AtlasPackLoader({ transport, store, bundledBase: bundled });
+
+    const first = await ensureStableFightPacks({
+      atlasVersion: version,
+      loadouts: [
+        { chassis: 'chassis-basic', paint: 'paint-crimson', weapon: 'weapon-sword' },
+        { chassis: 'chassis-basic', paint: 'paint-cobalt', weapon: 'weapon-axe' },
+      ],
+      transport,
+      loader,
+      includeArena: false,
+      includeFx: true,
+    });
+    expect(first.fetched).toBe(true);
+    expect(first.assets.some((a) => a.path === torsoPath && a.source === 'download')).toBe(true);
+    expect(first.assets.some((a) => a.partId === 'weapon-axe' && a.source === 'download')).toBe(
+      true,
+    );
+    expect(first.assets.some((a) => a.path === 'fx/hit.png')).toBe(true);
+
+    downloadObject.mockClear();
+    transport.fetchManifest.mockClear();
+    const offlineLoader = new AtlasPackLoader({
+      transport: {
+        fetchManifest: async () => {
+          throw new Error('offline');
+        },
+        downloadObject: async () => {
+          throw new Error('offline');
+        },
+      },
+      store,
+      bundledBase: bundled,
+    });
+    const offline = await ensureStableFightPacks({
+      atlasVersion: version,
+      loadouts: [{ paint: 'oxide', weapon: 'sword' }],
+      transport: {
+        fetchManifest: async () => {
+          throw new Error('offline');
+        },
+        downloadObject: async () => {
+          throw new Error('offline');
+        },
+      },
+      loader: offlineLoader,
+      includeArena: false,
+      includeFx: false,
+    });
+    expect(offline.offline).toBe(true);
+    expect(offline.fromCache).toBe(true);
+    expect(offline.assets.some((a) => a.path === torsoPath && a.source === 'cache')).toBe(true);
   });
 
   it('returns bundled fallback when manifest/audio transport never settles', async () => {

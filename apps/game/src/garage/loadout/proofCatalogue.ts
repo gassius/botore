@@ -1,14 +1,17 @@
 import type { GarageLoadout } from './loadoutTypes';
 import type { WeaponGlyphId } from '../../garage-tag';
+import { WORKSHOP_FRAME_ATLAS_VERSION } from '../../atlas/workshop-frame-paths';
 
 /**
  * Seeded proof catalogue ids from F1 (1001_seed_bots_as_data).
  * No catalogue expansion — Oxide/Petrol UI aliases map onto crimson/cobalt.
  */
+
 /** Seeded proof character — DEV adapter fixture only; live path resolves ownership. */
 export const PROOF_CHARACTER_ID = 'player-hero';
 export const PROOF_DISPLAY_NAME = 'Hero';
-export const PROOF_ATLAS_VERSION = 'v1';
+/** First-run / DEV pin — workshop-frame-v002 pack (`v2`). Health proof pack stays `v1`. */
+export const PROOF_ATLAS_VERSION = WORKSHOP_FRAME_ATLAS_VERSION;
 
 export const PROOF_PAINTS = [
   {

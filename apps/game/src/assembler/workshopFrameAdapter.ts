@@ -279,7 +279,7 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
   const gripWorld = transformPoint(handM, gripLocal[0], gripLocal[1]);
 
   return {
-    atlasVersion: 'v1',
+    atlasVersion: 'v2',
     chassisId: input.loadout.chassis || 'chassis-basic',
     paintId: paintVisual.cataloguePaintId,
     paintVisual: paintVisual.visual,
@@ -311,8 +311,8 @@ export function listWorkshopFrameGaps(): readonly string[] {
     'l/r are view sides not anatomical — document for animators; mirror is whole-hierarchy scaleX about canvas centre.',
     'motion_bounds are absolute relative-joint windows, not proven collision-free for arbitrary combos.',
     'status=integration-prototype-not-accepted — not Carlos likeness / native perf / replay acceptance.',
-    'Atlas null; F5/F6 atlas/vN packaging not yet aligned (mediaKey paths differ: parts/torso-oxide.png vs parts/chassis-basic/...).',
-    'Weapon media ids use underscores (weapon_sword); catalogue/F5 use hyphens (weapon-sword) — adapter maps, keep both until atlas rename.',
+    'Atlas pack v2 publishes kit-v002 keys at parts/<hyphenatedPartId>/… (C13); Metro kit remains render fallback until Storage cold-fetch is proven on device.',
+    'Weapon media ids use underscores (weapon_sword); catalogue/F5 atlas partIds use hyphens (weapon-sword) — adapter maps both (documented, keep).',
     'Float socket values (e.g. neck y 51.39999999999999) are exact JSON serializations — consume as floats; do not round in the adapter.',
     'heavy_windup.root_y is 45 in v002 (was 20 in v001 sketches) — geometry note only; MotionPose heavy_* is mapped (C11).',
   ];

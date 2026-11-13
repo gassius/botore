@@ -55,6 +55,7 @@ export {
 } from './resolve-audio';
 
 export {
+  WORKSHOP_FRAME_ATLAS_VERSION,
   WORKSHOP_FRAME_BODY_ASSET_IDS,
   WORKSHOP_FRAME_KIT,
   WORKSHOP_FRAME_WEAPON_ASSET_IDS,
@@ -68,6 +69,15 @@ export {
   resolveWorkshopWeaponAssetId,
   workshopFrameAtlasPathsForAsset,
 } from './workshop-frame-paths';
+
+export {
+  defaultAtlasVersionForWorkshopFrame,
+  ensureStableFightPacks,
+  type EnsureStableFightPacksInput,
+  type StableFightLoadoutSlots,
+} from './ensure-stable-fight-packs';
+
+export { createRestPackTransport, type RestPackTransportConfig } from './rest-pack-transport';
 
 // Native Expo adapters (documentDirectory cache + Asset.fromModule base pack)
 // live in ./expo-pack-store and ./expo-bundled-base-pack — import those files

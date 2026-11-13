@@ -1169,6 +1169,50 @@ begin
   );
   raise notice 'TEST-OK atlas v1 proof pack + get_atlas_manifest';
 
+  -- C13: workshop-frame-v002 pack (v2) published with hyphenated kit paths ----
+  select count(*) into v_count from public.atlas_versions where version = 'v2' and status = 'published';
+  perform tests.assert(v_count = 1, 'expected published atlas v2 (run pack + seed-atlas-storage)');
+  perform tests.assert(
+    coalesce(array_length(public.atlas_missing_storage_paths('v2'), 1), 0) = 0,
+    'v2 has no missing storage paths'
+  );
+  perform tests.assert(
+    exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v2' and path = 'parts/torso/oxide.png' and part_id = 'torso'
+    ),
+    'v2 has parts/torso/oxide.png'
+  );
+  perform tests.assert(
+    exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v2'
+         and path = 'parts/weapon-sword/oxide.png'
+         and part_id = 'weapon-sword'
+    ),
+    'v2 weapon id is hyphenated (weapon-sword)'
+  );
+  -- LIKE '_' is a single-char wildcard — escape so we reject literal weapon_sword
+  -- folders, not hyphenated weapon-sword paths.
+  perform tests.assert(
+    not exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v2'
+         and (
+           path like '%weapon\_sword%' escape '\'
+           or path like '%weapon\_axe%' escape '\'
+           or path like '%weapon\_dagger%' escape '\'
+           or path like '%/v001/%'
+           or part_id in ('weapon_sword', 'weapon_axe', 'weapon_dagger')
+         )
+    ),
+    'v2 must not register underscore weapon folders or kit-v001 paths'
+  );
+  select public.get_atlas_manifest('v2') into v_manifest;
+  perform tests.assert((v_manifest->>'ok')::boolean, 'get_atlas_manifest v2 ok');
+  perform tests.assert(v_manifest->>'version' = 'v2', 'manifest version v2');
+  raise notice 'TEST-OK atlas v2 workshop-frame-v002 pack + hyphen weapon ids';
+
   -- Publish rejects missing Storage objects --------------------------------
   perform set_config('request.jwt.claim.role', 'service_role', true);
   insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
