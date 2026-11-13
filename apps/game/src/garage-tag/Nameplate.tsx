@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { playerFacingDisplayName } from '../identity/platformPlayerId';
 import { garageTag } from './tokens';
 
 export type NameplateProps = {
@@ -10,8 +11,12 @@ export type NameplateProps = {
   testID?: string;
 };
 
-/** Riveted name-tag geometry with native text (never baked into PNG). */
+/**
+ * Riveted name-tag geometry with native text (never baked into PNG).
+ * C16: never renders Game Center / Play Games / device-fallback platform ids.
+ */
 export function Nameplate({ name, badge, style, testID }: NameplateProps): React.ReactElement {
+  const safeName = playerFacingDisplayName(name);
   return (
     <View style={[styles.tag, style]} testID={testID}>
       <View style={[styles.rivet, styles.rivetL]} />
@@ -22,7 +27,7 @@ export function Nameplate({ name, badge, style, testID }: NameplateProps): React
         </Text>
       ) : null}
       <Text style={styles.name} numberOfLines={2} allowFontScaling>
-        {name}
+        {safeName}
       </Text>
     </View>
   );

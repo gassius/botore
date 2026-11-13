@@ -20,6 +20,7 @@ import {
 } from '../../garage-tag';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import { paintUiAlias, weaponUiAlias } from '../../garage/loadout/proofCatalogue';
+import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
@@ -186,12 +187,13 @@ export function OpponentsScreen(props: {
               const isSelected = selected?.characterId === c.characterId;
               const weapon = weaponUiAlias(c.loadout.weapon);
               const paint = paintUiAlias(c.loadout.paint);
+              const name = playerFacingDisplayName(c.displayName);
               return (
                 <Pressable
                   key={c.characterId}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
-                  accessibilityLabel={`${c.displayName}, ${weapon}${isSelected ? ', selected' : ''}`}
+                  accessibilityLabel={`${name}, ${weapon}${isSelected ? ', selected' : ''}`}
                   onPress={() => {
                     selectOpponent(c);
                   }}
@@ -216,7 +218,7 @@ export function OpponentsScreen(props: {
                   </View>
                   <View style={styles.metaCol}>
                     <Text style={styles.name} numberOfLines={2} allowFontScaling>
-                      {c.displayName}
+                      {name}
                     </Text>
                     <Text style={styles.paint} allowFontScaling>
                       Paint · {paint}

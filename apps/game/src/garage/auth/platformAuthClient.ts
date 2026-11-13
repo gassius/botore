@@ -1,6 +1,9 @@
 /**
  * Client → Edge `platform-auth` (C12).
  * Uses public anon key only; Edge holds service role.
+ *
+ * C16: `platformId` on a successful response is for auth correlation only —
+ * never pass it into Nameplate / ranking / settings / fight labels.
  */
 
 import type { AuthSession } from './AuthPort';

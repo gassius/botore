@@ -1,3 +1,4 @@
+import { playerFacingDisplayName } from '../identity/platformPlayerId';
 import {
   RankingContractUnavailableError,
   RankingTransportError,
@@ -91,5 +92,6 @@ export async function loadRankingFromPort(port: RankingReadPort): Promise<Rankin
 export function rankingRowAccessibilityLabel(row: RankingRow): string {
   const ownership = row.isCurrentBot ? ', your bot' : '';
   const source = row.source === 'dev-fixture' ? ', development fixture' : '';
-  return `Rank ${row.rank}, ${row.displayName}${ownership}${source}`;
+  const name = playerFacingDisplayName(row.displayName);
+  return `Rank ${row.rank}, ${name}${ownership}${source}`;
 }

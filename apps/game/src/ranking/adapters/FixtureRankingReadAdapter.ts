@@ -1,7 +1,15 @@
+import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { SESSION_FAILURE_COPY } from '../../session-failure';
 import { RankingTransportError, type RankingReadPort } from '../RankingReadPort';
 import { DEV_EMPTY_RANKING_ROWS, DEV_POPULATED_RANKING_ROWS } from '../fixtures/devRankingFixtures';
 import type { RankingRow } from '../types';
+
+function sanitizeRankingRows(rows: readonly RankingRow[]): readonly RankingRow[] {
+  return rows.map((row) => ({
+    ...row,
+    displayName: playerFacingDisplayName(row.displayName),
+  }));
+}
 
 export type FixtureRankingScenario = 'populated' | 'empty' | 'error' | 'offline' | 'auth_expired';
 
@@ -52,10 +60,10 @@ export class FixtureRankingReadAdapter implements RankingReadPort {
     }
 
     if (this.scenario === 'empty') {
-      return DEV_EMPTY_RANKING_ROWS;
+      return sanitizeRankingRows(DEV_EMPTY_RANKING_ROWS);
     }
 
-    // Preserve adapter order exactly — no sort.
-    return this.rows;
+    // Preserve adapter order exactly — no sort. C16: redact platform-shaped labels.
+    return sanitizeRankingRows(this.rows);
   }
 }

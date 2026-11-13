@@ -16,6 +16,7 @@ import { PrivacyPolicyScreen } from '../../legal/PrivacyPolicyScreen';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
+import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { paintUiAlias, weaponUiAlias } from '../loadout/proofCatalogue';
 import { useGarageSession } from '../LoadoutSessionContext';
 import { DeleteAccountScreen } from './DeleteAccountScreen';
@@ -32,7 +33,7 @@ export function StableScreen(props: {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const confirmed = loadout.confirmedLoadout;
   const weapon = confirmed ? weaponUiAlias(confirmed.weapon) : 'sword';
-  const displayName = loadout.displayName ?? 'Pilot';
+  const displayName = playerFacingDisplayName(loadout.displayName);
 
   const hydrationKind =
     loadout.hydration === 'unavailable'
@@ -138,7 +139,7 @@ export function StableScreen(props: {
         />
       ) : (
         <Text style={styles.equipped} allowFontScaling>
-          EQUIPPED — last server-confirmed loadout
+          Equipped
         </Text>
       )}
 
@@ -170,9 +171,6 @@ export function StableScreen(props: {
               <Text style={styles.paintLabel} allowFontScaling>
                 Paint: {paintUiAlias(confirmed.paint)}
               </Text>
-              <Text style={styles.paintMeta} allowFontScaling>
-                {confirmed.paint}
-              </Text>
             </View>
           </View>
         </>
@@ -181,10 +179,6 @@ export function StableScreen(props: {
           No confirmed equipment is shown until hydration succeeds.
         </Text>
       )}
-
-      <Text style={styles.note} allowFontScaling>
-        Domain F8 · chrome from shell garage-tag · assembler via BotAssemblerSlot (F7 kit v002)
-      </Text>
     </ScreenChrome>
   );
 }
@@ -219,11 +213,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: garageTag.graphite,
     fontSize: 13,
-  },
-  paintMeta: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: garageTag.steel,
   },
   note: {
     marginTop: 8,
