@@ -2555,3 +2555,160 @@ begin
 
   raise notice 'TEST-OK B4 RPC grants + search_path harden';
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- B5: ensure_player_character + atlas-independent starter loadout
+-- ---------------------------------------------------------------------------
+-- Pattern (same as R5 / B2): capture under service_role / authenticated, then
+-- RESET ROLE before tests.assert — service_role has no USAGE on schema tests.
+do $$
+declare
+  v_account uuid := 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee0001';
+  v_auto uuid := 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee0002';
+  v_res jsonb;
+  v_res2 jsonb;
+  v_character_id text;
+  v_loadout_id uuid;
+  v_count integer;
+  v_loadout_ok boolean;
+  v_owned_ok boolean;
+  v_owned_id text;
+  v_auto_ok boolean;
+  v_auto_id text;
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'b5-ensure@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+
+  -- Intentionally no accounts / characters / loadout yet.
+
+  -- Capture under service_role (Edge path), assert as owner.
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  set local role service_role;
+  v_res := public.ensure_player_character(v_account);
+  v_character_id := v_res->>'characterId';
+  v_res2 := public.ensure_player_character(v_account);
+  reset role;
+
+  perform tests.assert((v_res->>'ok')::boolean, 'ensure creates character');
+  perform tests.assert((v_res->>'created')::boolean, 'created=true first call');
+  perform tests.assert(
+    v_character_id = 'player-' || replace(v_account::text, '-', ''),
+    'deterministic character id'
+  );
+  perform tests.assert((v_res2->>'ok')::boolean, 'ensure idempotent ok');
+  perform tests.assert((v_res2->>'created')::boolean = false, 'created=false on retry');
+  perform tests.assert(v_res2->>'characterId' = v_character_id, 'same character id');
+
+  select count(*)::int into v_count
+    from public.character_build_versions where character_id = v_character_id;
+  perform tests.assert(v_count = 1, 'starter build present');
+
+  select count(*)::int into v_count
+    from public.inventory_ledger
+   where account_id = v_account and reason = 'grant' and delta > 0;
+  perform tests.assert(v_count >= 3, 'starter inventory grants');
+
+  select loadout_version_id into v_loadout_id
+    from public.current_bot_loadouts where character_id = v_character_id;
+  perform tests.assert(v_loadout_id is not null, 'starter loadout present');
+
+  -- Atlas independence: direct bot_loadout_versions insert (no save_bot_loadout).
+  select exists (
+    select 1 from public.bot_loadout_versions
+     where character_id = v_character_id
+       and atlas_version = 'v1'
+       and loadout->>'chassis' = 'chassis-basic'
+       and loadout->>'paint' = 'paint-crimson'
+       and loadout->>'weapon' = 'weapon-sword'
+  ) into v_loadout_ok;
+  perform tests.assert(v_loadout_ok, 'starter loadout shape pinned without save_bot_loadout');
+
+  select count(*)::int into v_count
+    from public.bot_loadout_versions where character_id = v_character_id;
+  perform tests.assert(v_count = 1, 'no duplicate loadout versions');
+
+  -- Authenticated get_owned_character after ensure (capture then assert).
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_owned_character();
+  v_owned_ok := coalesce((v_res->>'ok')::boolean, false);
+  v_owned_id := v_res->>'characterId';
+  reset role;
+  perform tests.assert(v_owned_ok, 'get_owned_character after ensure');
+  perform tests.assert(v_owned_id = v_character_id, 'owned character matches');
+
+  -- Fresh account: get_owned_character auto-provisions without prior ensure.
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_auto,
+    'b5-auto@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+  insert into public.accounts (id) values (v_auto)
+  on conflict do nothing;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_auto::text, true);
+  set local role authenticated;
+  v_res := public.get_owned_character();
+  v_auto_ok := coalesce((v_res->>'ok')::boolean, false);
+  v_auto_id := v_res->>'characterId';
+  reset role;
+  perform tests.assert(v_auto_ok, 'get_owned_character auto-provisions');
+  perform tests.assert(
+    v_auto_id = 'player-aaaaaaaabbbb4ccc8dddeeeeeeee0002',
+    'auto-provision character id'
+  );
+
+  select count(*)::int into v_count
+    from public.current_bot_loadouts
+   where character_id = 'player-aaaaaaaabbbb4ccc8dddeeeeeeee0002';
+  perform tests.assert(v_count = 1, 'auto-provision starter loadout');
+
+  -- Anon cannot execute ensure
+  perform set_config('request.jwt.claim.role', 'anon', true);
+  set local role anon;
+  begin
+    perform public.ensure_player_character(v_account);
+    raise exception 'ANON FAIL: ensure_player_character allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+
+  -- Authenticated A cannot ensure for account B (SECURITY DEFINER body gate;
+  -- never current_user — see 0014). Capture under JWT role, assert as owner.
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  begin
+    perform public.ensure_player_character(v_auto);
+    reset role;
+    raise exception 'CROSS-ACCOUNT FAIL: ensure_player_character(B) as A allowed';
+  exception
+    when insufficient_privilege then
+      reset role;
+    when others then
+      reset role;
+      if sqlerrm like 'forbidden:%' or sqlstate = '42501' then
+        null;
+      else
+        raise;
+      end if;
+  end;
+
+  raise notice 'TEST-OK B5 ensure_player_character';
+end $$;

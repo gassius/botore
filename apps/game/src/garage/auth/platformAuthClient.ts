@@ -59,6 +59,24 @@ type EdgeSessionBody = {
 /** Bound silent first-launch so a hung Edge call cannot pin the splash forever. */
 export const PLATFORM_AUTH_FETCH_TIMEOUT_MS = 15_000;
 
+/** In-flight platform-auth calls keyed by identity (B5 concurrent-mint harden). */
+const platformAuthInFlight = new Map<string, Promise<PlatformAuthResponse>>();
+
+/** Test helper — clears single-flight map between cases. */
+export function resetPlatformAuthSingleFlightForTests(): void {
+  platformAuthInFlight.clear();
+}
+
+export function platformAuthFlightKey(body: PlatformAuthRequest): string {
+  if (body.provider === 'device_fallback') {
+    return `device_fallback:${body.deviceId}`;
+  }
+  if (body.provider === 'play_games') {
+    return `play_games:${body.serverAuthCode}:${body.fallbackDeviceId ?? ''}`;
+  }
+  return `game_center:${body.teamPlayerID}:${body.fallbackDeviceId ?? ''}`;
+}
+
 function abortSignalForTimeout(ms: number): AbortSignal {
   const timeoutFn = (AbortSignal as unknown as { timeout?: (n: number) => AbortSignal }).timeout;
   if (typeof timeoutFn === 'function') return timeoutFn.call(AbortSignal, ms);
@@ -67,10 +85,10 @@ function abortSignalForTimeout(ms: number): AbortSignal {
   return controller.signal;
 }
 
-export async function callPlatformAuth(
+async function callPlatformAuthOnce(
   config: SupabasePublicConfig,
   body: PlatformAuthRequest,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: typeof fetch,
 ): Promise<PlatformAuthResponse> {
   try {
     const res = await fetchImpl(`${config.url}/functions/v1/platform-auth`, {
@@ -119,4 +137,27 @@ export async function callPlatformAuth(
           : String(err),
     };
   }
+}
+
+/**
+ * POST platform-auth with per-identity single-flight. Concurrent silent-auth
+ * mounts (or StrictMode double effects) share one in-flight request so the
+ * Edge function is not hit twice for the same device / platform proof.
+ */
+export async function callPlatformAuth(
+  config: SupabasePublicConfig,
+  body: PlatformAuthRequest,
+  fetchImpl: typeof fetch = fetch,
+): Promise<PlatformAuthResponse> {
+  const key = platformAuthFlightKey(body);
+  const existing = platformAuthInFlight.get(key);
+  if (existing) return existing;
+
+  const pending = callPlatformAuthOnce(config, body, fetchImpl).finally(() => {
+    if (platformAuthInFlight.get(key) === pending) {
+      platformAuthInFlight.delete(key);
+    }
+  });
+  platformAuthInFlight.set(key, pending);
+  return pending;
 }

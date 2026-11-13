@@ -16,6 +16,10 @@ function memoryAdmin(): PlatformAuthAdmin & {
   readonly _deletedAccounts: Set<string>;
   /** Simulate Auth Admin email rewrite after soft-delete. */
   _retireEmail: (userId: string, retiredEmail: string) => void;
+  /** First verifyOtp fails once (concurrent mint / consumed token). */
+  _failNextVerify: () => void;
+  /** Next ensure_player_character RPC returns ok:false. */
+  _failNextEnsure: (code?: string, message?: string) => void;
 } {
   const identities: Array<{
     account_id: string;
@@ -26,12 +30,24 @@ function memoryAdmin(): PlatformAuthAdmin & {
   const deletedAccounts = new Set<string>();
   const usersByEmail = new Map<string, { id: string; email: string }>();
   const usersById = new Map<string, { id: string; email: string }>();
+  const usedHashes = new Set<string>();
+  const hashToUserId = new Map<string, string>();
   let userSeq = 0;
+  let linkSeq = 0;
+  /** When true, the next verifyOtp fails once (simulates concurrent 403). */
+  let failNextVerify = false;
+  let failNextEnsure: { code: string; message: string } | null = null;
 
   const admin = {
     _accounts: accounts,
     _identities: identities,
     _deletedAccounts: deletedAccounts,
+    _failNextVerify() {
+      failNextVerify = true;
+    },
+    _failNextEnsure(code = 'catalogue_incomplete', message = 'starter catalogue parts missing') {
+      failNextEnsure = { code, message };
+    },
     _retireEmail(userId: string, retiredEmail: string) {
       const user = usersById.get(userId);
       if (!user) return;
@@ -55,17 +71,40 @@ function memoryAdmin(): PlatformAuthAdmin & {
             usersByEmail.set(email, user);
             usersById.set(id, user);
           }
+          linkSeq += 1;
+          const hashed = `hash:${user.id}:${linkSeq}`;
+          hashToUserId.set(hashed, user.id);
           return {
             data: {
               user: { id: user.id, email: user.email },
-              properties: { hashed_token: `hash-${user.id}` },
+              properties: { hashed_token: hashed },
             },
             error: null,
           };
         },
       },
       async verifyOtp({ token_hash }: { token_hash: string }) {
-        const id = token_hash.replace('hash-', '');
+        if (failNextVerify) {
+          failNextVerify = false;
+          return {
+            data: { session: null },
+            error: { message: 'Token has expired or is invalid' },
+          };
+        }
+        if (usedHashes.has(token_hash)) {
+          return {
+            data: { session: null },
+            error: { message: 'Token has expired or is invalid' },
+          };
+        }
+        const id = hashToUserId.get(token_hash);
+        if (!id) {
+          return {
+            data: { session: null },
+            error: { message: 'Token has expired or is invalid' },
+          };
+        }
+        usedHashes.add(token_hash);
         const user = usersById.get(id);
         return {
           data: {
@@ -142,6 +181,33 @@ function memoryAdmin(): PlatformAuthAdmin & {
           };
         },
       };
+    },
+    async rpc(fn: string, args?: Record<string, unknown>) {
+      if (fn === 'ensure_player_character') {
+        if (failNextEnsure) {
+          const fail = failNextEnsure;
+          failNextEnsure = null;
+          return {
+            data: { ok: false, code: fail.code, message: fail.message },
+            error: null,
+          };
+        }
+        const accountId = String(args?.p_account_id ?? '');
+        if (!accountId) {
+          return { data: { ok: false, code: 'invalid_account' }, error: null };
+        }
+        return {
+          data: {
+            ok: true,
+            created: true,
+            characterId: `player-${accountId.replace(/-/g, '')}`,
+            displayName: 'Pilot',
+            loadoutCreated: true,
+          },
+          error: null,
+        };
+      }
+      return { data: null, error: { message: `unknown rpc ${fn}` } };
     },
   };
   return admin as PlatformAuthAdmin & typeof admin;
@@ -390,4 +456,73 @@ Deno.test('M1: after Auth retire, same platform id mints a fresh account', async
   const secondBody = await second.json();
   assertEquals(secondBody.ok, true);
   assertEquals(secondBody.session.user_id !== oldUserId, true);
+});
+
+Deno.test('B5: verifyOtp race retries with a fresh magic link', async () => {
+  const admin = memoryAdmin();
+  admin._failNextVerify();
+  const deps = await testDeps(admin);
+  const res = await handlePlatformAuthRequest(
+    new Request('http://local/functions/v1/platform-auth', {
+      method: 'POST',
+      body: JSON.stringify({
+        provider: 'device_fallback',
+        deviceId: 'dddddddd-eeee-4fff-8aaa-111111111111',
+      }),
+    }),
+    deps,
+  );
+  assertEquals(res.status, 200);
+  const body = await res.json();
+  assertEquals(body.ok, true);
+  assertEquals(typeof body.session.access_token, 'string');
+});
+
+Deno.test('B5: ensure failure on returning account still mints session', async () => {
+  const admin = memoryAdmin();
+  const deps = await testDeps(admin);
+  const deviceId = 'eeeeeeee-ffff-4aaa-8bbb-222222222222';
+
+  const first = await handlePlatformAuthRequest(
+    new Request('http://local/functions/v1/platform-auth', {
+      method: 'POST',
+      body: JSON.stringify({ provider: 'device_fallback', deviceId }),
+    }),
+    deps,
+  );
+  assertEquals(first.status, 200);
+
+  // Returning mint: identity exists → created=false; ensure fails → still 200.
+  admin._failNextEnsure('catalogue_incomplete', 'starter catalogue parts missing');
+  const second = await handlePlatformAuthRequest(
+    new Request('http://local/functions/v1/platform-auth', {
+      method: 'POST',
+      body: JSON.stringify({ provider: 'device_fallback', deviceId }),
+    }),
+    deps,
+  );
+  assertEquals(second.status, 200);
+  const body = await second.json();
+  assertEquals(body.ok, true);
+  assertEquals(typeof body.session.access_token, 'string');
+});
+
+Deno.test('B5: ensure failure on brand-new account fails closed', async () => {
+  const admin = memoryAdmin();
+  admin._failNextEnsure('catalogue_incomplete', 'starter catalogue parts missing');
+  const deps = await testDeps(admin);
+  const res = await handlePlatformAuthRequest(
+    new Request('http://local/functions/v1/platform-auth', {
+      method: 'POST',
+      body: JSON.stringify({
+        provider: 'device_fallback',
+        deviceId: 'ffffffff-aaaa-4bbb-8ccc-333333333333',
+      }),
+    }),
+    deps,
+  );
+  assertEquals(res.status, 500);
+  const body = await res.json();
+  assertEquals(body.ok, false);
+  assertEquals(body.code, 'catalogue_incomplete');
 });

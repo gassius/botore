@@ -286,6 +286,7 @@ role key. Migration `0019_admin_grant_lockdown.sql`.
 | `admin_fight_readiness`         | Fight eligibility + allowance depth            |
 | `backend_health_snapshot()`     | Aggregated SQL health for ops / smoke / UI     |
 | `GET /functions/v1/health`      | SQL snapshot + `checks.edge_functions` probes  |
+| `ensure_player_character()`     | B5 idempotent starter character + loadout      |
 | `get_owned_character()`         | Sanctioned owned character read (auth.uid())   |
 | `list_opponent_roster()`        | Sanctioned system opponent roster              |
 | `get_fight_allowance_summary()` | Sanctioned allowance summary (auth.uid())      |

@@ -117,6 +117,10 @@ function asAdmin(client: SupabaseClient): PlatformAuthAdmin {
         },
       };
     },
+    async rpc(fn: string, args?: Record<string, unknown>) {
+      const { data, error } = await client.rpc(fn, args ?? {});
+      return { data, error: error ? { message: error.message } : null };
+    },
   };
 }
 

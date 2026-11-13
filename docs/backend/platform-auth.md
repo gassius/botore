@@ -56,6 +56,21 @@ Synthetic emails are `*@players.botore.internal` (server-only).
 Migration `0023_player_identities.sql`: unique `(provider, platform_id)` →
 `accounts`. Client SELECT of own rows only; writes are service_role / Edge.
 
+Migration `0027_ensure_player_character.sql` (B5): after a successful mint,
+`platform-auth` calls `ensure_player_character(account_id)` (service_role) so
+every new account gets a player character, combat build, starter inventory
+(`grant`), confirmed starter loadout (chassis-basic / paint-crimson /
+weapon-sword), profile, and today’s fight allowances. The RPC is idempotent.
+`get_owned_character()` also auto-provisions when the character is missing
+(Retry Load / existing sessions). Starter loadout is inserted **directly** into
+`bot_loadout_versions` and does **not** require atlas v1 to be published or
+uploaded — Stable paints via Metro workshop-frame-v002. Authenticated
+Customise `save_bot_loadout` still needs a published atlas version later.
+
+Concurrent mint harden: Edge retries `verifyOtp` once with a fresh
+`generateLink` when the first token is consumed by a raced sibling call; the
+game client single-flights `callPlatformAuth` per identity key.
+
 ## Carlos setup checklist
 
 ### iOS (Game Center)

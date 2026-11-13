@@ -21,6 +21,11 @@ After R5 soft-delete, `get_owned_character()` returns
 `{ ok: false, code: 'account_deleted' }` when `accounts.deleted_at` is set
 (migration `0024_account_deletion.sql`).
 
+After B5 (`0027_ensure_player_character.sql`), `get_owned_character()`
+**auto-provisions** a player character + starter loadout via
+`ensure_player_character(auth.uid())` when none exists. Atlas Storage publish
+is **not** required for that starter row.
+
 `list_ranking` is migration `0022_list_ranking.sql` (C5). Ordering is
 server-owned: player characters by `sum(progression_ledger.delta_xp)` desc,
 then `character_id` asc; client must not re-sort.

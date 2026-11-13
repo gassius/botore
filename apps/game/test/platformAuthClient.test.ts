@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   callPlatformAuth,
   PLATFORM_AUTH_FETCH_TIMEOUT_MS,
+  resetPlatformAuthSingleFlightForTests,
 } from '../src/garage/auth/platformAuthClient';
 
 describe('callPlatformAuth', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    resetPlatformAuthSingleFlightForTests();
   });
 
   it('posts device_fallback and maps session tokens', async () => {
@@ -99,5 +101,47 @@ describe('callPlatformAuth', () => {
       expect(result.code).toBe('network_error');
       expect(result.message).toMatch(/timed out|abort/i);
     }
+  });
+
+  it('single-flights concurrent device_fallback posts for the same deviceId', async () => {
+    let resolveFetch: ((value: unknown) => void) | undefined;
+    const fetchMock = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+
+    const req = {
+      provider: 'device_fallback' as const,
+      deviceId: 'device-uuid-shared',
+    };
+    const config = { url: 'http://127.0.0.1:54321', anonKey: 'anon' };
+    const p1 = callPlatformAuth(config, req, fetchMock as unknown as typeof fetch);
+    const p2 = callPlatformAuth(config, req, fetchMock as unknown as typeof fetch);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    resolveFetch?.({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        provider: 'device_fallback',
+        platformId: 'device-uuid-shared',
+        session: {
+          access_token: 'a',
+          refresh_token: 'r',
+          expires_at: 99,
+          user_id: 'u1',
+          email: null,
+        },
+      }),
+    });
+
+    const [r1, r2] = await Promise.all([p1, p2]);
+    expect(r1).toEqual(r2);
+    expect(r1.ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
