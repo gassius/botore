@@ -43,8 +43,8 @@ events appear in a dashboard and symbolication upload is skipped.
    upload source maps and debug symbols.
 4. **EAS `projectId` / signing** — owned by **R2**. Crash reporting does not
    invent an Expo project; see
-   `docs/architecture/eas-production-credentials.md`. Until Carlos replaces
-   `REPLACE_WITH_EAS_PROJECT_ID_VIA_EAS_INIT` via `eas init` and provisions
+   `docs/architecture/eas-production-credentials.md`. Until Carlos runs
+   `eas init` (which writes `extra.eas.projectId`; commit that) and provisions
    signing, live symbolication upload remains blocked. Native GitHub stack onto
    R2 only if that PR is the hard dependency for merge order.
 

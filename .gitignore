@@ -30,6 +30,16 @@ apps/game/dist/
 apps/game/android/
 apps/game/ios/
 
+# EAS / store signing artifacts (R2) — never commit downloaded credentials
+apps/game/credentials.json
+apps/game/credentials/
+apps/game/play-service-account*.json
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+
 # Native design-review captures (C7) — attach on PRs / Project store, do not commit dumps
 artifacts/native-captures/
 

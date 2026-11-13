@@ -74,10 +74,11 @@ Profiles live in `eas.json`. The `design-review` profile bakes
 `docs/architecture/native-design-captures.md` and
 `scripts/native-capture/`. Web preview is not design-review acceptance.
 
-Production / signing (R2): `extra.eas.projectId` starts as
-`REPLACE_WITH_EAS_PROJECT_ID_VIA_EAS_INIT` until Carlos runs `eas login` +
-`eas init`. Checklist (Apple/Play, secrets locations, preview vs production
-Supabase public env): `docs/architecture/eas-production-credentials.md`. Do
+Production / signing (R2): leave `extra.eas.projectId` **absent** until
+Carlos runs `eas login` + `eas init` (or the first `eas build`). `eas init`
+writes `projectId`; commit that change. Checklist (Apple/Play, secrets
+locations, preview vs production Supabase public env, remote
+`appVersionSource`): `docs/architecture/eas-production-credentials.md`. Do
 not invent UUIDs or store credentials in git.
 
 Crash reporting (R3): `@sentry/react-native` initializes only when a DSN is
