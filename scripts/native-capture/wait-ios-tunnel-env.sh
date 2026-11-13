@@ -9,7 +9,10 @@ source "${SCRIPT_DIR}/lib.sh"
 cd "${REPO_ROOT}"
 
 TIP_SHA="$(git rev-parse HEAD)"
-NAME="ios-live-fight-tunnel-${TIP_SHA}"
+RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-1}"
+# Prefer attempt-scoped name; fall back to legacy sha-only for in-flight runs.
+NAME="ios-live-fight-tunnel-${TIP_SHA}-${RUN_ATTEMPT}"
+LEGACY_NAME="ios-live-fight-tunnel-${TIP_SHA}"
 OUT_DIR="${1:-${REPO_ROOT}/artifacts/ios-live-fight-tunnel}"
 TIMEOUT_MIN="${CAPTURE_TUNNEL_WAIT_MIN:-45}"
 mkdir -p "${OUT_DIR}"
@@ -20,21 +23,28 @@ if [[ -z "${GITHUB_TOKEN:-}" || -z "${GITHUB_REPOSITORY:-}" || -z "${GITHUB_RUN_
 fi
 
 API="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100"
-echo "waiting up to ${TIMEOUT_MIN}m for artifact ${NAME}…" >&2
+echo "waiting up to ${TIMEOUT_MIN}m for artifact ${NAME} (legacy ${LEGACY_NAME})…" >&2
+
+find_artifact_id() {
+  local want="$1"
+  curl -fsS -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "${API}" \
+    | node -e '
+      let s=""; process.stdin.on("data",d=>s+=d); process.stdin.on("end",()=>{
+        try {
+          const j=JSON.parse(s);
+          const a=(j.artifacts||[]).find(x=>x.name===process.argv[1] && !x.expired);
+          if(a) process.stdout.write(String(a.id));
+        } catch {}
+      });
+    ' "${want}"
+}
 
 for i in $(seq 1 $((TIMEOUT_MIN * 4))); do
-  ART_ID="$(
-    curl -fsS -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "${API}" \
-      | node -e '
-        let s=""; process.stdin.on("data",d=>s+=d); process.stdin.on("end",()=>{
-          try {
-            const j=JSON.parse(s);
-            const a=(j.artifacts||[]).find(x=>x.name===process.argv[1] && !x.expired);
-            if(a) process.stdout.write(String(a.id));
-          } catch {}
-        });
-      ' "${NAME}"
-  )"
+  ART_ID="$(find_artifact_id "${NAME}")"
+  if [[ -z "${ART_ID}" && "${RUN_ATTEMPT}" == "1" ]]; then
+    # Only attempt 1 may use the legacy name (no prior-attempt poison).
+    ART_ID="$(find_artifact_id "${LEGACY_NAME}")"
+  fi
   if [[ -n "${ART_ID}" ]]; then
     echo "found artifact id=${ART_ID}" >&2
     curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
@@ -67,4 +77,5 @@ for i in $(seq 1 $((TIMEOUT_MIN * 4))); do
 done
 
 echo "error: timed out waiting for ${NAME}" >&2
+echo "hint: re-run must include 'iOS live-fight backend (tunnel)' so a fresh attempt-scoped tunnel artifact exists" >&2
 exit 1

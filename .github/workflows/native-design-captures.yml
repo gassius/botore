@@ -225,7 +225,8 @@ jobs:
       - name: Upload tunnel env for iOS Simulator job
         uses: actions/upload-artifact@v4
         with:
-          name: ios-live-fight-tunnel-${{ github.sha }}
+          # Attempt-scoped so a re-run cannot bind iOS to a previous dead tunnel.
+          name: ios-live-fight-tunnel-${{ github.sha }}-${{ github.run_attempt }}
           path: artifacts/ios-live-fight-tunnel/
           if-no-files-found: error
           retention-days: 1
@@ -385,12 +386,15 @@ jobs:
           mkdir -p artifacts/ios-live-fight-done
           date -u +%Y-%m-%dT%H:%M:%SZ > artifacts/ios-live-fight-done/done.txt
           echo "sha=${GITHUB_SHA}" >> artifacts/ios-live-fight-done/done.txt
+          echo "run_attempt=${GITHUB_RUN_ATTEMPT}" >> artifacts/ios-live-fight-done/done.txt
 
       - name: Upload done marker for backend
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ios-live-fight-done-${{ github.sha }}
+          # Include run_attempt so a prior attempt's if:always() done marker cannot
+          # stop keepalive on the next re-run (leaves Cloudflare tunnel dead mid-build).
+          name: ios-live-fight-done-${{ github.sha }}-${{ github.run_attempt }}
           path: artifacts/ios-live-fight-done/
           if-no-files-found: error
           retention-days: 1

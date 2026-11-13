@@ -18,7 +18,11 @@
     "capture:android": "bash ../../scripts/native-capture/run-design-capture.sh --platform android",
     "capture:ios": "bash ../../scripts/native-capture/run-design-capture.sh --platform ios",
     "eas:design-review:android": "npx eas-cli@latest build -p android --profile design-review",
-    "eas:design-review:ios": "npx eas-cli@latest build -p ios --profile design-review"
+    "eas:design-review:ios": "npx eas-cli@latest build -p ios --profile design-review",
+    "eas:production:android": "npx eas-cli@latest build -p android --profile production",
+    "eas:production:ios": "npx eas-cli@latest build -p ios --profile production",
+    "eas:submit:android": "npx eas-cli@latest submit -p android --profile production",
+    "eas:submit:ios": "npx eas-cli@latest submit -p ios --profile production"
   },
   "dependencies": {
     "@babel/runtime": "^7.25.0",

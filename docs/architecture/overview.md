@@ -58,6 +58,11 @@ cost ledger — `docs/architecture/android-release-perf.md` +
 `scripts/release-perf/`. Agree limits on ClickUp before treating device
 numbers as acceptance; Expo web is not a substitute.
 
+EAS production + signing (R2): `production` / `submit.production` profiles,
+remote app version source, and Carlos Expo/Apple/Play credential steps —
+`docs/architecture/eas-production-credentials.md`. `eas init` writes
+`extra.eas.projectId`; do not invent a UUID or signing secrets.
+
 Crash reporting (R3): Sentry on preview/production playable profiles only —
 `docs/architecture/crash-reporting.md`. Local Metro needs no cloud account;
 Carlos provisions DSN / org secrets (and R2 EAS `projectId`) before live proof.
