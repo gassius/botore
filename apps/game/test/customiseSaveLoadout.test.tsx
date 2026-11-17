@@ -212,8 +212,8 @@ describe('E1 Customise Save Loadout (390×844)', () => {
     expect(api().dirty()).toBe(false);
 
     const treeText = collectText(root.root).join(' ');
-    expect(treeText).toMatch(/Confirmed:\s*petrol/i);
-    expect(treeText).toMatch(/axe/i);
+    expect(treeText).not.toMatch(/Confirmed:/i);
+    expect(() => root.root.findByProps({ testID: 'customise-confirmed-summary' })).toThrow();
     expect(treeText).not.toMatch(/00000000-0000-4000-8000/);
     expect(treeText).not.toMatch(/loadout_version/i);
     expect(treeText).not.toMatch(/…/);

@@ -52,4 +52,13 @@ describe('loadoutSavePlayerMessage', () => {
     expect(msg).toBe('Could not save changes. Your equipped loadout is unchanged.');
     expect(msg.toLowerCase()).not.toContain('schema cache');
   });
+
+  it('maps unmatched English server text to the default save failure', () => {
+    const msg = loadoutSavePlayerMessage({
+      code: 'unexpected',
+      message: 'relation "bot_loadout_versions" does not exist',
+    });
+    expect(msg).toBe('Could not save changes. Your equipped loadout is unchanged.');
+    expect(msg.toLowerCase()).not.toContain('relation');
+  });
 });

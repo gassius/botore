@@ -89,5 +89,7 @@ export function loadoutSavePlayerMessage(input: LoadoutSaveErrorInput): string {
   if (/^[a-z0-9_]+:/i.test(raw)) {
     return DEFAULT_SAVE_FAILURE;
   }
-  return raw;
+
+  // Never show unmatched server / RPC text on a player-facing screen.
+  return DEFAULT_SAVE_FAILURE;
 }
