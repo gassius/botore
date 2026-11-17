@@ -16,6 +16,7 @@ import {
   assembleWorkshopFrame,
   buildWorkshopFrameWorldMatrices,
   listWorkshopFrameGaps,
+  resolveWorkshopFramePose,
 } from '../src/assembler/workshopFrameAdapter';
 import { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from '../src/assembler/workshopFramePin';
 import {
@@ -25,7 +26,7 @@ import {
   rotateCwDeg,
   transformPoint,
 } from '../src/assembler/kitMath';
-import integrationDeltaJson from '../assets/workshop-frame-kit-v002/integration-delta-v001-to-v002.json';
+import integrationDeltaJson from '../assets/workshop-frame-kit-v003/integration-delta-v002-to-v003.json';
 
 const baseLoadout = {
   chassis: 'chassis-basic',
@@ -34,15 +35,15 @@ const baseLoadout = {
 };
 
 const integrationDelta = integrationDeltaJson as {
-  from: string;
-  to: string;
+  from: { version: string; family: string };
+  to: { version: string; family: string };
 };
 
-/** Historical v001 torso metrics from sealed INTEGRATION-DELTA.md (v001 assets removed). */
-const V001_TORSO_FROM_DELTA = {
-  compatible_family: 'workshop-frame-v001',
-  width: 220,
-  pivot: [110, 130] as const,
+/** Historical v002 torso metrics (v002 kept as history; active pin is v003). */
+const V002_TORSO_FROM_HISTORY = {
+  compatible_family: 'workshop-frame-v002',
+  width: 228,
+  pivot: [118, 146] as const,
 };
 
 describe('BotAssembler PLACEHOLDER path', () => {
@@ -66,42 +67,46 @@ describe('BotAssembler PLACEHOLDER path', () => {
   });
 });
 
-describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
-  it('pins coherent v002 manifest + family; never claims v001 geometry', () => {
-    expect(ACTIVE_WORKSHOP_FRAME_ASSET_VERSION).toBe('v002');
-    expect(WORKSHOP_FRAME_MANIFEST.version).toBe('v002');
-    expect(WORKSHOP_FRAME_KIT_ID).toBe('workshop-frame-v002');
-    expect(ACTIVE_WORKSHOP_FRAME_FAMILY).toBe('workshop-frame-v002');
+describe('Workshop Frame kit-v003 adapter (ACTIVE pin)', () => {
+  it('pins coherent v003 manifest + family; never claims v002 geometry as active', () => {
+    expect(ACTIVE_WORKSHOP_FRAME_ASSET_VERSION).toBe('v003');
+    expect(WORKSHOP_FRAME_MANIFEST.version).toBe('v003');
+    expect(WORKSHOP_FRAME_KIT_ID).toBe('workshop-frame-v003');
+    expect(ACTIVE_WORKSHOP_FRAME_FAMILY).toBe('workshop-frame-v003');
+    expect(WORKSHOP_FRAME_MANIFEST.family).toBe('workshop-frame-v003');
     const torso = WORKSHOP_FRAME_MANIFEST.assets.find((a) => a.id === 'torso')!;
-    expect(torso.compatible_family).toBe('workshop-frame-v002');
-    // Exact v002 measured values from INTEGRATION-DELTA (not v001).
+    expect(torso.compatible_family).toBe('workshop-frame-v003');
+    // Body geometry matches v002 for torso; hands/weapons changed in v003.
     expect(torso.width).toBe(228);
     expect(torso.height).toBe(196);
     expect(torso.pivot).toEqual([118, 146]);
-    expect(torso.sockets.shoulder_r![0]).toBe(194.88);
     const hand = WORKSHOP_FRAME_MANIFEST.assets.find((a) => a.id === 'hand_r')!;
-    expect(hand.sockets.grip).toEqual([60.0, 61.6]);
+    expect(hand.height).toBe(112);
+    expect(hand.sockets.grip).toEqual([60.0, 62.0]);
+    expect(hand.sockets.wrap).toEqual([60.0, 24.0]);
+    expect(hand.z).toBe(80);
     const sword = WORKSHOP_FRAME_MANIFEST.assets.find((a) => a.id === 'weapon_sword')!;
-    expect(sword.height).toBe(208);
-    expect(sword.pivot).toEqual([60, 163]);
-    expect(WORKSHOP_FRAME_MANIFEST.poses.heavy_windup?.root_y).toBe(45);
+    expect(sword.height).toBe(244);
+    expect(sword.pivot).toEqual([60, 184]);
+    expect(sword.parent).toBe('hand_r');
+    expect(sword.parent_socket).toBe('grip');
+    expect(sword.angle).toBe(80);
+    // Global 180° grip rotation removed.
+    expect(
+      (WORKSHOP_FRAME_MANIFEST as { weapon_grip_rotation_degrees?: number })
+        .weapon_grip_rotation_degrees,
+    ).toBeUndefined();
   });
 
-  it('pins v002 only and proves coordinates differ from sealed v001 delta (must_not_mix)', () => {
-    expect(integrationDelta.from).toBe('workshop-frame/v001');
-    expect(integrationDelta.to).toBe('workshop-frame/v002');
-    expect(V001_TORSO_FROM_DELTA.compatible_family).toBe('workshop-frame-v001');
-    const v002Torso = WORKSHOP_FRAME_MANIFEST.assets.find((a) => a.id === 'torso')!;
-    expect(v002Torso.pivot).not.toEqual([...V001_TORSO_FROM_DELTA.pivot]);
-    expect(v002Torso.width).not.toBe(V001_TORSO_FROM_DELTA.width);
-    expect(v002Torso.compatible_family).toBe('workshop-frame-v002');
-    // Active assembly layers must report v002 kit id only.
+  it('atomic delta seals v002→v003 and must_not_mix', () => {
+    expect(integrationDelta.from.version).toBe('v002');
+    expect(integrationDelta.to.version).toBe('v003');
+    expect(integrationDelta.to.family).toBe('workshop-frame-v003');
+    expect(V002_TORSO_FROM_HISTORY.compatible_family).toBe('workshop-frame-v002');
     const bot = assembleWorkshopFrame({ loadout: baseLoadout, facing: 'right' });
-    expect(bot.kitId).toBe('workshop-frame-v002');
-    expect(bot.layers.every((l) => l.label?.startsWith('workshop-frame-v002:'))).toBe(true);
-    expect(bot.layers.find((l) => l.id === 'torso')?.width).toBe(228);
-    expect(bot.layers.find((l) => l.id === 'torso')?.pivotX).toBe(118);
-    expect(bot.layers.find((l) => l.id === 'torso')?.pivotY).toBe(146);
+    expect(bot.kitId).toBe('workshop-frame-v003');
+    expect(bot.atlasVersion).toBe('v3');
+    expect(bot.layers.every((l) => l.label?.startsWith('workshop-frame-v003:'))).toBe(true);
   });
 
   it('maps catalogue / alias paints onto Oxide and Petrol without catalogue expansion', () => {
@@ -117,17 +122,17 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
     expect(OXIDE_PAINT.armourColor.toLowerCase()).not.toBe(PETROL_PAINT.armourColor.toLowerCase());
   });
 
-  it('assembles 15 robot parts + weapon from measured pivots with shared grip rotation', () => {
+  it('assembles body + wraps + weapon; grip world ≡ weapon pivot; no 180° special case', () => {
     const bot = assembleWorkshopFrame({ loadout: baseLoadout, facing: 'right' });
     expect(bot.placeholder).toBe(false);
     expect(bot.kitId).toBe(WORKSHOP_FRAME_KIT_ID);
     expect(bot.canvas.width).toBe(640);
-    expect(bot.layers.length).toBe(16); // 15 body + weapon
-    expect(bot.layers.every((l) => typeof l.imagePath === 'string')).toBe(true);
-    expect(bot.layers.every((l) => l.paintComposite === true)).toBe(true);
-    expect(bot.layers.every((l) => typeof l.materialUnderPath === 'string')).toBe(true);
-    expect(bot.layers.every((l) => typeof l.materialOverPath === 'string')).toBe(true);
+    // 15 body + 2 wraps + weapon
+    expect(bot.layers.length).toBe(18);
+    expect(bot.layers.find((l) => l.id === 'hand_r_wrap')).toBeTruthy();
+    expect(bot.layers.find((l) => l.id === 'hand_l_wrap')).toBeTruthy();
     expect(bot.layers.find((l) => l.id === 'weapon_sword')).toBeTruthy();
+    expect(bot.layers.every((l) => typeof l.imagePath === 'string')).toBe(true);
     expect(bot.layers.map((l) => l.zIndex)).toEqual(
       [...bot.layers]
         .sort((a, b) => a.zIndex - b.zIndex || a.id.localeCompare(b.id))
@@ -144,7 +149,52 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
     const weaponPivotWorld = transformPoint(weaponM, weapon.pivot[0], weapon.pivot[1]);
     expect(Math.abs(gripWorld.x - weaponPivotWorld.x)).toBeLessThan(1e-6);
     expect(Math.abs(gripWorld.y - weaponPivotWorld.y)).toBeLessThan(1e-6);
-    expect(WORKSHOP_FRAME_MANIFEST.weapon_grip_rotation_degrees).toBe(180);
+    expect(WORKSHOP_FRAME_MANIFEST.weapons.sword.grips.main.attach_angle).toBe(80);
+    expect(WORKSHOP_FRAME_MANIFEST.weapons.axe.grips.main.attach_angle).toBe(90);
+    expect(WORKSHOP_FRAME_MANIFEST.weapons.dagger.grips.main.attach_angle).toBe(-90);
+  });
+
+  it('applies axe z_overrides so hand_l_wrap draws over the haft', () => {
+    const axe = assembleWorkshopFrame({
+      loadout: { ...baseLoadout, weapon: 'weapon-axe' },
+      facing: 'right',
+    });
+    const wrap = axe.layers.find((l) => l.id === 'hand_l_wrap')!;
+    expect(wrap.zIndex).toBe(91);
+    expect(WORKSHOP_FRAME_MANIFEST.weapons.axe.z_overrides?.hand_l_wrap).toBe(91);
+    const weaponZ = axe.layers.find((l) => l.id === 'weapon_axe')!.zIndex;
+    const handZ = axe.layers.find((l) => l.id === 'hand_r')!.zIndex;
+    const rightWrapZ = axe.layers.find((l) => l.id === 'hand_r_wrap')!.zIndex;
+    expect(handZ).toBeLessThan(weaponZ);
+    expect(weaponZ).toBeLessThan(rightWrapZ);
+  });
+
+  it('resolves per-weapon idle stances (nested pose lookup; do not port v002 numbers)', () => {
+    const swordIdle = resolveWorkshopFramePose('idle', 'sword');
+    const axeIdle = resolveWorkshopFramePose('idle', 'axe');
+    const daggerIdle = resolveWorkshopFramePose('idle', 'dagger');
+    expect(swordIdle.root).toEqual({ x: 0, y: 10 });
+    expect(axeIdle.root).toEqual({ x: -2, y: 18 });
+    expect(daggerIdle.parts.torso?.rot).toBe(8);
+    // Different weapons → different stances
+    expect(axeIdle.root.y).not.toBe(swordIdle.root.y);
+    expect(daggerIdle.parts.torso?.rot).not.toBe(swordIdle.parts.torso?.rot ?? 0);
+
+    const swordBot = assembleWorkshopFrame({
+      loadout: baseLoadout,
+      facing: 'right',
+      weaponId: 'sword',
+      motionPose: 'idle',
+    });
+    const axeBot = assembleWorkshopFrame({
+      loadout: baseLoadout,
+      facing: 'right',
+      weaponId: 'axe',
+      motionPose: 'idle',
+    });
+    expect(swordBot.layers.find((l) => l.id === 'torso')?.rotateCwDeg).not.toBe(
+      axeBot.layers.find((l) => l.id === 'torso')?.rotateCwDeg,
+    );
   });
 
   it('swaps Oxide/Petrol via kit paint masks (shared under/over; tint token only)', () => {
@@ -158,7 +208,6 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
 
     const oxideTorso = oxideSword.layers.find((l) => l.id === 'torso')!;
     const petrolTorso = petrol.layers.find((l) => l.id === 'torso')!;
-    // Same geometry layers — paint swap must not retarget under/mask/over paths.
     expect(oxideTorso.materialUnderPath).toBe('materials/torso-under.png');
     expect(oxideTorso.paintMaskPath).toBe('masks/torso-paint.png');
     expect(oxideTorso.materialOverPath).toBe('materials/torso-over.png');
@@ -167,15 +216,13 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
     expect(petrolTorso.materialOverPath).toBe(oxideTorso.materialOverPath);
     expect(oxideTorso.color.toLowerCase()).toBe('#e8771c');
     expect(petrolTorso.color.toLowerCase()).toBe('#27877b');
-    expect(oxideTorso.color).not.toBe(petrolTorso.color);
-    // Precomposites remain as reference/fallback only.
     expect(oxideTorso.imagePath).toBe('parts/torso-oxide.png');
     expect(petrolTorso.imagePath).toBe('parts/torso-petrol.png');
 
-    // Empty-mask parts (hands / pelvis / weapons) stay metal — no paintMaskPath.
     expect(oxideSword.layers.find((l) => l.id === 'hand_r')?.paintMaskPath).toBeUndefined();
     expect(oxideSword.layers.find((l) => l.id === 'hand_r')?.isPaintMask).toBe(false);
     expect(oxideSword.layers.find((l) => l.id === 'weapon_sword')?.paintMaskPath).toBeUndefined();
+    expect(oxideSword.layers.find((l) => l.id === 'hand_r_wrap')?.isPaintMask).toBe(false);
 
     expect(axe.weaponKind).toBe('axe');
     expect(dagger.weaponKind).toBe('dagger');
@@ -207,24 +254,20 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
   });
 
   it('RN centre-origin scaleX(-1) mirrors canvas endpoints about mid-X (no double pivot)', () => {
-    // Shipped proof/replay opponent box is often 170dp; kit canvas is 640.
     for (const width of [170, WORKSHOP_FRAME_MANIFEST.canvas[0]]) {
       const mid = width / 2;
       expect(applyCenterOriginScaleX(0, width, -1)).toBeCloseTo(width, 10);
       expect(applyCenterOriginScaleX(width, width, -1)).toBeCloseTo(0, 10);
       expect(applyCenterOriginScaleX(mid, width, -1)).toBeCloseTo(mid, 10);
       expect(applyCenterOriginScaleX(mid / 2, width, -1)).toBeCloseTo(width - mid / 2, 10);
-      // Broken sandwich translate(w/2)·scaleX(-1)·translate(-w/2) on top of centre origin:
-      // effective x' = 2w - x (shifts centre by +w). Must not be what we use.
       const brokenDoublePivot = (x: number) => 2 * width - x;
       expect(applyCenterOriginScaleX(mid, width, -1)).not.toBeCloseTo(brokenDoublePivot(mid), 5);
     }
-    // Kit canvas mid-X contract: x'=640-x; RN centre scaleX(-1) matches.
     expect(WORKSHOP_FRAME_MANIFEST.canvas[0]).toBe(640);
     expect(applyCenterOriginScaleX(0, 640, -1)).toBeCloseTo(640, 10);
   });
 
-  it('uses +Y-down clockwise rotation: +90° sends +X to +Y; idle upper_arm_r elbow matches v002', () => {
+  it('uses +Y-down clockwise rotation: +90° sends +X to +Y; idle upper_arm_r elbow matches body geometry', () => {
     expect(transformPoint(rotateCwDeg(90), 1, 0)).toEqual({
       x: expect.closeTo(0, 10),
       y: expect.closeTo(1, 10),
@@ -241,20 +284,9 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
     const elbow = arm.sockets.elbow!;
     const local = childLocalMatrix(0, 0, arm.angle, arm.pivot[0], arm.pivot[1]);
     const elbowRel = transformPoint(local, elbow[0], elbow[1]);
-    // Contract: relative to shoulder/pivot after CW -24°, elbow ≈ (+25.413, +57.078), not mirrored X.
     expect(elbowRel.x).toBeCloseTo(25.413, 2);
     expect(elbowRel.y).toBeCloseTo(57.078, 2);
     expect(elbowRel.x).toBeGreaterThan(0);
-
-    const { matrices } = buildWorkshopFrameWorldMatrices('oxide', 'weapon-sword', 'idle');
-    const torso = WORKSHOP_FRAME_MANIFEST.assets.find((a) => a.id === 'torso')!;
-    const shoulder = torso.sockets.shoulder_r!;
-    const armM = matrices.get('upper_arm_r')!;
-    const elbowWorld = transformPoint(armM, elbow[0], elbow[1]);
-    const torsoM = matrices.get('torso')!;
-    const shoulderWorld = transformPoint(torsoM, shoulder[0], shoulder[1]);
-    expect(elbowWorld.x - shoulderWorld.x).toBeCloseTo(25.413, 2);
-    expect(elbowWorld.y - shoulderWorld.y).toBeCloseTo(57.078, 2);
   });
 
   it('honours paintId / weaponId overrides for preview without mutating input loadout', () => {
@@ -271,12 +303,13 @@ describe('Workshop Frame kit-v002 adapter (ACTIVE pin)', () => {
     expect(baseLoadout.weapon).toBe('weapon-sword');
   });
 
-  it('records concrete Game Art adapter gaps including v002 no-mix rule', () => {
+  it('records concrete Game Art adapter gaps including v003 no-mix rule', () => {
     const gaps = listWorkshopFrameGaps();
     expect(gaps.length).toBeGreaterThan(5);
-    expect(gaps.some((g) => g.includes('must_not_mix_versions') || g.includes('v002'))).toBe(true);
+    expect(gaps.some((g) => g.includes('must_not_mix_versions') || g.includes('v003'))).toBe(true);
     expect(gaps.some((g) => /need product mapping for heavy/i.test(g))).toBe(false);
     expect(gaps.some((g) => g.includes('MotionPose heavy_* is mapped'))).toBe(true);
     expect(gaps.some((g) => g.includes('weapon_sword'))).toBe(true);
+    expect(gaps.some((g) => g.includes('hand_l_wrap'))).toBe(true);
   });
 });

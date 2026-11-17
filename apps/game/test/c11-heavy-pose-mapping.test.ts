@@ -148,7 +148,8 @@ describe('C11 heavy-hit pose mapping', () => {
     const gaps = listWorkshopFrameGaps();
     expect(gaps.some((g) => /need product mapping for heavy/i.test(g))).toBe(false);
     expect(gaps.some((g) => g.includes('MotionPose heavy_* is mapped'))).toBe(true);
-    expect(gaps.some((g) => g.includes('heavy_windup.root_y'))).toBe(true);
+    // v003: nested per-weapon heavy entries (A2 may re-art); no v002 flat root_y note.
+    expect(gaps.some((g) => g.includes('heavy_windup'))).toBe(true);
   });
 
   it('gives PLACEHOLDER heavy poses non-zero provisional offsets', () => {

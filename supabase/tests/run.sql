@@ -1222,6 +1222,58 @@ begin
   perform tests.assert(v_manifest->>'version' = 'v2', 'manifest version v2');
   raise notice 'TEST-OK atlas v2 workshop-frame-v002 pack + hyphen weapon ids';
 
+  -- A1: workshop-frame-v003 pack (v3) published with wraps + hyphen paths ----
+  select count(*) into v_count from public.atlas_versions where version = 'v3' and status = 'published';
+  perform tests.assert(v_count = 1, 'expected published atlas v3 (run pack + seed-atlas-storage)');
+  perform tests.assert(
+    coalesce(array_length(public.atlas_missing_storage_paths('v3'), 1), 0) = 0,
+    'v3 has no missing storage paths'
+  );
+  perform tests.assert(
+    exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v3' and path = 'parts/torso/oxide.png' and part_id = 'torso'
+    ),
+    'v3 has parts/torso/oxide.png'
+  );
+  perform tests.assert(
+    exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v3'
+         and path = 'parts/hand-r-wrap/oxide.png'
+         and part_id = 'hand-r-wrap'
+    ),
+    'v3 has hand-r-wrap oxide'
+  );
+  perform tests.assert(
+    exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v3'
+         and path = 'parts/weapon-axe/oxide.png'
+         and part_id = 'weapon-axe'
+    ),
+    'v3 weapon id is hyphenated (weapon-axe)'
+  );
+  perform tests.assert(
+    not exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v3'
+         and (
+           path like '%weapon\_sword%' escape '\'
+           or path like '%weapon\_axe%' escape '\'
+           or path like '%weapon\_dagger%' escape '\'
+           or path like '%/v001/%'
+           or path like '%/v002/%'
+           or part_id in ('weapon_sword', 'weapon_axe', 'weapon_dagger')
+         )
+    ),
+    'v3 must not register underscore weapon folders or kit-v001/v002 paths'
+  );
+  select public.get_atlas_manifest('v3') into v_manifest;
+  perform tests.assert((v_manifest->>'ok')::boolean, 'get_atlas_manifest v3 ok');
+  perform tests.assert(v_manifest->>'version' = 'v3', 'manifest version v3');
+  raise notice 'TEST-OK atlas v3 workshop-frame-v003 pack + wraps + hyphen weapon ids';
+
   -- Publish rejects missing Storage objects --------------------------------
   perform set_config('request.jwt.claim.role', 'service_role', true);
   insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)

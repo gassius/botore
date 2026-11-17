@@ -41,8 +41,10 @@ export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY
 
 echo "atlas storage bootstrap…" >&2
 node scripts/seed-atlas-storage.mjs
-node scripts/pack-workshop-frame-atlas.mjs
+ATLAS_VERSION=v2 node scripts/pack-workshop-frame-atlas.mjs
 ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
+node scripts/pack-workshop-frame-atlas.mjs
+ATLAS_VERSION=v3 node scripts/seed-atlas-storage.mjs
 
 start_functions_serve() {
   {

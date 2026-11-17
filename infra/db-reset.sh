@@ -15,16 +15,19 @@ export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:54
 echo "==> supabase db reset (drops, re-applies migrations + [db.seed] seed.sql)"
 pnpm exec supabase db reset --local
 
-echo "==> atlas Storage bootstrap (upload proof pack payloads + publish v1/v2)"
+echo "==> atlas Storage bootstrap (upload proof pack payloads + publish v1/v2/v3)"
 # Migrations leave atlas versions as draft; real payloads must go through the Storage API.
 eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
 export SUPABASE_URL="${SUPABASE_URL:-http://127.0.0.1:54321}"
 export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-${SERVICE_ROLE_KEY:-}}"
 export DATABASE_URL
 node scripts/seed-atlas-storage.mjs
-# C13: materialize workshop-frame-v002 pack bytes, then publish immutable v2.
-node scripts/pack-workshop-frame-atlas.mjs
+# C13 history: materialize workshop-frame-v002 pack bytes, then publish immutable v2.
+ATLAS_VERSION=v2 node scripts/pack-workshop-frame-atlas.mjs
 ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
+# A1: materialize workshop-frame-v003 pack bytes, then publish immutable v3.
+node scripts/pack-workshop-frame-atlas.mjs
+ATLAS_VERSION=v3 node scripts/seed-atlas-storage.mjs
 node scripts/atlas-publish-race.mjs
 
 echo "==> running database tests (supabase/tests/run.sql)"

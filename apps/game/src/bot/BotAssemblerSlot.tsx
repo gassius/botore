@@ -4,7 +4,7 @@ import { View, StyleSheet } from 'react-native';
 import { BotAssembler, isMotionPose, type BotFacing, type MotionPose } from '../assembler';
 
 /**
- * Shared mount for F7 `BotAssembler` (`apps/game/src/assembler`, kit-v002 pin).
+ * Shared mount for F7 `BotAssembler` (`apps/game/src/assembler`, kit-v003 pin).
  * Shell/F8/fight import this slot or the assembler barrel — never fork a
  * second renderer. Do not mix stale Workshop Frame kit-v001 coordinates/assets.
  */
@@ -19,7 +19,7 @@ export type BotAssemblerSlotProps = {
   weaponId?: string;
   motionPose?: MotionPose | string;
   reducedMotion?: boolean;
-  /** Prefer false/omit so kit-v002 renders; true = geometric PLACEHOLDER only. */
+  /** Prefer false/omit so kit-v003 renders; true = geometric PLACEHOLDER only. */
   placeholder?: boolean;
   /** Forwarded to BotAssembler — PROVISIONAL display width (dp). */
   size?: number;
@@ -58,7 +58,7 @@ export function BotAssemblerSlot(props: BotAssemblerSlotProps): React.ReactEleme
 const styles = StyleSheet.create({
   wrap: {
     // Do not force width:100% — fight cards / dual Confirm mounts size from
-    // BotAssembler `size`. Stretching to parent clipped kit-v002 under overflow.
+    // BotAssembler `size`. Stretching to parent clipped kit-v003 under overflow.
     alignItems: 'center',
   },
 });

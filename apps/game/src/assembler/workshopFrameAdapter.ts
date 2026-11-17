@@ -1,15 +1,15 @@
 /**
  * Adapter: Workshop Frame kit media schema → existing BotAssembler props/model.
  *
- * ACTIVE PIN: kit-v002 (coherent manifest + parts + provenance). v001 removed
- * from the tree — NEVER load stale v001 coordinates against v002 assets.
+ * ACTIVE PIN: kit-v003 (coherent manifest + parts + provenance). Atomic swap —
+ * NEVER mix v002/v001 tiles or pose numbers with v003 assets.
  *
  * Does NOT invent a parallel public component API. Maps kit paint/weapon/pose
  * ids onto F7 `assembleBot` / `BotAssemblerProps`. Catalogue ids stay
  * paint-crimson / paint-cobalt / weapon-* (no catalogue expansion).
  */
 
-import kitManifestJson from '../../assets/workshop-frame-kit-v002/manifest.json';
+import kitManifestJson from '../../assets/workshop-frame-kit-v003/manifest.json';
 import { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from './workshopFramePin';
 import {
   childLocalMatrix,
@@ -33,7 +33,8 @@ import type {
 import type {
   KitAsset,
   KitPaintId,
-  KitPoseDeltas,
+  KitPoseEntry,
+  KitWeaponKind,
   WorkshopFrameManifest,
 } from './workshopFrameTypes';
 
@@ -46,12 +47,14 @@ if (WORKSHOP_FRAME_MANIFEST.version !== ACTIVE_WORKSHOP_FRAME_ASSET_VERSION) {
 }
 
 export const WORKSHOP_FRAME_KIT_ID = `${WORKSHOP_FRAME_MANIFEST.kit_id}-${WORKSHOP_FRAME_MANIFEST.version}`;
-export const ACTIVE_WORKSHOP_FRAME_FAMILY = `workshop-frame-${WORKSHOP_FRAME_MANIFEST.version}`;
+export const ACTIVE_WORKSHOP_FRAME_FAMILY =
+  WORKSHOP_FRAME_MANIFEST.family ?? `workshop-frame-${WORKSHOP_FRAME_MANIFEST.version}`;
 
 /**
  * F7 MotionPose → kit pose key (sketch motion).
  * Combat authority is sealed replay events → MotionPose (see
  * `motionPoseFromSealedAttack`); this table only resolves kit geometry.
+ * Attack/dodge/hit in v003 are v002 carry-overs (A2 later) — integrate as shipped.
  */
 export const MOTION_POSE_TO_KIT: Readonly<Record<MotionPose, string>> = {
   idle: 'idle',
@@ -63,45 +66,67 @@ export const MOTION_POSE_TO_KIT: Readonly<Record<MotionPose, string>> = {
   defeat: 'defeat',
 };
 
-const ROBOT_PART_IDS = [
+/** Body parts + hand wraps (finger layers). Weapons resolved separately. */
+const DRAW_PART_IDS = [
   'torso',
   'head',
   'pelvis',
   'upper_arm_l',
   'forearm_l',
   'hand_l',
+  'hand_l_wrap',
   'thigh_l',
   'shin_l',
   'foot_l',
   'upper_arm_r',
   'forearm_r',
   'hand_r',
+  'hand_r_wrap',
   'thigh_r',
   'shin_r',
   'foot_r',
 ] as const;
 
+const EMPTY_POSE: KitPoseEntry = { root: { x: 0, y: 0 }, parts: {} };
+
 function assetMap(manifest: WorkshopFrameManifest): Map<string, KitAsset> {
   return new Map(manifest.assets.map((a) => [a.id, a]));
-}
-
-function poseDeltaFor(pose: KitPoseDeltas, assetId: string): number {
-  const v = pose[assetId];
-  return typeof v === 'number' ? v : 0;
 }
 
 function resolveKitPaint(paintId: string): KitPaintId {
   return resolvePaintVisual(paintId).visual;
 }
 
+function resolveKitWeaponKind(weaponId: string): KitWeaponKind {
+  return resolveWeaponKit(weaponId).kind;
+}
+
 function resolveKitWeaponAssetId(weaponId: string): string {
-  const kind = resolveWeaponKit(weaponId).kind;
-  return WORKSHOP_FRAME_MANIFEST.integration.weapon_assets[kind] ?? `weapon_${kind}`;
+  const kind = resolveKitWeaponKind(weaponId);
+  return WORKSHOP_FRAME_MANIFEST.weapons[kind]?.asset ?? `weapon_${kind}`;
 }
 
 /**
- * Build world matrices for the robot hierarchy + selected weapon.
- * Weapon mounts to hand_r.grip with +weapon_grip_rotation_degrees (180).
+ * v003 pose lookup: poses[poseId][weaponId] ?? poses[poseId]["*"].
+ * Do not port v002 flat delta numbers.
+ */
+export function resolveWorkshopFramePose(
+  kitPoseKey: string,
+  weaponKind: KitWeaponKind,
+): KitPoseEntry {
+  const table = WORKSHOP_FRAME_MANIFEST.poses[kitPoseKey];
+  if (!table) return EMPTY_POSE;
+  return table[weaponKind] ?? table['*'] ?? EMPTY_POSE;
+}
+
+function poseRot(pose: KitPoseEntry, assetId: string): number {
+  return pose.parts[assetId]?.rot ?? 0;
+}
+
+/**
+ * Build world matrices for the robot hierarchy + selected weapon + wraps.
+ * Weapon is a normal child of hand_r.grip (pivot = grip_main, angle = attach_angle).
+ * No hardcoded 180° grip rotation.
  */
 export function buildWorkshopFrameWorldMatrices(
   paintId: string,
@@ -109,17 +134,21 @@ export function buildWorkshopFrameWorldMatrices(
   motionPose: MotionPose,
 ): {
   paint: KitPaintId;
+  weaponKind: KitWeaponKind;
   weaponAssetId: string;
   kitPoseKey: string;
+  pose: KitPoseEntry;
   matrices: Map<string, Mat3>;
   anglesCw: Map<string, number>;
 } {
   const manifest = WORKSHOP_FRAME_MANIFEST;
   const assets = assetMap(manifest);
   const paint = resolveKitPaint(paintId);
+  const weaponKind = resolveKitWeaponKind(weaponId);
   const weaponAssetId = resolveKitWeaponAssetId(weaponId);
   const kitPoseKey = MOTION_POSE_TO_KIT[motionPose] ?? 'idle';
-  const pose = manifest.poses[kitPoseKey] ?? {};
+  const pose = resolveWorkshopFramePose(kitPoseKey, weaponKind);
+  const weaponDef = manifest.weapons[weaponKind];
 
   const matrices = new Map<string, Mat3>();
   const anglesCw = new Map<string, number>();
@@ -129,9 +158,10 @@ export function buildWorkshopFrameWorldMatrices(
     throw new Error(`${ACTIVE_WORKSHOP_FRAME_FAMILY} missing torso`);
   }
 
-  const rootAngle = (pose.root_angle ?? 0) + torso.angle;
-  const rootX = manifest.root.position[0] + (pose.root_x ?? 0);
-  const rootY = manifest.root.position[1] + (pose.root_y ?? 0);
+  // torso.rot is the root rotation (replaces v002 root_angle).
+  const rootAngle = torso.angle + poseRot(pose, 'torso');
+  const rootX = manifest.root.position[0] + (pose.root.x ?? 0);
+  const rootY = manifest.root.position[1] + (pose.root.y ?? 0);
   const torsoM = multiply(
     multiply(translate(rootX, rootY), rotateCwDeg(rootAngle)),
     translate(-torso.pivot[0], -torso.pivot[1]),
@@ -139,7 +169,12 @@ export function buildWorkshopFrameWorldMatrices(
   matrices.set('torso', torsoM);
   anglesCw.set('torso', rootAngle);
 
-  const pending = ROBOT_PART_IDS.filter((id) => id !== 'torso');
+  const pending = DRAW_PART_IDS.filter((id) => id !== 'torso') as string[];
+  // Equipped weapon is a normal child of hand_r.grip.
+  if (assets.get(weaponAssetId)?.parent) {
+    pending.push(weaponAssetId);
+  }
+
   let guard = 0;
   while (pending.length > 0 && guard < 64) {
     guard += 1;
@@ -153,11 +188,21 @@ export function buildWorkshopFrameWorldMatrices(
       if (!parentM || !parentAsset) continue;
       const socket = parentAsset.sockets[asset.parent_socket];
       if (!socket) continue;
-      const angle = asset.angle + poseDeltaFor(pose, id);
-      const local = childLocalMatrix(socket[0], socket[1], angle, asset.pivot[0], asset.pivot[1]);
+
+      let socketX = socket[0];
+      let socketY = socket[1];
+      // Optional main-grip offset (usually [0,0]).
+      if (id === weaponAssetId && weaponDef?.grips?.main?.offset) {
+        socketX += weaponDef.grips.main.offset[0] ?? 0;
+        socketY += weaponDef.grips.main.offset[1] ?? 0;
+      }
+
+      // Wraps are never posed (angle 0 + no rot). Weapon follows hand via attach_angle on asset.angle.
+      const rot = id.endsWith('_wrap') ? 0 : poseRot(pose, id);
+      const angle = asset.angle + rot;
+      const local = childLocalMatrix(socketX, socketY, angle, asset.pivot[0], asset.pivot[1]);
       const world = multiply(parentM, local);
       matrices.set(id, world);
-      // Accumulated CW angle ≈ parent + local (valid for pure rotate+translate chain).
       anglesCw.set(id, (anglesCw.get(asset.parent) ?? 0) + angle);
       pending.splice(i, 1);
       progressed = true;
@@ -165,19 +210,15 @@ export function buildWorkshopFrameWorldMatrices(
     if (!progressed) break;
   }
 
-  const handM = matrices.get('hand_r');
-  const hand = assets.get('hand_r');
-  const weapon = assets.get(weaponAssetId);
-  if (handM && hand && weapon) {
-    const grip = hand.sockets.grip ?? ([60, 61.6] as const);
-    const gripRot = manifest.weapon_grip_rotation_degrees;
-    const angle = weapon.angle + gripRot + poseDeltaFor(pose, weaponAssetId);
-    const local = childLocalMatrix(grip[0], grip[1], angle, weapon.pivot[0], weapon.pivot[1]);
-    matrices.set(weaponAssetId, multiply(handM, local));
-    anglesCw.set(weaponAssetId, (anglesCw.get('hand_r') ?? 0) + angle);
-  }
+  return { paint, weaponKind, weaponAssetId, kitPoseKey, pose, matrices, anglesCw };
+}
 
-  return { paint, weaponAssetId, kitPoseKey, matrices, anglesCw };
+function layerRole(asset: KitAsset): AssembledLayer['role'] {
+  if (asset.role === 'weapon' || asset.id.startsWith('weapon_')) return 'weapon';
+  if (asset.id === 'head') return 'head';
+  if (asset.id === 'torso') return 'torso';
+  if (asset.id.startsWith('hand')) return 'hand';
+  return 'torso';
 }
 
 function layerFromAsset(
@@ -185,6 +226,7 @@ function layerFromAsset(
   paint: KitPaintId,
   matrix: Mat3,
   rotateCw: number,
+  zIndex: number,
 ): AssembledLayer {
   const topLeft = transformPoint(matrix, 0, 0);
   const pivotWorld = transformPoint(matrix, asset.pivot[0], asset.pivot[1]);
@@ -192,17 +234,9 @@ function layerFromAsset(
   const paintToken = WORKSHOP_FRAME_MANIFEST.paint_tokens[paint];
   return {
     id: asset.id,
-    role: asset.id.startsWith('weapon_')
-      ? 'weapon'
-      : asset.id === 'head'
-        ? 'head'
-        : asset.id === 'torso'
-          ? 'torso'
-          : asset.id.startsWith('hand')
-            ? 'hand'
-            : 'torso',
+    role: layerRole(asset),
     kind: asset.id.startsWith('weapon_') ? 'weapon' : asset.has_paint ? 'paint' : 'metal',
-    zIndex: asset.z,
+    zIndex,
     x: topLeft.x,
     y: topLeft.y,
     width: asset.width,
@@ -236,7 +270,7 @@ export interface AssembleWorkshopFrameInput {
 }
 
 /**
- * Assemble using measured kit-v002 geometry.
+ * Assemble using measured kit-v003 geometry.
  * Paint swap uses kit masks (under → tinted mask → over), not a whole-robot tint.
  * Precomposited `parts/{id}-{paint}.png` remain on each layer as fallback/reference.
  */
@@ -248,38 +282,43 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
   const paintVisual = resolvePaintVisual(paintId);
   const weapon = resolveWeaponKit(weaponId);
 
-  const { paint, weaponAssetId, matrices, anglesCw } = buildWorkshopFrameWorldMatrices(
+  const { paint, weaponKind, weaponAssetId, matrices, anglesCw } = buildWorkshopFrameWorldMatrices(
     paintId,
     weaponId,
     motionPose,
   );
 
   const assets = assetMap(WORKSHOP_FRAME_MANIFEST);
+  const zOverrides = WORKSHOP_FRAME_MANIFEST.weapons[weaponKind]?.z_overrides ?? {};
   const layers: AssembledLayer[] = [];
 
-  for (const id of ROBOT_PART_IDS) {
+  for (const id of DRAW_PART_IDS) {
     const asset = assets.get(id);
     const matrix = matrices.get(id);
     if (!asset || !matrix) continue;
-    layers.push(layerFromAsset(asset, paint, matrix, anglesCw.get(id) ?? 0));
+    const zIndex = zOverrides[id] ?? asset.z;
+    layers.push(layerFromAsset(asset, paint, matrix, anglesCw.get(id) ?? 0, zIndex));
   }
 
   const weaponAsset = assets.get(weaponAssetId);
   const weaponMatrix = matrices.get(weaponAssetId);
   if (weaponAsset && weaponMatrix) {
-    layers.push(layerFromAsset(weaponAsset, paint, weaponMatrix, anglesCw.get(weaponAssetId) ?? 0));
+    const zIndex = zOverrides[weaponAssetId] ?? weaponAsset.z;
+    layers.push(
+      layerFromAsset(weaponAsset, paint, weaponMatrix, anglesCw.get(weaponAssetId) ?? 0, zIndex),
+    );
   }
 
   layers.sort((a, b) => a.zIndex - b.zIndex || a.id.localeCompare(b.id));
 
   const canvas = WORKSHOP_FRAME_MANIFEST.canvas;
   const hand = assets.get('hand_r');
-  const gripLocal = hand?.sockets.grip ?? ([60, 61.6] as const);
+  const gripLocal = hand?.sockets.grip ?? ([60, 62] as const);
   const handM = matrices.get('hand_r') ?? identity();
   const gripWorld = transformPoint(handM, gripLocal[0], gripLocal[1]);
 
   return {
-    atlasVersion: 'v2',
+    atlasVersion: 'v3',
     chassisId: input.loadout.chassis || 'chassis-basic',
     paintId: paintVisual.cataloguePaintId,
     paintVisual: paintVisual.visual,
@@ -304,16 +343,20 @@ export function workshopFramePaintToken(paintId: string): string {
 
 export function listWorkshopFrameGaps(): readonly string[] {
   return [
-    'ACTIVE pin is v002 only; v001 assets removed — must_not_mix_versions (coords/padding differ). Prefer sealed atomic packs so F7 never sees partial trees.',
+    'ACTIVE pin is v003 only; kit-v002 kept as history — must_not_mix_versions (coords/pose format differ). Prefer sealed atomic packs so F7 never sees partial trees.',
+    'Pose format is nested {weapon|"*": {root, parts.rot}}; do not port v002 flat pose numbers.',
+    'weapon_grip_rotation_degrees removed — weapons are normal children of hand_r.grip with per-weapon attach_angle.',
+    'Always draw hand_l_wrap / hand_r_wrap; apply weapons[w].z_overrides (axe lifts hand_l_wrap to 91).',
     'Paint path: under→mask-tint(color)→over via kit materials/masks (RN Image tintColor on mask alpha). Precomposited parts/{id}-{paint}.png retained as fallback/reference only — do not whole-sprite tint.',
-    'No arena/FX/audio in kit-v002 — fight stage still uses separate quiet-arena placeholders when those land.',
+    'Attack/dodge/hit/heavy_* in v003 are v002 carry-overs pending A2 — integrate as shipped, not final art.',
     'Shield/drone/decal are reserved only; assembler ignores loadout.shield/drone/decals.',
     'l/r are view sides not anatomical — document for animators; mirror is whole-hierarchy scaleX about canvas centre.',
     'motion_bounds are absolute relative-joint windows, not proven collision-free for arbitrary combos.',
     'status=integration-prototype-not-accepted — not Carlos likeness / native perf / replay acceptance.',
-    'Atlas pack v2 publishes kit-v002 keys at parts/<hyphenatedPartId>/… (C13); Metro kit remains render fallback until Storage cold-fetch is proven on device.',
+    'Atlas pack v3 publishes kit-v003 keys at parts/<hyphenatedPartId>/… (A1); Metro kit remains render fallback until Storage cold-fetch is proven on device. v1/v2 remain separate fallbacks.',
     'Weapon media ids use underscores (weapon_sword); catalogue/F5 atlas partIds use hyphens (weapon-sword) — adapter maps both (documented, keep).',
-    'Float socket values (e.g. neck y 51.39999999999999) are exact JSON serializations — consume as floats; do not round in the adapter.',
-    'heavy_windup.root_y is 45 in v002 (was 20 in v001 sketches) — geometry note only; MotionPose heavy_* is mapped (C11).',
+    'Float socket values are exact JSON serializations — consume as floats; do not round in the adapter.',
+    'MotionPose heavy_* is mapped (C11); heavy_windup / heavy_attack use nested per-weapon pose entries (not v002 root_y).',
+    'victory/portrait kit poses exist but are not yet on the public MotionPose set.',
   ];
 }

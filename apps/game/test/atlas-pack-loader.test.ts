@@ -278,10 +278,10 @@ describe('atlas pack loader (F6)', () => {
     expect(silent.uri).toBeNull();
   });
 
-  it('maps F7 paint/weapon aliases onto F5 catalogue ids and kit-v002 atlas paths', () => {
-    expect(WORKSHOP_FRAME_ATLAS_VERSION).toBe('v2');
-    expect(WORKSHOP_FRAME_KIT.kitVersion).toBe('v002');
-    expect(WORKSHOP_FRAME_KIT.compatibleFamily).toBe('workshop-frame-v002');
+  it('maps F7 paint/weapon aliases onto F5 catalogue ids and kit-v003 atlas paths', () => {
+    expect(WORKSHOP_FRAME_ATLAS_VERSION).toBe('v3');
+    expect(WORKSHOP_FRAME_KIT.kitVersion).toBe('v003');
+    expect(WORKSHOP_FRAME_KIT.compatibleFamily).toBe('workshop-frame-v003');
     expect(resolvePaintToken('oxide')).toBe('oxide');
     expect(resolvePaintToken('paint-cobalt')).toBe('petrol');
     expect(resolvePaintCatalogueId('petrol')).toBe('paint-cobalt');
@@ -304,6 +304,9 @@ describe('atlas pack loader (F6)', () => {
 
     const weaponPath = atlasPathForWorkshopKitFile('parts/weapon_sword-oxide.png');
     expect(weaponPath).toBe('parts/weapon-sword/oxide.png');
+    const wrapPath = atlasPathForWorkshopKitFile('parts/hand_r_wrap-oxide.png');
+    expect(wrapPath).toBe('parts/hand-r-wrap/oxide.png');
+    expect(isWorkshopFrameAtlasPath(wrapPath)).toBe(true);
 
     const partIds = partIdsForWorkshopFrameLoadout({
       paintId: 'oxide',
@@ -312,13 +315,14 @@ describe('atlas pack loader (F6)', () => {
     });
     expect(partIds).toContain('torso');
     expect(partIds).toContain('upper-arm-l');
+    expect(partIds).toContain('hand-r-wrap');
     expect(partIds).toContain('weapon-sword');
     expect(partIds).not.toContain('weapon_sword');
     expect(partIds).toContain('paint-crimson');
     expect(partIds).toContain('chassis-basic');
   });
 
-  it('selects workshop-frame kit-v002 entries via F5 partId without a second schema', () => {
+  it('selects workshop-frame kit-v003 entries via F5 partId without a second schema', () => {
     const version = WORKSHOP_FRAME_ATLAS_VERSION;
     const kitPath = 'parts/torso/oxide.png';
     const weaponPath = 'parts/weapon-sword/oxide.png';

@@ -75,21 +75,26 @@ adapters map both. **Do not mix kit-v001.**
 Local/CI:
 
 ```bash
-node scripts/pack-workshop-frame-atlas.mjs
+# Historical kit-v002 fallback
+ATLAS_VERSION=v2 node scripts/pack-workshop-frame-atlas.mjs
 ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
+# Active kit-v003
+node scripts/pack-workshop-frame-atlas.mjs
+ATLAS_VERSION=v3 node scripts/seed-atlas-storage.mjs
 ```
 
 Hosted Botore Development publish needs Carlos’s project URL + service-role
-key (never commit). See `supabase/seed/atlas/v2/README.md`.
+key (never commit). See `supabase/seed/atlas/v3/README.md`.
 
-**Hosted order:** pack + `ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs`
-(upload + `publish_atlas_version('v2')`) **before** seeding or pinning any
-hosted loadout to `v2`. Migration `0026` leaves `v2` as draft until that
+**Hosted order:** pack + `ATLAS_VERSION=v3 node scripts/seed-atlas-storage.mjs`
+(upload + `publish_atlas_version('v3')`) **before** seeding or pinning any
+hosted loadout to `v3`. Migration `0030` leaves `v3` as draft until that
 publish; pinning a _new_ unpublished pack makes authenticated `save_bot_loadout` fail
 with `unpublished_atlas_version`. Re-pinning the character's already-confirmed
 atlas (B5 starter / E1 Customise) is allowed while Storage publish is pending.
+`v2` (kit-v002) remains a separate fallback from `0026`.
 
-First-run loadouts pin **`v2`** (local/CI after publish). Fight still records
+First-run loadouts pin **`v3`** (local/CI after publish). Fight still records
 `battle_participants.atlas_version` from the sealed loadout; offline
 same-version cache continues to work.
 

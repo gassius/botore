@@ -1,7 +1,7 @@
 /**
  * Shared BotAssembler — one module for stable / preview / fight.
  *
- * RN Animated first (no Skia). Workshop Frame kit-v002 PNGs when
+ * RN Animated first (no Skia). Workshop Frame kit-v003 PNGs when
  * `placeholder={false}` (default); geometric PLACEHOLDER when true.
  * Paint uses kit under→mask→over (tint mask only); never a whole-sprite tint.
  * Shell and F8 import this component; do not fork a second renderer.
@@ -267,7 +267,7 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
         <Text style={styles.badge} testID={`${testID}-badge`}>
           {assembled.placeholder
             ? `PLACEHOLDER · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()}`
-            : `kit-v002 local · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()} · NOT FINAL`}
+            : `kit-v003 local · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()} · NOT FINAL`}
         </Text>
       ) : null}
     </View>

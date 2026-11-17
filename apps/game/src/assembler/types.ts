@@ -88,7 +88,7 @@ export interface BotAssemblerProps {
   readonly reducedMotion?: boolean;
   /**
    * When true, render geometric PLACEHOLDER stand-ins. When false/omitted,
-   * use Workshop Frame kit-v002 (local integration only — not likeness/native
+   * use Workshop Frame kit-v003 (local integration only — not likeness/native
    * acceptance).
    */
   readonly placeholder?: boolean;
@@ -142,7 +142,7 @@ export interface AssembledLayer {
 }
 
 export interface AssembledBot {
-  /** Fight/stable media pin (`v2` for workshop-frame-v002; `v1` is proof-pack only). */
+  /** Fight/stable media pin (`v3` for workshop-frame-v003; `v2` history; `v1` proof-pack). */
   readonly atlasVersion: string;
   readonly chassisId: string;
   readonly paintId: string;
@@ -157,7 +157,7 @@ export interface AssembledBot {
   readonly canvas: { readonly width: number; readonly height: number; readonly provisional: true };
   readonly grip: ProvisionalPoint;
   readonly layers: readonly AssembledLayer[];
-  /** Set when assembled from Game Art workshop-frame-v002. */
+  /** Set when assembled from Game Art workshop-frame-v003. */
   readonly kitId?: string;
   readonly kitPoseKey?: string;
 }

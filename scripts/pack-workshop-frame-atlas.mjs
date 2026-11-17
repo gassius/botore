@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 /**
- * C13: Materialize supabase/seed/atlas/v2 from Workshop Frame kit-v002 + v1
+ * A1 / C13: Materialize supabase/seed/atlas/vN from Workshop Frame kit + v1
  * carry-forward (base / arena / FX / proof catalogue). Does not publish —
- * pair with `ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs`.
+ * pair with `ATLAS_VERSION=vN node scripts/seed-atlas-storage.mjs`.
+ *
+ * Default: kit-v003 → atlas/v3.
+ * Historical: ATLAS_VERSION=v2 rebuilds kit-v002 → atlas/v2 (separate fallback).
  *
  * Usage:
  *   node scripts/pack-workshop-frame-atlas.mjs
- *   KIT_DIR=/path/to/workshop-frame-kit-v002 node scripts/pack-workshop-frame-atlas.mjs
+ *   ATLAS_VERSION=v2 node scripts/pack-workshop-frame-atlas.mjs
+ *   KIT_DIR=/path/to/kit node scripts/pack-workshop-frame-atlas.mjs
  *
  * Hosted publish (Carlos credentials — never commit secrets):
  *   SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… DATABASE_URL=… \
  *     node scripts/pack-workshop-frame-atlas.mjs && \
- *     ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
+ *     ATLAS_VERSION=v3 node scripts/seed-atlas-storage.mjs
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -21,6 +25,9 @@ import {
   V1_CARRY_FORWARD_PATHS,
   WORKSHOP_FRAME_ATLAS_VERSION,
   WORKSHOP_FRAME_KIT_VERSION,
+  WORKSHOP_FRAME_LEGACY_ATLAS_VERSION,
+  WORKSHOP_FRAME_LEGACY_KIT_VERSION,
+  WORKSHOP_FRAME_PACK_TARGETS,
   workshopFrameKitPackPairs,
 } from './workshop-frame-atlas-recipe.mjs';
 
@@ -28,39 +35,54 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const VERSION = process.env.ATLAS_VERSION ?? WORKSHOP_FRAME_ATLAS_VERSION;
 const OUT_DIR = process.env.ATLAS_SEED_DIR ?? join(ROOT, 'supabase/seed/atlas', VERSION);
 const V1_DIR = join(ROOT, 'supabase/seed/atlas/v1');
-const DEFAULT_KIT_DIR = join(ROOT, 'apps/game/assets/workshop-frame-kit-v002');
-const STORE_KIT_DIR =
-  '/cursor/stores/bc-5a7e5278-ae46-41fa-b832-db846a325e85/docs/art-direction/2026-11-09-first-run/workshop-frame-kit-v002/kit-v002';
+
+const KIT_DIRS = {
+  v003: join(ROOT, 'apps/game/assets/workshop-frame-kit-v003'),
+  v002: join(ROOT, 'apps/game/assets/workshop-frame-kit-v002'),
+};
+
+const STORE_KIT_DIRS = {
+  v003: '/cursor/stores/bc-5a7e5278-ae46-41fa-b832-db846a325e85/inbox/kit-v003-extract/kit-v003',
+  v002: '/cursor/stores/bc-5a7e5278-ae46-41fa-b832-db846a325e85/docs/art-direction/2026-11-09-first-run/workshop-frame-kit-v002/kit-v002',
+};
 
 function fail(msg) {
   console.error(`ATLAS-PACK-FAIL ${msg}`);
   process.exit(1);
 }
 
-/**
- * Hard guard before any delete: this packer only materializes workshop-frame v2.
- * A leftover `ATLAS_VERSION=v1` from seed scripts used to rmSync the committed
- * supabase/seed/atlas/v1 tree.
- */
-export function assertWorkshopFramePackTarget(version, outDir, v1Dir = V1_DIR) {
-  if (version !== WORKSHOP_FRAME_ATLAS_VERSION) {
+function resolvePackTarget(version) {
+  const target = WORKSHOP_FRAME_PACK_TARGETS[version];
+  if (!target) {
     throw new Error(
-      `refusing ATLAS_VERSION=${version}; pack-workshop-frame-atlas only writes ${WORKSHOP_FRAME_ATLAS_VERSION}`,
+      `refusing ATLAS_VERSION=${version}; pack-workshop-frame-atlas only writes ${Object.keys(WORKSHOP_FRAME_PACK_TARGETS).join('|')}`,
     );
   }
+  return target;
+}
+
+/**
+ * Hard guard before any delete: this packer only materializes workshop-frame
+ * v2 (history) or v3 (active). A leftover `ATLAS_VERSION=v1` from seed scripts
+ * used to rmSync the committed supabase/seed/atlas/v1 tree.
+ */
+export function assertWorkshopFramePackTarget(version, outDir, v1Dir = V1_DIR) {
+  resolvePackTarget(version);
   if (resolve(outDir) === resolve(v1Dir)) {
     throw new Error(`refusing to wipe committed v1 seed at ${v1Dir}`);
   }
 }
 
-function resolveKitDir() {
+function resolveKitDir(kitVersion) {
   if (process.env.KIT_DIR) {
     if (!existsSync(process.env.KIT_DIR)) fail(`KIT_DIR missing: ${process.env.KIT_DIR}`);
     return process.env.KIT_DIR;
   }
-  if (existsSync(join(DEFAULT_KIT_DIR, 'parts'))) return DEFAULT_KIT_DIR;
-  if (existsSync(join(STORE_KIT_DIR, 'parts'))) return STORE_KIT_DIR;
-  fail(`kit-v002 not found under ${DEFAULT_KIT_DIR} or Project store path; set KIT_DIR=…`);
+  const defaultDir = KIT_DIRS[kitVersion];
+  if (defaultDir && existsSync(join(defaultDir, 'parts'))) return defaultDir;
+  const storeDir = STORE_KIT_DIRS[kitVersion];
+  if (storeDir && existsSync(join(storeDir, 'parts'))) return storeDir;
+  fail(`kit-${kitVersion} not found under ${defaultDir}; set KIT_DIR=…`);
 }
 
 function ensureParent(filePath) {
@@ -73,7 +95,7 @@ function copyFile(src, dest) {
   cpSync(src, dest);
 }
 
-function buildManifestJson(pairs) {
+function buildManifestJson(pairs, kitVersion, atlasVersion) {
   /** @type {Record<string, { images: string[], audio: string[], soundTags: string[], kit?: string }>} */
   const parts = {
     'chassis-basic': {
@@ -114,7 +136,7 @@ function buildManifestJson(pairs) {
         images: [],
         audio: [],
         soundTags: [],
-        kit: `workshop-frame-${WORKSHOP_FRAME_KIT_VERSION}`,
+        kit: `workshop-frame-${kitVersion}`,
       };
     }
     if (!parts[pair.partId].images.includes(pair.atlasRelative)) {
@@ -123,12 +145,12 @@ function buildManifestJson(pairs) {
   }
 
   return {
-    version: VERSION,
+    version: atlasVersion,
     status: 'draft',
-    note: 'Workshop Frame kit-v002 media keys packed onto F5 parts/<hyphenatedPartId>/… plus v1 carry-forward. budgets_final stays false. Do not mix kit-v001.',
+    note: `Workshop Frame kit-${kitVersion} media keys packed onto F5 parts/<hyphenatedPartId>/… plus v1 carry-forward. budgets_final stays false. Do not mix kit versions.`,
     kit: {
       id: 'workshop-frame',
-      version: WORKSHOP_FRAME_KIT_VERSION,
+      version: kitVersion,
       weaponIdRule:
         'Kit filenames use underscores (weapon_sword-*.png); atlas/catalogue partIds use hyphens (weapon-sword). Adapter maps both.',
     },
@@ -158,22 +180,34 @@ function buildManifestJson(pairs) {
 }
 
 function main() {
+  let target;
   try {
     assertWorkshopFramePackTarget(VERSION, OUT_DIR, V1_DIR);
+    target = resolvePackTarget(VERSION);
   } catch (err) {
     fail(err instanceof Error ? err.message : String(err));
   }
   if (!existsSync(V1_DIR)) fail(`v1 seed dir missing: ${V1_DIR}`);
 
-  const kitDir = resolveKitDir();
-  const pairs = workshopFrameKitPackPairs();
+  const kitVersion = target.kitVersion;
+  const kitDir = resolveKitDir(kitVersion);
+  const pairs = workshopFrameKitPackPairs({
+    includeWraps: target.includeWraps,
+    kitVersion,
+  });
 
+  // Preserve committed README.md across wipe of generated pack bytes.
+  const readmePath = join(OUT_DIR, 'README.md');
+  const readmeBackup = existsSync(readmePath) ? readFileSync(readmePath) : null;
   if (existsSync(OUT_DIR)) {
     rmSync(OUT_DIR, { recursive: true, force: true });
   }
   mkdirSync(OUT_DIR, { recursive: true });
+  if (readmeBackup) {
+    writeFileSync(readmePath, readmeBackup);
+  }
 
-  // Carry-forward v1 proof bytes (skip its manifest — we write a v2 one).
+  // Carry-forward v1 proof bytes (skip its manifest — we write a versioned one).
   for (const rel of V1_CARRY_FORWARD_PATHS) {
     if (rel === 'manifest.json') continue;
     copyFile(join(V1_DIR, rel), join(OUT_DIR, rel));
@@ -183,7 +217,7 @@ function main() {
     copyFile(join(kitDir, pair.kitRelative), join(OUT_DIR, pair.atlasRelative));
   }
 
-  const manifest = buildManifestJson(pairs);
+  const manifest = buildManifestJson(pairs, kitVersion, VERSION);
   writeFileSync(join(OUT_DIR, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
   // Sanity: hyphenated weapon path exists; underscore form must not be a folder name.
@@ -192,12 +226,16 @@ function main() {
   if (existsSync(join(OUT_DIR, 'parts/weapon_sword'))) {
     fail('underscore weapon folder leaked into atlas pack');
   }
+  if (target.includeWraps) {
+    const wrap = join(OUT_DIR, 'parts/hand-r-wrap/oxide.png');
+    if (!existsSync(wrap)) fail(`expected packed wrap ${wrap}`);
+  }
 
   const kitManifest = join(kitDir, 'manifest.json');
   if (existsSync(kitManifest)) {
     const raw = JSON.parse(readFileSync(kitManifest, 'utf8'));
-    if (raw.version !== WORKSHOP_FRAME_KIT_VERSION) {
-      fail(`kit version ${raw.version} != ${WORKSHOP_FRAME_KIT_VERSION}`);
+    if (raw.version !== kitVersion) {
+      fail(`kit version ${raw.version} != ${kitVersion}`);
     }
   }
 
@@ -209,3 +247,10 @@ const isDirectRun =
 if (isDirectRun) {
   main();
 }
+
+export {
+  WORKSHOP_FRAME_ATLAS_VERSION,
+  WORKSHOP_FRAME_KIT_VERSION,
+  WORKSHOP_FRAME_LEGACY_ATLAS_VERSION,
+  WORKSHOP_FRAME_LEGACY_KIT_VERSION,
+};

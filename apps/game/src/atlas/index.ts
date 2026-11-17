@@ -59,6 +59,7 @@ export {
   WORKSHOP_FRAME_BODY_ASSET_IDS,
   WORKSHOP_FRAME_KIT,
   WORKSHOP_FRAME_WEAPON_ASSET_IDS,
+  WORKSHOP_FRAME_WRAP_ASSET_IDS,
   atlasPathForWorkshopKitFile,
   canonicalAtlasPartId,
   isWorkshopFrameAtlasPath,
