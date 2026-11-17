@@ -67,7 +67,7 @@ weapon-sword), profile, and today’s fight allowances. The RPC is idempotent.
 uploaded — Stable paints via Metro workshop-frame-v002. Authenticated
 Customise `save_bot_loadout` may re-pin that current atlas while changing
 paint/weapon even if Storage publish is still pending (E1 / migration
-`0028`); pinning a *different* unpublished atlas still fails.
+`0028`); pinning a _different_ unpublished atlas still fails.
 
 Concurrent mint harden: Edge retries `verifyOtp` once with a fresh
 `generateLink` when the first token is consumed by a raced sibling call; the

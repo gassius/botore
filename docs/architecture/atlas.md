@@ -85,7 +85,7 @@ key (never commit). See `supabase/seed/atlas/v2/README.md`.
 **Hosted order:** pack + `ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs`
 (upload + `publish_atlas_version('v2')`) **before** seeding or pinning any
 hosted loadout to `v2`. Migration `0026` leaves `v2` as draft until that
-publish; pinning a *new* unpublished pack makes authenticated `save_bot_loadout` fail
+publish; pinning a _new_ unpublished pack makes authenticated `save_bot_loadout` fail
 with `unpublished_atlas_version`. Re-pinning the character's already-confirmed
 atlas (B5 starter / E1 Customise) is allowed while Storage publish is pending.
 

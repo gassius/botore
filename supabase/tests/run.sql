@@ -2765,8 +2765,10 @@ begin
   on conflict (version) do update
     set status = 'draft', published_at = null;
 
-  insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
-  values (
+  -- Explicit later created_at: DISTINCT ON current view ties on same-tx now().
+  insert into public.bot_loadout_versions (
+    character_id, loadout, atlas_version, created_at
+  ) values (
     v_character_id,
     jsonb_build_object(
       'chassis', 'chassis-basic',
@@ -2777,7 +2779,8 @@ begin
       'decals', '[]'::jsonb,
       'soundTags', '["chassis.light","weapon.sword"]'::jsonb
     ),
-    v_draft
+    v_draft,
+    clock_timestamp() + interval '1 second'
   );
 
   select loadout_version_id, atlas_version into v_prev, v_atlas
