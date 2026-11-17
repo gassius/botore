@@ -130,8 +130,7 @@ function pushMotionBeat(
     readonly fxFamily?: 'hit' | 'dodge' | 'defeat';
   } = {},
 ): void {
-  const hitContact =
-    beat.hitStop || (beat.markers.includes('hit') && extras.victimId != null);
+  const hitContact = beat.hitStop || (beat.markers.includes('hit') && extras.victimId != null);
   const victimId = hitContact ? extras.victimId : undefined;
   const victimPoseKey = hitContact ? extras.victimPoseKey : undefined;
   queue.push({

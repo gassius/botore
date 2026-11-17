@@ -206,18 +206,13 @@ describe('A2 frame-marker audio cues', () => {
 
   it('interleaves damage_pop on the hit frame and dodge on the strike frame', () => {
     const queue = compileAnimationQueue(swordConnectReplay());
-    const hitIdx = queue.findIndex(
-      (c) => c.kind === 'motion_beat' && c.markers.includes('hit'),
-    );
+    const hitIdx = queue.findIndex((c) => c.kind === 'motion_beat' && c.markers.includes('hit'));
     const damageIdx = queue.findIndex((c) => c.kind === 'damage_pop');
     expect(hitIdx).toBeGreaterThan(0);
     expect(damageIdx).toBe(hitIdx - 1);
 
     const swingIdx = queue.findIndex(
-      (c) =>
-        c.kind === 'motion_beat' &&
-        c.actor === 'far' &&
-        c.markers.includes('swing'),
+      (c) => c.kind === 'motion_beat' && c.actor === 'far' && c.markers.includes('swing'),
     );
     const dodgeIdx = queue.findIndex(
       (c) => c.kind === 'motion_beat' && c.markers.includes('dodge'),
@@ -227,9 +222,7 @@ describe('A2 frame-marker audio cues', () => {
 
     // reducedMotion still emits hit/dodge/defeat SFX.
     const reduced = compileAnimationQueue(swordConnectReplay(), { reducedMotion: true });
-    const reducedMarkers = reduced.flatMap((c) =>
-      c.kind === 'motion_beat' ? [...c.markers] : [],
-    );
+    const reducedMarkers = reduced.flatMap((c) => (c.kind === 'motion_beat' ? [...c.markers] : []));
     expect(reducedMarkers).toContain('hit');
     expect(reducedMarkers).toContain('dodge');
     expect(reducedMarkers).toContain('defeat');
