@@ -2719,9 +2719,12 @@ end $$;
 do $$
 declare
   v_account uuid := 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee00e1';
+  v_other uuid := 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee00e2';
   v_character_id text;
   v_version uuid;
   v_prev uuid;
+  v_before uuid;
+  v_after uuid;
   v_loadout jsonb;
   v_atlas text;
   v_draft text := 'v900028';
@@ -2832,6 +2835,52 @@ begin
         raise;
       end if;
   end;
+
+  -- Non-owner cannot re-pin the victim's current draft atlas (ownership after atlas gate).
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_other,
+    'e1-other@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+  insert into public.accounts (id) values (v_other)
+  on conflict do nothing;
+
+  select loadout_version_id into v_before
+    from public.current_bot_loadouts where character_id = v_character_id;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_other::text, true);
+  set local role authenticated;
+  begin
+    perform public.save_bot_loadout(
+      v_character_id,
+      '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword"}'::jsonb,
+      v_draft
+    );
+    reset role;
+    raise exception 'E1 FAIL: cross-account draft re-pin allowed';
+  exception
+    when insufficient_privilege then
+      reset role;
+    when others then
+      reset role;
+      if sqlerrm like 'forbidden%' or sqlstate = '42501' then
+        null;
+      else
+        raise;
+      end if;
+  end;
+
+  select loadout_version_id into v_after
+    from public.current_bot_loadouts where character_id = v_character_id;
+  perform tests.assert(
+    v_after is not distinct from v_before,
+    'E1 cross-account draft re-pin left current loadout unchanged'
+  );
 
   raise notice 'TEST-OK E1 save_bot_loadout draft current-atlas re-pin';
 end $$;

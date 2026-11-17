@@ -459,13 +459,8 @@ export function GarageSessionProvider(props: {
           accessToken: current.accessToken,
         });
         if (!result.ok) {
-          setLoadout((s) =>
-            failSave(
-              s,
-              loadoutSavePlayerMessage({ code: result.code, message: result.message }),
-              result.code,
-            ),
-          );
+          // Adapter already mapped to player-facing copy — pass through once.
+          setLoadout((s) => failSave(s, result.message, result.code));
           return false;
         }
         setLoadout((s) =>

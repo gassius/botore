@@ -34,4 +34,22 @@ describe('loadoutSavePlayerMessage', () => {
     expect(msg.toLowerCase()).not.toContain('unknown_atlas_version');
     expect(msg).toMatch(/could not save changes/i);
   });
+
+  it('maps SQLSTATE 42501 / permission denied to the default save failure', () => {
+    const msg = loadoutSavePlayerMessage({
+      code: '42501',
+      message: 'permission denied for function save_bot_loadout',
+    });
+    expect(msg).toBe('Could not save changes. Your equipped loadout is unchanged.');
+    expect(msg.toLowerCase()).not.toContain('permission denied');
+  });
+
+  it('maps PGRST codes to the default save failure', () => {
+    const msg = loadoutSavePlayerMessage({
+      code: 'PGRST202',
+      message: 'Could not find the function public.save_bot_loadout(...) in the schema cache',
+    });
+    expect(msg).toBe('Could not save changes. Your equipped loadout is unchanged.');
+    expect(msg.toLowerCase()).not.toContain('schema cache');
+  });
 });

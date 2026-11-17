@@ -79,6 +79,12 @@ export function loadoutSavePlayerMessage(input: LoadoutSaveErrorInput): string {
     return DEFAULT_SAVE_FAILURE;
   }
 
+  // SQLSTATE (e.g. 42501) or PostgREST (PGRST*) — never surface raw server text.
+  const codeRaw = (input.code ?? '').trim();
+  if (/^[0-9A-Z]{5}$/i.test(codeRaw) || /^PGRST/i.test(codeRaw)) {
+    return DEFAULT_SAVE_FAILURE;
+  }
+
   // Prefer an already plain adapter message; strip machine prefixes when present.
   if (/^[a-z0-9_]+:/i.test(raw)) {
     return DEFAULT_SAVE_FAILURE;
