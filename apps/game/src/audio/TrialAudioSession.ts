@@ -28,6 +28,12 @@ export type TrialAudioSources = Readonly<Record<TrialAudioClipId, AudioSource | 
 
 export type TrialPartAudioSources = Readonly<Partial<Record<PartAudioCueId, AudioSource | null>>>;
 
+/** Optional pitch/volume multipliers for UI cues (e.g. XP tick variation). */
+export type PlayCueOptions = {
+  readonly rate?: number;
+  readonly volumeScale?: number;
+};
+
 export type TrialAudioSessionOptions = {
   readonly backend?: TrialAudioBackend;
   readonly sources: TrialAudioSources;
@@ -50,7 +56,7 @@ export type TrialAudioSession = {
   notifyCommand: (cmd: AnimationCommand) => void;
   playUiTap: () => void;
   /** Result overlay / Customise one-shots (new record, XP tick, equip, card select). Fire-and-forget. */
-  playCue: (id: TrialAudioUiCueId) => void;
+  playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
   setMuted: (muted: boolean) => void;
   setMusicEnabled: (enabled: boolean) => void;
   setEffectsEnabled: (enabled: boolean) => void;
@@ -128,7 +134,12 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     }
   };
 
-  const playSource = (label: string, source: AudioSource | null | undefined, volume: number) => {
+  const playSource = (
+    label: string,
+    source: AudioSource | null | undefined,
+    volume: number,
+    rate?: number,
+  ) => {
     if (disposed) return;
     stats.cues += 1;
     if (effectsChannelMuted()) return;
@@ -138,10 +149,14 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     }
     ensureMode();
     const channelMuted = effectsChannelMuted();
+    const shotOpts =
+      typeof rate === 'number' && Number.isFinite(rate)
+        ? { volume, muted: channelMuted, rate }
+        : { volume, muted: channelMuted };
     safeRun(
       label,
       async () => {
-        const handle = await backend.playOneShot(source, { volume, muted: channelMuted });
+        const handle = await backend.playOneShot(source, shotOpts);
         if (!handle) {
           stats.failures += 1;
           return;
@@ -173,8 +188,15 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     );
   };
 
-  const playClip = (id: TrialAudioClipId) => {
-    playSource(id, sources[id], trialAudioClipVolume(id));
+  const playClip = (id: TrialAudioClipId, options?: PlayCueOptions) => {
+    const scale =
+      typeof options?.volumeScale === 'number' && Number.isFinite(options.volumeScale)
+        ? options.volumeScale
+        : 1;
+    const volume = Math.max(0, Math.min(1, trialAudioClipVolume(id) * scale));
+    const rate =
+      typeof options?.rate === 'number' && Number.isFinite(options.rate) ? options.rate : undefined;
+    playSource(id, sources[id], volume, rate);
   };
 
   const playResolved = (cmd: AnimationCommand) => {
@@ -360,8 +382,8 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     playUiTap: () => {
       playClip('uiTap');
     },
-    playCue: (id) => {
-      playClip(id);
+    playCue: (id, options) => {
+      playClip(id, options);
     },
     setMuted: (next) => {
       muted = Boolean(next);

@@ -1,16 +1,20 @@
 /**
- * Lightweight trial UI-cue session for Result / Customise (D2/D3).
+ * Lightweight trial UI-cue session for Result / Customise screens.
  * Same mute / Effects channel rules as fight replay; no combat command mapping.
  */
 import { useCallback, useEffect, useRef } from 'react';
 import { createExpoAvBackend } from './expoAvBackend';
-import { createTrialAudioSession, type TrialAudioSession } from './TrialAudioSession';
+import {
+  createTrialAudioSession,
+  type PlayCueOptions,
+  type TrialAudioSession,
+} from './TrialAudioSession';
 import { TRIAL_AUDIO_METRO_SOURCES } from './trialAudioMetroAssets';
 import type { TrialAudioUiCueId } from './trialAudioPin';
 
 export type TrialUiAudioApi = {
   playUiTap: () => void;
-  playCue: (id: TrialAudioUiCueId) => void;
+  playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
 };
 
 export function useTrialUiAudio(opts: {
@@ -68,9 +72,9 @@ export function useTrialUiAudio(opts: {
     }
   }, []);
 
-  const playCue = useCallback((id: TrialAudioUiCueId) => {
+  const playCue = useCallback((id: TrialAudioUiCueId, options?: PlayCueOptions) => {
     try {
-      sessionRef.current?.playCue(id);
+      sessionRef.current?.playCue(id, options);
     } catch {
       // ignore
     }

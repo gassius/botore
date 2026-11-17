@@ -211,6 +211,47 @@ describe('F11 TrialAudioSession never blocks / desyncs', () => {
     session.dispose();
   });
 
+  it('playCue applies rate/volumeScale for xpTick and stays silent when muted', async () => {
+    const shots: Array<{ source: unknown; volume: number; rate?: number }> = [];
+    const backend: TrialAudioBackend = {
+      ensureMode: async () => undefined,
+      playOneShot: async (source, opts) => {
+        shots.push({
+          source,
+          volume: opts.volume,
+          ...(opts.rate !== undefined ? { rate: opts.rate } : {}),
+        });
+        return {
+          setMuted: async () => undefined,
+          play: async () => undefined,
+          stop: async () => undefined,
+        };
+      },
+      startLoop: async () => ({
+        setMuted: async () => undefined,
+        setPaused: async () => undefined,
+        stop: async () => undefined,
+      }),
+    };
+    const session = createTrialAudioSession({ backend, sources, muted: false });
+    const base = trialAudioClipVolume('xpTick');
+    session.playCue('xpTick', { rate: 1.05, volumeScale: 0.8 });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toEqual([{ source: 10, volume: base * 0.8, rate: 1.05 }]);
+
+    session.setMuted(true);
+    session.playCue('xpTick', { rate: 0.95, volumeScale: 1.2 });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toHaveLength(1);
+
+    session.setMuted(false);
+    session.setEffectsEnabled(false);
+    session.playCue('xpTick', { rate: 1.02, volumeScale: 1 });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toHaveLength(1);
+    session.dispose();
+  });
+
   it('backend failures are swallowed and fight cues continue', async () => {
     const backend: TrialAudioBackend = {
       ensureMode: async () => {

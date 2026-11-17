@@ -32,6 +32,7 @@ export {
 } from './partAudioResolve';
 export {
   createTrialAudioSession,
+  type PlayCueOptions,
   type TrialAudioSession,
   type TrialAudioSessionOptions,
   type TrialAudioSources,
@@ -58,10 +59,12 @@ export {
   XP_TICK_VOLUME_SCALE_MAX,
   XP_TICK_VOLUME_SCALE_MIN,
   createXpTickGate,
+  isAttackerWin,
   resolveUiCuePlay,
   shouldPlayEquipCue,
   shouldPlayNewRecordCue,
   shouldPlaySelectCue,
+  shouldShowNewRecordStamp,
   xpTickVariation,
   type UiCuePlayRequest,
   type XpTickGate,

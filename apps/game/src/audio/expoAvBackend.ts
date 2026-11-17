@@ -171,11 +171,14 @@ export function createExpoAvBackend(options: ExpoAvBackendOptions = {}): TrialAu
 
     playOneShot: async (source, opts) => {
       try {
+        const rate = typeof opts.rate === 'number' && Number.isFinite(opts.rate) ? opts.rate : 1;
         const { sound } = await Audio.Sound.createAsync(source, {
           shouldPlay: false,
           volume: opts.volume,
           isMuted: opts.muted,
           isLooping: false,
+          rate,
+          shouldCorrectPitch: true,
         });
         return wrapOneShot(sound);
       } catch {

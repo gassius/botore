@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import { useTrialReplayAudio } from '../audio/useTrialReplayAudio';
+import type { PlayCueOptions } from '../audio/TrialAudioSession';
 import type { TrialAudioUiCueId } from '../audio/trialAudioPin';
 import { BotAssembler } from '../assembler';
 import {
@@ -99,7 +100,7 @@ export type CanonicalReplayPlayerHandle = {
   replay: () => void;
   playUiTap: () => void;
   /** Result/Customise UI cues (newRecord / xpTick / equip / select). */
-  playCue: (id: TrialAudioUiCueId) => void;
+  playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
   getPlaybackState: () => PlaybackUiState;
   /** Present only when `EXPO_PUBLIC_PERF_SAMPLE=1`; otherwise returns null. */
   getPerfSummary: () => FrameSampleSummary | null;
@@ -442,9 +443,9 @@ export const CanonicalReplayPlayer = forwardRef<
           // ignore
         }
       },
-      playCue: (id) => {
+      playCue: (id, options) => {
         try {
-          trialAudio.playCue(id);
+          trialAudio.playCue(id, options);
         } catch {
           // ignore
         }

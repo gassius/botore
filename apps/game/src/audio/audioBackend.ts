@@ -25,7 +25,7 @@ export type TrialAudioBackend = {
    */
   playOneShot: (
     source: AudioSource,
-    opts: { volume: number; muted: boolean },
+    opts: { volume: number; muted: boolean; rate?: number },
   ) => Promise<OneShotHandle | null>;
   /**
    * Create a looping clip paused. Session reconciles mute/play after await and

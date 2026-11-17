@@ -1,5 +1,5 @@
 /**
- * Headless-safe helpers for Result / Customise UI cues (D2/D3 call sites).
+ * Headless-safe helpers for Result / Customise UI cues.
  * Never loads or plays audio — only gates + variation math.
  *
  * Triggers (docs / Audio Director INTEGRATION):
@@ -8,6 +8,7 @@
  * - equip — only after EQUIP succeeds (server confirmed)
  * - select — weapon/part card tap
  */
+import type { BattleOutcome } from '@botore/replay';
 import type { TrialAudioUiCueId } from './trialAudioPin';
 
 /** Minimum gap between XP tick one-shots (Audio Director). */
@@ -83,6 +84,28 @@ export function shouldPlayNewRecordCue(input: {
 /** Equip SFX only after a confirmed successful save — never on press. */
 export function shouldPlayEquipCue(equipSucceeded: boolean): boolean {
   return equipSucceeded === true;
+}
+
+/** True when the attacker (near/player seat) won the sealed outcome. */
+export function isAttackerWin(outcome: BattleOutcome, attackerId: string): boolean {
+  if (!attackerId) return false;
+  if (outcome.reason === 'defeat') return outcome.winner === attackerId;
+  return outcome.winnerByTiebreak === attackerId;
+}
+
+/**
+ * NEW RECORD stamp: attacker win with positive XP (server) or any attacker win
+ * on DEV fixtures so the cue is hearable without inventing XP numbers.
+ */
+export function shouldShowNewRecordStamp(input: {
+  readonly outcome: BattleOutcome;
+  readonly attackerId: string;
+  readonly serverConfirmed: boolean;
+  readonly xpAwarded: number | null;
+}): boolean {
+  if (!isAttackerWin(input.outcome, input.attackerId)) return false;
+  if (!input.serverConfirmed) return true;
+  return (input.xpAwarded ?? 0) > 0;
 }
 
 /** Part / weapon card selection SFX. */

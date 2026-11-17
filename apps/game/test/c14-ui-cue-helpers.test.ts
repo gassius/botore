@@ -8,10 +8,13 @@ import {
   createTrialAudioSession,
   createXpTickGate,
   resolveUiCuePlay,
+  isAttackerWin,
   shouldPlayEquipCue,
   shouldPlayNewRecordCue,
   shouldPlaySelectCue,
+  shouldShowNewRecordStamp,
   TRIAL_AUDIO_UI_CUE_IDS,
+  trialAudioClipVolume,
   xpTickVariation,
   type TrialAudioBackend,
   type TrialAudioSources,
@@ -78,6 +81,82 @@ describe('C14 UI cue helpers for D2/D3', () => {
     expect(shouldPlayEquipCue(false)).toBe(false);
     expect(shouldPlaySelectCue(true)).toBe(true);
     expect(shouldPlaySelectCue(false)).toBe(false);
+  });
+
+  it('shows NEW RECORD stamp for attacker wins (server needs XP)', () => {
+    const win = {
+      winner: 'hero',
+      loser: 'foe',
+      reason: 'defeat' as const,
+    };
+    expect(isAttackerWin(win, 'hero')).toBe(true);
+    expect(
+      shouldShowNewRecordStamp({
+        outcome: win,
+        attackerId: 'hero',
+        serverConfirmed: true,
+        xpAwarded: 2,
+      }),
+    ).toBe(true);
+    expect(
+      shouldShowNewRecordStamp({
+        outcome: win,
+        attackerId: 'hero',
+        serverConfirmed: true,
+        xpAwarded: 0,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowNewRecordStamp({
+        outcome: win,
+        attackerId: 'hero',
+        serverConfirmed: false,
+        xpAwarded: null,
+      }),
+    ).toBe(true);
+  });
+
+  it('playCue applies xpTickVariation rate/volume when unmuted', async () => {
+    const shots: Array<{ source: unknown; volume: number; rate?: number }> = [];
+    const backend: TrialAudioBackend = {
+      ensureMode: async () => undefined,
+      playOneShot: async (source, opts) => {
+        shots.push({
+          source,
+          volume: opts.volume,
+          ...(opts.rate !== undefined ? { rate: opts.rate } : {}),
+        });
+        return {
+          setMuted: async () => undefined,
+          play: async () => undefined,
+          stop: async () => undefined,
+        };
+      },
+      startLoop: async () => ({
+        setMuted: async () => undefined,
+        setPaused: async () => undefined,
+        stop: async () => undefined,
+      }),
+    };
+    const session = createTrialAudioSession({ backend, sources, muted: false });
+    const variation = xpTickVariation(() => 0);
+    session.playCue('xpTick', {
+      rate: variation.rate,
+      volumeScale: variation.volumeScale,
+    });
+    await Promise.resolve();
+    expect(shots).toEqual([
+      {
+        source: 10,
+        volume: trialAudioClipVolume('xpTick') * variation.volumeScale,
+        rate: variation.rate,
+      },
+    ]);
+    session.setMuted(true);
+    session.playCue('xpTick', { rate: 1, volumeScale: 1 });
+    await Promise.resolve();
+    expect(shots).toHaveLength(1);
+    session.dispose();
   });
 
   it('playCue surfaces all UI cues when unmuted and none when effects muted', async () => {

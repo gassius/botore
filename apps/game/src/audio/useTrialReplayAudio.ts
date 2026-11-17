@@ -6,7 +6,11 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { AnimationCommand } from '../replay-playback';
 import type { SealedFightBuilds } from '../replay/fighterLoadout';
 import { createExpoAvBackend } from './expoAvBackend';
-import { createTrialAudioSession, type TrialAudioSession } from './TrialAudioSession';
+import {
+  createTrialAudioSession,
+  type PlayCueOptions,
+  type TrialAudioSession,
+} from './TrialAudioSession';
 import { TRIAL_AUDIO_METRO_SOURCES } from './trialAudioMetroAssets';
 import {
   TRIAL_AMBIENT_METRO_SOURCE,
@@ -18,7 +22,7 @@ import type { TrialAudioUiCueId } from './trialAudioPin';
 export type TrialReplayAudioApi = {
   onCommand: (cmd: AnimationCommand) => void;
   playUiTap: () => void;
-  playCue: (id: TrialAudioUiCueId) => void;
+  playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
   reset: () => void;
 };
 
@@ -115,9 +119,9 @@ export function useTrialReplayAudio(opts: {
     }
   }, []);
 
-  const playCue = useCallback((id: TrialAudioUiCueId) => {
+  const playCue = useCallback((id: TrialAudioUiCueId, options?: PlayCueOptions) => {
     try {
-      sessionRef.current?.playCue(id);
+      sessionRef.current?.playCue(id, options);
     } catch {
       // ignore
     }

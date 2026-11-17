@@ -17,7 +17,7 @@ import { DomainNote } from './DomainNote';
  * Progression XP / allowances only from server-confirmed combat-v1 — never REF samples.
  */
 export function FightResultSlot(): React.ReactElement {
-  const { goTo, goNext, goBack } = useFirstRun();
+  const { goTo, goNext, goBack, muted, musicEnabled, effectsEnabled } = useFirstRun();
   const { lastFight, fightKind } = useFightSession();
 
   const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
@@ -73,7 +73,13 @@ export function FightResultSlot(): React.ReactElement {
       }
     >
       <ScreenHeader title="Fight Result" />
-      <FightResultContent confirmed={confirmed} testID="fight-result" />
+      <FightResultContent
+        confirmed={confirmed}
+        muted={muted}
+        musicEnabled={musicEnabled}
+        effectsEnabled={effectsEnabled}
+        testID="fight-result"
+      />
       <DomainNote text="Domain: F10 fight result — XP and allowances from combat-v1 only. Never invent REF samples." />
     </ScreenChrome>
   );
