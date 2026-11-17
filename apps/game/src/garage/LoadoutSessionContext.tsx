@@ -29,6 +29,7 @@ import {
   setPendingLoadout,
   type LoadoutPreviewState,
 } from './loadout/loadoutState';
+import { loadoutSavePlayerMessage } from './loadout/loadoutSaveErrors';
 import { withUpdatedPaint, withUpdatedWeapon } from './loadout/proofCatalogue';
 import { ensureRuntimePacksBestEffort } from '../atlas/atlasPackRuntime';
 
@@ -412,17 +413,39 @@ export function GarageSessionProvider(props: {
           setSession(null);
           // F8: keep last confirmed; surface auth-expired so Customise is not silent.
           setLoadout((s) =>
-            failSave(s, 'Session expired. Sign in again to continue.', 'unauthenticated'),
+            failSave(
+              s,
+              loadoutSavePlayerMessage({
+                code: 'unauthenticated',
+                message: 'Session expired. Sign in again to save.',
+              }),
+              'unauthenticated',
+            ),
           );
+          return false;
+        }
+        if (loadout.saving) {
           return false;
         }
         if (
           loadout.hydration !== 'ready' ||
           !loadout.characterId ||
           !loadout.pendingLoadout ||
-          !loadout.dirty ||
-          loadout.saving
+          !loadout.dirty
         ) {
+          // Never silent when the player asked to save but state is blocked.
+          if (loadout.dirty) {
+            setLoadout((s) =>
+              failSave(
+                s,
+                loadoutSavePlayerMessage({
+                  code: 'save_blocked',
+                  message: 'Could not save changes. Server-confirmed loadout is unavailable.',
+                }),
+                'save_blocked',
+              ),
+            );
+          }
           return false;
         }
         const pending = loadout.pendingLoadout;
@@ -436,7 +459,13 @@ export function GarageSessionProvider(props: {
           accessToken: current.accessToken,
         });
         if (!result.ok) {
-          setLoadout((s) => failSave(s, result.message, result.code));
+          setLoadout((s) =>
+            failSave(
+              s,
+              loadoutSavePlayerMessage({ code: result.code, message: result.message }),
+              result.code,
+            ),
+          );
           return false;
         }
         setLoadout((s) =>

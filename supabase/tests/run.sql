@@ -2712,3 +2712,123 @@ begin
 
   raise notice 'TEST-OK B5 ensure_player_character';
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- E1: authenticated Customise save re-pins current draft atlas (paint+weapon)
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee00e1';
+  v_character_id text;
+  v_version uuid;
+  v_prev uuid;
+  v_loadout jsonb;
+  v_atlas text;
+  v_draft text := 'v900028';
+  v_other_draft text := 'v900029';
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'e1-save@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  set local role service_role;
+  perform public.ensure_player_character(v_account);
+  reset role;
+
+  select character_id into v_character_id
+    from public.characters
+   where account_id = v_account and is_opponent = false
+   limit 1;
+  perform tests.assert(v_character_id is not null, 'E1 character present');
+
+  -- Force a dedicated draft atlas pin (do not rely on v1 publish state in CI).
+  insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
+  values (
+    v_draft, 'draft', null, '{"version":"v900028","note":"e1-draft"}'::jsonb, false,
+    'E1 draft fixture — never publish'
+  )
+  on conflict (version) do update
+    set status = 'draft', published_at = null;
+
+  insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
+  values (
+    v_other_draft, 'draft', null, '{"version":"v900029","note":"e1-other-draft"}'::jsonb, false,
+    'E1 other draft — pin must fail'
+  )
+  on conflict (version) do update
+    set status = 'draft', published_at = null;
+
+  insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
+  values (
+    v_character_id,
+    jsonb_build_object(
+      'chassis', 'chassis-basic',
+      'paint', 'paint-crimson',
+      'weapon', 'weapon-sword',
+      'shield', 'null'::jsonb,
+      'drone', 'null'::jsonb,
+      'decals', '[]'::jsonb,
+      'soundTags', '["chassis.light","weapon.sword"]'::jsonb
+    ),
+    v_draft
+  );
+
+  select loadout_version_id, atlas_version into v_prev, v_atlas
+    from public.current_bot_loadouts where character_id = v_character_id;
+  perform tests.assert(v_atlas = v_draft, 'E1 current atlas is draft fixture');
+
+  -- Owner JWT: re-pin same draft while changing paint + weapon.
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  begin
+    v_version := public.save_bot_loadout(
+      v_character_id,
+      '{"chassis":"chassis-basic","paint":"paint-cobalt","weapon":"weapon-axe"}'::jsonb,
+      v_draft
+    );
+  exception
+    when others then
+      reset role;
+      raise;
+  end;
+  reset role;
+
+  perform tests.assert(v_version is distinct from v_prev, 'E1 save appends version on draft re-pin');
+  select loadout, atlas_version into v_loadout, v_atlas
+    from public.bot_loadout_versions where loadout_version_id = v_version;
+  perform tests.assert(v_loadout->>'paint' = 'paint-cobalt', 'E1 paint persisted');
+  perform tests.assert(v_loadout->>'weapon' = 'weapon-axe', 'E1 weapon persisted');
+  perform tests.assert(v_atlas = v_draft, 'E1 atlas re-pin unchanged');
+
+  -- Different unpublished atlas still rejected.
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  begin
+    perform public.save_bot_loadout(
+      v_character_id,
+      '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword"}'::jsonb,
+      v_other_draft
+    );
+    reset role;
+    raise exception 'E1 FAIL: unpublished foreign atlas pin allowed';
+  exception
+    when others then
+      reset role;
+      if sqlerrm like 'unpublished_atlas_version:%' then
+        null;
+      else
+        raise;
+      end if;
+  end;
+
+  raise notice 'TEST-OK E1 save_bot_loadout draft current-atlas re-pin';
+end $$;

@@ -207,10 +207,9 @@ export function CustomiseScreen(props: {
         testID="customise-bot"
       />
 
-      <Text style={styles.confirmed} allowFontScaling>
+      <Text style={styles.confirmed} allowFontScaling testID="customise-confirmed-summary">
         Confirmed: {paintUiAlias(loadout.confirmedLoadout.paint)} ·{' '}
         {weaponUiAlias(loadout.confirmedLoadout.weapon)}
-        {loadout.confirmedVersionId ? ` · ${loadout.confirmedVersionId.slice(0, 8)}…` : ''}
       </Text>
 
       <TabBar
