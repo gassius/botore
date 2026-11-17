@@ -26,14 +26,7 @@ export type BotFacing = 'left' | 'right';
  *   pending slot (`result-art/resultPoseSlot.ts`), not an approved pose key.
  */
 export type MotionPose =
-  | 'idle'
-  | 'attack'
-  | 'heavy_windup'
-  | 'heavy_attack'
-  | 'dodge'
-  | 'hit'
-  | 'defeat'
-  | 'portrait';
+  'idle' | 'attack' | 'heavy_windup' | 'heavy_attack' | 'dodge' | 'hit' | 'defeat' | 'portrait';
 
 /**
  * First-proof sample paints (Art Direction v0.3).
