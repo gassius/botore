@@ -28,6 +28,8 @@ describe('C11 heavy-hit pose mapping', () => {
       'dodge',
       'hit',
       'defeat',
+      'portrait',
+      'victory',
     ]);
     expect(isMotionPose('heavy_windup')).toBe(true);
     expect(isMotionPose('heavy_attack')).toBe(true);
@@ -53,12 +55,14 @@ describe('C11 heavy-hit pose mapping', () => {
     expect(windup.kitPoseKey).toBe('heavy_windup');
     expect(heavy.kitPoseKey).toBe('heavy_attack');
     expect(heavy.mirrored).toBe(true);
-    // Distinct root placement / part transforms vs quick (v002 heavy_windup.root_y=45).
+    // Windup stays distinct from quick. On kit-v003.1, heavy_attack aliases →
+    // strike (same baked geometry as quick_attack); MotionPose / kitPoseKey still
+    // differ so A2 can re-art without a parallel API.
     const quickTorso = quick.layers.find((l) => l.id === 'torso')!;
     const windupTorso = windup.layers.find((l) => l.id === 'torso')!;
-    const heavyTorso = heavy.layers.find((l) => l.id === 'torso')!;
     expect(windupTorso.y).not.toBe(quickTorso.y);
-    expect(heavyTorso.rotateCwDeg).not.toBe(quickTorso.rotateCwDeg);
+    expect(windupTorso.rotateCwDeg).not.toBe(quickTorso.rotateCwDeg);
+    expect(heavy.kitPoseKey).not.toBe(quick.kitPoseKey);
   });
 
   it('compiles sealed weapon attacks into windup then strike without inventing outcomes', () => {
