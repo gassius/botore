@@ -70,18 +70,17 @@ fi
 
 # CI cleartext ATS for local Supabase (no-op when already patched).
 node "${SCRIPT_DIR}/patch-ios-ci-ats.mjs" || true
+# CocoaPods + pnpm null-byte workaround (idempotent; no-op if ios/ missing).
+node "${SCRIPT_DIR}/patch-ios-cocoapods-null-byte.mjs" || true
 
 # Prefer cached Pods; always run pod install so the lockfile is respected.
 if [[ -f "${IOS_DIR}/Podfile" ]]; then
   echo "pod install…" >&2
-  (
-    cd "${IOS_DIR}"
-    if command -v pod >/dev/null 2>&1; then
-      pod install --deployment 2>/dev/null || pod install
-    else
-      echo "warn: CocoaPods gem missing; relying on Expo prebuild pod install" >&2
-    fi
-  )
+  if command -v pod >/dev/null 2>&1; then
+    bash "${SCRIPT_DIR}/pod-install-ci.sh"
+  else
+    echo "warn: CocoaPods gem missing; relying on Expo prebuild pod install" >&2
+  fi
 fi
 
 WORKSPACE="$(find "${IOS_DIR}" -maxdepth 1 -name '*.xcworkspace' ! -name 'Pods.xcworkspace' | head -n 1 || true)"

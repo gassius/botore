@@ -317,6 +317,8 @@ jobs:
           CI=1 pnpm exec expo prebuild --platform ios --clean --no-install
           cd ../..
           node scripts/native-capture/patch-ios-ci-ats.mjs
+          # CocoaPods + pnpm: avoid realdirpath null-byte crash (#12798).
+          node scripts/native-capture/patch-ios-cocoapods-null-byte.mjs
 
       - name: Cache CocoaPods
         uses: actions/cache@v4
@@ -339,8 +341,7 @@ jobs:
       - name: pod install (once)
         run: |
           set -euo pipefail
-          cd apps/game/ios
-          pod install --deployment 2>/dev/null || pod install
+          bash scripts/native-capture/pod-install-ci.sh
 
       - name: Build + live first-run fight captures on iOS Simulator
         env:

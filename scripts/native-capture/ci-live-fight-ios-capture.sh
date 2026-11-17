@@ -191,15 +191,13 @@ if [[ ! -d "${IOS_DIR}" ]]; then
   exit 1
 fi
 node "${SCRIPT_DIR}/patch-ios-ci-ats.mjs"
+node "${SCRIPT_DIR}/patch-ios-cocoapods-null-byte.mjs"
 
 # When the workflow already ran prebuild --no-install + one pod install, skip
 # a second pod install here (CAPTURE_IOS_SKIP_PREBUILD=1).
 if [[ "${CAPTURE_IOS_SKIP_PREBUILD:-0}" != "1" && "${CAPTURE_IOS_SKIP_PREBUILD:-0}" != "true" ]]; then
   if [[ -f "${IOS_DIR}/Podfile" ]] && command -v pod >/dev/null 2>&1; then
-    (
-      cd "${IOS_DIR}"
-      pod install --deployment 2>/dev/null || pod install
-    )
+    bash "${SCRIPT_DIR}/pod-install-ci.sh"
   fi
 fi
 
