@@ -1,0 +1,4721 @@
+{
+  "schema": "botore.workshop-frame.provisional.v2",
+  "kit_id": "workshop-frame",
+  "version": "v003",
+  "family": "workshop-frame-v003",
+  "immutable": true,
+  "status": "integration-prototype-not-accepted",
+  "supersedes": "v002 (coordinates NOT interchangeable)",
+  "canvas": [
+    640,
+    640
+  ],
+  "export_scale": 1,
+  "resolution_variants": {
+    "1x": {
+      "scale": 1,
+      "dirs": [
+        "parts",
+        "materials",
+        "masks",
+        "fx"
+      ]
+    },
+    "2x": {
+      "scale": 2,
+      "dirs": [
+        "parts@2x",
+        "materials@2x",
+        "masks@2x",
+        "fx@2x"
+      ],
+      "note": "same coordinates (all manifest numbers are 1x canvas px); draw @2x tiles at 0.5 scale. Use on >=2x screens when the bot is drawn wider than ~320 px."
+    }
+  },
+  "coordinate_system": "top-left XY; +X right, +Y down; clockwise-positive degrees; column-vector affine matrices; all numbers in 1x canvas px",
+  "root": {
+    "asset": "torso",
+    "position": [
+      310,
+      276
+    ]
+  },
+  "ground_y": 495,
+  "paint_tokens": {
+    "oxide": "#e8771c",
+    "petrol": "#27877b"
+  },
+  "paint_ids": [
+    "oxide",
+    "petrol"
+  ],
+  "paint_composite_order": [
+    "material_under",
+    "mask alpha tinted to paint token",
+    "material_over"
+  ],
+  "alpha": "straight/unassociated RGBA PNG; sRGB; no baked background",
+  "mirror": "Mirror the complete assembled hierarchy about x=320 (x_new = 640 - x). Never flip tiles independently. l/r = view-left(rear)/view-right(front).",
+  "hierarchy_note": "hand_l_wrap/hand_r_wrap are children of their hand (socket \"wrap\" = hand pivot, angle 0). The equipped weapon is a child of hand_r.grip.",
+  "weapons": {
+    "sword": {
+      "asset": "weapon_sword",
+      "hands": "one",
+      "grips": {
+        "main": {
+          "weapon_socket": "grip_main",
+          "hand": "hand_r",
+          "hand_socket": "grip",
+          "attach_angle": 80,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      },
+      "z_overrides": {},
+      "draw_order_note": "hand back layer < weapon < hand *_wrap layer for every gripping hand",
+      "grip_style": "forward",
+      "measure": {
+        "tile": [
+          140,
+          244
+        ],
+        "grip_to_pommel_end_px": 50
+      }
+    },
+    "axe": {
+      "asset": "weapon_axe",
+      "hands": "two",
+      "grips": {
+        "main": {
+          "weapon_socket": "grip_main",
+          "hand": "hand_r",
+          "hand_socket": "grip",
+          "attach_angle": 90,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "off": {
+          "weapon_socket": "grip_off",
+          "hand": "hand_l",
+          "hand_socket": "grip",
+          "attach_angle": 90,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      },
+      "z_overrides": {
+        "hand_l_wrap": 91
+      },
+      "draw_order_note": "hand back layer < weapon < hand *_wrap layer for every gripping hand",
+      "grip_style": "two-handed",
+      "off_grip_released_in": [
+        "victory",
+        "defeat",
+        "portrait"
+      ],
+      "off_grip_released_reason": "victory raises the axe one-handed (two-handed overhead does not fit the rig reach/canvas); defeat lets go with the rear hand. In every other pose the off hand is on grip_off.",
+      "off_hand_rule": "hand_l is NOT parented to the weapon. Every pose ships baked hand_l rotations that land hand_l.grip on weapon_axe.grip_off (validated <= 1.5 px / 2 deg). If an engine blends poses, blend all rots; do not re-solve.",
+      "measure": {
+        "tile": [
+          176,
+          338
+        ],
+        "grip_to_butt_end_px": 116,
+        "ratio_vs_sword_grip_to_pommel": 2.32,
+        "haft_length_px": 316,
+        "main_grip_fraction_from_butt": 0.358,
+        "hand_spacing_px": 78
+      }
+    },
+    "dagger": {
+      "asset": "weapon_dagger",
+      "hands": "one",
+      "grips": {
+        "main": {
+          "weapon_socket": "grip_main",
+          "hand": "hand_r",
+          "hand_socket": "grip",
+          "attach_angle": -90,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      },
+      "z_overrides": {},
+      "draw_order_note": "hand back layer < weapon < hand *_wrap layer for every gripping hand",
+      "grip_style": "reverse",
+      "grip_style_reason": "Reverse (ice-pick) grip: blade leaves the little-finger side and angles down toward the opponent. At fight scale it gives the dagger a silhouette that cannot be mistaken for a short sword, and its guard reads as a raised fist.",
+      "measure": {
+        "tile": [
+          100,
+          182
+        ]
+      }
+    }
+  },
+  "assets": [
+    {
+      "id": "torso",
+      "width": 228,
+      "height": 196,
+      "pivot": [
+        118.0,
+        146.0
+      ],
+      "sockets": {
+        "neck": [
+          118.0,
+          51.39999999999999
+        ],
+        "shoulder_l": [
+          31.200000000000003,
+          65.0
+        ],
+        "shoulder_r": [
+          194.88,
+          75.8
+        ],
+        "waist": [
+          118.0,
+          167.6
+        ]
+      },
+      "slot": "chassis",
+      "parent": null,
+      "parent_socket": null,
+      "angle": 0,
+      "z": 50,
+      "motion_bounds": [
+        -75,
+        40
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/torso.svg",
+      "files": {
+        "oxide": "parts/torso-oxide.png",
+        "petrol": "parts/torso-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/torso-oxide.png",
+        "petrol": "parts@2x/torso-petrol.png"
+      },
+      "material_under": "materials/torso-under.png",
+      "material_over": "materials/torso-over.png",
+      "paint_mask": "masks/torso-paint.png",
+      "material_under@2x": "materials@2x/torso-under.png",
+      "material_over@2x": "materials@2x/torso-over.png",
+      "paint_mask@2x": "masks@2x/torso-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "head",
+      "width": 210,
+      "height": 180,
+      "pivot": [
+        99.0,
+        154.0
+      ],
+      "sockets": {},
+      "slot": "head",
+      "parent": "torso",
+      "parent_socket": "neck",
+      "angle": 0,
+      "z": 60,
+      "motion_bounds": [
+        -30,
+        35
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/head.svg",
+      "files": {
+        "oxide": "parts/head-oxide.png",
+        "petrol": "parts/head-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/head-oxide.png",
+        "petrol": "parts@2x/head-petrol.png"
+      },
+      "material_under": "materials/head-under.png",
+      "material_over": "materials/head-over.png",
+      "paint_mask": "masks/head-paint.png",
+      "material_under@2x": "materials@2x/head-under.png",
+      "material_over@2x": "materials@2x/head-over.png",
+      "paint_mask@2x": "masks@2x/head-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "pelvis",
+      "width": 160,
+      "height": 90,
+      "pivot": [
+        80.0,
+        35.0
+      ],
+      "sockets": {
+        "hip_l": [
+          37.44,
+          48.0
+        ],
+        "hip_r": [
+          119.2,
+          48.0
+        ]
+      },
+      "slot": "pelvis",
+      "parent": "torso",
+      "parent_socket": "waist",
+      "angle": 0,
+      "z": 40,
+      "motion_bounds": [
+        -25,
+        15
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/pelvis.svg",
+      "files": {
+        "oxide": "parts/pelvis-oxide.png",
+        "petrol": "parts/pelvis-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/pelvis-oxide.png",
+        "petrol": "parts@2x/pelvis-petrol.png"
+      },
+      "material_under": "materials/pelvis-under.png",
+      "material_over": "materials/pelvis-over.png",
+      "paint_mask": "masks/pelvis-paint.png",
+      "material_under@2x": "materials@2x/pelvis-under.png",
+      "material_over@2x": "materials@2x/pelvis-over.png",
+      "paint_mask@2x": "masks@2x/pelvis-paint.png",
+      "has_paint": false
+    },
+    {
+      "id": "upper_arm_l",
+      "width": 155,
+      "height": 150,
+      "pivot": [
+        80.0,
+        38.0
+      ],
+      "sockets": {
+        "elbow": [
+          80.0,
+          100.48
+        ]
+      },
+      "slot": "upper_arm_l",
+      "parent": "torso",
+      "parent_socket": "shoulder_l",
+      "angle": 30,
+      "z": 15,
+      "motion_bounds": [
+        -150,
+        225
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/upper_arm_l.svg",
+      "files": {
+        "oxide": "parts/upper_arm_l-oxide.png",
+        "petrol": "parts/upper_arm_l-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/upper_arm_l-oxide.png",
+        "petrol": "parts@2x/upper_arm_l-petrol.png"
+      },
+      "material_under": "materials/upper_arm_l-under.png",
+      "material_over": "materials/upper_arm_l-over.png",
+      "paint_mask": "masks/upper_arm_l-paint.png",
+      "material_under@2x": "materials@2x/upper_arm_l-under.png",
+      "material_over@2x": "materials@2x/upper_arm_l-over.png",
+      "paint_mask@2x": "masks@2x/upper_arm_l-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "forearm_l",
+      "width": 145,
+      "height": 140,
+      "pivot": [
+        80.0,
+        35.0
+      ],
+      "sockets": {
+        "wrist": [
+          80.0,
+          98.0
+        ]
+      },
+      "slot": "forearm_l",
+      "parent": "upper_arm_l",
+      "parent_socket": "elbow",
+      "angle": -57,
+      "z": 20,
+      "motion_bounds": [
+        -155,
+        40
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/forearm_l.svg",
+      "files": {
+        "oxide": "parts/forearm_l-oxide.png",
+        "petrol": "parts/forearm_l-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/forearm_l-oxide.png",
+        "petrol": "parts@2x/forearm_l-petrol.png"
+      },
+      "material_under": "materials/forearm_l-under.png",
+      "material_over": "materials/forearm_l-over.png",
+      "paint_mask": "masks/forearm_l-paint.png",
+      "material_under@2x": "materials@2x/forearm_l-under.png",
+      "material_over@2x": "materials@2x/forearm_l-over.png",
+      "paint_mask@2x": "masks@2x/forearm_l-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "thigh_l",
+      "width": 120,
+      "height": 150,
+      "pivot": [
+        60.0,
+        30.0
+      ],
+      "sockets": {
+        "knee": [
+          60.0,
+          92.32
+        ]
+      },
+      "slot": "thigh_l",
+      "parent": "pelvis",
+      "parent_socket": "hip_l",
+      "angle": 24,
+      "z": 30,
+      "motion_bounds": [
+        -65,
+        65
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/thigh_l.svg",
+      "files": {
+        "oxide": "parts/thigh_l-oxide.png",
+        "petrol": "parts/thigh_l-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/thigh_l-oxide.png",
+        "petrol": "parts@2x/thigh_l-petrol.png"
+      },
+      "material_under": "materials/thigh_l-under.png",
+      "material_over": "materials/thigh_l-over.png",
+      "paint_mask": "masks/thigh_l-paint.png",
+      "material_under@2x": "materials@2x/thigh_l-under.png",
+      "material_over@2x": "materials@2x/thigh_l-over.png",
+      "paint_mask@2x": "masks@2x/thigh_l-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "shin_l",
+      "width": 120,
+      "height": 150,
+      "pivot": [
+        60.0,
+        30.0
+      ],
+      "sockets": {
+        "ankle": [
+          60.0,
+          104.10000000000001
+        ]
+      },
+      "slot": "shin_l",
+      "parent": "thigh_l",
+      "parent_socket": "knee",
+      "angle": -13,
+      "z": 35,
+      "motion_bounds": [
+        -75,
+        110
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/shin_l.svg",
+      "files": {
+        "oxide": "parts/shin_l-oxide.png",
+        "petrol": "parts/shin_l-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/shin_l-oxide.png",
+        "petrol": "parts@2x/shin_l-petrol.png"
+      },
+      "material_under": "materials/shin_l-under.png",
+      "material_over": "materials/shin_l-over.png",
+      "paint_mask": "masks/shin_l-paint.png",
+      "material_under@2x": "materials@2x/shin_l-under.png",
+      "material_over@2x": "materials@2x/shin_l-over.png",
+      "paint_mask@2x": "masks@2x/shin_l-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "foot_l",
+      "width": 150,
+      "height": 100,
+      "pivot": [
+        60.0,
+        30.0
+      ],
+      "sockets": {},
+      "slot": "foot_l",
+      "parent": "shin_l",
+      "parent_socket": "ankle",
+      "angle": -11,
+      "z": 36,
+      "motion_bounds": [
+        -45,
+        55
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/foot_l.svg",
+      "files": {
+        "oxide": "parts/foot_l-oxide.png",
+        "petrol": "parts/foot_l-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/foot_l-oxide.png",
+        "petrol": "parts@2x/foot_l-petrol.png"
+      },
+      "material_under": "materials/foot_l-under.png",
+      "material_over": "materials/foot_l-over.png",
+      "paint_mask": "masks/foot_l-paint.png",
+      "material_under@2x": "materials@2x/foot_l-under.png",
+      "material_over@2x": "materials@2x/foot_l-over.png",
+      "paint_mask@2x": "masks@2x/foot_l-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "upper_arm_r",
+      "width": 155,
+      "height": 150,
+      "pivot": [
+        80.0,
+        38.0
+      ],
+      "sockets": {
+        "elbow": [
+          80.0,
+          100.48
+        ]
+      },
+      "slot": "upper_arm_r",
+      "parent": "torso",
+      "parent_socket": "shoulder_r",
+      "angle": -24,
+      "z": 70,
+      "motion_bounds": [
+        -100,
+        110
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/upper_arm_r.svg",
+      "files": {
+        "oxide": "parts/upper_arm_r-oxide.png",
+        "petrol": "parts/upper_arm_r-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/upper_arm_r-oxide.png",
+        "petrol": "parts@2x/upper_arm_r-petrol.png"
+      },
+      "material_under": "materials/upper_arm_r-under.png",
+      "material_over": "materials/upper_arm_r-over.png",
+      "paint_mask": "masks/upper_arm_r-paint.png",
+      "material_under@2x": "materials@2x/upper_arm_r-under.png",
+      "material_over@2x": "materials@2x/upper_arm_r-over.png",
+      "paint_mask@2x": "masks@2x/upper_arm_r-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "forearm_r",
+      "width": 145,
+      "height": 140,
+      "pivot": [
+        80.0,
+        35.0
+      ],
+      "sockets": {
+        "wrist": [
+          80.0,
+          98.0
+        ]
+      },
+      "slot": "forearm_r",
+      "parent": "upper_arm_r",
+      "parent_socket": "elbow",
+      "angle": -112,
+      "z": 75,
+      "motion_bounds": [
+        -255,
+        20
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/forearm_r.svg",
+      "files": {
+        "oxide": "parts/forearm_r-oxide.png",
+        "petrol": "parts/forearm_r-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/forearm_r-oxide.png",
+        "petrol": "parts@2x/forearm_r-petrol.png"
+      },
+      "material_under": "materials/forearm_r-under.png",
+      "material_over": "materials/forearm_r-over.png",
+      "paint_mask": "masks/forearm_r-paint.png",
+      "material_under@2x": "materials@2x/forearm_r-under.png",
+      "material_over@2x": "materials@2x/forearm_r-over.png",
+      "paint_mask@2x": "masks@2x/forearm_r-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "thigh_r",
+      "width": 120,
+      "height": 150,
+      "pivot": [
+        60.0,
+        30.0
+      ],
+      "sockets": {
+        "knee": [
+          60.0,
+          92.32
+        ]
+      },
+      "slot": "thigh_r",
+      "parent": "pelvis",
+      "parent_socket": "hip_r",
+      "angle": -27,
+      "z": 55,
+      "motion_bounds": [
+        -95,
+        65
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/thigh_r.svg",
+      "files": {
+        "oxide": "parts/thigh_r-oxide.png",
+        "petrol": "parts/thigh_r-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/thigh_r-oxide.png",
+        "petrol": "parts@2x/thigh_r-petrol.png"
+      },
+      "material_under": "materials/thigh_r-under.png",
+      "material_over": "materials/thigh_r-over.png",
+      "paint_mask": "masks/thigh_r-paint.png",
+      "material_under@2x": "materials@2x/thigh_r-under.png",
+      "material_over@2x": "materials@2x/thigh_r-over.png",
+      "paint_mask@2x": "masks@2x/thigh_r-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "shin_r",
+      "width": 120,
+      "height": 150,
+      "pivot": [
+        60.0,
+        30.0
+      ],
+      "sockets": {
+        "ankle": [
+          60.0,
+          104.10000000000001
+        ]
+      },
+      "slot": "shin_r",
+      "parent": "thigh_r",
+      "parent_socket": "knee",
+      "angle": 15,
+      "z": 56,
+      "motion_bounds": [
+        -65,
+        120
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/shin_r.svg",
+      "files": {
+        "oxide": "parts/shin_r-oxide.png",
+        "petrol": "parts/shin_r-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/shin_r-oxide.png",
+        "petrol": "parts@2x/shin_r-petrol.png"
+      },
+      "material_under": "materials/shin_r-under.png",
+      "material_over": "materials/shin_r-over.png",
+      "paint_mask": "masks/shin_r-paint.png",
+      "material_under@2x": "materials@2x/shin_r-under.png",
+      "material_over@2x": "materials@2x/shin_r-over.png",
+      "paint_mask@2x": "masks@2x/shin_r-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "foot_r",
+      "width": 150,
+      "height": 100,
+      "pivot": [
+        60.0,
+        30.0
+      ],
+      "sockets": {},
+      "slot": "foot_r",
+      "parent": "shin_r",
+      "parent_socket": "ankle",
+      "angle": 12,
+      "z": 57,
+      "motion_bounds": [
+        -30,
+        55
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/foot_r.svg",
+      "files": {
+        "oxide": "parts/foot_r-oxide.png",
+        "petrol": "parts/foot_r-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/foot_r-oxide.png",
+        "petrol": "parts@2x/foot_r-petrol.png"
+      },
+      "material_under": "materials/foot_r-under.png",
+      "material_over": "materials/foot_r-over.png",
+      "paint_mask": "masks/foot_r-paint.png",
+      "material_under@2x": "materials@2x/foot_r-under.png",
+      "material_over@2x": "materials@2x/foot_r-over.png",
+      "paint_mask@2x": "masks@2x/foot_r-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "hand_l",
+      "width": 120,
+      "height": 112,
+      "pivot": [
+        60.0,
+        24.0
+      ],
+      "sockets": {
+        "grip": [
+          60.0,
+          62.0
+        ],
+        "wrap": [
+          60.0,
+          24.0
+        ]
+      },
+      "slot": "hand_l",
+      "parent": "forearm_l",
+      "parent_socket": "wrist",
+      "angle": 0,
+      "z": 65,
+      "motion_bounds": [
+        -45,
+        75
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/hand_l.svg",
+      "files": {
+        "oxide": "parts/hand_l-oxide.png",
+        "petrol": "parts/hand_l-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/hand_l-oxide.png",
+        "petrol": "parts@2x/hand_l-petrol.png"
+      },
+      "material_under": "materials/hand_l-under.png",
+      "material_over": "materials/hand_l-over.png",
+      "paint_mask": "masks/hand_l-paint.png",
+      "material_under@2x": "materials@2x/hand_l-under.png",
+      "material_over@2x": "materials@2x/hand_l-over.png",
+      "paint_mask@2x": "masks@2x/hand_l-paint.png",
+      "has_paint": false
+    },
+    {
+      "id": "hand_l_wrap",
+      "width": 120,
+      "height": 112,
+      "pivot": [
+        60.0,
+        24.0
+      ],
+      "sockets": {},
+      "slot": "hand_l_wrap",
+      "parent": "hand_l",
+      "parent_socket": "wrap",
+      "angle": 0,
+      "z": 66,
+      "motion_bounds": [
+        0,
+        0
+      ],
+      "role": "hand-front-layer",
+      "note": "curled fingers/thumb drawn OVER the weapon handle; same tile/pivot as its hand; always drawn",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/hand_l_wrap.svg",
+      "files": {
+        "oxide": "parts/hand_l_wrap-oxide.png",
+        "petrol": "parts/hand_l_wrap-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/hand_l_wrap-oxide.png",
+        "petrol": "parts@2x/hand_l_wrap-petrol.png"
+      },
+      "material_under": "materials/hand_l_wrap-under.png",
+      "material_over": "materials/hand_l_wrap-over.png",
+      "paint_mask": "masks/hand_l_wrap-paint.png",
+      "material_under@2x": "materials@2x/hand_l_wrap-under.png",
+      "material_over@2x": "materials@2x/hand_l_wrap-over.png",
+      "paint_mask@2x": "masks@2x/hand_l_wrap-paint.png",
+      "has_paint": false
+    },
+    {
+      "id": "hand_r",
+      "width": 120,
+      "height": 112,
+      "pivot": [
+        60.0,
+        24.0
+      ],
+      "sockets": {
+        "grip": [
+          60.0,
+          62.0
+        ],
+        "wrap": [
+          60.0,
+          24.0
+        ]
+      },
+      "slot": "hand_r",
+      "parent": "forearm_r",
+      "parent_socket": "wrist",
+      "angle": 0,
+      "z": 80,
+      "motion_bounds": [
+        -115,
+        185
+      ],
+      "role": "body",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/hand_r.svg",
+      "files": {
+        "oxide": "parts/hand_r-oxide.png",
+        "petrol": "parts/hand_r-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/hand_r-oxide.png",
+        "petrol": "parts@2x/hand_r-petrol.png"
+      },
+      "material_under": "materials/hand_r-under.png",
+      "material_over": "materials/hand_r-over.png",
+      "paint_mask": "masks/hand_r-paint.png",
+      "material_under@2x": "materials@2x/hand_r-under.png",
+      "material_over@2x": "materials@2x/hand_r-over.png",
+      "paint_mask@2x": "masks@2x/hand_r-paint.png",
+      "has_paint": false
+    },
+    {
+      "id": "hand_r_wrap",
+      "width": 120,
+      "height": 112,
+      "pivot": [
+        60.0,
+        24.0
+      ],
+      "sockets": {},
+      "slot": "hand_r_wrap",
+      "parent": "hand_r",
+      "parent_socket": "wrap",
+      "angle": 0,
+      "z": 92,
+      "motion_bounds": [
+        0,
+        0
+      ],
+      "role": "hand-front-layer",
+      "note": "curled fingers/thumb drawn OVER the weapon handle; same tile/pivot as its hand; always drawn",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/hand_r_wrap.svg",
+      "files": {
+        "oxide": "parts/hand_r_wrap-oxide.png",
+        "petrol": "parts/hand_r_wrap-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/hand_r_wrap-oxide.png",
+        "petrol": "parts@2x/hand_r_wrap-petrol.png"
+      },
+      "material_under": "materials/hand_r_wrap-under.png",
+      "material_over": "materials/hand_r_wrap-over.png",
+      "paint_mask": "masks/hand_r_wrap-paint.png",
+      "material_under@2x": "materials@2x/hand_r_wrap-under.png",
+      "material_over@2x": "materials@2x/hand_r_wrap-over.png",
+      "paint_mask@2x": "masks@2x/hand_r_wrap-paint.png",
+      "has_paint": false
+    },
+    {
+      "id": "weapon_sword",
+      "width": 140,
+      "height": 244,
+      "pivot": [
+        60.0,
+        184.0
+      ],
+      "sockets": {
+        "grip_main": [
+          60.0,
+          184.0
+        ]
+      },
+      "slot": "sword",
+      "parent": "hand_r",
+      "parent_socket": "grip",
+      "angle": 80,
+      "z": 85,
+      "motion_bounds": [
+        -180,
+        180
+      ],
+      "role": "weapon",
+      "note": "child of hand_r.grip; pivot = own grip_main socket; angle = attach_angle. Draw only the equipped weapon.",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/weapon_sword.svg",
+      "files": {
+        "oxide": "parts/weapon_sword-oxide.png",
+        "petrol": "parts/weapon_sword-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/weapon_sword-oxide.png",
+        "petrol": "parts@2x/weapon_sword-petrol.png"
+      },
+      "material_under": "materials/weapon_sword-under.png",
+      "material_over": "materials/weapon_sword-over.png",
+      "paint_mask": "masks/weapon_sword-paint.png",
+      "material_under@2x": "materials@2x/weapon_sword-under.png",
+      "material_over@2x": "materials@2x/weapon_sword-over.png",
+      "paint_mask@2x": "masks@2x/weapon_sword-paint.png",
+      "has_paint": false
+    },
+    {
+      "id": "weapon_axe",
+      "width": 176,
+      "height": 338,
+      "pivot": [
+        64.0,
+        214.0
+      ],
+      "sockets": {
+        "grip_main": [
+          64.0,
+          214.0
+        ],
+        "grip_off": [
+          64.0,
+          292.0
+        ]
+      },
+      "slot": "axe",
+      "parent": "hand_r",
+      "parent_socket": "grip",
+      "angle": 90,
+      "z": 85,
+      "motion_bounds": [
+        -180,
+        180
+      ],
+      "role": "weapon",
+      "note": "child of hand_r.grip; pivot = own grip_main socket; angle = attach_angle. Draw only the equipped weapon.",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/weapon_axe.svg",
+      "files": {
+        "oxide": "parts/weapon_axe-oxide.png",
+        "petrol": "parts/weapon_axe-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/weapon_axe-oxide.png",
+        "petrol": "parts@2x/weapon_axe-petrol.png"
+      },
+      "material_under": "materials/weapon_axe-under.png",
+      "material_over": "materials/weapon_axe-over.png",
+      "paint_mask": "masks/weapon_axe-paint.png",
+      "material_under@2x": "materials@2x/weapon_axe-under.png",
+      "material_over@2x": "materials@2x/weapon_axe-over.png",
+      "paint_mask@2x": "masks@2x/weapon_axe-paint.png",
+      "has_paint": false
+    },
+    {
+      "id": "weapon_dagger",
+      "width": 100,
+      "height": 182,
+      "pivot": [
+        50.0,
+        127.0
+      ],
+      "sockets": {
+        "grip_main": [
+          50.0,
+          127.0
+        ]
+      },
+      "slot": "dagger",
+      "parent": "hand_r",
+      "parent_socket": "grip",
+      "angle": -90,
+      "z": 85,
+      "motion_bounds": [
+        -180,
+        180
+      ],
+      "role": "weapon",
+      "note": "child of hand_r.grip; pivot = own grip_main socket; angle = attach_angle. Draw only the equipped weapon.",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "source/weapon_dagger.svg",
+      "files": {
+        "oxide": "parts/weapon_dagger-oxide.png",
+        "petrol": "parts/weapon_dagger-petrol.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/weapon_dagger-oxide.png",
+        "petrol": "parts@2x/weapon_dagger-petrol.png"
+      },
+      "material_under": "materials/weapon_dagger-under.png",
+      "material_over": "materials/weapon_dagger-over.png",
+      "paint_mask": "masks/weapon_dagger-paint.png",
+      "material_under@2x": "materials@2x/weapon_dagger-under.png",
+      "material_over@2x": "materials@2x/weapon_dagger-over.png",
+      "paint_mask@2x": "masks@2x/weapon_dagger-paint.png",
+      "has_paint": false
+    }
+  ],
+  "poses": {
+    "idle": {
+      "sword": {
+        "root": {
+          "x": 0,
+          "y": 10
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -61.71
+          },
+          "forearm_r": {
+            "rot": -35.59
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 81.43
+          },
+          "head": {
+            "rot": -5
+          },
+          "shin_l": {
+            "rot": 44.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -23.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": 4
+          },
+          "upper_arm_l": {
+            "rot": 51.21
+          },
+          "upper_arm_r": {
+            "rot": 34.16
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": -2,
+          "y": 18
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 43.58
+          },
+          "forearm_r": {
+            "rot": -78.76
+          },
+          "hand_l": {
+            "rot": 12.84
+          },
+          "hand_r": {
+            "rot": 102.18
+          },
+          "head": {
+            "rot": -10
+          },
+          "shin_l": {
+            "rot": -22.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": 4.35
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "torso": {
+            "rot": 12
+          },
+          "upper_arm_l": {
+            "rot": -81.42
+          },
+          "upper_arm_r": {
+            "rot": 60.57
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": 4,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -27.49
+          },
+          "foot_r": {
+            "rot": -3.97
+          },
+          "forearm_l": {
+            "rot": -71.82
+          },
+          "forearm_r": {
+            "rot": -31.99
+          },
+          "hand_l": {
+            "rot": 4.86
+          },
+          "hand_r": {
+            "rot": -22.39
+          },
+          "head": {
+            "rot": -6
+          },
+          "shin_l": {
+            "rot": 45.06
+          },
+          "shin_r": {
+            "rot": 34.43
+          },
+          "thigh_l": {
+            "rot": -25.58
+          },
+          "thigh_r": {
+            "rot": -38.46
+          },
+          "torso": {
+            "rot": 8
+          },
+          "upper_arm_l": {
+            "rot": 55.95
+          },
+          "upper_arm_r": {
+            "rot": 52.38
+          }
+        }
+      }
+    },
+    "victory": {
+      "sword": {
+        "root": {
+          "x": 0,
+          "y": 4
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -25.46
+          },
+          "foot_r": {
+            "rot": 9.25
+          },
+          "forearm_l": {
+            "rot": -59.81
+          },
+          "forearm_r": {
+            "rot": -9.53
+          },
+          "hand_l": {
+            "rot": 37.64
+          },
+          "hand_r": {
+            "rot": 140.62
+          },
+          "head": {
+            "rot": -16
+          },
+          "shin_l": {
+            "rot": 33.27
+          },
+          "shin_r": {
+            "rot": -15.0
+          },
+          "thigh_l": {
+            "rot": 1.2
+          },
+          "thigh_r": {
+            "rot": 14.75
+          },
+          "torso": {
+            "rot": -9
+          },
+          "upper_arm_l": {
+            "rot": 188.18
+          },
+          "upper_arm_r": {
+            "rot": -48.09
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": 0,
+          "y": 4
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -25.46
+          },
+          "foot_r": {
+            "rot": 9.25
+          },
+          "forearm_l": {
+            "rot": -59.81
+          },
+          "forearm_r": {
+            "rot": -41.38
+          },
+          "hand_l": {
+            "rot": 37.64
+          },
+          "hand_r": {
+            "rot": 138.45
+          },
+          "head": {
+            "rot": -16
+          },
+          "shin_l": {
+            "rot": 33.27
+          },
+          "shin_r": {
+            "rot": -15.0
+          },
+          "thigh_l": {
+            "rot": 1.2
+          },
+          "thigh_r": {
+            "rot": 14.75
+          },
+          "torso": {
+            "rot": -9
+          },
+          "upper_arm_l": {
+            "rot": -171.82
+          },
+          "upper_arm_r": {
+            "rot": -10.06
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": 0,
+          "y": 4
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -25.46
+          },
+          "foot_r": {
+            "rot": 9.25
+          },
+          "forearm_l": {
+            "rot": -59.81
+          },
+          "forearm_r": {
+            "rot": 69.84
+          },
+          "hand_l": {
+            "rot": 37.64
+          },
+          "hand_r": {
+            "rot": -108.39
+          },
+          "head": {
+            "rot": -16
+          },
+          "shin_l": {
+            "rot": 33.27
+          },
+          "shin_r": {
+            "rot": -15.0
+          },
+          "thigh_l": {
+            "rot": 1.2
+          },
+          "thigh_r": {
+            "rot": 14.75
+          },
+          "torso": {
+            "rot": -9
+          },
+          "upper_arm_l": {
+            "rot": 188.18
+          },
+          "upper_arm_r": {
+            "rot": -66.45
+          }
+        }
+      }
+    },
+    "defeat": {
+      "sword": {
+        "root": {
+          "x": -14,
+          "y": 98
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 61.0
+          },
+          "foot_r": {
+            "rot": 38.0
+          },
+          "forearm_l": {
+            "rot": 0.14
+          },
+          "forearm_r": {
+            "rot": 33.08
+          },
+          "hand_l": {
+            "rot": 42.59
+          },
+          "hand_r": {
+            "rot": 101.94
+          },
+          "head": {
+            "rot": 26
+          },
+          "pelvis": {
+            "rot": -18
+          },
+          "shin_l": {
+            "rot": 117.37
+          },
+          "shin_r": {
+            "rot": 97.85
+          },
+          "thigh_l": {
+            "rot": -34.37
+          },
+          "thigh_r": {
+            "rot": 8.15
+          },
+          "torso": {
+            "rot": 24
+          },
+          "upper_arm_l": {
+            "rot": -49.74
+          },
+          "upper_arm_r": {
+            "rot": -7.02
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": -14,
+          "y": 98
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 61.0
+          },
+          "foot_r": {
+            "rot": 38.0
+          },
+          "forearm_l": {
+            "rot": 0.14
+          },
+          "forearm_r": {
+            "rot": -34.55
+          },
+          "hand_l": {
+            "rot": 42.59
+          },
+          "hand_r": {
+            "rot": 177.09
+          },
+          "head": {
+            "rot": 26
+          },
+          "pelvis": {
+            "rot": -18
+          },
+          "shin_l": {
+            "rot": 117.37
+          },
+          "shin_r": {
+            "rot": 97.85
+          },
+          "thigh_l": {
+            "rot": -34.37
+          },
+          "thigh_r": {
+            "rot": 8.15
+          },
+          "torso": {
+            "rot": 24
+          },
+          "upper_arm_l": {
+            "rot": -49.74
+          },
+          "upper_arm_r": {
+            "rot": -21.55
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": -14,
+          "y": 98
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 61.0
+          },
+          "foot_r": {
+            "rot": 38.0
+          },
+          "forearm_l": {
+            "rot": 0.14
+          },
+          "forearm_r": {
+            "rot": -15.39
+          },
+          "hand_l": {
+            "rot": 42.59
+          },
+          "hand_r": {
+            "rot": -18.57
+          },
+          "head": {
+            "rot": 26
+          },
+          "pelvis": {
+            "rot": -18
+          },
+          "shin_l": {
+            "rot": 117.37
+          },
+          "shin_r": {
+            "rot": 97.85
+          },
+          "thigh_l": {
+            "rot": -34.37
+          },
+          "thigh_r": {
+            "rot": 8.15
+          },
+          "torso": {
+            "rot": 24
+          },
+          "upper_arm_l": {
+            "rot": -49.74
+          },
+          "upper_arm_r": {
+            "rot": 35.96
+          }
+        }
+      }
+    },
+    "quick_attack": {
+      "sword": {
+        "root": {
+          "x": -65,
+          "y": 10
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -61.71
+          },
+          "forearm_r": {
+            "rot": 9.41
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 81.43
+          },
+          "head": {
+            "rot": -15
+          },
+          "shin_l": {
+            "rot": 44.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -23.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": 16
+          },
+          "upper_arm_l": {
+            "rot": 39.21
+          },
+          "upper_arm_r": {
+            "rot": 12.16
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": -67,
+          "y": 18
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 56.98
+          },
+          "forearm_r": {
+            "rot": -31.01
+          },
+          "hand_l": {
+            "rot": 64.52
+          },
+          "hand_r": {
+            "rot": 170.99
+          },
+          "head": {
+            "rot": -20
+          },
+          "shin_l": {
+            "rot": -22.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": 4.35
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "torso": {
+            "rot": 24
+          },
+          "upper_arm_l": {
+            "rot": -112.61
+          },
+          "upper_arm_r": {
+            "rot": -22.0
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": -61,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -27.49
+          },
+          "foot_r": {
+            "rot": -3.97
+          },
+          "forearm_l": {
+            "rot": -71.82
+          },
+          "forearm_r": {
+            "rot": 13.01
+          },
+          "hand_l": {
+            "rot": 4.86
+          },
+          "hand_r": {
+            "rot": -22.39
+          },
+          "head": {
+            "rot": -16
+          },
+          "shin_l": {
+            "rot": 45.06
+          },
+          "shin_r": {
+            "rot": 34.43
+          },
+          "thigh_l": {
+            "rot": -25.58
+          },
+          "thigh_r": {
+            "rot": -38.46
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": 43.95
+          },
+          "upper_arm_r": {
+            "rot": 30.38
+          }
+        }
+      }
+    },
+    "heavy_windup": {
+      "sword": {
+        "root": {
+          "x": 0,
+          "y": 55
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -61.71
+          },
+          "forearm_r": {
+            "rot": -58.59
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 81.43
+          },
+          "head": {
+            "rot": 7
+          },
+          "shin_l": {
+            "rot": 44.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -23.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": -8
+          },
+          "upper_arm_l": {
+            "rot": 31.21
+          },
+          "upper_arm_r": {
+            "rot": -10.84
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": -2,
+          "y": 63
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 51.34
+          },
+          "forearm_r": {
+            "rot": -137.84
+          },
+          "hand_l": {
+            "rot": -39.03
+          },
+          "hand_r": {
+            "rot": 107.18
+          },
+          "head": {
+            "rot": 2
+          },
+          "shin_l": {
+            "rot": -22.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": 4.35
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "upper_arm_l": {
+            "rot": -81.33
+          },
+          "upper_arm_r": {
+            "rot": 70.64
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": 4,
+          "y": 61
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -27.49
+          },
+          "foot_r": {
+            "rot": -3.97
+          },
+          "forearm_l": {
+            "rot": -71.82
+          },
+          "forearm_r": {
+            "rot": -54.99
+          },
+          "hand_l": {
+            "rot": 4.86
+          },
+          "hand_r": {
+            "rot": -22.39
+          },
+          "head": {
+            "rot": 6
+          },
+          "shin_l": {
+            "rot": 45.06
+          },
+          "shin_r": {
+            "rot": 34.43
+          },
+          "thigh_l": {
+            "rot": -25.58
+          },
+          "thigh_r": {
+            "rot": -38.46
+          },
+          "torso": {
+            "rot": -4
+          },
+          "upper_arm_l": {
+            "rot": 35.95
+          },
+          "upper_arm_r": {
+            "rot": 7.38
+          }
+        }
+      }
+    },
+    "heavy_attack": {
+      "sword": {
+        "root": {
+          "x": 10,
+          "y": 10
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -61.71
+          },
+          "forearm_r": {
+            "rot": 34.41
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 81.43
+          },
+          "head": {
+            "rot": -20
+          },
+          "shin_l": {
+            "rot": 60.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -33.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": 24
+          },
+          "upper_arm_l": {
+            "rot": 36.21
+          },
+          "upper_arm_r": {
+            "rot": 24.16
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": 8,
+          "y": 18
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 90.16
+          },
+          "forearm_r": {
+            "rot": -35.78
+          },
+          "hand_l": {
+            "rot": 67.89
+          },
+          "hand_r": {
+            "rot": 171.0
+          },
+          "head": {
+            "rot": -25
+          },
+          "shin_l": {
+            "rot": -6.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": -5.65
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "torso": {
+            "rot": 32
+          },
+          "upper_arm_l": {
+            "rot": -133.06
+          },
+          "upper_arm_r": {
+            "rot": -1.23
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": 14,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -27.49
+          },
+          "foot_r": {
+            "rot": -3.97
+          },
+          "forearm_l": {
+            "rot": -71.82
+          },
+          "forearm_r": {
+            "rot": 38.01
+          },
+          "hand_l": {
+            "rot": 4.86
+          },
+          "hand_r": {
+            "rot": -22.39
+          },
+          "head": {
+            "rot": -21
+          },
+          "shin_l": {
+            "rot": 61.06
+          },
+          "shin_r": {
+            "rot": 34.43
+          },
+          "thigh_l": {
+            "rot": -35.58
+          },
+          "thigh_r": {
+            "rot": -38.46
+          },
+          "torso": {
+            "rot": 28
+          },
+          "upper_arm_l": {
+            "rot": 40.95
+          },
+          "upper_arm_r": {
+            "rot": 42.38
+          }
+        }
+      }
+    },
+    "dodge": {
+      "sword": {
+        "root": {
+          "x": -24,
+          "y": 30
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -61.71
+          },
+          "forearm_r": {
+            "rot": -35.59
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 81.43
+          },
+          "head": {
+            "rot": 7
+          },
+          "shin_l": {
+            "rot": 14.05
+          },
+          "shin_r": {
+            "rot": 58.56
+          },
+          "thigh_l": {
+            "rot": -13.87
+          },
+          "thigh_r": {
+            "rot": -39.24
+          },
+          "torso": {
+            "rot": -13
+          },
+          "upper_arm_l": {
+            "rot": 51.21
+          },
+          "upper_arm_r": {
+            "rot": 46.16
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": -26,
+          "y": 38
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 56.98
+          },
+          "forearm_r": {
+            "rot": -92.35
+          },
+          "hand_l": {
+            "rot": -8.72
+          },
+          "hand_r": {
+            "rot": 134.93
+          },
+          "head": {
+            "rot": 2
+          },
+          "shin_l": {
+            "rot": -52.02
+          },
+          "shin_r": {
+            "rot": 67.96
+          },
+          "thigh_l": {
+            "rot": 14.35
+          },
+          "thigh_r": {
+            "rot": -60.59
+          },
+          "torso": {
+            "rot": -5
+          },
+          "upper_arm_l": {
+            "rot": -81.17
+          },
+          "upper_arm_r": {
+            "rot": 33.41
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": -20,
+          "y": 36
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -27.49
+          },
+          "foot_r": {
+            "rot": -3.97
+          },
+          "forearm_l": {
+            "rot": -71.82
+          },
+          "forearm_r": {
+            "rot": -31.99
+          },
+          "hand_l": {
+            "rot": 4.86
+          },
+          "hand_r": {
+            "rot": -22.39
+          },
+          "head": {
+            "rot": 6
+          },
+          "shin_l": {
+            "rot": 15.06
+          },
+          "shin_r": {
+            "rot": 70.43
+          },
+          "thigh_l": {
+            "rot": -15.58
+          },
+          "thigh_r": {
+            "rot": -53.46
+          },
+          "torso": {
+            "rot": -9
+          },
+          "upper_arm_l": {
+            "rot": 55.95
+          },
+          "upper_arm_r": {
+            "rot": 64.38
+          }
+        }
+      }
+    },
+    "hit": {
+      "sword": {
+        "root": {
+          "x": -15,
+          "y": 10
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -81.71
+          },
+          "forearm_r": {
+            "rot": -20.59
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 81.43
+          },
+          "head": {
+            "rot": 13
+          },
+          "shin_l": {
+            "rot": 44.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -23.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": -14
+          },
+          "upper_arm_l": {
+            "rot": 81.21
+          },
+          "upper_arm_r": {
+            "rot": 59.16
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": -17,
+          "y": 18
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 22.85
+          },
+          "forearm_r": {
+            "rot": -100.87
+          },
+          "hand_l": {
+            "rot": 9.82
+          },
+          "hand_r": {
+            "rot": 96.95
+          },
+          "head": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": -22.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": 4.35
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "torso": {
+            "rot": -6
+          },
+          "upper_arm_l": {
+            "rot": -71.69
+          },
+          "upper_arm_r": {
+            "rot": 73.9
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": -11,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -27.49
+          },
+          "foot_r": {
+            "rot": -3.97
+          },
+          "forearm_l": {
+            "rot": -91.82
+          },
+          "forearm_r": {
+            "rot": -16.99
+          },
+          "hand_l": {
+            "rot": 4.86
+          },
+          "hand_r": {
+            "rot": -22.39
+          },
+          "head": {
+            "rot": 12
+          },
+          "shin_l": {
+            "rot": 45.06
+          },
+          "shin_r": {
+            "rot": 34.43
+          },
+          "thigh_l": {
+            "rot": -25.58
+          },
+          "thigh_r": {
+            "rot": -38.46
+          },
+          "torso": {
+            "rot": -10
+          },
+          "upper_arm_l": {
+            "rot": 85.95
+          },
+          "upper_arm_r": {
+            "rot": 77.38
+          }
+        }
+      }
+    },
+    "portrait": {
+      "*": {
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "parts": {
+          "head": {
+            "rot": -4
+          },
+          "upper_arm_r": {
+            "rot": 14
+          },
+          "forearm_r": {
+            "rot": 60
+          },
+          "upper_arm_l": {
+            "rot": -10
+          }
+        }
+      }
+    }
+  },
+  "pose_meta": {
+    "idle": {
+      "kind": "stance",
+      "use": "stable / customise / fight idle. Per-weapon guard.",
+      "feet": "planted on ground_y",
+      "per_weapon": true
+    },
+    "victory": {
+      "kind": "result",
+      "use": "result overlay, own bot. Weapon raised, chest out, rear fist pumped.",
+      "feet": "planted",
+      "per_weapon": true
+    },
+    "defeat": {
+      "kind": "result",
+      "use": "result overlay / KO hold. Both knees down, slumped, head hanging, weapon grounded.",
+      "feet": "knees on ground_y",
+      "per_weapon": true,
+      "fx": [
+        "defeat_sparks"
+      ]
+    },
+    "portrait": {
+      "kind": "render",
+      "use": "ranking head-and-shoulders portrait source pose; render WITHOUT weapon",
+      "per_weapon": false
+    },
+    "quick_attack": {
+      "kind": "combat-carried-from-v002",
+      "use": "v002 delta re-based onto the v003 per-weapon guard; axe two-handed re-solved. Not re-art-directed.",
+      "per_weapon": true
+    },
+    "heavy_windup": {
+      "kind": "combat-carried-from-v002",
+      "use": "v002 delta re-based onto the v003 per-weapon guard; axe two-handed re-solved. Not re-art-directed.",
+      "per_weapon": true
+    },
+    "heavy_attack": {
+      "kind": "combat-carried-from-v002",
+      "use": "v002 delta re-based onto the v003 per-weapon guard; axe two-handed re-solved. Not re-art-directed.",
+      "per_weapon": true
+    },
+    "dodge": {
+      "kind": "combat-carried-from-v002",
+      "use": "v002 delta re-based onto the v003 per-weapon guard; axe two-handed re-solved. Not re-art-directed.",
+      "per_weapon": true
+    },
+    "hit": {
+      "kind": "combat-carried-from-v002",
+      "use": "v002 delta re-based onto the v003 per-weapon guard; axe two-handed re-solved. Not re-art-directed.",
+      "per_weapon": true
+    }
+  },
+  "pose_format": {
+    "shape": "{poseId: {weaponId | \"*\": {root: {x, y}, parts: {partId: {rot}}}}}",
+    "lookup": "poses[poseId][weaponId] ?? poses[poseId][\"*\"]",
+    "root": "x/y px added to root.position",
+    "rot": "degrees ADDED to the part's default `angle`, rotating around its own pivot. Missing part = 0. torso.rot is the root rotation.",
+    "weapon": "never posed directly; it follows hand_r via grips.main.attach_angle",
+    "blend": "linear interpolation of root.x/y and each rot is valid between any two entries of the same weapon"
+  },
+  "fx": {
+    "defeat_sparks": {
+      "frames": [
+        "fx/defeat-sparks-00.png",
+        "fx/defeat-sparks-01.png",
+        "fx/defeat-sparks-02.png"
+      ],
+      "frames@2x": [
+        "fx@2x/defeat-sparks-00.png",
+        "fx@2x/defeat-sparks-01.png",
+        "fx@2x/defeat-sparks-02.png"
+      ],
+      "source": [
+        "source/fx-defeat-sparks-00.svg",
+        "source/fx-defeat-sparks-01.svg",
+        "source/fx-defeat-sparks-02.svg"
+      ],
+      "width": 184,
+      "height": 132,
+      "pivot": [
+        84,
+        100
+      ],
+      "parent": "torso",
+      "parent_socket": "shoulder_l",
+      "offset": [
+        4,
+        -22
+      ],
+      "angle": 0,
+      "orientation": "screen-up (position follows the socket; do not inherit torso rotation)",
+      "z": 95,
+      "poses": [
+        "defeat"
+      ],
+      "playback": "optional one-shot on KO hold; frames 00-02 then hide; static frame 01 for reduced motion or skip",
+      "timing": "not approved"
+    }
+  },
+  "plates": {
+    "victory": {
+      "svg": "plates/svg/victory.svg",
+      "png": {
+        "1x": "plates/png/1x/victory.png",
+        "2x": "plates/png/2x/victory.png",
+        "3x": "plates/png/3x/victory.png"
+      },
+      "size_pt": [
+        300,
+        96
+      ],
+      "text": "VICTORY",
+      "accessibility_label": "Victory"
+    },
+    "defeat": {
+      "svg": "plates/svg/defeat.svg",
+      "png": {
+        "1x": "plates/png/1x/defeat.png",
+        "2x": "plates/png/2x/defeat.png",
+        "3x": "plates/png/3x/defeat.png"
+      },
+      "size_pt": [
+        300,
+        96
+      ],
+      "text": "DEFEAT",
+      "accessibility_label": "Defeat"
+    },
+    "new_record": {
+      "svg": "plates/svg/new-record.svg",
+      "png": {
+        "1x": "plates/png/1x/new-record.png",
+        "2x": "plates/png/2x/new-record.png",
+        "3x": "plates/png/3x/new-record.png"
+      },
+      "size_pt": [
+        220,
+        64
+      ],
+      "text": "NEW RECORD",
+      "accessibility_label": "New record"
+    }
+  },
+  "portrait": {
+    "pose": "portrait",
+    "exclude_assets": [
+      "weapon_sword",
+      "weapon_axe",
+      "weapon_dagger"
+    ],
+    "anchor": {
+      "asset": "torso",
+      "socket": "neck"
+    },
+    "crop_center_offset": [
+      -4,
+      -16
+    ],
+    "crop_size": 256,
+    "facing": "right (canonical); mirror only if the row layout requires it",
+    "background": "transparent; UI supplies the tag/frame",
+    "sizes_px": [
+      96,
+      192,
+      288
+    ],
+    "filter": "render the full 640 assembly at >= 2x parts, then crop and Lanczos-downsample",
+    "note": "crop is anchored to the world position of torso.neck in the portrait pose, so any future head/torso part or paint keeps the framing",
+    "crop_rect_canvas_px": [
+      178.0,
+      37.4,
+      256,
+      256
+    ],
+    "samples": {
+      "oxide": {
+        "96": "portraits/oxide-96.png",
+        "192": "portraits/oxide-192.png",
+        "288": "portraits/oxide-288.png"
+      },
+      "petrol": {
+        "96": "portraits/petrol-96.png",
+        "192": "portraits/petrol-192.png",
+        "288": "portraits/petrol-288.png"
+      }
+    }
+  },
+  "atlas": null,
+  "audio_ids": [],
+  "integration": {
+    "component": "BotAssembler",
+    "existing_props": [
+      "loadout",
+      "facing",
+      "paintId",
+      "weaponId",
+      "motionPose?",
+      "reducedMotion?",
+      "placeholder?"
+    ],
+    "mapping": {
+      "paintId": "paint_ids",
+      "weaponId": "weapons keys (sword|axe|dagger) -> weapons[w].asset",
+      "motionPose": "poses key; default \"idle\"",
+      "facing": "whole-hierarchy mirror",
+      "reducedMotion": "snap to the target pose, no tween; result plates still shown"
+    },
+    "status": "adapter-needed-exact-F7-types-not-verified"
+  },
+  "validation_summary": {
+    "passed": true,
+    "checks": 2178,
+    "failures": [],
+    "pose_weapon_cases": 27,
+    "min_joint_overlap_px": 195,
+    "max_offhand_error_px": 0.648,
+    "max_offhand_angle_err_deg": 0.1,
+    "min_finger_cover_of_handle": 1.0,
+    "meaning": "Geometry/file/raster proof from manifest + PNGs. Not art acceptance, native performance, animation timing or full collision clearance.",
+    "negative_tests": [
+      {
+        "mutation": "axe gripped under head (v002 bug)",
+        "caught": true
+      },
+      {
+        "mutation": "finger layer behind handle",
+        "caught": true
+      },
+      {
+        "mutation": "axe off-hand rotations missing",
+        "caught": true
+      },
+      {
+        "mutation": "v002 shared 180deg mount, data only",
+        "caught": true
+      }
+    ]
+  },
+  "file_inventory": [
+    {
+      "path": "INTEGRATION-DELTA-v002-to-v003.md",
+      "bytes": 3949,
+      "sha256": "e277457e570195c2638a2015e292ba6de312b6526156aace98ed501255100bc2"
+    },
+    {
+      "path": "PROVENANCE.md",
+      "bytes": 1653,
+      "sha256": "472286aa1054634d23897e97ecaea1e560e5d6257b12864482d18f90411eac2a"
+    },
+    {
+      "path": "README.md",
+      "bytes": 9481,
+      "sha256": "5000423a5fa57bd6befefbdfac24370dab9250c2081a1ff7d1871b735b450120"
+    },
+    {
+      "path": "fx/defeat-sparks-00.png",
+      "bytes": 7447,
+      "sha256": "88cfa82af6da5588b6881aee0f259bc9041d83829a2da9db5cc6865db2f49ffa",
+      "width": 184,
+      "height": 132,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/defeat-sparks-01.png",
+      "bytes": 9286,
+      "sha256": "4cb7e8aaae707119526cd9a196175b41c2d53253bb6fa9f5635e86afc165f076",
+      "width": 184,
+      "height": 132,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/defeat-sparks-02.png",
+      "bytes": 8742,
+      "sha256": "667cc741f0edabccbcae495467287369340479d78eb1964480fb8ac46187bc81",
+      "width": 184,
+      "height": 132,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/defeat-sparks-00.png",
+      "bytes": 17313,
+      "sha256": "1a483b858e5a80ec8ccdc7b4948220976a3423c8c7fc9687b24b4bb4953f340e",
+      "width": 368,
+      "height": 264,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/defeat-sparks-01.png",
+      "bytes": 21431,
+      "sha256": "04a41c942cdd22f406d953a02b70c7c276d8a5c356509cc0092fe0df83349d55",
+      "width": 368,
+      "height": 264,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/defeat-sparks-02.png",
+      "bytes": 22239,
+      "sha256": "bcc98a260cb1829021d20d5415bb6c589ca11e350c1cd86e8c7da6f627dad141",
+      "width": 368,
+      "height": 264,
+      "mode": "RGBA"
+    },
+    {
+      "path": "integration-delta-v002-to-v003.json",
+      "bytes": 9729,
+      "sha256": "4ac4240f94a75277cc66b0fa59a9fd710d015e8f4620e470d83d34b5218953c0"
+    },
+    {
+      "path": "masks/foot_l-paint.png",
+      "bytes": 1111,
+      "sha256": "0246ca1a858fd55f7db64b52c6da8a5bc6975112413ade3b32d2eeeca0ad3d71",
+      "width": 150,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/foot_r-paint.png",
+      "bytes": 1111,
+      "sha256": "0246ca1a858fd55f7db64b52c6da8a5bc6975112413ade3b32d2eeeca0ad3d71",
+      "width": 150,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/forearm_l-paint.png",
+      "bytes": 1341,
+      "sha256": "766b029c3291a371c4136d4dff0cb9b0ecc1aed3675ee3f8ebe355ecf360554c",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/forearm_r-paint.png",
+      "bytes": 1341,
+      "sha256": "766b029c3291a371c4136d4dff0cb9b0ecc1aed3675ee3f8ebe355ecf360554c",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/hand_l-paint.png",
+      "bytes": 132,
+      "sha256": "305ac7ac04059a559065a2f559b813cb1a8e0b3ec896788ddca3fed4e8916a2c",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/hand_l_wrap-paint.png",
+      "bytes": 132,
+      "sha256": "305ac7ac04059a559065a2f559b813cb1a8e0b3ec896788ddca3fed4e8916a2c",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/hand_r-paint.png",
+      "bytes": 132,
+      "sha256": "305ac7ac04059a559065a2f559b813cb1a8e0b3ec896788ddca3fed4e8916a2c",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/hand_r_wrap-paint.png",
+      "bytes": 132,
+      "sha256": "305ac7ac04059a559065a2f559b813cb1a8e0b3ec896788ddca3fed4e8916a2c",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/head-paint.png",
+      "bytes": 2348,
+      "sha256": "6eb445eb5f21c777265d70ddef2ecd6857c8d1a4af517addc3ebfc7f086b2a60",
+      "width": 210,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/pelvis-paint.png",
+      "bytes": 136,
+      "sha256": "5c582dc4981bf3567c79567c84f087bcaa12b3bb1449ad5255acc6d568b1d3b4",
+      "width": 160,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/shin_l-paint.png",
+      "bytes": 932,
+      "sha256": "b0d4112ff5f41baab56ff232453b58dcd6f887ff94c6dfdefad50259a814b869",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/shin_r-paint.png",
+      "bytes": 932,
+      "sha256": "b0d4112ff5f41baab56ff232453b58dcd6f887ff94c6dfdefad50259a814b869",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/thigh_l-paint.png",
+      "bytes": 955,
+      "sha256": "2904c418255575a2dac60ca62210a3a55510468ec874e27b5c0c1595c8ad364f",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/thigh_r-paint.png",
+      "bytes": 955,
+      "sha256": "2904c418255575a2dac60ca62210a3a55510468ec874e27b5c0c1595c8ad364f",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/torso-paint.png",
+      "bytes": 1849,
+      "sha256": "561dc2d20f8f75291e473afbe97fb7ae6a07cc3a2728486baa82e23e2746bfeb",
+      "width": 228,
+      "height": 196,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/upper_arm_l-paint.png",
+      "bytes": 1433,
+      "sha256": "704ed52a743510cfefd610492ca464fed14bf471190ee017d7f48ed14386d7ea",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/upper_arm_r-paint.png",
+      "bytes": 1433,
+      "sha256": "704ed52a743510cfefd610492ca464fed14bf471190ee017d7f48ed14386d7ea",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/weapon_axe-paint.png",
+      "bytes": 311,
+      "sha256": "54908907539dc5c6e43f1a756f96da51570e1fab025e9af5138b51d7dab51055",
+      "width": 176,
+      "height": 338,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/weapon_dagger-paint.png",
+      "bytes": 150,
+      "sha256": "8005874fa8cac0644ce18d9b9736787492c292b620d401ac37b8992de1166731",
+      "width": 100,
+      "height": 182,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks/weapon_sword-paint.png",
+      "bytes": 213,
+      "sha256": "71ce0294d9f891e24b830393addadf2329524ffe5499987a1b4026d0df5284d8",
+      "width": 140,
+      "height": 244,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/foot_l-paint.png",
+      "bytes": 2263,
+      "sha256": "fe14b18c82c4d4096d4fb460c2acd101c0abc8fb67cc295986c8b05522894c70",
+      "width": 300,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/foot_r-paint.png",
+      "bytes": 2263,
+      "sha256": "fe14b18c82c4d4096d4fb460c2acd101c0abc8fb67cc295986c8b05522894c70",
+      "width": 300,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/forearm_l-paint.png",
+      "bytes": 2711,
+      "sha256": "44d819c6922e2ddba8de0ef4a927b06fd0af1b645cb253638ef5ab1c2e764069",
+      "width": 290,
+      "height": 280,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/forearm_r-paint.png",
+      "bytes": 2711,
+      "sha256": "44d819c6922e2ddba8de0ef4a927b06fd0af1b645cb253638ef5ab1c2e764069",
+      "width": 290,
+      "height": 280,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/hand_l-paint.png",
+      "bytes": 288,
+      "sha256": "bb9e5f424ca60688cf3b3e265e5c5115d63a3d9d4fedaf4de0c34983622ba0fb",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/hand_l_wrap-paint.png",
+      "bytes": 288,
+      "sha256": "bb9e5f424ca60688cf3b3e265e5c5115d63a3d9d4fedaf4de0c34983622ba0fb",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/hand_r-paint.png",
+      "bytes": 288,
+      "sha256": "bb9e5f424ca60688cf3b3e265e5c5115d63a3d9d4fedaf4de0c34983622ba0fb",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/hand_r_wrap-paint.png",
+      "bytes": 288,
+      "sha256": "bb9e5f424ca60688cf3b3e265e5c5115d63a3d9d4fedaf4de0c34983622ba0fb",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/head-paint.png",
+      "bytes": 4953,
+      "sha256": "12024a87d99b3fb6014e440b82a58a327fcbe5e48b51eac7ff4f5d60ecf1ba73",
+      "width": 420,
+      "height": 360,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/pelvis-paint.png",
+      "bytes": 303,
+      "sha256": "bb1cadf9ca3a357d8b0c5b75bc3a80d7535469f07af603dd0fd935f34124eb66",
+      "width": 320,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/shin_l-paint.png",
+      "bytes": 1818,
+      "sha256": "0da82521a667cc004dd2b2921372267e46db7aaeafbd5230f165e6494049763e",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/shin_r-paint.png",
+      "bytes": 1818,
+      "sha256": "0da82521a667cc004dd2b2921372267e46db7aaeafbd5230f165e6494049763e",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/thigh_l-paint.png",
+      "bytes": 1971,
+      "sha256": "4773f84e89ec1986cc272a34feaa9c5686fe403cb5ff7700748abc7f5e7c8956",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/thigh_r-paint.png",
+      "bytes": 1971,
+      "sha256": "4773f84e89ec1986cc272a34feaa9c5686fe403cb5ff7700748abc7f5e7c8956",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/torso-paint.png",
+      "bytes": 3827,
+      "sha256": "1e963de66948f89bad4a2459b31bfe6f811a171fa3049ec8a9adf752d7de63d2",
+      "width": 456,
+      "height": 392,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/upper_arm_l-paint.png",
+      "bytes": 2895,
+      "sha256": "d27a9d9390625e7780207914132dd21fe322fe46bb3afc10e5426bb0fbf7bca7",
+      "width": 310,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/upper_arm_r-paint.png",
+      "bytes": 2895,
+      "sha256": "d27a9d9390625e7780207914132dd21fe322fe46bb3afc10e5426bb0fbf7bca7",
+      "width": 310,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/weapon_axe-paint.png",
+      "bytes": 1002,
+      "sha256": "8a1bd0ff816bd96d7e8e0208e6758f205b04a8db4238c981d39094124827cd26",
+      "width": 352,
+      "height": 676,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/weapon_dagger-paint.png",
+      "bytes": 362,
+      "sha256": "66ac230ffc829b01bddf21f77a46ad59f96014638ef404ec9ebc437409888b83",
+      "width": 200,
+      "height": 364,
+      "mode": "RGBA"
+    },
+    {
+      "path": "masks@2x/weapon_sword-paint.png",
+      "bytes": 610,
+      "sha256": "c1010ff31313734d981b6fe67794acb0c497b03ee97ef92075e35196fbc65c92",
+      "width": 280,
+      "height": 488,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/foot_l-over.png",
+      "bytes": 4480,
+      "sha256": "9e522a610c642232f7241ddd234b89edd50d3fb4e84e4823110ee98c8b18ccac",
+      "width": 150,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/foot_l-under.png",
+      "bytes": 3618,
+      "sha256": "48b5a0b72a54797eae8146472a99d3b77a971337f55826837e0849f6cf82692f",
+      "width": 150,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/foot_r-over.png",
+      "bytes": 4480,
+      "sha256": "9e522a610c642232f7241ddd234b89edd50d3fb4e84e4823110ee98c8b18ccac",
+      "width": 150,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/foot_r-under.png",
+      "bytes": 3618,
+      "sha256": "48b5a0b72a54797eae8146472a99d3b77a971337f55826837e0849f6cf82692f",
+      "width": 150,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/forearm_l-over.png",
+      "bytes": 5216,
+      "sha256": "e878c64aeb2cfd43f0333d3a7ca87af55b472176acbea152540fc6a63924c3e7",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/forearm_l-under.png",
+      "bytes": 5998,
+      "sha256": "591fe7f88e65dafa689d9138985c8b027070e2c782ad29eb41fe818f044f9a16",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/forearm_r-over.png",
+      "bytes": 5216,
+      "sha256": "e878c64aeb2cfd43f0333d3a7ca87af55b472176acbea152540fc6a63924c3e7",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/forearm_r-under.png",
+      "bytes": 5998,
+      "sha256": "591fe7f88e65dafa689d9138985c8b027070e2c782ad29eb41fe818f044f9a16",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_l-over.png",
+      "bytes": 132,
+      "sha256": "305ac7ac04059a559065a2f559b813cb1a8e0b3ec896788ddca3fed4e8916a2c",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_l-under.png",
+      "bytes": 3366,
+      "sha256": "1cf811b3125e72d77970212f2e9927e1e6efbe93b5cbe6814165f479937c42fd",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_l_wrap-over.png",
+      "bytes": 2346,
+      "sha256": "6421dc961c4a8457e581e3946c2ff4a8feefb930669abbab0d7c41de1ae68474",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_l_wrap-under.png",
+      "bytes": 132,
+      "sha256": "305ac7ac04059a559065a2f559b813cb1a8e0b3ec896788ddca3fed4e8916a2c",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_r-over.png",
+      "bytes": 132,
+      "sha256": "305ac7ac04059a559065a2f559b813cb1a8e0b3ec896788ddca3fed4e8916a2c",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_r-under.png",
+      "bytes": 3366,
+      "sha256": "1cf811b3125e72d77970212f2e9927e1e6efbe93b5cbe6814165f479937c42fd",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_r_wrap-over.png",
+      "bytes": 2346,
+      "sha256": "6421dc961c4a8457e581e3946c2ff4a8feefb930669abbab0d7c41de1ae68474",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/hand_r_wrap-under.png",
+      "bytes": 132,
+      "sha256": "305ac7ac04059a559065a2f559b813cb1a8e0b3ec896788ddca3fed4e8916a2c",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/head-over.png",
+      "bytes": 14351,
+      "sha256": "d584d0ddff9e4ba0506d0c6638e04bb17f62b008c6f9d96c84bd4809962a6acf",
+      "width": 210,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/head-under.png",
+      "bytes": 6417,
+      "sha256": "5a16211990d0828f1bcc8804164245c4070adfdd7ea7f04fbe712f82411bdf96",
+      "width": 210,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/pelvis-over.png",
+      "bytes": 592,
+      "sha256": "263552e5401f801080498fd0be76fcc23dabd0c384d75c5fee1139dbb9b830d9",
+      "width": 160,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/pelvis-under.png",
+      "bytes": 5775,
+      "sha256": "b6db0288d3e90e429f8b759e5dec86a2c7b2a45f87df263765aa89e24d6456c3",
+      "width": 160,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/shin_l-over.png",
+      "bytes": 2921,
+      "sha256": "81cf869fbc332bdb59dd1c1864abe5abf6cff54881e6dd4adc98bdc84bfc46ac",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/shin_l-under.png",
+      "bytes": 6051,
+      "sha256": "5ab92a0d27a8b16acd67f2d37ee19a6a23b07640770232c1c7ca819ef459c92e",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/shin_r-over.png",
+      "bytes": 2921,
+      "sha256": "81cf869fbc332bdb59dd1c1864abe5abf6cff54881e6dd4adc98bdc84bfc46ac",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/shin_r-under.png",
+      "bytes": 6051,
+      "sha256": "5ab92a0d27a8b16acd67f2d37ee19a6a23b07640770232c1c7ca819ef459c92e",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/thigh_l-over.png",
+      "bytes": 3178,
+      "sha256": "d7ecf100355d3facabe8257c8fdf50b21f6840751d57cf2c0a7d41f3c9e89d51",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/thigh_l-under.png",
+      "bytes": 5326,
+      "sha256": "a5614157f17dd0d0be27094e26c85fa37e296352b653abf41b049e8b0bd3d966",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/thigh_r-over.png",
+      "bytes": 3178,
+      "sha256": "d7ecf100355d3facabe8257c8fdf50b21f6840751d57cf2c0a7d41f3c9e89d51",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/thigh_r-under.png",
+      "bytes": 5326,
+      "sha256": "a5614157f17dd0d0be27094e26c85fa37e296352b653abf41b049e8b0bd3d966",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/torso-over.png",
+      "bytes": 9451,
+      "sha256": "14c3438f564e7a38ebad410783fb5d98c164995a2ee4403c0d43fa9f21eef9e7",
+      "width": 228,
+      "height": 196,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/torso-under.png",
+      "bytes": 17040,
+      "sha256": "e616ad1a83956d576bd50aeedf0daa620dadd2cbc82958a0f26cbff77725cb53",
+      "width": 228,
+      "height": 196,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/upper_arm_l-over.png",
+      "bytes": 5001,
+      "sha256": "13a07c10abbe87b31550a0c92eb0c6105bf9581c44e363cfdf08e62523c182e5",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/upper_arm_l-under.png",
+      "bytes": 8512,
+      "sha256": "0f574bc56946f2bb3356f0c31f0471d1292be82774ebfa6b4f7e3ef081d6dc08",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/upper_arm_r-over.png",
+      "bytes": 5001,
+      "sha256": "13a07c10abbe87b31550a0c92eb0c6105bf9581c44e363cfdf08e62523c182e5",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/upper_arm_r-under.png",
+      "bytes": 8512,
+      "sha256": "0f574bc56946f2bb3356f0c31f0471d1292be82774ebfa6b4f7e3ef081d6dc08",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_axe-over.png",
+      "bytes": 311,
+      "sha256": "54908907539dc5c6e43f1a756f96da51570e1fab025e9af5138b51d7dab51055",
+      "width": 176,
+      "height": 338,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_axe-under.png",
+      "bytes": 11684,
+      "sha256": "d9ae51c858600ae86b03398fee1abc2eccb24ce0a8d50e4cec1cd8f577012615",
+      "width": 176,
+      "height": 338,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_dagger-over.png",
+      "bytes": 150,
+      "sha256": "8005874fa8cac0644ce18d9b9736787492c292b620d401ac37b8992de1166731",
+      "width": 100,
+      "height": 182,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_dagger-under.png",
+      "bytes": 4389,
+      "sha256": "9c8b71ddabc945ab5954b91c876d2502adb3fe58d4ed8ba585c6a6e4a9279975",
+      "width": 100,
+      "height": 182,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_sword-over.png",
+      "bytes": 213,
+      "sha256": "71ce0294d9f891e24b830393addadf2329524ffe5499987a1b4026d0df5284d8",
+      "width": 140,
+      "height": 244,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials/weapon_sword-under.png",
+      "bytes": 7050,
+      "sha256": "0cdcb041357986e40f9a9c96c657edf715d1361720f34b62ae95b89825fbbe47",
+      "width": 140,
+      "height": 244,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/foot_l-over.png",
+      "bytes": 8738,
+      "sha256": "4fd935416948467fff7bd4048aaa8a32a8d0fa58d2ebb61f79448df5c5abb874",
+      "width": 300,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/foot_l-under.png",
+      "bytes": 7760,
+      "sha256": "8efa3b46b1a2797c0b4ae1fd103085269f7c2e54288e268bd490ef04fe1f9113",
+      "width": 300,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/foot_r-over.png",
+      "bytes": 8738,
+      "sha256": "4fd935416948467fff7bd4048aaa8a32a8d0fa58d2ebb61f79448df5c5abb874",
+      "width": 300,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/foot_r-under.png",
+      "bytes": 7760,
+      "sha256": "8efa3b46b1a2797c0b4ae1fd103085269f7c2e54288e268bd490ef04fe1f9113",
+      "width": 300,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/forearm_l-over.png",
+      "bytes": 10765,
+      "sha256": "6d63cf6d7aec7aa6029b49a2f128d8eaa6e5465ea2de9639def9bdf9bbff0a56",
+      "width": 290,
+      "height": 280,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/forearm_l-under.png",
+      "bytes": 13632,
+      "sha256": "a9ca5c0a2809b8e6786e53872e18d600be9894c32a1f19b02e8c88d6513ab550",
+      "width": 290,
+      "height": 280,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/forearm_r-over.png",
+      "bytes": 10765,
+      "sha256": "6d63cf6d7aec7aa6029b49a2f128d8eaa6e5465ea2de9639def9bdf9bbff0a56",
+      "width": 290,
+      "height": 280,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/forearm_r-under.png",
+      "bytes": 13632,
+      "sha256": "a9ca5c0a2809b8e6786e53872e18d600be9894c32a1f19b02e8c88d6513ab550",
+      "width": 290,
+      "height": 280,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/hand_l-over.png",
+      "bytes": 288,
+      "sha256": "bb9e5f424ca60688cf3b3e265e5c5115d63a3d9d4fedaf4de0c34983622ba0fb",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/hand_l-under.png",
+      "bytes": 6987,
+      "sha256": "555eb9f77e6c5a4f04ee796c2007d26c1eb061c41668d6b6be415e94e6ccbc7e",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/hand_l_wrap-over.png",
+      "bytes": 4761,
+      "sha256": "9c869eaa3660b5d573d7efad26a247608b7b977717d47fb469a2845c1433a377",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/hand_l_wrap-under.png",
+      "bytes": 288,
+      "sha256": "bb9e5f424ca60688cf3b3e265e5c5115d63a3d9d4fedaf4de0c34983622ba0fb",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/hand_r-over.png",
+      "bytes": 288,
+      "sha256": "bb9e5f424ca60688cf3b3e265e5c5115d63a3d9d4fedaf4de0c34983622ba0fb",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/hand_r-under.png",
+      "bytes": 6987,
+      "sha256": "555eb9f77e6c5a4f04ee796c2007d26c1eb061c41668d6b6be415e94e6ccbc7e",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/hand_r_wrap-over.png",
+      "bytes": 4761,
+      "sha256": "9c869eaa3660b5d573d7efad26a247608b7b977717d47fb469a2845c1433a377",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/hand_r_wrap-under.png",
+      "bytes": 288,
+      "sha256": "bb9e5f424ca60688cf3b3e265e5c5115d63a3d9d4fedaf4de0c34983622ba0fb",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/head-over.png",
+      "bytes": 28923,
+      "sha256": "8fddff050aa7abaae21ac85e6c2f67e677b8b0ed8efb046a4491c1f6693e62a7",
+      "width": 420,
+      "height": 360,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/head-under.png",
+      "bytes": 12351,
+      "sha256": "9cbd23b63a41c64cf7e7224224f63e119c526c9a9694365e400579ad4489d6e1",
+      "width": 420,
+      "height": 360,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/pelvis-over.png",
+      "bytes": 1307,
+      "sha256": "562c8367c41d493d17e3c0bee8c74a60233d638739b08c2bdeb97074fa7f9f28",
+      "width": 320,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/pelvis-under.png",
+      "bytes": 12446,
+      "sha256": "4b7ab2549959cf392fc142f3b88cade679f73cb0d2fe3379fb023973ecd042e5",
+      "width": 320,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/shin_l-over.png",
+      "bytes": 6224,
+      "sha256": "826a825a41b01eaed5e722062b877620714308910c0fc9a0b47ef4832d7bd1e5",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/shin_l-under.png",
+      "bytes": 13638,
+      "sha256": "5df692a7c9a58600506667d9b605d222a705a29de838bf2b591620ff67ad7132",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/shin_r-over.png",
+      "bytes": 6224,
+      "sha256": "826a825a41b01eaed5e722062b877620714308910c0fc9a0b47ef4832d7bd1e5",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/shin_r-under.png",
+      "bytes": 13638,
+      "sha256": "5df692a7c9a58600506667d9b605d222a705a29de838bf2b591620ff67ad7132",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/thigh_l-over.png",
+      "bytes": 6592,
+      "sha256": "b81823aeaa9bafdcd713da3bff77b4ce38f9e5a4a6fef594e7f579692db76efc",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/thigh_l-under.png",
+      "bytes": 11980,
+      "sha256": "c7b73034f12d8e1b938af9cb62b4615b988cd1ed10a28809f5d58b7e02bddf30",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/thigh_r-over.png",
+      "bytes": 6592,
+      "sha256": "b81823aeaa9bafdcd713da3bff77b4ce38f9e5a4a6fef594e7f579692db76efc",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/thigh_r-under.png",
+      "bytes": 11980,
+      "sha256": "c7b73034f12d8e1b938af9cb62b4615b988cd1ed10a28809f5d58b7e02bddf30",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/torso-over.png",
+      "bytes": 19651,
+      "sha256": "3b916f47167261261a8ac4bcd300d49a4fc718fca230568f22dbbd43ebc1b835",
+      "width": 456,
+      "height": 392,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/torso-under.png",
+      "bytes": 37186,
+      "sha256": "640a32fb04a491aa4ae4465948aa71e2f6d516a1fb8d29009e39923dcf292746",
+      "width": 456,
+      "height": 392,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/upper_arm_l-over.png",
+      "bytes": 10497,
+      "sha256": "b3cb84fe3b6c4d90b632d14ecd8ae3faf03dc2899a85975c817ec58212bd1cbe",
+      "width": 310,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/upper_arm_l-under.png",
+      "bytes": 19248,
+      "sha256": "8b33ae3bf88359c11b916be7d19f04e57a4c52cf9d849233346fb3c6fe786d10",
+      "width": 310,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/upper_arm_r-over.png",
+      "bytes": 10497,
+      "sha256": "b3cb84fe3b6c4d90b632d14ecd8ae3faf03dc2899a85975c817ec58212bd1cbe",
+      "width": 310,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/upper_arm_r-under.png",
+      "bytes": 19248,
+      "sha256": "8b33ae3bf88359c11b916be7d19f04e57a4c52cf9d849233346fb3c6fe786d10",
+      "width": 310,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/weapon_axe-over.png",
+      "bytes": 1002,
+      "sha256": "8a1bd0ff816bd96d7e8e0208e6758f205b04a8db4238c981d39094124827cd26",
+      "width": 352,
+      "height": 676,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/weapon_axe-under.png",
+      "bytes": 24994,
+      "sha256": "a00de13043b85d1f8ae95e2af18158ada045479bb680f59c9398eed2cecf08a9",
+      "width": 352,
+      "height": 676,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/weapon_dagger-over.png",
+      "bytes": 362,
+      "sha256": "66ac230ffc829b01bddf21f77a46ad59f96014638ef404ec9ebc437409888b83",
+      "width": 200,
+      "height": 364,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/weapon_dagger-under.png",
+      "bytes": 8694,
+      "sha256": "cfa88e9472d4c1f3c69cdbb9fab76bd378a0874b1a83d5b57a0447d04e1d1d81",
+      "width": 200,
+      "height": 364,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/weapon_sword-over.png",
+      "bytes": 610,
+      "sha256": "c1010ff31313734d981b6fe67794acb0c497b03ee97ef92075e35196fbc65c92",
+      "width": 280,
+      "height": 488,
+      "mode": "RGBA"
+    },
+    {
+      "path": "materials@2x/weapon_sword-under.png",
+      "bytes": 14450,
+      "sha256": "fc61bccb5bf33bf9ed1352e44b09ba453f1a0eb81d34f0eb2949e2ffb7dede48",
+      "width": 280,
+      "height": 488,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/foot_l-oxide.png",
+      "bytes": 4873,
+      "sha256": "d433034f8afa3154048723828e1e2021dbe30f1cfc2ca24ca2f02d68c69f2a5e",
+      "width": 150,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/foot_l-petrol.png",
+      "bytes": 4783,
+      "sha256": "6f1bf78a2d308173f3b84e45b6ade8caf14b84d04bee4b631a55f49614206382",
+      "width": 150,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/foot_r-oxide.png",
+      "bytes": 4873,
+      "sha256": "d433034f8afa3154048723828e1e2021dbe30f1cfc2ca24ca2f02d68c69f2a5e",
+      "width": 150,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/foot_r-petrol.png",
+      "bytes": 4783,
+      "sha256": "6f1bf78a2d308173f3b84e45b6ade8caf14b84d04bee4b631a55f49614206382",
+      "width": 150,
+      "height": 100,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/forearm_l-oxide.png",
+      "bytes": 7447,
+      "sha256": "1bff3278faa76d116f4bd56b167fd5f6f72bd2e4e21857f4a5cc26a5091e2949",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/forearm_l-petrol.png",
+      "bytes": 7347,
+      "sha256": "749a8cfc4c6a765dd26829843e006f9112a81af2a4d1d32029a27513ea1f7401",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/forearm_r-oxide.png",
+      "bytes": 7447,
+      "sha256": "1bff3278faa76d116f4bd56b167fd5f6f72bd2e4e21857f4a5cc26a5091e2949",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/forearm_r-petrol.png",
+      "bytes": 7347,
+      "sha256": "749a8cfc4c6a765dd26829843e006f9112a81af2a4d1d32029a27513ea1f7401",
+      "width": 145,
+      "height": 140,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_l-oxide.png",
+      "bytes": 3366,
+      "sha256": "1cf811b3125e72d77970212f2e9927e1e6efbe93b5cbe6814165f479937c42fd",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_l-petrol.png",
+      "bytes": 3366,
+      "sha256": "1cf811b3125e72d77970212f2e9927e1e6efbe93b5cbe6814165f479937c42fd",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_l_wrap-oxide.png",
+      "bytes": 2346,
+      "sha256": "6421dc961c4a8457e581e3946c2ff4a8feefb930669abbab0d7c41de1ae68474",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_l_wrap-petrol.png",
+      "bytes": 2346,
+      "sha256": "6421dc961c4a8457e581e3946c2ff4a8feefb930669abbab0d7c41de1ae68474",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_r-oxide.png",
+      "bytes": 3366,
+      "sha256": "1cf811b3125e72d77970212f2e9927e1e6efbe93b5cbe6814165f479937c42fd",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_r-petrol.png",
+      "bytes": 3366,
+      "sha256": "1cf811b3125e72d77970212f2e9927e1e6efbe93b5cbe6814165f479937c42fd",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_r_wrap-oxide.png",
+      "bytes": 2346,
+      "sha256": "6421dc961c4a8457e581e3946c2ff4a8feefb930669abbab0d7c41de1ae68474",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/hand_r_wrap-petrol.png",
+      "bytes": 2346,
+      "sha256": "6421dc961c4a8457e581e3946c2ff4a8feefb930669abbab0d7c41de1ae68474",
+      "width": 120,
+      "height": 112,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/head-oxide.png",
+      "bytes": 16450,
+      "sha256": "541df19ec4fad1ea793ff19197eff376c425b6d514bc9eb3ccc99bd88e3c1950",
+      "width": 210,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/head-petrol.png",
+      "bytes": 16172,
+      "sha256": "9658582e9489cd12010a2971dc093c8bcd1b3d14771614d7a246c116ff9d1da2",
+      "width": 210,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/pelvis-oxide.png",
+      "bytes": 6174,
+      "sha256": "cb054e4b54c1188505874250b40e08b6bc7056103244612be3f08b369ac2bc98",
+      "width": 160,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/pelvis-petrol.png",
+      "bytes": 6174,
+      "sha256": "cb054e4b54c1188505874250b40e08b6bc7056103244612be3f08b369ac2bc98",
+      "width": 160,
+      "height": 90,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/shin_l-oxide.png",
+      "bytes": 7315,
+      "sha256": "30f3f4c4ed187743432a502079b51dbe75d2177130d7242cc8ce3fb95a896323",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/shin_l-petrol.png",
+      "bytes": 7260,
+      "sha256": "0dc188e983ec022eb8a2e345d4ad24c24f75f7e353554243e23577dc8259a5cf",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/shin_r-oxide.png",
+      "bytes": 7315,
+      "sha256": "30f3f4c4ed187743432a502079b51dbe75d2177130d7242cc8ce3fb95a896323",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/shin_r-petrol.png",
+      "bytes": 7260,
+      "sha256": "0dc188e983ec022eb8a2e345d4ad24c24f75f7e353554243e23577dc8259a5cf",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/thigh_l-oxide.png",
+      "bytes": 5473,
+      "sha256": "f28c73935b85d970af06aeea267679838d2dcebb9826b083a75caacba46322ed",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/thigh_l-petrol.png",
+      "bytes": 5406,
+      "sha256": "63fe55ade1ec619613784d8729187d610d88261566993cfe62a02a9e9d26d1d3",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/thigh_r-oxide.png",
+      "bytes": 5473,
+      "sha256": "f28c73935b85d970af06aeea267679838d2dcebb9826b083a75caacba46322ed",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/thigh_r-petrol.png",
+      "bytes": 5406,
+      "sha256": "63fe55ade1ec619613784d8729187d610d88261566993cfe62a02a9e9d26d1d3",
+      "width": 120,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/torso-oxide.png",
+      "bytes": 19402,
+      "sha256": "7878afa87b481000993f2d0f8a42831990e8e3eef44286665b321cc788e370a0",
+      "width": 228,
+      "height": 196,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/torso-petrol.png",
+      "bytes": 19129,
+      "sha256": "17ca26d85b1875a72c8bfd00f7a17795e8c5c6676954d06e2411059917de6fa5",
+      "width": 228,
+      "height": 196,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/upper_arm_l-oxide.png",
+      "bytes": 9030,
+      "sha256": "668a7ca8597cd7848ddb39b86acba92339a1b8723d1903a089680536ea2fbb21",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/upper_arm_l-petrol.png",
+      "bytes": 8929,
+      "sha256": "b53912366a024356ef1242917ebb76d52764eac2c346d656637f8fa40a2449e7",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/upper_arm_r-oxide.png",
+      "bytes": 9030,
+      "sha256": "668a7ca8597cd7848ddb39b86acba92339a1b8723d1903a089680536ea2fbb21",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/upper_arm_r-petrol.png",
+      "bytes": 8929,
+      "sha256": "b53912366a024356ef1242917ebb76d52764eac2c346d656637f8fa40a2449e7",
+      "width": 155,
+      "height": 150,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_axe-oxide.png",
+      "bytes": 11684,
+      "sha256": "d9ae51c858600ae86b03398fee1abc2eccb24ce0a8d50e4cec1cd8f577012615",
+      "width": 176,
+      "height": 338,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_axe-petrol.png",
+      "bytes": 11684,
+      "sha256": "d9ae51c858600ae86b03398fee1abc2eccb24ce0a8d50e4cec1cd8f577012615",
+      "width": 176,
+      "height": 338,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_dagger-oxide.png",
+      "bytes": 4389,
+      "sha256": "9c8b71ddabc945ab5954b91c876d2502adb3fe58d4ed8ba585c6a6e4a9279975",
+      "width": 100,
+      "height": 182,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_dagger-petrol.png",
+      "bytes": 4389,
+      "sha256": "9c8b71ddabc945ab5954b91c876d2502adb3fe58d4ed8ba585c6a6e4a9279975",
+      "width": 100,
+      "height": 182,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_sword-oxide.png",
+      "bytes": 7050,
+      "sha256": "0cdcb041357986e40f9a9c96c657edf715d1361720f34b62ae95b89825fbbe47",
+      "width": 140,
+      "height": 244,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts/weapon_sword-petrol.png",
+      "bytes": 7050,
+      "sha256": "0cdcb041357986e40f9a9c96c657edf715d1361720f34b62ae95b89825fbbe47",
+      "width": 140,
+      "height": 244,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/foot_l-oxide.png",
+      "bytes": 9441,
+      "sha256": "8c750944eca291faad280d2f851707d4cc0149a242c91da7c1aec23ec01f978a",
+      "width": 300,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/foot_l-petrol.png",
+      "bytes": 9271,
+      "sha256": "a54d3dfbea78990b97e1d74c71a4e21565685ebbf72f576c1ca7213c55c0bf47",
+      "width": 300,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/foot_r-oxide.png",
+      "bytes": 9441,
+      "sha256": "8c750944eca291faad280d2f851707d4cc0149a242c91da7c1aec23ec01f978a",
+      "width": 300,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/foot_r-petrol.png",
+      "bytes": 9271,
+      "sha256": "a54d3dfbea78990b97e1d74c71a4e21565685ebbf72f576c1ca7213c55c0bf47",
+      "width": 300,
+      "height": 200,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/forearm_l-oxide.png",
+      "bytes": 16080,
+      "sha256": "5917243bd05a622cdcae594fd4b4b876135eec8d2c81eb5374d77d440e40edd4",
+      "width": 290,
+      "height": 280,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/forearm_l-petrol.png",
+      "bytes": 15843,
+      "sha256": "3ab856502d28aa62200680671cf5705fe5f3503184d53853eb6c9a30c418ae44",
+      "width": 290,
+      "height": 280,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/forearm_r-oxide.png",
+      "bytes": 16080,
+      "sha256": "5917243bd05a622cdcae594fd4b4b876135eec8d2c81eb5374d77d440e40edd4",
+      "width": 290,
+      "height": 280,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/forearm_r-petrol.png",
+      "bytes": 15843,
+      "sha256": "3ab856502d28aa62200680671cf5705fe5f3503184d53853eb6c9a30c418ae44",
+      "width": 290,
+      "height": 280,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/hand_l-oxide.png",
+      "bytes": 6987,
+      "sha256": "555eb9f77e6c5a4f04ee796c2007d26c1eb061c41668d6b6be415e94e6ccbc7e",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/hand_l-petrol.png",
+      "bytes": 6987,
+      "sha256": "555eb9f77e6c5a4f04ee796c2007d26c1eb061c41668d6b6be415e94e6ccbc7e",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/hand_l_wrap-oxide.png",
+      "bytes": 4761,
+      "sha256": "9c869eaa3660b5d573d7efad26a247608b7b977717d47fb469a2845c1433a377",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/hand_l_wrap-petrol.png",
+      "bytes": 4761,
+      "sha256": "9c869eaa3660b5d573d7efad26a247608b7b977717d47fb469a2845c1433a377",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/hand_r-oxide.png",
+      "bytes": 6987,
+      "sha256": "555eb9f77e6c5a4f04ee796c2007d26c1eb061c41668d6b6be415e94e6ccbc7e",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/hand_r-petrol.png",
+      "bytes": 6987,
+      "sha256": "555eb9f77e6c5a4f04ee796c2007d26c1eb061c41668d6b6be415e94e6ccbc7e",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/hand_r_wrap-oxide.png",
+      "bytes": 4761,
+      "sha256": "9c869eaa3660b5d573d7efad26a247608b7b977717d47fb469a2845c1433a377",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/hand_r_wrap-petrol.png",
+      "bytes": 4761,
+      "sha256": "9c869eaa3660b5d573d7efad26a247608b7b977717d47fb469a2845c1433a377",
+      "width": 240,
+      "height": 224,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/head-oxide.png",
+      "bytes": 32708,
+      "sha256": "58413de744c417d290f99dff646e1960dcfe04a67ee1af3d5a60d3b4455b2f30",
+      "width": 420,
+      "height": 360,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/head-petrol.png",
+      "bytes": 32127,
+      "sha256": "8096fe19b01ba028cf18f5dbe1afc8731029cf644026ea89711705ae7219d9d2",
+      "width": 420,
+      "height": 360,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/pelvis-oxide.png",
+      "bytes": 13325,
+      "sha256": "500379ae94448db623e3d96a7bdfcd1a0109e4853e0115215f60643bd2cc7ed0",
+      "width": 320,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/pelvis-petrol.png",
+      "bytes": 13325,
+      "sha256": "500379ae94448db623e3d96a7bdfcd1a0109e4853e0115215f60643bd2cc7ed0",
+      "width": 320,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/shin_l-oxide.png",
+      "bytes": 16124,
+      "sha256": "7a6e2b01041a1752f581d1b24ea30ebd9dd1b1f92994e0f088f470f7ac54d3b1",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/shin_l-petrol.png",
+      "bytes": 15947,
+      "sha256": "78235fabf9fbe623802b75118f48be84c46389e62f64ae18a4d8cf4e99c62d9e",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/shin_r-oxide.png",
+      "bytes": 16124,
+      "sha256": "7a6e2b01041a1752f581d1b24ea30ebd9dd1b1f92994e0f088f470f7ac54d3b1",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/shin_r-petrol.png",
+      "bytes": 15947,
+      "sha256": "78235fabf9fbe623802b75118f48be84c46389e62f64ae18a4d8cf4e99c62d9e",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/thigh_l-oxide.png",
+      "bytes": 11665,
+      "sha256": "1272bb0add58e5aafefeba0bcde86a1100ecf1caca236e492f86ff3f0a315de7",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/thigh_l-petrol.png",
+      "bytes": 11583,
+      "sha256": "c3b6410e0395c1404d70e404e0562ed4066efed367e26745cac9cd56b97e24d6",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/thigh_r-oxide.png",
+      "bytes": 11665,
+      "sha256": "1272bb0add58e5aafefeba0bcde86a1100ecf1caca236e492f86ff3f0a315de7",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/thigh_r-petrol.png",
+      "bytes": 11583,
+      "sha256": "c3b6410e0395c1404d70e404e0562ed4066efed367e26745cac9cd56b97e24d6",
+      "width": 240,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/torso-oxide.png",
+      "bytes": 41548,
+      "sha256": "d28d414e0cf0f392d984c74b10f71bcb46b01eb89b8dbd4f106a5e498c0edfd5",
+      "width": 456,
+      "height": 392,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/torso-petrol.png",
+      "bytes": 40979,
+      "sha256": "397acb5dde0541e603552d53b45deaef1fa041d246fd20ac4f36e5008bb8d785",
+      "width": 456,
+      "height": 392,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/upper_arm_l-oxide.png",
+      "bytes": 19721,
+      "sha256": "3e97a1891d16789887c2757ec1d2563cddc62f84fe5be50e9e0a748b52e0f94d",
+      "width": 310,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/upper_arm_l-petrol.png",
+      "bytes": 19481,
+      "sha256": "b5574c0ec6caf2c7f7ff59b746bdb15ecc2b59a507fd39f972f196d56288241d",
+      "width": 310,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/upper_arm_r-oxide.png",
+      "bytes": 19721,
+      "sha256": "3e97a1891d16789887c2757ec1d2563cddc62f84fe5be50e9e0a748b52e0f94d",
+      "width": 310,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/upper_arm_r-petrol.png",
+      "bytes": 19481,
+      "sha256": "b5574c0ec6caf2c7f7ff59b746bdb15ecc2b59a507fd39f972f196d56288241d",
+      "width": 310,
+      "height": 300,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/weapon_axe-oxide.png",
+      "bytes": 24994,
+      "sha256": "a00de13043b85d1f8ae95e2af18158ada045479bb680f59c9398eed2cecf08a9",
+      "width": 352,
+      "height": 676,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/weapon_axe-petrol.png",
+      "bytes": 24994,
+      "sha256": "a00de13043b85d1f8ae95e2af18158ada045479bb680f59c9398eed2cecf08a9",
+      "width": 352,
+      "height": 676,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/weapon_dagger-oxide.png",
+      "bytes": 8694,
+      "sha256": "cfa88e9472d4c1f3c69cdbb9fab76bd378a0874b1a83d5b57a0447d04e1d1d81",
+      "width": 200,
+      "height": 364,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/weapon_dagger-petrol.png",
+      "bytes": 8694,
+      "sha256": "cfa88e9472d4c1f3c69cdbb9fab76bd378a0874b1a83d5b57a0447d04e1d1d81",
+      "width": 200,
+      "height": 364,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/weapon_sword-oxide.png",
+      "bytes": 14450,
+      "sha256": "fc61bccb5bf33bf9ed1352e44b09ba453f1a0eb81d34f0eb2949e2ffb7dede48",
+      "width": 280,
+      "height": 488,
+      "mode": "RGBA"
+    },
+    {
+      "path": "parts@2x/weapon_sword-petrol.png",
+      "bytes": 14450,
+      "sha256": "fc61bccb5bf33bf9ed1352e44b09ba453f1a0eb81d34f0eb2949e2ffb7dede48",
+      "width": 280,
+      "height": 488,
+      "mode": "RGBA"
+    },
+    {
+      "path": "plates/png/1x/defeat.png",
+      "bytes": 5807,
+      "sha256": "f52e780b89328d65be9ec74fdcd62f52dccae67580f256cecc963e2726357a95",
+      "width": 300,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "plates/png/1x/new-record.png",
+      "bytes": 10356,
+      "sha256": "9e7adf7ede172921e44d52671b93fcc2a78ce4abb1c42fa0f0c478cc464b8644",
+      "width": 220,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "plates/png/1x/victory.png",
+      "bytes": 6578,
+      "sha256": "31e2558a28eda2342adfba0b36dac1e349484ea70f067013dfe83ee7913d206a",
+      "width": 300,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "plates/png/2x/defeat.png",
+      "bytes": 11442,
+      "sha256": "49d6ccb338ab126c0366651514a5f53ede73816a6695fa1f179f4b1ac63db7b8",
+      "width": 600,
+      "height": 192,
+      "mode": "RGBA"
+    },
+    {
+      "path": "plates/png/2x/new-record.png",
+      "bytes": 20954,
+      "sha256": "b013bfd726bab091f7539b215055d14ef7b3d901c7457709e1658e242a82d868",
+      "width": 440,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "plates/png/2x/victory.png",
+      "bytes": 13157,
+      "sha256": "756915ff025bdb561a0ec335865e786adec386dba8ec0fa87415874714988074",
+      "width": 600,
+      "height": 192,
+      "mode": "RGBA"
+    },
+    {
+      "path": "plates/png/3x/defeat.png",
+      "bytes": 17205,
+      "sha256": "0805ba30c20d58a093f5754301074779ed862a6ef1ec0ff39257840786dd6019",
+      "width": 900,
+      "height": 288,
+      "mode": "RGBA"
+    },
+    {
+      "path": "plates/png/3x/new-record.png",
+      "bytes": 31957,
+      "sha256": "8280677dd5314c6ff3fa85b62b2dcb6ee497b291d24f05d0795518945074776f",
+      "width": 660,
+      "height": 192,
+      "mode": "RGBA"
+    },
+    {
+      "path": "plates/png/3x/victory.png",
+      "bytes": 20473,
+      "sha256": "4cca3f0c803f8458948fd7eec735ce8f45a4044b62921795608ebe0df3dba40f",
+      "width": 900,
+      "height": 288,
+      "mode": "RGBA"
+    },
+    {
+      "path": "plates/svg/defeat.svg",
+      "bytes": 7730,
+      "sha256": "ed150eec8ca70b01e3a5d62240f71ddc5e090a9fbc804a720c40d7c8169567e4"
+    },
+    {
+      "path": "plates/svg/new-record.svg",
+      "bytes": 10138,
+      "sha256": "b22a3d34856e276b7db68d78556cc1b24b35c00572fa68681b8676531999607a"
+    },
+    {
+      "path": "plates/svg/victory.svg",
+      "bytes": 8529,
+      "sha256": "9b970b589ffb5cbb71202474a963ff52b9ce763831e0319cf03acb379dafa4f8"
+    },
+    {
+      "path": "portraits/oxide-192.png",
+      "bytes": 46185,
+      "sha256": "ad574ba791a50b16418a8e0cc22d908c355eb07dbebb07989d29365dca3af2da",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA"
+    },
+    {
+      "path": "portraits/oxide-288.png",
+      "bytes": 82986,
+      "sha256": "2bd8a844bcbb6aac8eaf3289c8bf74e97881ac14e5d31499a57a1527539ce267",
+      "width": 288,
+      "height": 288,
+      "mode": "RGBA"
+    },
+    {
+      "path": "portraits/oxide-96.png",
+      "bytes": 16328,
+      "sha256": "505e3d60ffd54e69906d60ea64255e605826dc711cc395bfff5a7e4511e947a0",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "portraits/petrol-192.png",
+      "bytes": 44538,
+      "sha256": "ddd45180e2ae23205ff44360897f875ec4534522d1c59415c925fb33962bb96d",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA"
+    },
+    {
+      "path": "portraits/petrol-288.png",
+      "bytes": 80113,
+      "sha256": "d697b85ce67e9000af2e0d9795363ed94676bc0add217dba0aaacb0daa1e2f46",
+      "width": 288,
+      "height": 288,
+      "mode": "RGBA"
+    },
+    {
+      "path": "portraits/petrol-96.png",
+      "bytes": 15936,
+      "sha256": "f85e354091c544bbeb526d83edc0131b51c0e53316f5944650ba0145aeac7c4f",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "previews/axe-v002-vs-v003.png",
+      "bytes": 213782,
+      "sha256": "da6317a97c7f26fd25ed69581592cbfe08c2e35704ae8dcbd0b570994f27be5d",
+      "width": 1280,
+      "height": 700,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/combat-carried-sheet.png",
+      "bytes": 545780,
+      "sha256": "77d49be310da03485337ee3be30c67f2805cae546a93d3add43c6a6d485fc9f0",
+      "width": 960,
+      "height": 1640,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/contact-sheet-390x844.png",
+      "bytes": 196375,
+      "sha256": "fa0ab6f5d67cb2beafce6bb9051e06c68667cc09639c89499ed1b2a0bf1558aa",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/contact-sheet-390x844@3x.png",
+      "bytes": 674679,
+      "sha256": "8b697a6e2d3b23f60dcb69dedd3776e80d88fffba3f8c4fd98beb0c7294e5bf9",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-scale-axe-vs-sword@2x.png",
+      "bytes": 212072,
+      "sha256": "7fb433e87ec2875beb7b12110cc954a12128af46920ff5d9d96e5ce42ac11f9d",
+      "width": 780,
+      "height": 1240,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/grip-closeups.png",
+      "bytes": 485690,
+      "sha256": "36727836e4e2b82177bd4ac39b46c02d36b9ad8de84cdf7937944a55b6f85868",
+      "width": 1680,
+      "height": 420,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/defeat-axe-oxide.png",
+      "bytes": 232791,
+      "sha256": "cea337f585bbf5969772d878e46e0c5712b6c3efbe67dbe9ad5b1af3b7089d82",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/defeat-axe-petrol.png",
+      "bytes": 230662,
+      "sha256": "904ca07274387fb91778579130998268a0d91b533596e8c5c1608d5f40e13ea0",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/defeat-dagger-oxide.png",
+      "bytes": 230987,
+      "sha256": "28f9cd8725152660a0509d4724f0064bb3a38fbe9545351ba24297e6a84df4c6",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/defeat-dagger-petrol.png",
+      "bytes": 227385,
+      "sha256": "422c36ac2d893627ae7dff3c929d11badf192d4ce1d83b8df3c10079da0ae774",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/defeat-sword-oxide.png",
+      "bytes": 237584,
+      "sha256": "73c75abe0d01ea4cc451ed1ffcbf26b04799592e8f96ee1b623cbe720a833b5b",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/defeat-sword-petrol.png",
+      "bytes": 233664,
+      "sha256": "a58194885ce11878a6b0f8210b2d1645c5fe07518ee81b74b442d1d6a3d19885",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/idle-axe-oxide.png",
+      "bytes": 208652,
+      "sha256": "492fe09bc6ae4e080318075272ca5f75a8961f802fc112228073ee8eea187a22",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/idle-axe-petrol.png",
+      "bytes": 206351,
+      "sha256": "e5516386370fb24d33c116704da66749a63a6f2c549fb016039f41568cbd1954",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/idle-dagger-oxide.png",
+      "bytes": 214121,
+      "sha256": "3acb352d61951006ee96509ab69621fa1d1348c861ad5e1e5dd6a97b192244f5",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/idle-dagger-petrol.png",
+      "bytes": 210959,
+      "sha256": "a8ac15b9828b9ea3ffa9fd348436adfe37543b3647561a0296b4368b3635f5a0",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/idle-sword-oxide.png",
+      "bytes": 222206,
+      "sha256": "e8a646808f0b42907d1391ae3ce1e3b99f1bf5f90f5045728572b3f23a0a233d",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/idle-sword-petrol.png",
+      "bytes": 218894,
+      "sha256": "6e6617c52e47d1aecef228d274af2081231fc8722be2171ddc650a0977c3ca05",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/victory-axe-oxide.png",
+      "bytes": 268136,
+      "sha256": "57ee06c968905535fe2de84a72974eba1d366ccf6bf4b9436f3c4f7d00fba8af",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/victory-axe-petrol.png",
+      "bytes": 264164,
+      "sha256": "9e6cc3e4aa25294582a79b5a29fe58fdb853fefbf7067dbf4e171b05b3865325",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/victory-dagger-oxide.png",
+      "bytes": 261590,
+      "sha256": "5e1437bd69c28b777f5ed4e1cf25ed268e42f5f607c15e94bb4de8f063c910cf",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/victory-dagger-petrol.png",
+      "bytes": 258747,
+      "sha256": "70dda6255e967e2ee55e045186a9eedf43092bb4ddb03de99819d1086660a7b9",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/victory-sword-oxide.png",
+      "bytes": 264468,
+      "sha256": "40e6b2ed4648865f1b7dbec7f1cdf47e5e92e528fc7ad29e036445a4fbb38924",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/phone/victory-sword-petrol.png",
+      "bytes": 261339,
+      "sha256": "7500003ffaac4959e75a77679e9fe55eb6562ba455d26c8bea3ec7eb0914d855",
+      "width": 780,
+      "height": 1688,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/plates-preview.png",
+      "bytes": 60439,
+      "sha256": "f88f7ba0e365d31102a52486d56c33a8bebb5cb95758f5f4efc8854c016a690e",
+      "width": 1300,
+      "height": 560,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/ranking-portraits.png",
+      "bytes": 182951,
+      "sha256": "68a808762492f80ef5a83a336813c725b046bb4bb05a2b78b15927da1a43283e",
+      "width": 780,
+      "height": 660,
+      "mode": "RGB"
+    },
+    {
+      "path": "source/art_v003.py",
+      "bytes": 10524,
+      "sha256": "6e62528217e780358cbb845f87758f3cf9f64e00f553cc0ffc5c52d8600f7a2d"
+    },
+    {
+      "path": "source/author_poses.py",
+      "bytes": 9779,
+      "sha256": "b9477a91da47c91d03d4b4e5d5c5efb2efcfd274dec4f2120a614e741986029e"
+    },
+    {
+      "path": "source/build_kit_v003.py",
+      "bytes": 15245,
+      "sha256": "11b0b29b50e5d397f468b880b17e128a81868e291d8e5ddd947ead275deca51b"
+    },
+    {
+      "path": "source/delta_v003.py",
+      "bytes": 4008,
+      "sha256": "cca5a3c5e4aec83ffe645c63c01b1c901fe0a88a3b4668ae95c25c50cd3ea079"
+    },
+    {
+      "path": "source/foot_l.svg",
+      "bytes": 2001,
+      "sha256": "61087534deab4b3ee070b9cd769f76a2db664bf1f8cacc3ba75187881bc956d4"
+    },
+    {
+      "path": "source/foot_r.svg",
+      "bytes": 2001,
+      "sha256": "61087534deab4b3ee070b9cd769f76a2db664bf1f8cacc3ba75187881bc956d4"
+    },
+    {
+      "path": "source/forearm_l.svg",
+      "bytes": 3593,
+      "sha256": "37ca79d1b2c83a47accaebb1cfda76d50b7bf1bf256f89e31d0fc31b7f8accae"
+    },
+    {
+      "path": "source/forearm_r.svg",
+      "bytes": 3593,
+      "sha256": "b5cf66ce5d83991cba5fa2efb14d20c7ec0301b72e35eaa5fe47a6824ac8dde6"
+    },
+    {
+      "path": "source/fx-defeat-sparks-00.svg",
+      "bytes": 2489,
+      "sha256": "4d9b4fd7141bf44dd57e5614369e115b820d485a506539547e4d0d612224e2cd"
+    },
+    {
+      "path": "source/fx-defeat-sparks-01.svg",
+      "bytes": 2583,
+      "sha256": "6ef12afe3644bb57c6a46e25b076c0503d6278282ef43abd5e770381ceec3e10"
+    },
+    {
+      "path": "source/fx-defeat-sparks-02.svg",
+      "bytes": 2533,
+      "sha256": "1b93143cf6e26bfa6bf34a757e3f02c7c320326ad681046bffa0c7887baa46e7"
+    },
+    {
+      "path": "source/fx_art.py",
+      "bytes": 1799,
+      "sha256": "1b1063fd96b287431ee7f828cf42819a269a88978feb987add72b657bd33f1ef"
+    },
+    {
+      "path": "source/geom_v002_base.py",
+      "bytes": 14948,
+      "sha256": "95d1a2b24d81b2807bb50de411933ff90628eac673dbf4d895aa53ba873a4496"
+    },
+    {
+      "path": "source/hand_l.svg",
+      "bytes": 1578,
+      "sha256": "0442f42341b07c72aaa902bcfdfb315bb48ec1393abc2f729674beea6293ab79"
+    },
+    {
+      "path": "source/hand_l_wrap.svg",
+      "bytes": 3295,
+      "sha256": "7b7f556d0d54b320ffb7bca176177e55f6f379e5cb8db046b5ad3ba2fbab5aed"
+    },
+    {
+      "path": "source/hand_r.svg",
+      "bytes": 1578,
+      "sha256": "0442f42341b07c72aaa902bcfdfb315bb48ec1393abc2f729674beea6293ab79"
+    },
+    {
+      "path": "source/hand_r_wrap.svg",
+      "bytes": 3295,
+      "sha256": "7b7f556d0d54b320ffb7bca176177e55f6f379e5cb8db046b5ad3ba2fbab5aed"
+    },
+    {
+      "path": "source/head.svg",
+      "bytes": 4361,
+      "sha256": "9aaae5b5afd17fd6d3e304ce3794da90122ec1838094ae15150bb48c9015d9ff"
+    },
+    {
+      "path": "source/mfasm.py",
+      "bytes": 3630,
+      "sha256": "fa2e4b956e7c744c27d2e71f4aba02245eaeabe86d8972201dfec2894d7f5d62"
+    },
+    {
+      "path": "source/negative_test_v003.py",
+      "bytes": 1891,
+      "sha256": "91c56d3e4098897a795ac0f1ff01485eb2f57adb47d9ac0e0ea6f77fa7e4ed71"
+    },
+    {
+      "path": "source/pelvis.svg",
+      "bytes": 1896,
+      "sha256": "9a2a8da692e3eb750eae1dabc2910fb9cd0e36ec8de33b458fac542cebf4ea0c"
+    },
+    {
+      "path": "source/plates.py",
+      "bytes": 6946,
+      "sha256": "f7978b4338ee0c0c1fa56878a3beb3c905aec5d658dcbb93fabc5d19e5d52055"
+    },
+    {
+      "path": "source/poses.json",
+      "bytes": 16463,
+      "sha256": "282d6d0e229ed18b9309bca9b2ca8179a89b7883c9ef181af44e196dc0641c22"
+    },
+    {
+      "path": "source/previews_v003.py",
+      "bytes": 9901,
+      "sha256": "bbcc2e5790c6a41c0b0ee2410cdea784e9e7e9a6973be34106d5334c7e2a416a"
+    },
+    {
+      "path": "source/render.py",
+      "bytes": 1429,
+      "sha256": "0955f5203826a3deeb99ecf9bb608dcaeb76ee8feacc9f8688784e941f996181"
+    },
+    {
+      "path": "source/rig.py",
+      "bytes": 5205,
+      "sha256": "150894837bc288c5eb8c44e24d1f5aefa536885e41a30c2a1048c52e0f7c7ce9"
+    },
+    {
+      "path": "source/seal_kit_v003.py",
+      "bytes": 2312,
+      "sha256": "c49b8dc59810c8ed417d2eef4781ee3b7444ba908313546e40bf4f8ef59a3e65"
+    },
+    {
+      "path": "source/shin_l.svg",
+      "bytes": 2847,
+      "sha256": "2aef3293f1c4a2c278cae7f58b757dd1fe991adcfae4be80f15fffed6887e8f8"
+    },
+    {
+      "path": "source/shin_r.svg",
+      "bytes": 2847,
+      "sha256": "2aef3293f1c4a2c278cae7f58b757dd1fe991adcfae4be80f15fffed6887e8f8"
+    },
+    {
+      "path": "source/thigh_l.svg",
+      "bytes": 2858,
+      "sha256": "150718082d5ae8ded2deb111fb94254512ebd0f412c5152ca669d0a0b074ab33"
+    },
+    {
+      "path": "source/thigh_r.svg",
+      "bytes": 2858,
+      "sha256": "150718082d5ae8ded2deb111fb94254512ebd0f412c5152ca669d0a0b074ab33"
+    },
+    {
+      "path": "source/torso.svg",
+      "bytes": 6043,
+      "sha256": "8490804c1a33fbccbbee2b62f14de80eab4448940cd329816788a1b80811ecef"
+    },
+    {
+      "path": "source/upper_arm_l.svg",
+      "bytes": 3854,
+      "sha256": "ebb7db35e3067473d8358818d09dee4c98a6eed5cbb05b8e245aafe9f7d59fac"
+    },
+    {
+      "path": "source/upper_arm_r.svg",
+      "bytes": 3854,
+      "sha256": "914c5140f9037ebfdf50b9bd827fd54d4e3f3e87bc353e97cd6d2bf11c3b15ba"
+    },
+    {
+      "path": "source/validate_kit_v003.py",
+      "bytes": 12389,
+      "sha256": "1d6bbc7d9504baf9392792df89899e299ef425d2daa3b285b54747f76c78e364"
+    },
+    {
+      "path": "source/weapon_axe.svg",
+      "bytes": 4795,
+      "sha256": "d1d0ba41cc010dfd8efd3329a682fddaf64e08d529858837b348e0447eefdba9"
+    },
+    {
+      "path": "source/weapon_dagger.svg",
+      "bytes": 2386,
+      "sha256": "8ee34f0284a1c4fa061a25dd95bfb509be22d25d2a73cf1ee50c4fadbbe46bbf"
+    },
+    {
+      "path": "source/weapon_sword.svg",
+      "bytes": 3037,
+      "sha256": "c2790057adee6fd6b80d70d33ab35bf3878bfbe4c1122db1e36cdd0a064d278c"
+    },
+    {
+      "path": "validation/negative-tests.json",
+      "bytes": 884,
+      "sha256": "a101641a64c376cf17962df99cca6f57245d4c5c24af3f1ea351f42edc07b18a"
+    },
+    {
+      "path": "validation/pose-solve-log.json",
+      "bytes": 2832,
+      "sha256": "a3770b7c943e0d247f35a50fa5924bccc024aba5c5449b5754c301c87ac9f15b"
+    },
+    {
+      "path": "validation/report.json",
+      "bytes": 234646,
+      "sha256": "55ab49a4831015d69786c53a37caf0ef6e31529af3be6a3e86f782dc31e426f7"
+    },
+    {
+      "path": "validation/visual-review.md",
+      "bytes": 3746,
+      "sha256": "bff3b300864ad429d404328afb72c3ef1e02e11c58d4b83d6b8dafef666cf867"
+    }
+  ]
+}

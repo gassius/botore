@@ -1,0 +1,511 @@
+{
+  "from": {
+    "version": "v002",
+    "schema": "botore.workshop-frame.provisional.v1",
+    "family": "workshop-frame-v002"
+  },
+  "to": {
+    "version": "v003",
+    "schema": "botore.workshop-frame.provisional.v2",
+    "family": "workshop-frame-v003"
+  },
+  "rule": "Atomic version swap. Never mix v002 tiles/coordinates with v003. Every PNG path is re-issued; hand and weapon tiles are new geometry.",
+  "unchanged": {
+    "canvas": true,
+    "root.position": true,
+    "paint_tokens": true,
+    "body_part_geometry": "torso, head, pelvis, upper_arm_l/r, forearm_l/r, thigh_l/r, shin_l/r, foot_l/r: identical pixels/pivots/sockets (only motion_bounds widened where listed)",
+    "mirror_rule": true,
+    "paint_composite_order": true,
+    "paint_ids": [
+      "oxide",
+      "petrol"
+    ],
+    "weapon_ids": [
+      "sword",
+      "axe",
+      "dagger"
+    ]
+  },
+  "removed_fields": {
+    "weapon_grip_rotation_degrees": "v002 global 180. Replaced by weapons[w].grips.main.attach_angle (sword 80, axe 90, dagger -90).",
+    "poses (v002 flat delta dict)": "replaced by the nested pose format; v002 names kept"
+  },
+  "added_fields": [
+    "family",
+    "ground_y",
+    "resolution_variants",
+    "weapons",
+    "pose_meta",
+    "pose_format",
+    "fx",
+    "plates",
+    "portrait",
+    "assets[].role",
+    "assets[].files@2x (+materials/masks @2x)"
+  ],
+  "added_assets": [
+    "hand_l_wrap",
+    "hand_r_wrap"
+  ],
+  "changed_assets": {
+    "torso": {
+      "motion_bounds": {
+        "v002": [
+          -75,
+          25
+        ],
+        "v003": [
+          -75,
+          40
+        ]
+      }
+    },
+    "head": {
+      "motion_bounds": {
+        "v002": [
+          -20,
+          20
+        ],
+        "v003": [
+          -30,
+          35
+        ]
+      }
+    },
+    "pelvis": {
+      "motion_bounds": {
+        "v002": [
+          -15,
+          15
+        ],
+        "v003": [
+          -25,
+          15
+        ]
+      }
+    },
+    "upper_arm_l": {
+      "motion_bounds": {
+        "v002": [
+          -80,
+          110
+        ],
+        "v003": [
+          -150,
+          225
+        ]
+      }
+    },
+    "forearm_l": {
+      "motion_bounds": {
+        "v002": [
+          -145,
+          20
+        ],
+        "v003": [
+          -155,
+          40
+        ]
+      }
+    },
+    "shin_l": {
+      "motion_bounds": {
+        "v002": [
+          -65,
+          65
+        ],
+        "v003": [
+          -75,
+          110
+        ]
+      }
+    },
+    "foot_l": {
+      "motion_bounds": {
+        "v002": [
+          -30,
+          30
+        ],
+        "v003": [
+          -45,
+          55
+        ]
+      }
+    },
+    "upper_arm_r": {
+      "motion_bounds": {
+        "v002": [
+          -80,
+          110
+        ],
+        "v003": [
+          -100,
+          110
+        ]
+      }
+    },
+    "forearm_r": {
+      "motion_bounds": {
+        "v002": [
+          -145,
+          20
+        ],
+        "v003": [
+          -255,
+          20
+        ]
+      }
+    },
+    "thigh_r": {
+      "motion_bounds": {
+        "v002": [
+          -65,
+          65
+        ],
+        "v003": [
+          -95,
+          65
+        ]
+      }
+    },
+    "shin_r": {
+      "motion_bounds": {
+        "v002": [
+          -65,
+          65
+        ],
+        "v003": [
+          -65,
+          120
+        ]
+      }
+    },
+    "foot_r": {
+      "motion_bounds": {
+        "v002": [
+          -30,
+          30
+        ],
+        "v003": [
+          -30,
+          55
+        ]
+      }
+    },
+    "hand_l": {
+      "height": {
+        "v002": 100,
+        "v003": 112
+      },
+      "pivot": {
+        "v002": [
+          60,
+          25
+        ],
+        "v003": [
+          60.0,
+          24.0
+        ]
+      },
+      "sockets": {
+        "v002": {
+          "grip": [
+            60.0,
+            61.6
+          ]
+        },
+        "v003": {
+          "grip": [
+            60.0,
+            62.0
+          ],
+          "wrap": [
+            60.0,
+            24.0
+          ]
+        }
+      },
+      "motion_bounds": {
+        "v002": [
+          -25,
+          25
+        ],
+        "v003": [
+          -45,
+          75
+        ]
+      }
+    },
+    "hand_r": {
+      "height": {
+        "v002": 100,
+        "v003": 112
+      },
+      "pivot": {
+        "v002": [
+          60,
+          25
+        ],
+        "v003": [
+          60.0,
+          24.0
+        ]
+      },
+      "sockets": {
+        "v002": {
+          "grip": [
+            60.0,
+            61.6
+          ]
+        },
+        "v003": {
+          "grip": [
+            60.0,
+            62.0
+          ],
+          "wrap": [
+            60.0,
+            24.0
+          ]
+        }
+      },
+      "z": {
+        "v002": 90,
+        "v003": 80
+      },
+      "motion_bounds": {
+        "v002": [
+          -25,
+          25
+        ],
+        "v003": [
+          -115,
+          185
+        ]
+      }
+    },
+    "weapon_sword": {
+      "height": {
+        "v002": 208,
+        "v003": 244
+      },
+      "pivot": {
+        "v002": [
+          60,
+          163
+        ],
+        "v003": [
+          60.0,
+          184.0
+        ]
+      },
+      "sockets": {
+        "v002": {
+          "grip": [
+            60.0,
+            163.0
+          ]
+        },
+        "v003": {
+          "grip_main": [
+            60.0,
+            184.0
+          ]
+        }
+      },
+      "parent": {
+        "v002": null,
+        "v003": "hand_r"
+      },
+      "parent_socket": {
+        "v002": null,
+        "v003": "grip"
+      },
+      "angle": {
+        "v002": 0,
+        "v003": 80
+      }
+    },
+    "weapon_axe": {
+      "width": {
+        "v002": 140,
+        "v003": 176
+      },
+      "height": {
+        "v002": 208,
+        "v003": 338
+      },
+      "pivot": {
+        "v002": [
+          60,
+          163
+        ],
+        "v003": [
+          64.0,
+          214.0
+        ]
+      },
+      "sockets": {
+        "v002": {
+          "grip": [
+            60,
+            163
+          ]
+        },
+        "v003": {
+          "grip_main": [
+            64.0,
+            214.0
+          ],
+          "grip_off": [
+            64.0,
+            292.0
+          ]
+        }
+      },
+      "parent": {
+        "v002": null,
+        "v003": "hand_r"
+      },
+      "parent_socket": {
+        "v002": null,
+        "v003": "grip"
+      },
+      "angle": {
+        "v002": 0,
+        "v003": 90
+      }
+    },
+    "weapon_dagger": {
+      "width": {
+        "v002": 140,
+        "v003": 100
+      },
+      "height": {
+        "v002": 208,
+        "v003": 182
+      },
+      "pivot": {
+        "v002": [
+          60,
+          163
+        ],
+        "v003": [
+          50.0,
+          127.0
+        ]
+      },
+      "sockets": {
+        "v002": {
+          "grip": [
+            60,
+            163
+          ]
+        },
+        "v003": {
+          "grip_main": [
+            50.0,
+            127.0
+          ]
+        }
+      },
+      "parent": {
+        "v002": null,
+        "v003": "hand_r"
+      },
+      "parent_socket": {
+        "v002": null,
+        "v003": "grip"
+      },
+      "angle": {
+        "v002": 0,
+        "v003": -90
+      }
+    }
+  },
+  "weapon_mount": {
+    "v002": "all weapons: pivot=grip=[60,163], mounted at hand_r.grip=[60,61.6] rotated 180, no parent field (renderer special case)",
+    "v003": {
+      "sword": {
+        "asset": "weapon_sword",
+        "parent": "hand_r",
+        "parent_socket": "grip",
+        "pivot(=grip_main)": [
+          60.0,
+          184.0
+        ],
+        "attach_angle": 80,
+        "off_grip": null,
+        "z_overrides": {}
+      },
+      "axe": {
+        "asset": "weapon_axe",
+        "parent": "hand_r",
+        "parent_socket": "grip",
+        "pivot(=grip_main)": [
+          64.0,
+          214.0
+        ],
+        "attach_angle": 90,
+        "off_grip": {
+          "weapon_socket": "grip_off",
+          "hand": "hand_l",
+          "hand_socket": "grip",
+          "attach_angle": 90,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "z_overrides": {
+          "hand_l_wrap": 91
+        }
+      },
+      "dagger": {
+        "asset": "weapon_dagger",
+        "parent": "hand_r",
+        "parent_socket": "grip",
+        "pivot(=grip_main)": [
+          50.0,
+          127.0
+        ],
+        "attach_angle": -90,
+        "off_grip": null,
+        "z_overrides": {}
+      }
+    }
+  },
+  "pose_format": {
+    "v002": "{poseId: {partId|root_x|root_y|root_angle: deg|px}} (deltas)",
+    "v003": "{poseId: {weaponId | \"*\": {root: {x, y}, parts: {partId: {rot}}}}}",
+    "conversion": "root_x/root_y -> root.x/y ; root_angle -> parts.torso.rot ; partId: d -> parts.partId.rot = d. v003 values are NOT v002 values: every v003 pose is re-based on the per-weapon guard.",
+    "pose_ids_v002": [
+      "idle",
+      "quick_attack",
+      "heavy_windup",
+      "heavy_attack",
+      "dodge",
+      "hit",
+      "defeat"
+    ],
+    "pose_ids_v003": [
+      "idle",
+      "victory",
+      "defeat",
+      "quick_attack",
+      "heavy_windup",
+      "heavy_attack",
+      "dodge",
+      "hit",
+      "portrait"
+    ]
+  },
+  "renderer_changes_required": [
+    "Treat the equipped weapon as a normal child of hand_r.grip using its own pivot and angle (delete the hardcoded 180 deg special case).",
+    "Draw hand_l_wrap / hand_r_wrap (new assets) in z order; apply weapons[w].z_overrides (axe lifts hand_l_wrap to 91).",
+    "Resolve poses with poses[poseId][weaponId] ?? poses[poseId][\"*\"]; rot is added to each part default angle; torso.rot is root rotation.",
+    "Optional: use parts@2x on >=2x screens (same coordinates).",
+    "Optional: render fx.defeat_sparks during the defeat hold; plates/ and portraits/ are new UI-side assets."
+  ]
+}
