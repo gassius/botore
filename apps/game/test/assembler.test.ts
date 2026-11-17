@@ -109,7 +109,7 @@ describe('Workshop Frame kit-v003.1 adapter (ACTIVE pin)', () => {
     expect(bot.kitId).toBe('workshop-frame-v003.1');
     expect(bot.atlasVersion).toBe('v3');
     expect(bot.layers.every((l) => l.label?.startsWith('workshop-frame-v003.1:'))).toBe(true);
-    expect(bot.canvas.width).toBe(800);
+    expect(bot.canvas.width).toBe(640);
   });
 
   it('maps catalogue / alias paints onto Oxide and Petrol without catalogue expansion', () => {
@@ -129,9 +129,9 @@ describe('Workshop Frame kit-v003.1 adapter (ACTIVE pin)', () => {
     const bot = assembleWorkshopFrame({ loadout: baseLoadout, facing: 'right' });
     expect(bot.placeholder).toBe(false);
     expect(bot.kitId).toBe(WORKSHOP_FRAME_KIT_ID);
-    // v003.1 stage is 800×800 (rig 640 translated by rig_origin).
-    expect(bot.canvas.width).toBe(800);
-    expect(bot.canvas.height).toBe(800);
+    // Assembler keeps the 640 rig canvas; stage margin is overflow-only.
+    expect(bot.canvas.width).toBe(640);
+    expect(bot.canvas.height).toBe(640);
     // 15 body + 2 wraps + weapon
     expect(bot.layers.length).toBe(18);
     expect(bot.layers.find((l) => l.id === 'hand_r_wrap')).toBeTruthy();

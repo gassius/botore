@@ -180,14 +180,13 @@ export function buildWorkshopFrameWorldMatrices(
     throw new Error(`${ACTIVE_WORKSHOP_FRAME_FAMILY} missing torso`);
   }
 
-  // v003.1 stage: translate the 640 rig into the 800 drawing surface.
-  const stageOriginX = manifest.stage?.rig_origin[0] ?? 0;
-  const stageOriginY = manifest.stage?.rig_origin[1] ?? 0;
-
+  // Keep world coords in the 640 rig frame. Kit-v003.1 `stage` (800 +
+  // rig_origin) is optional drawing margin — fight/replay use overflow
+  // instead of translating every pose (would shrink bots at size/800).
   // torso.rot is the root rotation (replaces v002 root_angle).
   const rootAngle = torso.angle + poseRot(pose, 'torso');
-  const rootX = stageOriginX + manifest.root.position[0] + (pose.root.x ?? 0);
-  const rootY = stageOriginY + manifest.root.position[1] + (pose.root.y ?? 0);
+  const rootX = manifest.root.position[0] + (pose.root.x ?? 0);
+  const rootY = manifest.root.position[1] + (pose.root.y ?? 0);
   const torsoM = multiply(
     multiply(translate(rootX, rootY), rotateCwDeg(rootAngle)),
     translate(-torso.pivot[0], -torso.pivot[1]),
@@ -334,8 +333,9 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
 
   layers.sort((a, b) => a.zIndex - b.zIndex || a.id.localeCompare(b.id));
 
-  const stage = WORKSHOP_FRAME_MANIFEST.stage;
-  const canvas = stage?.size ?? WORKSHOP_FRAME_MANIFEST.canvas;
+  // Always report the 640 rig canvas so BotAssembler scale matches
+  // scenePlacement KIT_CANVAS_WIDTH and ground_anchor math.
+  const canvas = WORKSHOP_FRAME_MANIFEST.canvas;
   const hand = assets.get('hand_r');
   const gripLocal = hand?.sockets.grip ?? ([60, 62] as const);
   const handM = matrices.get('hand_r') ?? identity();
@@ -369,7 +369,7 @@ export function listWorkshopFrameGaps(): readonly string[] {
   return [
     'ACTIVE pin is v003.1 (family workshop-frame-v003); kit-v002 kept as history — must_not_mix_versions.',
     'Pose format is nested {weapon|"*": {root, parts.rot}}; do not port v002 flat pose numbers.',
-    'v003.1 stage is 800×800 with rig_origin [80,160]; rig numbers stay in 640 space. Mirror about stage centre (400).',
+    'v003.1 stage is 800×800 with rig_origin [80,160] for overflow margin; assembler keeps 640 canvas + rig coords (Replay overflow:visible). Mirror about rig x=320.',
     'weapon_grip_rotation_degrees removed — weapons are normal children of hand_r.grip with per-weapon attach_angle.',
     'Always draw hand_l_wrap / hand_r_wrap; apply weapons[w].z_overrides (axe lifts hand_l_wrap to 91).',
     'Paint path: under→mask-tint(color)→over via kit materials/masks. Precomposited parts/{id}-{paint}.png are fallback only.',

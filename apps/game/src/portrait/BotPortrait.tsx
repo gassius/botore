@@ -12,6 +12,8 @@ import { StyleSheet, View } from 'react-native';
 import {
   BotAssembler,
   isMotionPose,
+  resolvePaintVisual,
+  resolveWeaponKit,
   type AssemblerLoadoutInput,
   type BotFacing,
 } from '../assembler';
@@ -48,11 +50,14 @@ export function BotPortrait({
   const weapon = weaponId ?? loadout.weapon;
   const motionPose = resolvePortraitMotionPose();
   const layout = useMemo(() => portraitCropLayout(size), [size]);
+  const paintLabel = resolvePaintVisual(paint).label;
+  const weaponLabel = resolveWeaponKit(weapon).label;
+  const accessibilityLabel = `Bot portrait, ${paintLabel} ${weaponLabel.toLowerCase()}`;
 
   return (
     <View
       style={[styles.frame, { width: layout.cropSize, height: layout.cropSize }]}
-      accessibilityLabel={`bot portrait ${paint} ${weapon}`}
+      accessibilityLabel={accessibilityLabel}
       testID={testID}
     >
       <View

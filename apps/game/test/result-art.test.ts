@@ -65,8 +65,8 @@ describe('A3 result plates + victory/defeat poses (kit-v003.1)', () => {
       });
       expect(bot.motionPose).toBe('victory');
       expect(bot.kitPoseKey).toBe('victory');
-      expect(bot.canvas.width).toBe(800);
-      expect(bot.canvas.height).toBe(800);
+      expect(bot.canvas.width).toBe(640);
+      expect(bot.canvas.height).toBe(640);
       expect(bot.layers.some((l) => l.role === 'weapon')).toBe(true);
     }
   });

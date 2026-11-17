@@ -13,7 +13,7 @@ export type ResultVictoryPoseSlotProps = {
   readonly paintId?: string;
   readonly weaponId?: string;
   readonly facing?: BotFacing;
-  /** Display width in pt over the 800 stage (victory needs stage margins). */
+  /** Display width in pt over the 640 rig (victory may overflow above). */
   readonly size?: number;
   readonly reducedMotion?: boolean;
   readonly style?: StyleProp<ViewStyle>;
@@ -37,9 +37,13 @@ export function ResultVictoryPoseSlot({
   const paint = paintId ?? loadout.paint;
   const weapon = weaponId ?? loadout.weapon;
 
+  // Kit stage margin above the 640 frame (160 px) — pad so overhead victory
+  // is not clipped by parents that overflow:hidden.
+  const stagePadTop = (160 / 640) * size;
+
   return (
     <View
-      style={[styles.wrap, style]}
+      style={[styles.wrap, { paddingTop: stagePadTop }, style]}
       accessibilityLabel="victory pose"
       testID={testID}
       nativeID={resolved.slotId ?? VICTORY_POSE_SLOT_ID}
@@ -66,5 +70,6 @@ export type ResultVictoryPoseProps = ResultVictoryPoseSlotProps;
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
+    overflow: 'visible',
   },
 });

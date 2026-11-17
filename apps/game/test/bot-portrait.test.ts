@@ -23,7 +23,15 @@ describe('A5 BotPortrait — per-bot paint + weapon (never sample sheets)', () =
     expect(PORTRAIT_CROP_RECT_CANVAS_PX).toEqual([190, 41.4, 272, 272]);
     const layout = portraitCropLayout(PORTRAIT_DISPLAY_PT);
     expect(layout.cropSize).toBe(46);
-    expect(layout.canvasSize).toBeCloseTo((800 * 46) / 272, 5);
+    expect(layout.canvasSize).toBeCloseTo((640 * 46) / 272, 5);
+  });
+
+  it('uses player-facing paint/weapon labels in accessibilityLabel source', () => {
+    const src = readFileSync(join(__dirname, '../src/portrait/BotPortrait.tsx'), 'utf8');
+    expect(src.includes('resolvePaintVisual')).toBe(true);
+    expect(src.includes('resolveWeaponKit')).toBe(true);
+    expect(src.includes('Bot portrait')).toBe(true);
+    expect(src.includes('bot portrait ${paint} ${weapon}')).toBe(false);
   });
 
   it('prefers portrait MotionPose; adapter keeps weapon equipped', () => {

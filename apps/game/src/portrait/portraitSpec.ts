@@ -8,10 +8,13 @@
 /** Display size on ranking rows (ClickUp A5: 46 pt). */
 export const PORTRAIT_DISPLAY_PT = 46;
 
-/** Kit rig canvas (1x). Stage may be larger; crop is measured in rig space then offset. */
+/** Kit rig canvas (1x). Assembler keeps 640; stage overflow is optional. */
 export const PORTRAIT_KIT_CANVAS_PX = 640;
 
-/** v003.1 stage.rig_origin — crop is authored in rig space. */
+/**
+ * Kit stage.rig_origin (informational). Portrait crop is authored in rig
+ * space; assembly does not translate by this offset.
+ */
 export const PORTRAIT_STAGE_RIG_ORIGIN = [80, 160] as const;
 
 /**
@@ -41,7 +44,7 @@ export const PORTRAIT_FORBIDDEN_SAMPLE_REQUIRES = [
 ] as const;
 
 /**
- * Crop window over the staged assembly so head/shoulders fill `displaySize`².
+ * Crop window over the 640 rig assembly so head/shoulders fill `displaySize`².
  * Pure layout helper — D4 / tests use this without mounting RN.
  */
 export function portraitCropLayout(displaySize: number): {
@@ -51,16 +54,11 @@ export function portraitCropLayout(displaySize: number): {
   readonly cropSize: number;
 } {
   const [cropX, cropY, cropW] = PORTRAIT_CROP_RECT_CANVAS_PX;
-  const [ox, oy] = PORTRAIT_STAGE_RIG_ORIGIN;
-  // Assembly draws on the 800 stage; crop rect is rig-relative.
-  const stageCropX = ox + cropX;
-  const stageCropY = oy + cropY;
-  const stageCanvas = 800;
   const scale = displaySize / cropW;
   return {
-    canvasSize: stageCanvas * scale,
-    offsetX: -stageCropX * scale,
-    offsetY: -stageCropY * scale,
+    canvasSize: PORTRAIT_KIT_CANVAS_PX * scale,
+    offsetX: -cropX * scale,
+    offsetY: -cropY * scale,
     cropSize: displaySize,
   };
 }
