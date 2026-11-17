@@ -48,7 +48,9 @@ describe('C14 part sound-tag resolution', () => {
     expect(weaponSwingCueFromBuild({ weapon: 'weapon-dagger', soundTags: ['weapon.dagger'] })).toBe(
       'weaponDaggerSwing',
     );
-    expect(weaponSwingCueFromBuild({ weapon: 'unknown', soundTags: ['weapon.generic'] })).toBeNull();
+    expect(
+      weaponSwingCueFromBuild({ weapon: 'unknown', soundTags: ['weapon.generic'] }),
+    ).toBeNull();
   });
 
   it('maps chassis.light to chassis-basic hit', () => {

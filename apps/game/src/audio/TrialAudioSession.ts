@@ -183,7 +183,9 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
       if (partSource != null) {
         // Part clips ship at unity gain; match base swing/hit volume from the trial manifest.
         const volume =
-          cue.id === 'chassisBasicHit' ? trialAudioClipVolume('hit') : trialAudioClipVolume('swing');
+          cue.id === 'chassisBasicHit'
+            ? trialAudioClipVolume('hit')
+            : trialAudioClipVolume('swing');
         playSource(cue.id, partSource, volume);
         return;
       }

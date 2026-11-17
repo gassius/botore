@@ -79,9 +79,7 @@ export function useTrialReplayAudio(opts: {
       session.dispose();
       if (sessionRef.current === session) sessionRef.current = null;
     };
-    // profileKey captures fighterProfiles content without identity churn.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, profileKey]);
+  }, [enabled, profileKey, fighterProfiles]);
 
   useEffect(() => {
     sessionRef.current?.setMuted(opts.muted);

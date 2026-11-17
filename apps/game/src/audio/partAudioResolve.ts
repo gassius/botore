@@ -27,7 +27,10 @@ export type FighterAudioProfile = {
 
 export type ResolvedOneShotCue =
   | { readonly kind: 'part'; readonly id: PartAudioCueId }
-  | { readonly kind: 'base'; readonly id: 'swing' | 'hit' | 'dodge' | 'defeat' | 'hush' | 'uiTap' | 'win' };
+  | {
+      readonly kind: 'base';
+      readonly id: 'swing' | 'hit' | 'dodge' | 'defeat' | 'hush' | 'uiTap' | 'win';
+    };
 
 function tagsOf(build: Pick<SealedBotBuild, 'soundTags'> | null | undefined): readonly string[] {
   return build?.soundTags ?? [];

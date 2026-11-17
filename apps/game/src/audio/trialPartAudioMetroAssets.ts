@@ -14,4 +14,5 @@ export const TRIAL_PART_AUDIO_METRO_SOURCES: Readonly<Record<PartAudioCueId, Aud
   chassisBasicHit: require('../../assets/atlas/parts/chassis-basic/hit.m4a') as AudioSource,
 };
 
-export const TRIAL_AMBIENT_METRO_SOURCE: AudioSource = require('../../assets/atlas/arenas/quiet/ambient.m4a') as AudioSource;
+export const TRIAL_AMBIENT_METRO_SOURCE: AudioSource =
+  require('../../assets/atlas/arenas/quiet/ambient.m4a') as AudioSource;

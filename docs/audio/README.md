@@ -25,8 +25,8 @@ manifest** as part art.
 Until atlas base-pack download is wired on the F10 replay path, the client also
 ships a **separate versioned trial audio pack** for CanonicalReplayPlayer:
 
-| Pack                        | Path                                 | Pin                                                          |
-| --------------------------- | ------------------------------------ | ------------------------------------------------------------ |
+| Pack                        | Path                                                          | Pin                                                          |
+| --------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------ |
 | Trial base (7 SFX + 1 loop) | `apps/game/assets/trial-audio-v002/` (v001 sealed, untouched) | `ACTIVE_TRIAL_AUDIO_ASSET_VERSION` in `apps/game/src/audio/` |
 
 `trial-audio-v002` is real ElevenLabs AAC (Carlos go recorded in pack provenance).
