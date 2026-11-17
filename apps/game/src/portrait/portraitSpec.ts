@@ -1,48 +1,47 @@
 /**
- * Ranking portrait framing from Workshop Frame kit-v003 `manifest.portrait`.
+ * Ranking portrait framing from Workshop Frame kit-v003.1 `manifest.portrait`.
  *
  * A5: every portrait is a live BotAssembler render of that bot's paint + weapon.
- * Kit sample head sheets are NOT the product portrait source.
- *
- * Supervisor override vs kit weaponless samples: the weapon stays equipped so
- * sword/axe/dagger rows are distinct.
+ * Kit sample PNGs are NOT the product portrait source.
  */
 
 /** Display size on ranking rows (ClickUp A5: 46 pt). */
 export const PORTRAIT_DISPLAY_PT = 46;
 
-/** Kit canvas size the crop is measured against (1x). */
+/** Kit rig canvas (1x). Stage may be larger; crop is measured in rig space then offset. */
 export const PORTRAIT_KIT_CANVAS_PX = 640;
 
+/** v003.1 stage.rig_origin — crop is authored in rig space. */
+export const PORTRAIT_STAGE_RIG_ORIGIN = [80, 160] as const;
+
 /**
- * Square crop in kit canvas px: [x, y, width, height].
- * Anchored to torso.neck + crop_center_offset in kit-v003.
+ * Square crop in kit rig canvas px: [x, y, width, height] (v003.1).
+ * Anchored to torso.neck + crop_center_offset [16, -4], crop_size 272.
  */
-export const PORTRAIT_CROP_RECT_CANVAS_PX = [178, 37.4, 256, 256] as const;
+export const PORTRAIT_CROP_RECT_CANVAS_PX = [190, 41.4, 272, 272] as const;
 
 /** Downsample targets from the kit portrait spec (not Metro require targets). */
 export const PORTRAIT_OUTPUT_SIZES_PX = [96, 192, 288] as const;
 
 /**
- * Preferred MotionPose for portrait framing once A1 lands kit-v003 `portrait`.
- * Until the adapter maps it, BotPortrait falls back to `idle` while still
- * rendering the equipped weapon.
+ * Preferred MotionPose for portrait framing.
  */
 export const PORTRAIT_POSE_PREFERRED = 'portrait' as const;
 
 /**
  * Forbidden Metro/require product sources — kit sample sheets must never be
- * the ranking portrait. Checked against BotPortrait.tsx only (docs may name them).
+ * the ranking portrait. Checked against BotPortrait.tsx only.
  */
 export const PORTRAIT_FORBIDDEN_SAMPLE_REQUIRES = [
   'portraits/oxide-',
   'portraits/petrol-',
+  'portraits/scrapgreen-',
   "require('../../assets",
   'require("../../assets',
 ] as const;
 
 /**
- * Crop window over the full kit canvas so head/shoulders fill `displaySize`².
+ * Crop window over the staged assembly so head/shoulders fill `displaySize`².
  * Pure layout helper — D4 / tests use this without mounting RN.
  */
 export function portraitCropLayout(displaySize: number): {
@@ -52,11 +51,16 @@ export function portraitCropLayout(displaySize: number): {
   readonly cropSize: number;
 } {
   const [cropX, cropY, cropW] = PORTRAIT_CROP_RECT_CANVAS_PX;
+  const [ox, oy] = PORTRAIT_STAGE_RIG_ORIGIN;
+  // Assembly draws on the 800 stage; crop rect is rig-relative.
+  const stageCropX = ox + cropX;
+  const stageCropY = oy + cropY;
+  const stageCanvas = 800;
   const scale = displaySize / cropW;
   return {
-    canvasSize: PORTRAIT_KIT_CANVAS_PX * scale,
-    offsetX: -cropX * scale,
-    offsetY: -cropY * scale,
+    canvasSize: stageCanvas * scale,
+    offsetX: -stageCropX * scale,
+    offsetY: -stageCropY * scale,
     cropSize: displaySize,
   };
 }

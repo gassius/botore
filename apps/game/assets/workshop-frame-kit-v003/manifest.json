@@ -1,11 +1,30 @@
 {
   "schema": "botore.workshop-frame.provisional.v2",
   "kit_id": "workshop-frame",
-  "version": "v003",
+  "version": "v003.1",
   "family": "workshop-frame-v003",
   "immutable": true,
   "status": "integration-prototype-not-accepted",
-  "supersedes": "v002 (coordinates NOT interchangeable)",
+  "supersedes": "v003 (same parts, sockets, pivots, root and idle numbers; poses/portrait/stage changed - see INTEGRATION-DELTA-v003-to-v003.1.md). v002 coordinates remain NOT interchangeable.",
+  "stage": {
+    "size": [
+      800,
+      800
+    ],
+    "rig_origin": [
+      80,
+      160
+    ],
+    "note": "v003.1 grows the DRAWING SURFACE, not the rig: the 640x640 rig frame and every manifest number are unchanged. Draw the rig translated by rig_origin inside an 800x800 stage (or allow overflow of 160 px above and 80 px on each side of the 640 frame). Victory and the A2 strike/follow-through/windup poses use this margin; idle and defeat stay inside the 640 frame. Mirror still happens about rig x=320 (stage x=400).",
+    "used_by": [
+      "victory",
+      "windup",
+      "strike",
+      "follow_through",
+      "walk_in",
+      "knockout"
+    ]
+  },
   "canvas": [
     640,
     640
@@ -194,7 +213,7 @@
       "z": 50,
       "motion_bounds": [
         -75,
-        40
+        35
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -230,7 +249,7 @@
       "angle": 0,
       "z": 60,
       "motion_bounds": [
-        -30,
+        -35,
         35
       ],
       "role": "body",
@@ -276,8 +295,8 @@
       "angle": 0,
       "z": 40,
       "motion_bounds": [
-        -25,
-        15
+        -30,
+        20
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -318,8 +337,8 @@
       "angle": 30,
       "z": 15,
       "motion_bounds": [
-        -150,
-        225
+        -195,
+        180
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -360,8 +379,8 @@
       "angle": -57,
       "z": 20,
       "motion_bounds": [
-        -155,
-        40
+        -370,
+        20
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -444,8 +463,8 @@
       "angle": -13,
       "z": 35,
       "motion_bounds": [
-        -75,
-        110
+        -65,
+        100
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -481,8 +500,8 @@
       "angle": -11,
       "z": 36,
       "motion_bounds": [
-        -45,
-        55
+        -95,
+        30
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -523,8 +542,8 @@
       "angle": -24,
       "z": 70,
       "motion_bounds": [
-        -100,
-        110
+        -155,
+        220
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -565,7 +584,7 @@
       "angle": -112,
       "z": 75,
       "motion_bounds": [
-        -255,
+        -395,
         20
       ],
       "role": "body",
@@ -607,7 +626,7 @@
       "angle": -27,
       "z": 55,
       "motion_bounds": [
-        -95,
+        -100,
         65
       ],
       "role": "body",
@@ -650,7 +669,7 @@
       "z": 56,
       "motion_bounds": [
         -65,
-        120
+        125
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -687,7 +706,7 @@
       "z": 57,
       "motion_bounds": [
         -30,
-        55
+        40
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -732,8 +751,8 @@
       "angle": 0,
       "z": 65,
       "motion_bounds": [
-        -45,
-        75
+        -150,
+        180
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -816,8 +835,8 @@
       "angle": 0,
       "z": 80,
       "motion_bounds": [
-        -115,
-        185
+        -145,
+        290
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -1167,150 +1186,159 @@
       "sword": {
         "root": {
           "x": 0,
-          "y": 4
+          "y": 8
         },
         "parts": {
           "foot_l": {
-            "rot": -25.46
+            "rot": -29.21
           },
           "foot_r": {
-            "rot": 9.25
+            "rot": 10.78
           },
           "forearm_l": {
-            "rot": -59.81
+            "rot": -303.01
           },
           "forearm_r": {
-            "rot": -9.53
+            "rot": 112.0
           },
           "hand_l": {
-            "rot": 37.64
+            "rot": 46.87
           },
           "hand_r": {
-            "rot": 140.62
+            "rot": 94.19
           },
           "head": {
-            "rot": -16
+            "rot": -22
+          },
+          "pelvis": {
+            "rot": 6
           },
           "shin_l": {
-            "rot": 33.27
+            "rot": 37.29
           },
           "shin_r": {
-            "rot": -15.0
+            "rot": -14.97
           },
           "thigh_l": {
-            "rot": 1.2
+            "rot": -0.08
           },
           "thigh_r": {
-            "rot": 14.75
+            "rot": 12.19
           },
           "torso": {
-            "rot": -9
+            "rot": -14
           },
           "upper_arm_l": {
-            "rot": 188.18
+            "rot": 143.05
           },
           "upper_arm_r": {
-            "rot": -48.09
+            "rot": -124.63
           }
         }
       },
       "axe": {
         "root": {
           "x": 0,
-          "y": 4
+          "y": 8
         },
         "parts": {
           "foot_l": {
-            "rot": -25.46
+            "rot": -29.21
           },
           "foot_r": {
-            "rot": 9.25
+            "rot": 10.78
           },
           "forearm_l": {
-            "rot": -59.81
+            "rot": 56.99
           },
           "forearm_r": {
-            "rot": -41.38
+            "rot": -248.0
           },
           "hand_l": {
-            "rot": 37.64
+            "rot": 46.87
           },
           "hand_r": {
-            "rot": 138.45
+            "rot": 93.39
           },
           "head": {
-            "rot": -16
+            "rot": -22
+          },
+          "pelvis": {
+            "rot": 6
           },
           "shin_l": {
-            "rot": 33.27
+            "rot": 37.29
           },
           "shin_r": {
-            "rot": -15.0
+            "rot": -14.97
           },
           "thigh_l": {
-            "rot": 1.2
+            "rot": -0.08
           },
           "thigh_r": {
-            "rot": 14.75
+            "rot": 12.19
           },
           "torso": {
-            "rot": -9
+            "rot": -14
           },
           "upper_arm_l": {
-            "rot": -171.82
+            "rot": -216.95
           },
           "upper_arm_r": {
-            "rot": -10.06
+            "rot": 235.3
           }
         }
       },
       "dagger": {
         "root": {
           "x": 0,
-          "y": 4
+          "y": 8
         },
         "parts": {
           "foot_l": {
-            "rot": -25.46
+            "rot": -29.21
           },
           "foot_r": {
-            "rot": 9.25
+            "rot": 10.78
           },
           "forearm_l": {
-            "rot": -59.81
+            "rot": -303.01
           },
           "forearm_r": {
-            "rot": 69.84
+            "rot": 112.0
           },
           "hand_l": {
-            "rot": 37.64
+            "rot": 46.87
           },
           "hand_r": {
-            "rot": -108.39
+            "rot": -96.51
           },
           "head": {
-            "rot": -16
+            "rot": -22
+          },
+          "pelvis": {
+            "rot": 6
           },
           "shin_l": {
-            "rot": 33.27
+            "rot": 37.29
           },
           "shin_r": {
-            "rot": -15.0
+            "rot": -14.97
           },
           "thigh_l": {
-            "rot": 1.2
+            "rot": -0.08
           },
           "thigh_r": {
-            "rot": 14.75
+            "rot": 12.19
           },
           "torso": {
-            "rot": -9
+            "rot": -14
           },
           "upper_arm_l": {
-            "rot": 188.18
+            "rot": 143.05
           },
           "upper_arm_r": {
-            "rot": -66.45
+            "rot": -92.07
           }
         }
       }
@@ -1319,44 +1347,44 @@
       "sword": {
         "root": {
           "x": -14,
-          "y": 98
+          "y": 99
         },
         "parts": {
           "foot_l": {
-            "rot": 61.0
+            "rot": 25.0
           },
           "foot_r": {
-            "rot": 38.0
+            "rot": 2.0
           },
           "forearm_l": {
             "rot": 0.14
           },
           "forearm_r": {
-            "rot": 33.08
+            "rot": 32.1
           },
           "hand_l": {
             "rot": 42.59
           },
           "hand_r": {
-            "rot": 101.94
+            "rot": 102.86
           },
           "head": {
             "rot": 26
           },
           "pelvis": {
-            "rot": -18
+            "rot": -24
           },
           "shin_l": {
-            "rot": 117.37
+            "rot": 104.82
           },
           "shin_r": {
-            "rot": 97.85
+            "rot": 102.65
           },
           "thigh_l": {
-            "rot": -34.37
+            "rot": -11.82
           },
           "thigh_r": {
-            "rot": 8.15
+            "rot": 13.35
           },
           "torso": {
             "rot": 24
@@ -1365,51 +1393,51 @@
             "rot": -49.74
           },
           "upper_arm_r": {
-            "rot": -7.02
+            "rot": -6.96
           }
         }
       },
       "axe": {
         "root": {
           "x": -14,
-          "y": 98
+          "y": 99
         },
         "parts": {
           "foot_l": {
-            "rot": 61.0
+            "rot": 25.0
           },
           "foot_r": {
-            "rot": 38.0
+            "rot": 2.0
           },
           "forearm_l": {
             "rot": 0.14
           },
           "forearm_r": {
-            "rot": -34.55
+            "rot": -34.44
           },
           "hand_l": {
             "rot": 42.59
           },
           "hand_r": {
-            "rot": 177.09
+            "rot": 178.62
           },
           "head": {
             "rot": 26
           },
           "pelvis": {
-            "rot": -18
+            "rot": -24
           },
           "shin_l": {
-            "rot": 117.37
+            "rot": 104.82
           },
           "shin_r": {
-            "rot": 97.85
+            "rot": 102.65
           },
           "thigh_l": {
-            "rot": -34.37
+            "rot": -11.82
           },
           "thigh_r": {
-            "rot": 8.15
+            "rot": 13.35
           },
           "torso": {
             "rot": 24
@@ -1418,51 +1446,51 @@
             "rot": -49.74
           },
           "upper_arm_r": {
-            "rot": -21.55
+            "rot": -23.18
           }
         }
       },
       "dagger": {
         "root": {
           "x": -14,
-          "y": 98
+          "y": 99
         },
         "parts": {
           "foot_l": {
-            "rot": 61.0
+            "rot": 25.0
           },
           "foot_r": {
-            "rot": 38.0
+            "rot": 2.0
           },
           "forearm_l": {
             "rot": 0.14
           },
           "forearm_r": {
-            "rot": -15.39
+            "rot": -16.29
           },
           "hand_l": {
             "rot": 42.59
           },
           "hand_r": {
-            "rot": -18.57
+            "rot": -17.63
           },
           "head": {
             "rot": 26
           },
           "pelvis": {
-            "rot": -18
+            "rot": -24
           },
           "shin_l": {
-            "rot": 117.37
+            "rot": 104.82
           },
           "shin_r": {
-            "rot": 97.85
+            "rot": 102.65
           },
           "thigh_l": {
-            "rot": -34.37
+            "rot": -11.82
           },
           "thigh_r": {
-            "rot": 8.15
+            "rot": 13.35
           },
           "torso": {
             "rot": 24
@@ -1471,460 +1499,803 @@
             "rot": -49.74
           },
           "upper_arm_r": {
-            "rot": 35.96
+            "rot": 35.92
           }
         }
       }
     },
-    "quick_attack": {
+    "walk_in": {
       "sword": {
         "root": {
-          "x": -65,
-          "y": 10
+          "x": 2,
+          "y": 2
         },
         "parts": {
           "foot_l": {
-            "rot": -24.18
+            "rot": -8.24
           },
           "foot_r": {
-            "rot": -2.32
+            "rot": -10.17
           },
           "forearm_l": {
-            "rot": -61.71
+            "rot": -38.0
           },
           "forearm_r": {
-            "rot": 9.41
+            "rot": -8.38
           },
           "hand_l": {
-            "rot": -6.5
+            "rot": -9.41
           },
           "hand_r": {
-            "rot": 81.43
+            "rot": 98.93
           },
           "head": {
-            "rot": -15
+            "rot": -4
           },
           "shin_l": {
-            "rot": 44.05
+            "rot": 13.0
           },
           "shin_r": {
-            "rot": 22.56
+            "rot": 32.95
           },
           "thigh_l": {
-            "rot": -23.87
+            "rot": -2.76
           },
           "thigh_r": {
-            "rot": -24.24
+            "rot": -44.79
           },
           "torso": {
-            "rot": 16
+            "rot": 6
           },
           "upper_arm_l": {
-            "rot": 39.21
+            "rot": 8.41
           },
           "upper_arm_r": {
-            "rot": 12.16
+            "rot": 33.45
           }
         }
       },
       "axe": {
         "root": {
-          "x": -67,
-          "y": 18
+          "x": 2,
+          "y": 2
         },
         "parts": {
           "foot_l": {
-            "rot": 5.68
+            "rot": -8.24
           },
           "foot_r": {
-            "rot": 1.63
+            "rot": -10.17
           },
           "forearm_l": {
-            "rot": 56.98
+            "rot": 27.78
           },
           "forearm_r": {
-            "rot": -31.01
+            "rot": -17.7
           },
           "hand_l": {
-            "rot": 64.52
+            "rot": 23.97
           },
           "hand_r": {
-            "rot": 170.99
+            "rot": 13.13
           },
           "head": {
-            "rot": -20
+            "rot": -4
           },
           "shin_l": {
-            "rot": -22.02
+            "rot": 13.0
           },
           "shin_r": {
-            "rot": 31.96
+            "rot": 32.95
           },
           "thigh_l": {
-            "rot": 4.35
+            "rot": -2.76
           },
           "thigh_r": {
-            "rot": -45.59
+            "rot": -44.79
           },
           "torso": {
-            "rot": 24
+            "rot": 6
           },
           "upper_arm_l": {
-            "rot": -112.61
+            "rot": -52.75
           },
           "upper_arm_r": {
-            "rot": -22.0
+            "rot": 112.57
           }
         }
       },
       "dagger": {
         "root": {
-          "x": -61,
+          "x": 2,
+          "y": 2
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -8.24
+          },
+          "foot_r": {
+            "rot": -10.17
+          },
+          "forearm_l": {
+            "rot": -46.72
+          },
+          "forearm_r": {
+            "rot": 9.69
+          },
+          "hand_l": {
+            "rot": 6.55
+          },
+          "hand_r": {
+            "rot": -56.44
+          },
+          "head": {
+            "rot": -4
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 32.95
+          },
+          "thigh_l": {
+            "rot": -2.76
+          },
+          "thigh_r": {
+            "rot": -44.79
+          },
+          "torso": {
+            "rot": 6
+          },
+          "upper_arm_l": {
+            "rot": 11.17
+          },
+          "upper_arm_r": {
+            "rot": 56.76
+          }
+        }
+      }
+    },
+    "windup": {
+      "sword": {
+        "root": {
+          "x": -20,
           "y": 16
         },
         "parts": {
           "foot_l": {
-            "rot": -27.49
+            "rot": -37.72
           },
           "foot_r": {
-            "rot": -3.97
+            "rot": 22.9
           },
           "forearm_l": {
-            "rot": -71.82
+            "rot": -14.28
           },
           "forearm_r": {
-            "rot": 13.01
+            "rot": 53.39
           },
           "hand_l": {
-            "rot": 4.86
+            "rot": 91.0
           },
           "hand_r": {
-            "rot": -22.39
+            "rot": 24.2
           },
           "head": {
-            "rot": -16
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
           },
           "shin_l": {
-            "rot": 45.06
+            "rot": 62.36
           },
           "shin_r": {
-            "rot": 34.43
+            "rot": -14.99
           },
           "thigh_l": {
-            "rot": -25.58
+            "rot": -20.64
           },
           "thigh_r": {
-            "rot": -38.46
+            "rot": -3.9
+          },
+          "torso": {
+            "rot": -12
+          },
+          "upper_arm_l": {
+            "rot": -57.73
+          },
+          "upper_arm_r": {
+            "rot": -81.59
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": -20,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -37.72
+          },
+          "foot_r": {
+            "rot": 22.9
+          },
+          "forearm_l": {
+            "rot": 36.8
+          },
+          "forearm_r": {
+            "rot": -273.71
+          },
+          "hand_l": {
+            "rot": -69.42
+          },
+          "hand_r": {
+            "rot": 167.41
+          },
+          "head": {
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.36
+          },
+          "shin_r": {
+            "rot": -14.99
+          },
+          "thigh_l": {
+            "rot": -20.64
+          },
+          "thigh_r": {
+            "rot": -3.9
+          },
+          "torso": {
+            "rot": -12
+          },
+          "upper_arm_l": {
+            "rot": -62.38
+          },
+          "upper_arm_r": {
+            "rot": 120.29
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": -20,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -37.72
+          },
+          "foot_r": {
+            "rot": 22.9
+          },
+          "forearm_l": {
+            "rot": -28.45
+          },
+          "forearm_r": {
+            "rot": 17.46
+          },
+          "hand_l": {
+            "rot": 79.33
+          },
+          "hand_r": {
+            "rot": -139.89
+          },
+          "head": {
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.36
+          },
+          "shin_r": {
+            "rot": -14.99
+          },
+          "thigh_l": {
+            "rot": -20.64
+          },
+          "thigh_r": {
+            "rot": -3.9
+          },
+          "torso": {
+            "rot": -12
+          },
+          "upper_arm_l": {
+            "rot": -41.88
+          },
+          "upper_arm_r": {
+            "rot": 98.43
+          }
+        }
+      }
+    },
+    "strike": {
+      "sword": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 57.0
+          },
+          "forearm_r": {
+            "rot": 103.77
+          },
+          "hand_l": {
+            "rot": -142.18
+          },
+          "hand_r": {
+            "rot": 133.14
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
           },
           "torso": {
             "rot": 20
           },
           "upper_arm_l": {
-            "rot": 43.95
+            "rot": 6.62
           },
           "upper_arm_r": {
-            "rot": 30.38
-          }
-        }
-      }
-    },
-    "heavy_windup": {
-      "sword": {
-        "root": {
-          "x": 0,
-          "y": 55
-        },
-        "parts": {
-          "foot_l": {
-            "rot": -24.18
-          },
-          "foot_r": {
-            "rot": -2.32
-          },
-          "forearm_l": {
-            "rot": -61.71
-          },
-          "forearm_r": {
-            "rot": -58.59
-          },
-          "hand_l": {
-            "rot": -6.5
-          },
-          "hand_r": {
-            "rot": 81.43
-          },
-          "head": {
-            "rot": 7
-          },
-          "shin_l": {
-            "rot": 44.05
-          },
-          "shin_r": {
-            "rot": 22.56
-          },
-          "thigh_l": {
-            "rot": -23.87
-          },
-          "thigh_r": {
-            "rot": -24.24
-          },
-          "torso": {
-            "rot": -8
-          },
-          "upper_arm_l": {
-            "rot": 31.21
-          },
-          "upper_arm_r": {
-            "rot": -10.84
+            "rot": -82.91
           }
         }
       },
       "axe": {
         "root": {
-          "x": -2,
-          "y": 63
+          "x": 32,
+          "y": 28
         },
         "parts": {
           "foot_l": {
-            "rot": 5.68
+            "rot": -30.25
           },
           "foot_r": {
-            "rot": 1.63
+            "rot": 11.74
           },
           "forearm_l": {
-            "rot": 51.34
+            "rot": 43.46
           },
           "forearm_r": {
-            "rot": -137.84
+            "rot": -25.87
           },
           "hand_l": {
-            "rot": -39.03
+            "rot": 96.07
           },
           "hand_r": {
-            "rot": 107.18
+            "rot": 185.65
           },
           "head": {
-            "rot": 2
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
           },
           "shin_l": {
-            "rot": -22.02
+            "rot": 13.0
           },
           "shin_r": {
-            "rot": 31.96
+            "rot": 26.99
           },
           "thigh_l": {
-            "rot": 4.35
+            "rot": 5.25
           },
           "thigh_r": {
-            "rot": -45.59
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
           },
           "upper_arm_l": {
-            "rot": -81.33
+            "rot": -116.52
           },
           "upper_arm_r": {
-            "rot": 70.64
+            "rot": -27.77
           }
         }
       },
       "dagger": {
         "root": {
-          "x": 4,
-          "y": 61
+          "x": 32,
+          "y": 28
         },
         "parts": {
           "foot_l": {
-            "rot": -27.49
+            "rot": -30.25
           },
           "foot_r": {
-            "rot": -3.97
+            "rot": 11.74
           },
           "forearm_l": {
-            "rot": -71.82
+            "rot": 57.0
           },
           "forearm_r": {
-            "rot": -54.99
+            "rot": 111.89
           },
           "hand_l": {
-            "rot": 4.86
+            "rot": -142.18
           },
           "hand_r": {
-            "rot": -22.39
+            "rot": -95.68
           },
           "head": {
-            "rot": 6
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
           },
           "shin_l": {
-            "rot": 45.06
+            "rot": 13.0
           },
           "shin_r": {
-            "rot": 34.43
+            "rot": 26.99
           },
           "thigh_l": {
-            "rot": -25.58
+            "rot": 5.25
           },
           "thigh_r": {
-            "rot": -38.46
+            "rot": -50.73
           },
           "torso": {
-            "rot": -4
+            "rot": 20
           },
           "upper_arm_l": {
-            "rot": 35.95
+            "rot": 6.62
           },
           "upper_arm_r": {
-            "rot": 7.38
+            "rot": -73.41
           }
         }
       }
     },
-    "heavy_attack": {
+    "follow_through": {
+      "sword": {
+        "root": {
+          "x": 38,
+          "y": 34
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -29.72
+          },
+          "foot_r": {
+            "rot": 9.18
+          },
+          "forearm_l": {
+            "rot": 57.0
+          },
+          "forearm_r": {
+            "rot": 11.82
+          },
+          "hand_l": {
+            "rot": -129.7
+          },
+          "hand_r": {
+            "rot": 197.08
+          },
+          "head": {
+            "rot": -2
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 39.3
+          },
+          "thigh_l": {
+            "rot": -1.28
+          },
+          "thigh_r": {
+            "rot": -66.48
+          },
+          "torso": {
+            "rot": 26
+          },
+          "upper_arm_l": {
+            "rot": 4.24
+          },
+          "upper_arm_r": {
+            "rot": -20.9
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": 38,
+          "y": 34
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -29.72
+          },
+          "foot_r": {
+            "rot": 9.18
+          },
+          "forearm_l": {
+            "rot": 26.57
+          },
+          "forearm_r": {
+            "rot": -38.84
+          },
+          "hand_l": {
+            "rot": 171.17
+          },
+          "hand_r": {
+            "rot": 281.88
+          },
+          "head": {
+            "rot": -2
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 39.3
+          },
+          "thigh_l": {
+            "rot": -1.28
+          },
+          "thigh_r": {
+            "rot": -66.48
+          },
+          "torso": {
+            "rot": 26
+          },
+          "upper_arm_l": {
+            "rot": -136.74
+          },
+          "upper_arm_r": {
+            "rot": -73.04
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": 38,
+          "y": 34
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -29.72
+          },
+          "foot_r": {
+            "rot": 9.18
+          },
+          "forearm_l": {
+            "rot": 57.0
+          },
+          "forearm_r": {
+            "rot": 40.98
+          },
+          "hand_l": {
+            "rot": -133.01
+          },
+          "hand_r": {
+            "rot": -60.1
+          },
+          "head": {
+            "rot": -2
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 39.3
+          },
+          "thigh_l": {
+            "rot": -1.28
+          },
+          "thigh_r": {
+            "rot": -66.48
+          },
+          "torso": {
+            "rot": 26
+          },
+          "upper_arm_l": {
+            "rot": 5.02
+          },
+          "upper_arm_r": {
+            "rot": -16.87
+          }
+        }
+      }
+    },
+    "recovery": {
       "sword": {
         "root": {
           "x": 10,
-          "y": 10
+          "y": 14
         },
         "parts": {
           "foot_l": {
-            "rot": -24.18
+            "rot": -27.48
           },
           "foot_r": {
-            "rot": -2.32
+            "rot": -1.26
           },
           "forearm_l": {
-            "rot": -61.71
+            "rot": -63.62
           },
           "forearm_r": {
-            "rot": 34.41
+            "rot": -21.65
           },
           "hand_l": {
-            "rot": -6.5
+            "rot": -6.36
           },
           "hand_r": {
-            "rot": 81.43
+            "rot": 143.3
           },
           "head": {
-            "rot": -20
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -2
           },
           "shin_l": {
-            "rot": 60.05
+            "rot": 33.3
           },
           "shin_r": {
-            "rot": 22.56
+            "rot": 24.45
           },
           "thigh_l": {
-            "rot": -33.87
+            "rot": -7.82
           },
           "thigh_r": {
-            "rot": -24.24
+            "rot": -25.19
           },
           "torso": {
-            "rot": 24
+            "rot": 4
           },
           "upper_arm_l": {
-            "rot": 36.21
+            "rot": 52.97
           },
           "upper_arm_r": {
-            "rot": 24.16
+            "rot": -29.65
           }
         }
       },
       "axe": {
         "root": {
-          "x": 8,
-          "y": 18
+          "x": 10,
+          "y": 14
         },
         "parts": {
           "foot_l": {
-            "rot": 5.68
+            "rot": -27.48
           },
           "foot_r": {
-            "rot": 1.63
+            "rot": -1.26
           },
           "forearm_l": {
-            "rot": 90.16
+            "rot": 22.32
           },
           "forearm_r": {
-            "rot": -35.78
+            "rot": -32.61
           },
           "hand_l": {
-            "rot": 67.89
+            "rot": 48.19
           },
           "hand_r": {
-            "rot": 171.0
+            "rot": 55.47
           },
           "head": {
-            "rot": -25
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -2
           },
           "shin_l": {
-            "rot": -6.02
+            "rot": 33.3
           },
           "shin_r": {
-            "rot": 31.96
+            "rot": 24.45
           },
           "thigh_l": {
-            "rot": -5.65
+            "rot": -7.82
           },
           "thigh_r": {
-            "rot": -45.59
+            "rot": -25.19
           },
           "torso": {
-            "rot": 32
+            "rot": 4
           },
           "upper_arm_l": {
-            "rot": -133.06
+            "rot": -63.5
           },
           "upper_arm_r": {
-            "rot": -1.23
+            "rot": 93.15
           }
         }
       },
       "dagger": {
         "root": {
-          "x": 14,
-          "y": 16
+          "x": 10,
+          "y": 14
         },
         "parts": {
           "foot_l": {
-            "rot": -27.49
+            "rot": -27.48
           },
           "foot_r": {
-            "rot": -3.97
+            "rot": -1.26
           },
           "forearm_l": {
-            "rot": -71.82
+            "rot": -69.8
           },
           "forearm_r": {
-            "rot": 38.01
+            "rot": -13.27
           },
           "hand_l": {
-            "rot": 4.86
+            "rot": 0.05
           },
           "hand_r": {
-            "rot": -22.39
+            "rot": -32.56
           },
           "head": {
-            "rot": -21
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -2
           },
           "shin_l": {
-            "rot": 61.06
+            "rot": 33.3
           },
           "shin_r": {
-            "rot": 34.43
+            "rot": 24.45
           },
           "thigh_l": {
-            "rot": -35.58
+            "rot": -7.82
           },
           "thigh_r": {
-            "rot": -38.46
+            "rot": -25.19
           },
           "torso": {
-            "rot": 28
+            "rot": 4
           },
           "upper_arm_l": {
-            "rot": 40.95
+            "rot": 56.75
           },
           "upper_arm_r": {
-            "rot": 42.38
+            "rot": 47.83
           }
         }
       }
@@ -1932,151 +2303,965 @@
     "dodge": {
       "sword": {
         "root": {
-          "x": -24,
-          "y": 30
+          "x": -72,
+          "y": 50
         },
         "parts": {
           "foot_l": {
-            "rot": -24.18
+            "rot": -71.47
           },
           "foot_r": {
-            "rot": -2.32
+            "rot": -8.76
           },
           "forearm_l": {
-            "rot": -61.71
+            "rot": -140.4
           },
           "forearm_r": {
-            "rot": -35.59
+            "rot": 3.45
           },
           "hand_l": {
-            "rot": -6.5
+            "rot": 56.27
           },
           "hand_r": {
-            "rot": 81.43
+            "rot": 104.68
           },
           "head": {
-            "rot": 7
+            "rot": -4
+          },
+          "pelvis": {
+            "rot": 10
           },
           "shin_l": {
-            "rot": 14.05
+            "rot": 76.9
           },
           "shin_r": {
-            "rot": 58.56
+            "rot": 51.96
           },
           "thigh_l": {
-            "rot": -13.87
+            "rot": 14.56
           },
           "thigh_r": {
-            "rot": -39.24
+            "rot": -23.2
           },
           "torso": {
-            "rot": -13
+            "rot": -30
           },
           "upper_arm_l": {
-            "rot": 51.21
+            "rot": 81.13
           },
           "upper_arm_r": {
-            "rot": 46.16
+            "rot": 47.86
           }
         }
       },
       "axe": {
         "root": {
-          "x": -26,
-          "y": 38
+          "x": -72,
+          "y": 50
         },
         "parts": {
           "foot_l": {
-            "rot": 5.68
+            "rot": -71.47
           },
           "foot_r": {
-            "rot": 1.63
+            "rot": -8.76
           },
           "forearm_l": {
-            "rot": 56.98
+            "rot": 25.49
           },
           "forearm_r": {
-            "rot": -92.35
+            "rot": -1.28
           },
           "hand_l": {
-            "rot": -8.72
+            "rot": 22.16
           },
           "hand_r": {
-            "rot": 134.93
+            "rot": 5.42
+          },
+          "head": {
+            "rot": -4
+          },
+          "pelvis": {
+            "rot": 10
+          },
+          "shin_l": {
+            "rot": 76.9
+          },
+          "shin_r": {
+            "rot": 51.96
+          },
+          "thigh_l": {
+            "rot": 14.56
+          },
+          "thigh_r": {
+            "rot": -23.2
+          },
+          "torso": {
+            "rot": -30
+          },
+          "upper_arm_l": {
+            "rot": -44.65
+          },
+          "upper_arm_r": {
+            "rot": 107.86
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": -72,
+          "y": 50
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -71.47
+          },
+          "foot_r": {
+            "rot": -8.76
+          },
+          "forearm_l": {
+            "rot": -140.4
+          },
+          "forearm_r": {
+            "rot": 21.08
+          },
+          "hand_l": {
+            "rot": 56.27
+          },
+          "hand_r": {
+            "rot": -56.71
+          },
+          "head": {
+            "rot": -4
+          },
+          "pelvis": {
+            "rot": 10
+          },
+          "shin_l": {
+            "rot": 76.9
+          },
+          "shin_r": {
+            "rot": 51.96
+          },
+          "thigh_l": {
+            "rot": 14.56
+          },
+          "thigh_r": {
+            "rot": -23.2
+          },
+          "torso": {
+            "rot": -30
+          },
+          "upper_arm_l": {
+            "rot": 81.13
+          },
+          "upper_arm_r": {
+            "rot": 71.64
+          }
+        }
+      }
+    },
+    "hit_react": {
+      "sword": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": -98.43
+          },
+          "forearm_r": {
+            "rot": 112.0
+          },
+          "hand_l": {
+            "rot": -122.44
+          },
+          "hand_r": {
+            "rot": 64.02
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15.0
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": 119.87
+          },
+          "upper_arm_r": {
+            "rot": -0.34
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": 21.91
+          },
+          "forearm_r": {
+            "rot": 64.61
+          },
+          "hand_l": {
+            "rot": 95.05
+          },
+          "hand_r": {
+            "rot": 49.56
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15.0
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": -57.97
+          },
+          "upper_arm_r": {
+            "rot": 53.83
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": -98.43
+          },
+          "forearm_r": {
+            "rot": 112.0
+          },
+          "hand_l": {
+            "rot": -122.44
+          },
+          "hand_r": {
+            "rot": -56.93
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15.0
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": 119.87
+          },
+          "upper_arm_r": {
+            "rot": 21.82
+          }
+        }
+      }
+    },
+    "knockout": {
+      "sword": {
+        "root": {
+          "x": -64,
+          "y": 52
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -76.39
+          },
+          "foot_r": {
+            "rot": 4.37
+          },
+          "forearm_l": {
+            "rot": -69.88
+          },
+          "forearm_r": {
+            "rot": 112.0
+          },
+          "hand_l": {
+            "rot": -104.85
+          },
+          "hand_r": {
+            "rot": 178.93
+          },
+          "head": {
+            "rot": -30
+          },
+          "pelvis": {
+            "rot": 12
+          },
+          "shin_l": {
+            "rot": 97.52
+          },
+          "shin_r": {
+            "rot": 19.17
+          },
+          "thigh_l": {
+            "rot": 2.88
+          },
+          "thigh_r": {
+            "rot": -33.54
+          },
+          "torso": {
+            "rot": -36
+          },
+          "upper_arm_l": {
+            "rot": 87.73
+          },
+          "upper_arm_r": {
+            "rot": -49.06
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": -64,
+          "y": 52
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -76.39
+          },
+          "foot_r": {
+            "rot": 4.37
+          },
+          "forearm_l": {
+            "rot": 41.09
+          },
+          "forearm_r": {
+            "rot": 4.91
+          },
+          "hand_l": {
+            "rot": 116.46
+          },
+          "hand_r": {
+            "rot": 103.17
+          },
+          "head": {
+            "rot": -30
+          },
+          "pelvis": {
+            "rot": 12
+          },
+          "shin_l": {
+            "rot": 97.52
+          },
+          "shin_r": {
+            "rot": 19.17
+          },
+          "thigh_l": {
+            "rot": 2.88
+          },
+          "thigh_r": {
+            "rot": -33.54
+          },
+          "torso": {
+            "rot": -36
+          },
+          "upper_arm_l": {
+            "rot": -94.54
+          },
+          "upper_arm_r": {
+            "rot": 63.93
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": -64,
+          "y": 52
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -76.39
+          },
+          "foot_r": {
+            "rot": 4.37
+          },
+          "forearm_l": {
+            "rot": -69.88
+          },
+          "forearm_r": {
+            "rot": -6.37
+          },
+          "hand_l": {
+            "rot": -104.85
+          },
+          "hand_r": {
+            "rot": 105.62
+          },
+          "head": {
+            "rot": -30
+          },
+          "pelvis": {
+            "rot": 12
+          },
+          "shin_l": {
+            "rot": 97.52
+          },
+          "shin_r": {
+            "rot": 19.17
+          },
+          "thigh_l": {
+            "rot": 2.88
+          },
+          "thigh_r": {
+            "rot": -33.54
+          },
+          "torso": {
+            "rot": -36
+          },
+          "upper_arm_l": {
+            "rot": 87.73
+          },
+          "upper_arm_r": {
+            "rot": 2.75
+          }
+        }
+      }
+    },
+    "quick_attack": {
+      "sword": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 57.0
+          },
+          "forearm_r": {
+            "rot": 103.77
+          },
+          "hand_l": {
+            "rot": -142.18
+          },
+          "hand_r": {
+            "rot": 133.14
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": 6.62
+          },
+          "upper_arm_r": {
+            "rot": -82.91
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 43.46
+          },
+          "forearm_r": {
+            "rot": -25.87
+          },
+          "hand_l": {
+            "rot": 96.07
+          },
+          "hand_r": {
+            "rot": 185.65
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": -116.52
+          },
+          "upper_arm_r": {
+            "rot": -27.77
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 57.0
+          },
+          "forearm_r": {
+            "rot": 111.89
+          },
+          "hand_l": {
+            "rot": -142.18
+          },
+          "hand_r": {
+            "rot": -95.68
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": 6.62
+          },
+          "upper_arm_r": {
+            "rot": -73.41
+          }
+        }
+      }
+    },
+    "heavy_windup": {
+      "sword": {
+        "root": {
+          "x": -20,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -37.72
+          },
+          "foot_r": {
+            "rot": 22.9
+          },
+          "forearm_l": {
+            "rot": -14.28
+          },
+          "forearm_r": {
+            "rot": 53.39
+          },
+          "hand_l": {
+            "rot": 91.0
+          },
+          "hand_r": {
+            "rot": 24.2
           },
           "head": {
             "rot": 2
           },
+          "pelvis": {
+            "rot": 8
+          },
           "shin_l": {
-            "rot": -52.02
+            "rot": 62.36
           },
           "shin_r": {
-            "rot": 67.96
+            "rot": -14.99
           },
           "thigh_l": {
-            "rot": 14.35
+            "rot": -20.64
           },
           "thigh_r": {
-            "rot": -60.59
+            "rot": -3.9
           },
           "torso": {
-            "rot": -5
+            "rot": -12
           },
           "upper_arm_l": {
-            "rot": -81.17
+            "rot": -57.73
           },
           "upper_arm_r": {
-            "rot": 33.41
+            "rot": -81.59
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": -20,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -37.72
+          },
+          "foot_r": {
+            "rot": 22.9
+          },
+          "forearm_l": {
+            "rot": 36.8
+          },
+          "forearm_r": {
+            "rot": -273.71
+          },
+          "hand_l": {
+            "rot": -69.42
+          },
+          "hand_r": {
+            "rot": 167.41
+          },
+          "head": {
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.36
+          },
+          "shin_r": {
+            "rot": -14.99
+          },
+          "thigh_l": {
+            "rot": -20.64
+          },
+          "thigh_r": {
+            "rot": -3.9
+          },
+          "torso": {
+            "rot": -12
+          },
+          "upper_arm_l": {
+            "rot": -62.38
+          },
+          "upper_arm_r": {
+            "rot": 120.29
           }
         }
       },
       "dagger": {
         "root": {
           "x": -20,
-          "y": 36
+          "y": 16
         },
         "parts": {
           "foot_l": {
-            "rot": -27.49
+            "rot": -37.72
           },
           "foot_r": {
-            "rot": -3.97
+            "rot": 22.9
           },
           "forearm_l": {
-            "rot": -71.82
+            "rot": -28.45
           },
           "forearm_r": {
-            "rot": -31.99
+            "rot": 17.46
           },
           "hand_l": {
-            "rot": 4.86
+            "rot": 79.33
           },
           "hand_r": {
-            "rot": -22.39
+            "rot": -139.89
           },
           "head": {
-            "rot": 6
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
           },
           "shin_l": {
-            "rot": 15.06
+            "rot": 62.36
           },
           "shin_r": {
-            "rot": 70.43
+            "rot": -14.99
           },
           "thigh_l": {
-            "rot": -15.58
+            "rot": -20.64
           },
           "thigh_r": {
-            "rot": -53.46
+            "rot": -3.9
           },
           "torso": {
-            "rot": -9
+            "rot": -12
           },
           "upper_arm_l": {
-            "rot": 55.95
+            "rot": -41.88
           },
           "upper_arm_r": {
-            "rot": 64.38
+            "rot": 98.43
+          }
+        }
+      }
+    },
+    "heavy_attack": {
+      "sword": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 57.0
+          },
+          "forearm_r": {
+            "rot": 103.77
+          },
+          "hand_l": {
+            "rot": -142.18
+          },
+          "hand_r": {
+            "rot": 133.14
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": 6.62
+          },
+          "upper_arm_r": {
+            "rot": -82.91
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 43.46
+          },
+          "forearm_r": {
+            "rot": -25.87
+          },
+          "hand_l": {
+            "rot": 96.07
+          },
+          "hand_r": {
+            "rot": 185.65
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": -116.52
+          },
+          "upper_arm_r": {
+            "rot": -27.77
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 57.0
+          },
+          "forearm_r": {
+            "rot": 111.89
+          },
+          "hand_l": {
+            "rot": -142.18
+          },
+          "hand_r": {
+            "rot": -95.68
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13.0
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": 6.62
+          },
+          "upper_arm_r": {
+            "rot": -73.41
           }
         }
       }
@@ -2084,173 +3269,231 @@
     "hit": {
       "sword": {
         "root": {
-          "x": -15,
-          "y": 10
+          "x": -30,
+          "y": 14
         },
         "parts": {
           "foot_l": {
-            "rot": -24.18
+            "rot": -41.51
           },
           "foot_r": {
-            "rot": -2.32
+            "rot": 16.33
           },
           "forearm_l": {
-            "rot": -81.71
+            "rot": -98.43
           },
           "forearm_r": {
-            "rot": -20.59
+            "rot": 112.0
           },
           "hand_l": {
-            "rot": -6.5
+            "rot": -122.44
           },
           "hand_r": {
-            "rot": 81.43
+            "rot": 64.02
           },
           "head": {
-            "rot": 13
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
           },
           "shin_l": {
-            "rot": 44.05
+            "rot": 62.58
           },
           "shin_r": {
-            "rot": 22.56
+            "rot": -15.0
           },
           "thigh_l": {
-            "rot": -23.87
+            "rot": -7.07
           },
           "thigh_r": {
-            "rot": -24.24
+            "rot": 12.67
           },
           "torso": {
-            "rot": -14
+            "rot": -22
           },
           "upper_arm_l": {
-            "rot": 81.21
+            "rot": 119.87
           },
           "upper_arm_r": {
-            "rot": 59.16
+            "rot": -0.34
           }
         }
       },
       "axe": {
         "root": {
-          "x": -17,
-          "y": 18
+          "x": -30,
+          "y": 14
         },
         "parts": {
           "foot_l": {
-            "rot": 5.68
+            "rot": -41.51
           },
           "foot_r": {
-            "rot": 1.63
+            "rot": 16.33
           },
           "forearm_l": {
-            "rot": 22.85
+            "rot": 21.91
           },
           "forearm_r": {
-            "rot": -100.87
+            "rot": 64.61
           },
           "hand_l": {
-            "rot": 9.82
+            "rot": 95.05
           },
           "hand_r": {
-            "rot": 96.95
+            "rot": 49.56
           },
           "head": {
+            "rot": -24
+          },
+          "pelvis": {
             "rot": 8
           },
           "shin_l": {
-            "rot": -22.02
+            "rot": 62.58
           },
           "shin_r": {
-            "rot": 31.96
+            "rot": -15.0
           },
           "thigh_l": {
-            "rot": 4.35
+            "rot": -7.07
           },
           "thigh_r": {
-            "rot": -45.59
+            "rot": 12.67
           },
           "torso": {
-            "rot": -6
+            "rot": -22
           },
           "upper_arm_l": {
-            "rot": -71.69
+            "rot": -57.97
           },
           "upper_arm_r": {
-            "rot": 73.9
+            "rot": 53.83
           }
         }
       },
       "dagger": {
         "root": {
-          "x": -11,
-          "y": 16
+          "x": -30,
+          "y": 14
         },
         "parts": {
           "foot_l": {
-            "rot": -27.49
+            "rot": -41.51
           },
           "foot_r": {
-            "rot": -3.97
+            "rot": 16.33
           },
           "forearm_l": {
-            "rot": -91.82
+            "rot": -98.43
           },
           "forearm_r": {
-            "rot": -16.99
+            "rot": 112.0
           },
           "hand_l": {
-            "rot": 4.86
+            "rot": -122.44
           },
           "hand_r": {
-            "rot": -22.39
+            "rot": -56.93
           },
           "head": {
-            "rot": 12
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
           },
           "shin_l": {
-            "rot": 45.06
+            "rot": 62.58
           },
           "shin_r": {
-            "rot": 34.43
+            "rot": -15.0
           },
           "thigh_l": {
-            "rot": -25.58
+            "rot": -7.07
           },
           "thigh_r": {
-            "rot": -38.46
+            "rot": 12.67
           },
           "torso": {
-            "rot": -10
+            "rot": -22
           },
           "upper_arm_l": {
-            "rot": 85.95
+            "rot": 119.87
           },
           "upper_arm_r": {
-            "rot": 77.38
+            "rot": 21.82
           }
         }
       }
     },
     "portrait": {
-      "*": {
+      "sword": {
         "root": {
           "x": 0,
           "y": 0
         },
         "parts": {
+          "forearm_r": {
+            "rot": 11.03
+          },
+          "hand_r": {
+            "rot": -27.6
+          },
           "head": {
             "rot": -4
           },
-          "upper_arm_r": {
-            "rot": 14
+          "upper_arm_l": {
+            "rot": -10
           },
+          "upper_arm_r": {
+            "rot": 88.56
+          }
+        }
+      },
+      "axe": {
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "parts": {
           "forearm_r": {
-            "rot": 60
+            "rot": 64.62
+          },
+          "hand_r": {
+            "rot": -72.81
+          },
+          "head": {
+            "rot": -4
           },
           "upper_arm_l": {
             "rot": -10
+          },
+          "upper_arm_r": {
+            "rot": 60.19
+          }
+        }
+      },
+      "dagger": {
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "parts": {
+          "forearm_r": {
+            "rot": -7.32
+          },
+          "hand_r": {
+            "rot": -78.77
+          },
+          "head": {
+            "rot": -4
+          },
+          "upper_arm_l": {
+            "rot": -10
+          },
+          "upper_arm_r": {
+            "rot": 74.09
           }
         }
       }
@@ -2265,14 +3508,15 @@
     },
     "victory": {
       "kind": "result",
-      "use": "result overlay, own bot. Weapon raised, chest out, rear fist pumped.",
+      "use": "result overlay, own bot. v003.1: weapon arm raised overhead-forward, weapon high and diagonal, chest open, chin up, rear fist pumped up-back (V silhouette). Uses the stage margin above the rig frame.",
       "feet": "planted",
-      "per_weapon": true
+      "per_weapon": true,
+      "uses_stage_margin": true
     },
     "defeat": {
       "kind": "result",
-      "use": "result overlay / KO hold. Both knees down, slumped, head hanging, weapon grounded.",
-      "feet": "knees on ground_y",
+      "use": "result overlay / KO hold. Both knees down, slumped, head hanging, weapon grounded. v003.1: both knees AND both toe caps touch ground_y (toes tucked), no floating knees, boots no longer read as slabs.",
+      "feet": "knees + toe caps on ground_y",
       "per_weapon": true,
       "fx": [
         "defeat_sparks"
@@ -2280,32 +3524,79 @@
     },
     "portrait": {
       "kind": "render",
-      "use": "ranking head-and-shoulders portrait source pose; render WITHOUT weapon",
-      "per_weapon": false
+      "use": "ranking head-and-shoulders portrait source pose. Per weapon: render it WITH the bot's own equipped weapon and own paint (see portrait.rule).",
+      "per_weapon": true
+    },
+    "walk_in": {
+      "kind": "fight-A2",
+      "use": "passing pose of the entrance walk (alternate with idle while translating)",
+      "per_weapon": true,
+      "timing": "see timing[weaponId]"
+    },
+    "windup": {
+      "kind": "fight-A2",
+      "use": "anticipation; weapon never crosses the face (validated)",
+      "per_weapon": true,
+      "timing": "see timing[weaponId]"
+    },
+    "strike": {
+      "kind": "fight-A2",
+      "use": "contact extreme, smear-friendly (fully extended arc end)",
+      "per_weapon": true,
+      "timing": "see timing[weaponId]"
+    },
+    "follow_through": {
+      "kind": "fight-A2",
+      "use": "overshoot past the contact point",
+      "per_weapon": true,
+      "timing": "see timing[weaponId]"
+    },
+    "recovery": {
+      "kind": "fight-A2",
+      "use": "settling back toward guard",
+      "per_weapon": true,
+      "timing": "see timing[weaponId]"
+    },
+    "dodge": {
+      "kind": "fight-A2",
+      "use": "evade: weight thrown back and low",
+      "per_weapon": true,
+      "timing": "see timing[weaponId]"
+    },
+    "hit_react": {
+      "kind": "fight-A2",
+      "use": "taking a hit: torso and head snapped back",
+      "per_weapon": true,
+      "timing": "see timing[weaponId]"
+    },
+    "knockout": {
+      "kind": "fight-A2",
+      "use": "KO launch: thrown back, front leg kicked up; blend into defeat",
+      "per_weapon": true,
+      "timing": "see timing[weaponId]"
     },
     "quick_attack": {
-      "kind": "combat-carried-from-v002",
-      "use": "v002 delta re-based onto the v003 per-weapon guard; axe two-handed re-solved. Not re-art-directed.",
+      "kind": "alias",
+      "alias_of": "strike",
+      "use": "v002/F7 name kept for compatibility; identical numbers to \"strike\"",
       "per_weapon": true
     },
     "heavy_windup": {
-      "kind": "combat-carried-from-v002",
-      "use": "v002 delta re-based onto the v003 per-weapon guard; axe two-handed re-solved. Not re-art-directed.",
+      "kind": "alias",
+      "alias_of": "windup",
+      "use": "v002/F7 name kept for compatibility; identical numbers to \"windup\"",
       "per_weapon": true
     },
     "heavy_attack": {
-      "kind": "combat-carried-from-v002",
-      "use": "v002 delta re-based onto the v003 per-weapon guard; axe two-handed re-solved. Not re-art-directed.",
-      "per_weapon": true
-    },
-    "dodge": {
-      "kind": "combat-carried-from-v002",
-      "use": "v002 delta re-based onto the v003 per-weapon guard; axe two-handed re-solved. Not re-art-directed.",
+      "kind": "alias",
+      "alias_of": "strike",
+      "use": "v002/F7 name kept for compatibility; identical numbers to \"strike\"",
       "per_weapon": true
     },
     "hit": {
-      "kind": "combat-carried-from-v002",
-      "use": "v002 delta re-based onto the v003 per-weapon guard; axe two-handed re-solved. Not re-art-directed.",
+      "kind": "alias",
+      "alias_of": "hit_react",
+      "use": "v002/F7 name kept for compatibility; identical numbers to \"hit_react\"",
       "per_weapon": true
     }
   },
@@ -2315,7 +3606,382 @@
     "root": "x/y px added to root.position",
     "rot": "degrees ADDED to the part's default `angle`, rotating around its own pivot. Missing part = 0. torso.rot is the root rotation.",
     "weapon": "never posed directly; it follows hand_r via grips.main.attach_angle",
-    "blend": "linear interpolation of root.x/y and each rot is valid between any two entries of the same weapon"
+    "blend": "linear interpolation of root.x/y and each rot is valid between any two entries of the same weapon (rots are stored nearest the weapon's idle value, so no joint spins). Two-handed axe: the off hand is exact at each key, and can drift a few px mid-blend.",
+    "aliases": "pose_aliases maps v002/F7 motionPose names to A2 names; the alias entries are also present in poses with identical numbers."
+  },
+  "pose_aliases": {
+    "quick_attack": "strike",
+    "heavy_windup": "windup",
+    "heavy_attack": "strike",
+    "hit": "hit_react"
+  },
+  "qa_regions": {
+    "face": {
+      "asset": "head",
+      "rect_local_px": [
+        112,
+        58,
+        192,
+        142
+      ],
+      "use": "QA only: visor+brow area in head-tile px. No weapon pixel may enter it in windup; checked by validate_kit_v0031.py."
+    }
+  },
+  "timing": {
+    "fps": 30,
+    "per_weapon": {
+      "sword": {
+        "hit_stop_frames": 3,
+        "weight": "medium, one-handed",
+        "walk_in": [
+          {
+            "to": "walk_in",
+            "frames": 6,
+            "ease": "ease-in-out"
+          },
+          {
+            "to": "idle",
+            "frames": 6,
+            "ease": "ease-in-out",
+            "note": "repeat walk_in<->idle while root.x travels ~7 px/frame (1x rig px)"
+          }
+        ],
+        "attack": [
+          {
+            "to": "windup",
+            "frames": 7,
+            "ease": "ease-in-out",
+            "note": "anticipation"
+          },
+          {
+            "to": "windup",
+            "frames": 3,
+            "ease": "hold",
+            "note": "anticipation hold"
+          },
+          {
+            "to": "strike",
+            "frames": 2,
+            "ease": "linear",
+            "note": "smear frame(s) here"
+          },
+          {
+            "to": "strike",
+            "frames": 3,
+            "ease": "hit-stop",
+            "note": "only when the hit connects; on a whiff skip to follow_through"
+          },
+          {
+            "to": "follow_through",
+            "frames": 4,
+            "ease": "ease-out",
+            "note": "overshoot"
+          },
+          {
+            "to": "recovery",
+            "frames": 6,
+            "ease": "ease-in-out"
+          },
+          {
+            "to": "idle",
+            "frames": 5,
+            "ease": "ease-in-out"
+          }
+        ],
+        "dodge": [
+          {
+            "to": "dodge",
+            "frames": 3,
+            "ease": "ease-out"
+          },
+          {
+            "to": "dodge",
+            "frames": 4,
+            "ease": "hold"
+          },
+          {
+            "to": "idle",
+            "frames": 6,
+            "ease": "ease-in-out"
+          }
+        ],
+        "hit_react": [
+          {
+            "to": "hit_react",
+            "frames": 2,
+            "ease": "ease-out",
+            "note": "starts on the attacker hit-stop frame 1; victim also freezes for hit_stop_frames"
+          },
+          {
+            "to": "hit_react",
+            "frames": 2,
+            "ease": "hold"
+          },
+          {
+            "to": "idle",
+            "frames": 8,
+            "ease": "ease-in-out"
+          }
+        ],
+        "knockout": [
+          {
+            "to": "knockout",
+            "frames": 3,
+            "ease": "ease-out"
+          },
+          {
+            "to": "knockout",
+            "frames": 6,
+            "ease": "hit-stop",
+            "note": "KO hit-stop is longer than a normal hit"
+          },
+          {
+            "to": "knockout",
+            "frames": 18,
+            "ease": "hold"
+          },
+          {
+            "to": "defeat",
+            "frames": 12,
+            "ease": "ease-in",
+            "note": "then ~1 s hold before the result overlay"
+          }
+        ],
+        "attack_total_frames": 30
+      },
+      "axe": {
+        "hit_stop_frames": 5,
+        "weight": "heavy, two-handed",
+        "walk_in": [
+          {
+            "to": "walk_in",
+            "frames": 8,
+            "ease": "ease-in-out"
+          },
+          {
+            "to": "idle",
+            "frames": 8,
+            "ease": "ease-in-out",
+            "note": "repeat walk_in<->idle while root.x travels ~5 px/frame"
+          }
+        ],
+        "attack": [
+          {
+            "to": "windup",
+            "frames": 10,
+            "ease": "ease-in-out",
+            "note": "anticipation"
+          },
+          {
+            "to": "windup",
+            "frames": 5,
+            "ease": "hold",
+            "note": "anticipation hold"
+          },
+          {
+            "to": "strike",
+            "frames": 3,
+            "ease": "linear",
+            "note": "smear frame(s) here"
+          },
+          {
+            "to": "strike",
+            "frames": 5,
+            "ease": "hit-stop",
+            "note": "only when the hit connects"
+          },
+          {
+            "to": "follow_through",
+            "frames": 6,
+            "ease": "ease-out",
+            "note": "overshoot"
+          },
+          {
+            "to": "recovery",
+            "frames": 10,
+            "ease": "ease-in-out"
+          },
+          {
+            "to": "idle",
+            "frames": 7,
+            "ease": "ease-in-out"
+          }
+        ],
+        "dodge": [
+          {
+            "to": "dodge",
+            "frames": 4,
+            "ease": "ease-out"
+          },
+          {
+            "to": "dodge",
+            "frames": 4,
+            "ease": "hold"
+          },
+          {
+            "to": "idle",
+            "frames": 8,
+            "ease": "ease-in-out"
+          }
+        ],
+        "hit_react": [
+          {
+            "to": "hit_react",
+            "frames": 2,
+            "ease": "ease-out"
+          },
+          {
+            "to": "hit_react",
+            "frames": 3,
+            "ease": "hold"
+          },
+          {
+            "to": "idle",
+            "frames": 10,
+            "ease": "ease-in-out"
+          }
+        ],
+        "knockout": [
+          {
+            "to": "knockout",
+            "frames": 3,
+            "ease": "ease-out"
+          },
+          {
+            "to": "knockout",
+            "frames": 8,
+            "ease": "hit-stop"
+          },
+          {
+            "to": "knockout",
+            "frames": 18,
+            "ease": "hold"
+          },
+          {
+            "to": "defeat",
+            "frames": 14,
+            "ease": "ease-in"
+          }
+        ],
+        "attack_total_frames": 46
+      },
+      "dagger": {
+        "hit_stop_frames": 2,
+        "weight": "light, fast",
+        "walk_in": [
+          {
+            "to": "walk_in",
+            "frames": 5,
+            "ease": "ease-in-out"
+          },
+          {
+            "to": "idle",
+            "frames": 5,
+            "ease": "ease-in-out",
+            "note": "repeat walk_in<->idle while root.x travels ~8 px/frame"
+          }
+        ],
+        "attack": [
+          {
+            "to": "windup",
+            "frames": 4,
+            "ease": "ease-in-out",
+            "note": "anticipation"
+          },
+          {
+            "to": "windup",
+            "frames": 1,
+            "ease": "hold"
+          },
+          {
+            "to": "strike",
+            "frames": 2,
+            "ease": "linear",
+            "note": "stab; smear frame here"
+          },
+          {
+            "to": "strike",
+            "frames": 2,
+            "ease": "hit-stop",
+            "note": "only when the hit connects"
+          },
+          {
+            "to": "follow_through",
+            "frames": 3,
+            "ease": "ease-out",
+            "note": "overshoot"
+          },
+          {
+            "to": "recovery",
+            "frames": 4,
+            "ease": "ease-in-out"
+          },
+          {
+            "to": "idle",
+            "frames": 3,
+            "ease": "ease-in-out"
+          }
+        ],
+        "dodge": [
+          {
+            "to": "dodge",
+            "frames": 2,
+            "ease": "ease-out"
+          },
+          {
+            "to": "dodge",
+            "frames": 3,
+            "ease": "hold"
+          },
+          {
+            "to": "idle",
+            "frames": 5,
+            "ease": "ease-in-out"
+          }
+        ],
+        "hit_react": [
+          {
+            "to": "hit_react",
+            "frames": 2,
+            "ease": "ease-out"
+          },
+          {
+            "to": "hit_react",
+            "frames": 2,
+            "ease": "hold"
+          },
+          {
+            "to": "idle",
+            "frames": 8,
+            "ease": "ease-in-out"
+          }
+        ],
+        "knockout": [
+          {
+            "to": "knockout",
+            "frames": 3,
+            "ease": "ease-out"
+          },
+          {
+            "to": "knockout",
+            "frames": 6,
+            "ease": "hit-stop"
+          },
+          {
+            "to": "knockout",
+            "frames": 18,
+            "ease": "hold"
+          },
+          {
+            "to": "defeat",
+            "frames": 12,
+            "ease": "ease-in"
+          }
+        ],
+        "attack_total_frames": 19
+      }
+    },
+    "how_to_play": "A sequence is a list of segments. Segment k blends from the previous pose to \"to\" over \"frames\" frames using \"ease\" (linear | ease-in | ease-out | ease-in-out; \"hold\" and \"hit-stop\" keep the pose frozen). Hit-stop freezes BOTH bots for hit_stop_frames on contact; skip the hit-stop segment on a miss. reducedMotion: skip walk_in bob, snap between keys, keep hit-stop at 0 frames, still show result plates."
   },
   "fx": {
     "defeat_sparks": {
@@ -2402,20 +4068,22 @@
   },
   "portrait": {
     "pose": "portrait",
-    "exclude_assets": [
-      "weapon_sword",
-      "weapon_axe",
-      "weapon_dagger"
+    "exclude_assets": [],
+    "rule": "Each bot's portrait is rendered from THAT bot's own loadout: its paintId (paint_tokens[paintId], or the paint's hex composited material_under + tinted paint_mask + material_over) and its weaponId (pose poses.portrait[weaponId], drawing weapons[weaponId].asset with the normal grip/z rules). Never reuse or recolour the shipped sample PNGs; they are references for QA only. Re-render whenever paintId or weaponId changes (cache key: kit version + paintId/hex + weaponId + size).",
+    "inputs": [
+      "paintId (or paint hex)",
+      "weaponId",
+      "kit version"
     ],
     "anchor": {
       "asset": "torso",
       "socket": "neck"
     },
     "crop_center_offset": [
-      -4,
-      -16
+      16,
+      -4
     ],
-    "crop_size": 256,
+    "crop_size": 272,
     "facing": "right (canonical); mirror only if the row layout requires it",
     "background": "transparent; UI supplies the tag/frame",
     "sizes_px": [
@@ -2426,21 +4094,42 @@
     "filter": "render the full 640 assembly at >= 2x parts, then crop and Lanczos-downsample",
     "note": "crop is anchored to the world position of torso.neck in the portrait pose, so any future head/torso part or paint keeps the framing",
     "crop_rect_canvas_px": [
-      178.0,
-      37.4,
-      256,
-      256
+      190.0,
+      41.4,
+      272,
+      272
     ],
     "samples": {
-      "oxide": {
-        "96": "portraits/oxide-96.png",
-        "192": "portraits/oxide-192.png",
-        "288": "portraits/oxide-288.png"
+      "oxide-sword": {
+        "loadout": {
+          "paint": "oxide",
+          "paint_hex": "#e8771c",
+          "weapon": "sword"
+        },
+        "96": "portraits/oxide-sword-96.png",
+        "192": "portraits/oxide-sword-192.png",
+        "288": "portraits/oxide-sword-288.png"
       },
-      "petrol": {
-        "96": "portraits/petrol-96.png",
-        "192": "portraits/petrol-192.png",
-        "288": "portraits/petrol-288.png"
+      "petrol-axe": {
+        "loadout": {
+          "paint": "petrol",
+          "paint_hex": "#27877b",
+          "weapon": "axe"
+        },
+        "96": "portraits/petrol-axe-96.png",
+        "192": "portraits/petrol-axe-192.png",
+        "288": "portraits/petrol-axe-288.png"
+      },
+      "scrapgreen-dagger": {
+        "loadout": {
+          "paint": null,
+          "paint_hex": "#6E8B3D",
+          "paint_label": "Scrap Green: TEST paint, not in the catalog; proves the render is driven by the loadout, not by the two sample paints",
+          "weapon": "dagger"
+        },
+        "96": "portraits/scrapgreen-dagger-96.png",
+        "192": "portraits/scrapgreen-dagger-192.png",
+        "288": "portraits/scrapgreen-dagger-288.png"
       }
     }
   },
@@ -2468,48 +4157,99 @@
   },
   "validation_summary": {
     "passed": true,
-    "checks": 2178,
+    "checks": 3776,
     "failures": [],
-    "pose_weapon_cases": 27,
+    "weapon_px_on_face": {
+      "idle.sword": 0,
+      "idle.axe": 0,
+      "idle.dagger": 0,
+      "victory.sword": 0,
+      "victory.axe": 0,
+      "victory.dagger": 0,
+      "defeat.sword": 0,
+      "defeat.axe": 0,
+      "defeat.dagger": 0,
+      "walk_in.sword": 0,
+      "walk_in.axe": 0,
+      "walk_in.dagger": 0,
+      "windup.sword": 0,
+      "windup.axe": 0,
+      "windup.dagger": 0,
+      "strike.sword": 0,
+      "strike.axe": 0,
+      "strike.dagger": 0,
+      "follow_through.sword": 0,
+      "follow_through.axe": 29,
+      "follow_through.dagger": 0,
+      "recovery.sword": 0,
+      "recovery.axe": 0,
+      "recovery.dagger": 0,
+      "dodge.sword": 0,
+      "dodge.axe": 0,
+      "dodge.dagger": 0,
+      "hit_react.sword": 0,
+      "hit_react.axe": 0,
+      "hit_react.dagger": 0,
+      "knockout.sword": 0,
+      "knockout.axe": 0,
+      "knockout.dagger": 0,
+      "quick_attack.sword": 0,
+      "quick_attack.axe": 0,
+      "quick_attack.dagger": 0,
+      "heavy_windup.sword": 0,
+      "heavy_windup.axe": 0,
+      "heavy_windup.dagger": 0,
+      "heavy_attack.sword": 0,
+      "heavy_attack.axe": 0,
+      "heavy_attack.dagger": 0,
+      "hit.sword": 0,
+      "hit.axe": 0,
+      "hit.dagger": 0
+    },
+    "pose_weapon_cases": 48,
     "min_joint_overlap_px": 195,
-    "max_offhand_error_px": 0.648,
-    "max_offhand_angle_err_deg": 0.1,
+    "max_offhand_error_px": 0.019,
+    "max_offhand_angle_err_deg": 0.01,
     "min_finger_cover_of_handle": 1.0,
     "meaning": "Geometry/file/raster proof from manifest + PNGs. Not art acceptance, native performance, animation timing or full collision clearance.",
     "negative_tests": [
       {
-        "mutation": "axe gripped under head (v002 bug)",
+        "mutation": "windup weapon across the face",
         "caught": true
       },
       {
-        "mutation": "finger layer behind handle",
+        "mutation": "victory reverted to v003 (weapon low)",
         "caught": true
       },
       {
-        "mutation": "axe off-hand rotations missing",
+        "mutation": "defeat reverted to v003 (floating knee)",
         "caught": true
       },
       {
-        "mutation": "v002 shared 180deg mount, data only",
+        "mutation": "axe off hand off the haft in strike",
+        "caught": true
+      },
+      {
+        "mutation": "portrait copied from a sample instead of own loadout",
         "caught": true
       }
     ]
   },
   "file_inventory": [
     {
-      "path": "INTEGRATION-DELTA-v002-to-v003.md",
-      "bytes": 3949,
-      "sha256": "e277457e570195c2638a2015e292ba6de312b6526156aace98ed501255100bc2"
+      "path": "INTEGRATION-DELTA-v003-to-v003.1.md",
+      "bytes": 2415,
+      "sha256": "d34ac0a5c0063f0e85e35a3eda203592efa5bfc89616791db739d9a40670b011"
     },
     {
       "path": "PROVENANCE.md",
-      "bytes": 1653,
-      "sha256": "472286aa1054634d23897e97ecaea1e560e5d6257b12864482d18f90411eac2a"
+      "bytes": 758,
+      "sha256": "1f4afe4ccc2443eea490c715900cd7650ce36ce905433cc15de3beb25a4354df"
     },
     {
       "path": "README.md",
-      "bytes": 9481,
-      "sha256": "5000423a5fa57bd6befefbdfac24370dab9250c2081a1ff7d1871b735b450120"
+      "bytes": 5288,
+      "sha256": "0b620dff6026809ce67a557dcbfb98ec46cf45afed758a01996c35cea473c0d2"
     },
     {
       "path": "fx/defeat-sparks-00.png",
@@ -2560,9 +4300,9 @@
       "mode": "RGBA"
     },
     {
-      "path": "integration-delta-v002-to-v003.json",
-      "bytes": 9729,
-      "sha256": "4ac4240f94a75277cc66b0fa59a9fd710d015e8f4620e470d83d34b5218953c0"
+      "path": "integration-delta-v003-to-v003.1.json",
+      "bytes": 5783,
+      "sha256": "f4a1e7b3139d84d85fc7578d0511e283e42ec01ec19e2cf6f2412cfa724137f0"
     },
     {
       "path": "masks/foot_l-paint.png",
@@ -4252,241 +5992,319 @@
       "sha256": "9b970b589ffb5cbb71202474a963ff52b9ce763831e0319cf03acb379dafa4f8"
     },
     {
-      "path": "portraits/oxide-192.png",
-      "bytes": 46185,
-      "sha256": "ad574ba791a50b16418a8e0cc22d908c355eb07dbebb07989d29365dca3af2da",
+      "path": "portraits/oxide-sword-192.png",
+      "bytes": 53072,
+      "sha256": "2796287234e8af6c2be2cf0ef86cc4e7ec543afafe13672ecc9897bc93b95b5c",
       "width": 192,
       "height": 192,
       "mode": "RGBA"
     },
     {
-      "path": "portraits/oxide-288.png",
-      "bytes": 82986,
-      "sha256": "2bd8a844bcbb6aac8eaf3289c8bf74e97881ac14e5d31499a57a1527539ce267",
+      "path": "portraits/oxide-sword-288.png",
+      "bytes": 96283,
+      "sha256": "7868c2814d843039cfb41348b68437c344387b9d0bfa52a968e1e093f78dc937",
       "width": 288,
       "height": 288,
       "mode": "RGBA"
     },
     {
-      "path": "portraits/oxide-96.png",
-      "bytes": 16328,
-      "sha256": "505e3d60ffd54e69906d60ea64255e605826dc711cc395bfff5a7e4511e947a0",
+      "path": "portraits/oxide-sword-96.png",
+      "bytes": 18429,
+      "sha256": "345718cf248f762e14eeb69c59cb8c47da1a41b093b4b268e2ca294eb2be7ada",
       "width": 96,
       "height": 96,
       "mode": "RGBA"
     },
     {
-      "path": "portraits/petrol-192.png",
-      "bytes": 44538,
-      "sha256": "ddd45180e2ae23205ff44360897f875ec4534522d1c59415c925fb33962bb96d",
+      "path": "portraits/petrol-axe-192.png",
+      "bytes": 48242,
+      "sha256": "b90f8c3d26bf004cc25c9f71aed6367a545e1439992bff2574b52582a5106e01",
       "width": 192,
       "height": 192,
       "mode": "RGBA"
     },
     {
-      "path": "portraits/petrol-288.png",
-      "bytes": 80113,
-      "sha256": "d697b85ce67e9000af2e0d9795363ed94676bc0add217dba0aaacb0daa1e2f46",
+      "path": "portraits/petrol-axe-288.png",
+      "bytes": 87234,
+      "sha256": "94ffb95a9220b50aa1db965f6cd7f2f91ec22667fcfc64112c3a84ac58246731",
       "width": 288,
       "height": 288,
       "mode": "RGBA"
     },
     {
-      "path": "portraits/petrol-96.png",
-      "bytes": 15936,
-      "sha256": "f85e354091c544bbeb526d83edc0131b51c0e53316f5944650ba0145aeac7c4f",
+      "path": "portraits/petrol-axe-96.png",
+      "bytes": 17067,
+      "sha256": "93783d2309a8124be1cd106f0be3c448a94bb5c01550fbd4c0bf73e2dfaba086",
       "width": 96,
       "height": 96,
       "mode": "RGBA"
     },
     {
-      "path": "previews/axe-v002-vs-v003.png",
-      "bytes": 213782,
-      "sha256": "da6317a97c7f26fd25ed69581592cbfe08c2e35704ae8dcbd0b570994f27be5d",
-      "width": 1280,
-      "height": 700,
-      "mode": "RGB"
+      "path": "portraits/scrapgreen-dagger-192.png",
+      "bytes": 48274,
+      "sha256": "f1a2f3628af544eb986789694e1b62fd05859f191969bd559f9469f6386a00f3",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA"
     },
     {
-      "path": "previews/combat-carried-sheet.png",
-      "bytes": 545780,
-      "sha256": "77d49be310da03485337ee3be30c67f2805cae546a93d3add43c6a6d485fc9f0",
-      "width": 960,
-      "height": 1640,
-      "mode": "RGB"
+      "path": "portraits/scrapgreen-dagger-288.png",
+      "bytes": 88063,
+      "sha256": "b0e1a86ceecad2540a37b2c8a91ab44c433eafd4c271b94e10753738b5916ecb",
+      "width": 288,
+      "height": 288,
+      "mode": "RGBA"
+    },
+    {
+      "path": "portraits/scrapgreen-dagger-96.png",
+      "bytes": 16663,
+      "sha256": "ee2685bc7ee25fcc62e6d4abbb91dcbc3faaa3a45b43cff2dee3692835680980",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA"
     },
     {
       "path": "previews/contact-sheet-390x844.png",
-      "bytes": 196375,
-      "sha256": "fa0ab6f5d67cb2beafce6bb9051e06c68667cc09639c89499ed1b2a0bf1558aa",
+      "bytes": 180112,
+      "sha256": "f2cc518b09ddaae05696882f0751b38987c10cb99fa489d119609d278b15c785",
       "width": 390,
       "height": 844,
       "mode": "RGB"
     },
     {
       "path": "previews/contact-sheet-390x844@3x.png",
-      "bytes": 674679,
-      "sha256": "8b697a6e2d3b23f60dcb69dedd3776e80d88fffba3f8c4fd98beb0c7294e5bf9",
+      "bytes": 601367,
+      "sha256": "91ebed59dd988997b096d687984ffdab80ca2fd34ccf3ca2657a26fe7e3338b7",
       "width": 1170,
       "height": 2532,
       "mode": "RGB"
     },
     {
-      "path": "previews/fight-scale-axe-vs-sword@2x.png",
-      "bytes": 212072,
-      "sha256": "7fb433e87ec2875beb7b12110cc954a12128af46920ff5d9d96e5ce42ac11f9d",
-      "width": 780,
-      "height": 1240,
+      "path": "previews/defeat-v003-vs-v003.1.png",
+      "bytes": 152174,
+      "sha256": "eba4bbc7036800b116f133518085322c07d4a46fb905d546f623dc5990cc11d0",
+      "width": 2400,
+      "height": 560,
       "mode": "RGB"
     },
     {
-      "path": "previews/grip-closeups.png",
-      "bytes": 485690,
-      "sha256": "36727836e4e2b82177bd4ac39b46c02d36b9ad8de84cdf7937944a55b6f85868",
-      "width": 1680,
-      "height": 420,
+      "path": "previews/fight/a2-axe-strip.gif",
+      "bytes": 2415447,
+      "sha256": "55b828373743277919ce30da6b981fae630acf59efbabeb192be2497212a66c6"
+    },
+    {
+      "path": "previews/fight/a2-axe-strip@2x.mp4",
+      "bytes": 693672,
+      "sha256": "db322b8a68b42fe901c96611013aef5c3539bb936170ad7ba7924cfe74d392cb"
+    },
+    {
+      "path": "previews/fight/a2-dagger-strip.gif",
+      "bytes": 2152866,
+      "sha256": "ecb71bbfe9792c0b1c1f9f037d8401ab182078e4ff5be27245e9f47ba1789d13"
+    },
+    {
+      "path": "previews/fight/a2-dagger-strip@2x.mp4",
+      "bytes": 527137,
+      "sha256": "4438196a68778475a4d701dcc9cfb07a9b2c4c6c5e66dd4a5c8819b181f9ffed"
+    },
+    {
+      "path": "previews/fight/a2-sword-strip.gif",
+      "bytes": 1996740,
+      "sha256": "07fd449c6599659565be32f35c575a4005b362e0fb93cfc908d1ac30938a3af1"
+    },
+    {
+      "path": "previews/fight/a2-sword-strip@2x.mp4",
+      "bytes": 633837,
+      "sha256": "64668e6242a092f0cec849132742c5d5fc2721e2689aa32924f45a5a14a5417d"
+    },
+    {
+      "path": "previews/fight-sheet-axe-390x844.png",
+      "bytes": 188809,
+      "sha256": "a288382b9e49efd0cc7ce4bfbc7209a5dda573bc056eff24867b6ff214ed0dff",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-axe-390x844@3x.png",
+      "bytes": 664734,
+      "sha256": "fd43586c27e2aa8b724fd50b3a68e99e20278b1b8ce04290919cb802a7d2d8ba",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-dagger-390x844.png",
+      "bytes": 192243,
+      "sha256": "947cf4c9c368521887201d821d6c05631062ca092fd47614ff321e05907bc4b2",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-dagger-390x844@3x.png",
+      "bytes": 684953,
+      "sha256": "321386614d51ed3bb8cb1348df198e5d8162e714bdc1591226a52f09550a2636",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-sword-390x844.png",
+      "bytes": 202051,
+      "sha256": "aaccd6ebca16ab3edba76b25ced9731b73c00c2f7a91692da93bbeda1c7822ab",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-sword-390x844@3x.png",
+      "bytes": 717660,
+      "sha256": "f2fd196afed93ebb43ebb2cd2f0364f7c60249c67dba9d625f5ebe6322a4b7f1",
+      "width": 1170,
+      "height": 2532,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/defeat-axe-oxide.png",
-      "bytes": 232791,
-      "sha256": "cea337f585bbf5969772d878e46e0c5712b6c3efbe67dbe9ad5b1af3b7089d82",
+      "bytes": 225174,
+      "sha256": "7c24c7ba7a142e8425243e00da8fe2b8bff061547ce97f5a0adc0e181b08f63a",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/defeat-axe-petrol.png",
-      "bytes": 230662,
-      "sha256": "904ca07274387fb91778579130998268a0d91b533596e8c5c1608d5f40e13ea0",
+      "bytes": 224584,
+      "sha256": "e5f49e7f950d0659cb742a64875251d7617700d32bf22941dca13c58d672015a",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/defeat-dagger-oxide.png",
-      "bytes": 230987,
-      "sha256": "28f9cd8725152660a0509d4724f0064bb3a38fbe9545351ba24297e6a84df4c6",
+      "bytes": 221704,
+      "sha256": "a9d6c5afb089d763906b2159665d5b0139c6d6783b375a8c363bc820692b9a49",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/defeat-dagger-petrol.png",
-      "bytes": 227385,
-      "sha256": "422c36ac2d893627ae7dff3c929d11badf192d4ce1d83b8df3c10079da0ae774",
+      "bytes": 219172,
+      "sha256": "24ef820f4551c74b2a5bafff9bdf7b6bae9e1343b12cb3466bffec05c8815d58",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/defeat-sword-oxide.png",
-      "bytes": 237584,
-      "sha256": "73c75abe0d01ea4cc451ed1ffcbf26b04799592e8f96ee1b623cbe720a833b5b",
+      "bytes": 228346,
+      "sha256": "118e2ead92c6821e696effb53cccf44dd7e1b7d7ad1a69728a23fb0c95f11c48",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/defeat-sword-petrol.png",
-      "bytes": 233664,
-      "sha256": "a58194885ce11878a6b0f8210b2d1645c5fe07518ee81b74b442d1d6a3d19885",
+      "bytes": 226288,
+      "sha256": "01a83b01696e3a08146c360187e3fd8c83f291f7bfa4a1e16f04bae08bce957a",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/idle-axe-oxide.png",
-      "bytes": 208652,
-      "sha256": "492fe09bc6ae4e080318075272ca5f75a8961f802fc112228073ee8eea187a22",
+      "bytes": 208800,
+      "sha256": "65a71d85c5cc0db1c58a3c3506170f96d74d418222546ae0955f27497d7c3bbc",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/idle-axe-petrol.png",
-      "bytes": 206351,
-      "sha256": "e5516386370fb24d33c116704da66749a63a6f2c549fb016039f41568cbd1954",
+      "bytes": 206499,
+      "sha256": "c0affdec49345155c1e0032460e11e403ab553e6ff0693de901be6c0f9d4847e",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/idle-dagger-oxide.png",
-      "bytes": 214121,
-      "sha256": "3acb352d61951006ee96509ab69621fa1d1348c861ad5e1e5dd6a97b192244f5",
+      "bytes": 214265,
+      "sha256": "e44443b23b3c64b95ebc6d2a8406d691b1ea039eae6bebe4d437ec9a686b0d2a",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/idle-dagger-petrol.png",
-      "bytes": 210959,
-      "sha256": "a8ac15b9828b9ea3ffa9fd348436adfe37543b3647561a0296b4368b3635f5a0",
+      "bytes": 211115,
+      "sha256": "03949cb6b92eac3b5cb433855d605ac60698864334da264afaff52363b08e33f",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/idle-sword-oxide.png",
-      "bytes": 222206,
-      "sha256": "e8a646808f0b42907d1391ae3ce1e3b99f1bf5f90f5045728572b3f23a0a233d",
+      "bytes": 222382,
+      "sha256": "8c99067a10d4d5d03736423a7fd8d65019a1e182f3cf83084cf0dfcc441664b2",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/idle-sword-petrol.png",
-      "bytes": 218894,
-      "sha256": "6e6617c52e47d1aecef228d274af2081231fc8722be2171ddc650a0977c3ca05",
+      "bytes": 219030,
+      "sha256": "a3286176ed73bd2d8a565a729ed2367b43bb53e6fe9b8c11426c840c72203543",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/victory-axe-oxide.png",
-      "bytes": 268136,
-      "sha256": "57ee06c968905535fe2de84a72974eba1d366ccf6bf4b9436f3c4f7d00fba8af",
+      "bytes": 272818,
+      "sha256": "0ec123695ebd9a2a1eb426919d25603363008ce8cffc2694c22b93b1c372b0bb",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/victory-axe-petrol.png",
-      "bytes": 264164,
-      "sha256": "9e6cc3e4aa25294582a79b5a29fe58fdb853fefbf7067dbf4e171b05b3865325",
+      "bytes": 269521,
+      "sha256": "8d0d8d632f4756480cc5c164f8d7e7a62a1aa727e4e80ab02c6dcaa88cc79af5",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/victory-dagger-oxide.png",
-      "bytes": 261590,
-      "sha256": "5e1437bd69c28b777f5ed4e1cf25ed268e42f5f607c15e94bb4de8f063c910cf",
+      "bytes": 258433,
+      "sha256": "fee2033ce331183ade8771480fe60f5ee5fff2851b74b0bcae497e23ff033412",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/victory-dagger-petrol.png",
-      "bytes": 258747,
-      "sha256": "70dda6255e967e2ee55e045186a9eedf43092bb4ddb03de99819d1086660a7b9",
+      "bytes": 255327,
+      "sha256": "d24a1df8120e0a83594412aa5b3a3cb63cad3179ddedafe99dc57f5e11ab69d0",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/victory-sword-oxide.png",
-      "bytes": 264468,
-      "sha256": "40e6b2ed4648865f1b7dbec7f1cdf47e5e92e528fc7ad29e036445a4fbb38924",
+      "bytes": 263801,
+      "sha256": "6f4ee41666ba26b5c598e9647f538b2e09e89658ae795a0d9bd784e516830fce",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
     },
     {
       "path": "previews/phone/victory-sword-petrol.png",
-      "bytes": 261339,
-      "sha256": "7500003ffaac4959e75a77679e9fe55eb6562ba455d26c8bea3ec7eb0914d855",
+      "bytes": 260848,
+      "sha256": "0c708e7ad537ccf1d8cea5a02a101e482239503b83edcfc724a36f50a7586208",
       "width": 780,
       "height": 1688,
       "mode": "RGB"
@@ -4501,10 +6319,18 @@
     },
     {
       "path": "previews/ranking-portraits.png",
-      "bytes": 182951,
-      "sha256": "68a808762492f80ef5a83a336813c725b046bb4bb05a2b78b15927da1a43283e",
+      "bytes": 124600,
+      "sha256": "4725c6ce42f242ec3c6b3617a806393d5154dccab18274be96798de15a88d47f",
       "width": 780,
-      "height": 660,
+      "height": 560,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/victory-v003-vs-v003.1.png",
+      "bytes": 179936,
+      "sha256": "44058231a306dbabebf3e2ef368c2583469e9fc1aaf999526089b4666a927fde",
+      "width": 2400,
+      "height": 560,
       "mode": "RGB"
     },
     {
@@ -4518,14 +6344,24 @@
       "sha256": "b9477a91da47c91d03d4b4e5d5c5efb2efcfd274dec4f2120a614e741986029e"
     },
     {
-      "path": "source/build_kit_v003.py",
-      "bytes": 15245,
-      "sha256": "11b0b29b50e5d397f468b880b17e128a81868e291d8e5ddd947ead275deca51b"
+      "path": "source/author_v0031.py",
+      "bytes": 13099,
+      "sha256": "fef059b229ce41836512543a954db2e9744586c42094ed044203479d84884c8c"
     },
     {
-      "path": "source/delta_v003.py",
-      "bytes": 4008,
-      "sha256": "cca5a3c5e4aec83ffe645c63c01b1c901fe0a88a3b4668ae95c25c50cd3ea079"
+      "path": "source/build_kit_v0031.py",
+      "bytes": 21099,
+      "sha256": "6f736e243c686d164896ffa7a5078647544183f1ea412dcb03bd408d7217fd27"
+    },
+    {
+      "path": "source/delta_v0031.py",
+      "bytes": 3670,
+      "sha256": "f9ae9b7149144b6b3721ed12cb0666e43bfb04960ca47bd1a3dca9f652862084"
+    },
+    {
+      "path": "source/faceck.py",
+      "bytes": 965,
+      "sha256": "8f5304075068d1626b432ef751a34ada3a26bced53b1d991147ba4b26c842a84"
     },
     {
       "path": "source/foot_l.svg",
@@ -4598,14 +6434,19 @@
       "sha256": "9aaae5b5afd17fd6d3e304ce3794da90122ec1838094ae15150bb48c9015d9ff"
     },
     {
-      "path": "source/mfasm.py",
-      "bytes": 3630,
-      "sha256": "fa2e4b956e7c744c27d2e71f4aba02245eaeabe86d8972201dfec2894d7f5d62"
+      "path": "source/look.py",
+      "bytes": 1172,
+      "sha256": "78ee655327a009845d7e48ec7d5405432089d9f90a7d0bbe5e85df6bbcbdcbb8"
     },
     {
-      "path": "source/negative_test_v003.py",
-      "bytes": 1891,
-      "sha256": "91c56d3e4098897a795ac0f1ff01485eb2f57adb47d9ac0e0ea6f77fa7e4ed71"
+      "path": "source/mfasm.py",
+      "bytes": 4851,
+      "sha256": "414cbcce0d2b128b64fbe4ce1063d7ce8ec9651ce86de83ee4c5f8cb5294aa91"
+    },
+    {
+      "path": "source/negative_test_v0031.py",
+      "bytes": 2416,
+      "sha256": "5f5383b2695e05e99300a1854087268e48e8669908436bb532a916977eb337d7"
     },
     {
       "path": "source/pelvis.svg",
@@ -4619,18 +6460,23 @@
     },
     {
       "path": "source/poses.json",
-      "bytes": 16463,
-      "sha256": "282d6d0e229ed18b9309bca9b2ca8179a89b7883c9ef181af44e196dc0641c22"
+      "bytes": 32624,
+      "sha256": "a1025c19518fc9602748ab26ee7a989b9664768c6dcb135524506f2fd2e27b29"
     },
     {
-      "path": "source/previews_v003.py",
-      "bytes": 9901,
-      "sha256": "bbcc2e5790c6a41c0b0ee2410cdea784e9e7e9a6973be34106d5334c7e2a416a"
+      "path": "source/poses_authored.json",
+      "bytes": 34752,
+      "sha256": "b02f05cb9ad829dba662898e15e06116528f1f2ac17b68b028abac42cc26270b"
+    },
+    {
+      "path": "source/previews_v0031.py",
+      "bytes": 13284,
+      "sha256": "e9fa000911ea8cf35e9ca74e2224f22b8c2a50b5c8a4e88e806dd9b98ce583be"
     },
     {
       "path": "source/render.py",
-      "bytes": 1429,
-      "sha256": "0955f5203826a3deeb99ecf9bb608dcaeb76ee8feacc9f8688784e941f996181"
+      "bytes": 1772,
+      "sha256": "7c250deb6ebf7a0080348a344ac79c8fa480839bd6dd9560ae0604694771175a"
     },
     {
       "path": "source/rig.py",
@@ -4638,9 +6484,9 @@
       "sha256": "150894837bc288c5eb8c44e24d1f5aefa536885e41a30c2a1048c52e0f7c7ce9"
     },
     {
-      "path": "source/seal_kit_v003.py",
-      "bytes": 2312,
-      "sha256": "c49b8dc59810c8ed417d2eef4781ee3b7444ba908313546e40bf4f8ef59a3e65"
+      "path": "source/seal_kit_v0031.py",
+      "bytes": 2394,
+      "sha256": "fe0bac0b33e15b3aed7f938cff4701babad0d25442331446131d27b5f188b565"
     },
     {
       "path": "source/shin_l.svg",
@@ -4678,9 +6524,9 @@
       "sha256": "914c5140f9037ebfdf50b9bd827fd54d4e3f3e87bc353e97cd6d2bf11c3b15ba"
     },
     {
-      "path": "source/validate_kit_v003.py",
-      "bytes": 12389,
-      "sha256": "1d6bbc7d9504baf9392792df89899e299ef425d2daa3b285b54747f76c78e364"
+      "path": "source/validate_kit_v0031.py",
+      "bytes": 17297,
+      "sha256": "303090687f34a6e27dde61ace22dd831b2b8ccaea14564b183d2cded9b8e0a21"
     },
     {
       "path": "source/weapon_axe.svg",
@@ -4699,23 +6545,23 @@
     },
     {
       "path": "validation/negative-tests.json",
-      "bytes": 884,
-      "sha256": "a101641a64c376cf17962df99cca6f57245d4c5c24af3f1ea351f42edc07b18a"
+      "bytes": 1112,
+      "sha256": "9fbe80de8061c990235a1a1a9d0701e44b3e33760f5624412637bb3f824422d1"
     },
     {
       "path": "validation/pose-solve-log.json",
-      "bytes": 2832,
-      "sha256": "a3770b7c943e0d247f35a50fa5924bccc024aba5c5449b5754c301c87ac9f15b"
+      "bytes": 8596,
+      "sha256": "6c34a0e656598ab1d61f455baf98c79741fe829b87894bcb1084574fcf7cc41b"
     },
     {
       "path": "validation/report.json",
-      "bytes": 234646,
-      "sha256": "55ab49a4831015d69786c53a37caf0ef6e31529af3be6a3e86f782dc31e426f7"
+      "bytes": 411459,
+      "sha256": "1b4ea2d45f6897b24efdfd834f5133e587b9d0dc7fc57f8f84627095b29c4c15"
     },
     {
       "path": "validation/visual-review.md",
-      "bytes": 3746,
-      "sha256": "bff3b300864ad429d404328afb72c3ef1e02e11c58d4b83d6b8dafef666cf867"
+      "bytes": 3368,
+      "sha256": "6820e5fddb3335db87e7850b8757448874754396f1a6a9afd802a7f3505ac4f3"
     }
   ]
 }

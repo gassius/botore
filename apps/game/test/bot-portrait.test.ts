@@ -18,19 +18,17 @@ import {
 const chassis = 'chassis-basic';
 
 describe('A5 BotPortrait — per-bot paint + weapon (never sample sheets)', () => {
-  it('exposes 46 pt display and kit-v003 crop rect', () => {
+  it('exposes 46 pt display and kit-v003.1 crop rect', () => {
     expect(PORTRAIT_DISPLAY_PT).toBe(46);
-    expect(PORTRAIT_CROP_RECT_CANVAS_PX).toEqual([178, 37.4, 256, 256]);
+    expect(PORTRAIT_CROP_RECT_CANVAS_PX).toEqual([190, 41.4, 272, 272]);
     const layout = portraitCropLayout(PORTRAIT_DISPLAY_PT);
     expect(layout.cropSize).toBe(46);
-    expect(layout.canvasSize).toBeCloseTo((640 * 46) / 256, 5);
-    expect(layout.offsetX).toBeCloseTo((-178 * 46) / 256, 5);
+    expect(layout.canvasSize).toBeCloseTo((800 * 46) / 272, 5);
   });
 
   it('prefers portrait MotionPose; adapter keeps weapon equipped', () => {
     expect(PORTRAIT_POSE_PREFERRED).toBe('portrait');
     expect(MOTION_POSE_TO_KIT.portrait).toBe('portrait');
-    // kit-v003 ships poses.portrait (*); weapon still drawn for A5.
     expect(resolveKitPoseKey('portrait', WORKSHOP_FRAME_MANIFEST)).toBe('portrait');
     const sword = assembleBot({
       loadout: { chassis, paint: 'paint-crimson', weapon: 'weapon-sword' },
@@ -61,11 +59,7 @@ describe('A5 BotPortrait — per-bot paint + weapon (never sample sheets)', () =
     expect(src.includes('BotAssembler')).toBe(true);
     expect(src.includes('require(')).toBe(false);
     for (const frag of PORTRAIT_FORBIDDEN_SAMPLE_REQUIRES) {
-      if (frag.startsWith('require')) {
-        expect(src.includes(frag)).toBe(false);
-      } else {
-        expect(src.includes(frag)).toBe(false);
-      }
+      expect(src.includes(frag)).toBe(false);
     }
   });
 

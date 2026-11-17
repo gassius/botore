@@ -67,13 +67,15 @@ describe('BotAssembler PLACEHOLDER path', () => {
   });
 });
 
-describe('Workshop Frame kit-v003 adapter (ACTIVE pin)', () => {
-  it('pins coherent v003 manifest + family; never claims v002 geometry as active', () => {
-    expect(ACTIVE_WORKSHOP_FRAME_ASSET_VERSION).toBe('v003');
-    expect(WORKSHOP_FRAME_MANIFEST.version).toBe('v003');
-    expect(WORKSHOP_FRAME_KIT_ID).toBe('workshop-frame-v003');
+describe('Workshop Frame kit-v003.1 adapter (ACTIVE pin)', () => {
+  it('pins coherent v003.1 manifest + family; never claims v002 geometry as active', () => {
+    expect(ACTIVE_WORKSHOP_FRAME_ASSET_VERSION).toBe('v003.1');
+    expect(WORKSHOP_FRAME_MANIFEST.version).toBe('v003.1');
+    expect(WORKSHOP_FRAME_KIT_ID).toBe('workshop-frame-v003.1');
     expect(ACTIVE_WORKSHOP_FRAME_FAMILY).toBe('workshop-frame-v003');
     expect(WORKSHOP_FRAME_MANIFEST.family).toBe('workshop-frame-v003');
+    expect(WORKSHOP_FRAME_MANIFEST.stage?.size).toEqual([800, 800]);
+    expect(WORKSHOP_FRAME_MANIFEST.stage?.rig_origin).toEqual([80, 160]);
     const torso = WORKSHOP_FRAME_MANIFEST.assets.find((a) => a.id === 'torso')!;
     expect(torso.compatible_family).toBe('workshop-frame-v003');
     // Body geometry matches v002 for torso; hands/weapons changed in v003.
@@ -104,9 +106,10 @@ describe('Workshop Frame kit-v003 adapter (ACTIVE pin)', () => {
     expect(integrationDelta.to.family).toBe('workshop-frame-v003');
     expect(V002_TORSO_FROM_HISTORY.compatible_family).toBe('workshop-frame-v002');
     const bot = assembleWorkshopFrame({ loadout: baseLoadout, facing: 'right' });
-    expect(bot.kitId).toBe('workshop-frame-v003');
+    expect(bot.kitId).toBe('workshop-frame-v003.1');
     expect(bot.atlasVersion).toBe('v3');
-    expect(bot.layers.every((l) => l.label?.startsWith('workshop-frame-v003:'))).toBe(true);
+    expect(bot.layers.every((l) => l.label?.startsWith('workshop-frame-v003.1:'))).toBe(true);
+    expect(bot.canvas.width).toBe(800);
   });
 
   it('maps catalogue / alias paints onto Oxide and Petrol without catalogue expansion', () => {
@@ -126,7 +129,9 @@ describe('Workshop Frame kit-v003 adapter (ACTIVE pin)', () => {
     const bot = assembleWorkshopFrame({ loadout: baseLoadout, facing: 'right' });
     expect(bot.placeholder).toBe(false);
     expect(bot.kitId).toBe(WORKSHOP_FRAME_KIT_ID);
-    expect(bot.canvas.width).toBe(640);
+    // v003.1 stage is 800×800 (rig 640 translated by rig_origin).
+    expect(bot.canvas.width).toBe(800);
+    expect(bot.canvas.height).toBe(800);
     // 15 body + 2 wraps + weapon
     expect(bot.layers.length).toBe(18);
     expect(bot.layers.find((l) => l.id === 'hand_r_wrap')).toBeTruthy();

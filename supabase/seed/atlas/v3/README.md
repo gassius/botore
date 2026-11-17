@@ -1,6 +1,6 @@
-# Atlas v3 — Workshop Frame kit-v003
+# Atlas v3 — Workshop Frame kit-v003.1
 
-Immutable pack for Workshop Frame kit-v003 grips/stances (A1).
+Immutable pack for Workshop Frame kit-v003.1 (family workshop-frame-v003; A1 grips + A3 victory/defeat poses).
 
 | Concern    | Rule                                                                                            |
 | ---------- | ----------------------------------------------------------------------------------------------- |

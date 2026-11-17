@@ -14,12 +14,13 @@ export {
   resolveResultBotPose,
 } from './resultPoseSlot';
 export type {
-  ApprovedDefeatPose,
-  PendingVictoryPoseSlot,
+  ApprovedResultBotPose,
   ResolvedResultBotPose,
   ResultBotPoseKind,
 } from './resultPoseSlot';
+/** @deprecated Use ApprovedResultBotPose */
+export type { ApprovedResultBotPose as ApprovedDefeatPose } from './resultPoseSlot';
 export { ResultDefeatPose } from './ResultDefeatPose';
 export type { ResultDefeatPoseProps } from './ResultDefeatPose';
-export { ResultVictoryPoseSlot } from './ResultVictoryPoseSlot';
-export type { ResultVictoryPoseSlotProps } from './ResultVictoryPoseSlot';
+export { ResultVictoryPose, ResultVictoryPoseSlot } from './ResultVictoryPoseSlot';
+export type { ResultVictoryPoseProps, ResultVictoryPoseSlotProps } from './ResultVictoryPoseSlot';

@@ -344,7 +344,7 @@ export function provisionalMotionOffset(
   pose: MotionPose,
   reducedMotion: boolean,
 ): { translateX: number; translateY: number; rotateDeg: number; provisional: true } {
-  if (reducedMotion || pose === 'idle' || pose === 'portrait') {
+  if (reducedMotion || pose === 'idle' || pose === 'portrait' || pose === 'victory') {
     return { translateX: 0, translateY: 0, rotateDeg: 0, provisional: true };
   }
   switch (pose) {

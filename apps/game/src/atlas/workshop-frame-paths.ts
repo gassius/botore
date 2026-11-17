@@ -1,7 +1,8 @@
 /**
  * Workshop Frame kit-v003 → F5 atlas path coordination (F6 / A1).
  *
- * Visible-build pin: **v003 only**. Do not mix v002/v001 coordinates or assets.
+ * Visible-build pin: **v003.1** (family workshop-frame-v003). Do not mix
+ * v002/v001 coordinates or assets.
  * Kit local `manifest.json` (`botore.workshop-frame.provisional.v2`) remains a
  * media-adapter for F7 — not a competing Storage/wire schema. Pack fetch/cache
  * still uses F5 `get_atlas_manifest` entries.
@@ -18,10 +19,12 @@
 
 export const WORKSHOP_FRAME_KIT = {
   kitId: 'workshop-frame',
+  /** Atlas path namespace stays v003; Metro pin is kit version v003.1. */
   kitVersion: 'v003',
   compatibleFamily: 'workshop-frame-v003',
-  /** Local kit tree name F7 mounts under apps/game/assets/ once pushed. */
+  /** Local kit tree name F7 mounts under apps/game/assets/. */
   localAssetDir: 'workshop-frame-kit-v003',
+  pinVersion: 'v003.1',
 } as const;
 
 /**

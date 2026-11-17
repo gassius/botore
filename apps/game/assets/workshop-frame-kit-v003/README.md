@@ -1,87 +1,71 @@
-# Botore Workshop Frame — kit-v003
+# Botore Workshop Frame kit v003.1
 
-**Integration prototype, not art/rig/production accepted.** v003 fixes how weapons are held and adds stance, result poses, result plates and ranking portraits on the same modular rig. Built from kit-v002 (`/workspace/botore-art/2026-11-09-first-kit/kit-v002/`, unchanged). Original vector construction, no paid generation. **Coordinates are NOT interchangeable with v002. Swap the whole pack at once.**
+This is a point release on top of kit v003 (A1 approved). It contains **no new part art**: every part, material, mask, fx and plate PNG is byte-identical to v003. Only `manifest.json` (poses, stage, timing, portrait rule), the portrait samples and the previews change.
 
-## Start here
-| File | What it shows |
+| Ticket | What v003.1 delivers |
 |---|---|
-| `previews/contact-sheet-390x844.png` (`@3x` alongside) | 3 weapons × 2 paints × idle/victory/defeat on one 390×844 phone screen |
-| `previews/phone/{pose}-{weapon}-{paint}.png` | 18 individual 390×844 @2x phone checks (customise-style panel for idle, dimmed arena + plate for results) |
-| `previews/fight-scale-axe-vs-sword@2x.png` | Oxide axe vs mirrored Petrol sword, at the environment-v001 fight positions and scales |
-| `previews/axe-v002-vs-v003.png` | Before/after for the axe Carlos flagged |
-| `previews/grip-closeups.png` | 3× close-ups of every gripping hand (fingers over handle) |
-| `previews/combat-carried-sheet.png` | The v002 combat poses re-based on the new guards (carried over, not re-art-directed) |
-| `previews/plates-preview.png`, `previews/ranking-portraits.png` | Result plates, sample ranking portraits |
-| `manifest.json` | Rig, weapons/grips, poses, fx, plates, portrait spec |
-| `INTEGRATION-DELTA-v002-to-v003.md` + `integration-delta-v002-to-v003.json` | What engineering has to change |
-| `validation/report.json`, `validation/negative-tests.json`, `validation/visual-review.md` | Automated checks, proof that the checks catch the v002 bugs, and my visual review with weaknesses |
+| A3 | **Victory redone.** The weapon arm is raised overhead-forward and the weapon is held high on a diagonal. The chest opens, the chin lifts and the rear fist pumps up and back, giving a V silhouette. **Defeat fixed.** Both knees and both toe caps now touch `ground_y`. The rear knee no longer floats and the boots no longer read as slabs. The plates are unchanged (already approved). |
+| A2 (first pass) | 8 fight keys for each weapon, in the same pose format: `walk_in, windup, strike, follow_through, recovery, dodge, hit_react, knockout`. A 30 fps timing table with hit-stop is in `manifest.timing`. |
+| A5 | **Portrait rule.** Each bot's portrait is rendered from that bot's own paint and weapon (`manifest.portrait.rule`). There is a per-weapon portrait pose with the weapon in frame. The example renders cover 3 loadouts, one of which uses a **non-sample test paint** (Scrap Green `#6E8B3D` with the dagger). |
 
-## What changed vs v002
-1. **Per-weapon grips (replaces the single shared 180° mount).** Each weapon is a child of `hand_r.grip`. Its `pivot` is its own `grip_main` socket and its `angle` is the per-weapon `attach_angle`. +90 puts the striking end out of the thumb side, −90 out of the little-finger side.
-   - **Sword**: one-handed, `attach_angle` 80, blade up and forward. The grip was lengthened to 64 px with a pommel, so the handle visibly leaves the fist on both sides.
-   - **Axe**: redrawn as a two-handed war axe. The haft is 316 px with leather wraps where the hands go. The main grip sits in the lower third (0.36 of the haft length from the butt) and the off-hand grip is near the butt (`grip_off`). The bit faces local +X, which is toward the opponent in every guard. The rear hand is held on `grip_off` by baked rotations (error ≤ 0.65 px, 0.1°).
-   - **Dagger**: **reverse (ice-pick) grip**, `attach_angle` −90. I chose it because at fight scale a forward-held dagger reads as a stubby sword, while the reverse grip gives a raised-fist guard with the blade angled down toward the opponent, a silhouette no other weapon has.
-2. **Hands that close around the handle.** Each hand is now two tiles. The `hand_*` back layer (wrist hub, palm housing) is drawn *behind* the weapon, and the new `hand_*_wrap` layer (four curled fingers, knuckle bar, thumb) is drawn *in front of* it. Draw order is always hand < weapon < wrap. For the axe the rear wrap is raised to z 91 via `weapons.axe.z_overrides`.
-3. **Per-weapon guard stances** (`poses.idle.{sword|axe|dagger}`), with feet planted on `ground_y`.
-4. **Result poses on the rig**: `victory` (weapon raised, chest out, rear fist pumped behind the head) and `defeat` (both knees down, slumped, head hanging, weapon grounded), each per weapon, plus the optional `fx.defeat_sparks` (3 frames, 1x/2x).
-5. **Plates**: `plates/` VICTORY, DEFEAT and NEW RECORD in Garage Tag style. SVG plus transparent PNG @1x/2x/3x. The letters are vector geometry built to the launch-v001 wordmark rules (rounded heavy blocks), with no font dependency.
-6. **Portraits**: head-and-shoulders spec built from the rig (`manifest.portrait`), plus sample Oxide/Petrol renders at 96/192/288 px in `portraits/`.
-7. **2x tiles**: `parts@2x/`, `materials@2x/`, `masks@2x/`, `fx@2x/` use the same coordinates. At phone sizes the 1x tiles get upscaled, so use these on ≥2x screens.
-8. **Pose data format** replaced (see below). The v002 combat pose names (`quick_attack`, `heavy_windup`, `heavy_attack`, `dodge`, `hit`) are kept and re-based on the new per-weapon guards. For the axe both hands stay on the haft.
+## Stage (canvas growth)
+The 640×640 rig frame and **all** rig numbers are unchanged; only the drawing surface grows. Allocate `stage.size` = 800×800 and draw the rig translated by `stage.rig_origin` = (80, 160). Equivalently, allow 160 px of overflow above the frame and 80 px on each side. Victory and the attack keys use this margin. Idle, defeat and the portrait stay inside the 640 frame (validated).
 
-## Rig contract (unchanged parts in brief)
-Canvas 640×640, root `torso` at [310,276], +X right, +Y down, clockwise-positive degrees, column-vector matrices, all numbers in 1x canvas px. `ground_y` = 495 (bottom of the boot soles).
+## Pose format (unchanged since v003)
+`{poseId: {weaponId | '*': {root: {x, y}, parts: {partId: {rot}}}}}`
 
-```
-M_torso = T(root.position + pose.root) · R(pose.parts.torso.rot) · T(-torso.pivot)
-M_child = M_parent · T(parent.sockets[parent_socket] (+ weapons[w].grips.main.offset for the weapon))
-                   · R(child.angle + pose.parts[child].rot) · T(-child.pivot)
-```
-- Draw in ascending `z`, after applying `weapons[weaponId].z_overrides`. Only draw the equipped weapon asset.
-- `facing` left: mirror the whole assembled hierarchy, `T(640,0)·S(-1,1)`. Never flip tiles individually.
-- Paint: `material_under`, then `paint_mask` alpha tinted with `paint_tokens[paintId]`, then `material_over`. `parts/{id}-{paint}.png` are pre-composited fallbacks. Hands, wraps and weapons are unpainted steel (their masks are empty on purpose).
+- Lookup is `poses[poseId][weaponId] ?? poses[poseId]['*']`.
+- `rot` is in degrees and is added to the part's default `angle` (clockwise is positive, Y points down). `torso.rot` is the root rotation.
+- The weapon follows `hand_r.grip` through `weapons[w].grips.main.attach_angle`.
+- Old motionPose names resolve through `pose_aliases`: `quick_attack` and `heavy_attack` map to `strike`, `heavy_windup` to `windup`, `hit` to `hit_react`. `dodge` keeps its name.
+- **Blend rule:** linear on `root` and on each `rot`. v003.1 stores each rot so that every part's world angle travels the short way from that weapon's idle. As a result the axe no longer swings through the floor between idle and windup.
+- Between keys the large arcs are intentional. For example, the sword goes from windup to strike with +190° on `hand_r`, which is the overhead slash.
 
-## Pose format (`manifest.poses`)
-```
-{ poseId: { weaponId | "*": { root: {x, y}, parts: { partId: { rot } } } } }
-```
-- Lookup: `poses[poseId][weaponId] ?? poses[poseId]["*"]`.
-- `root.x/y`: px added to `root.position`. `rot`: degrees **added to the part's default `angle`**, around its own pivot. A missing part means 0. `parts.torso.rot` is the root rotation.
-- The weapon is never posed directly. It follows `hand_r` through its grip.
-- Blending: linear interpolation of `root.x/y` and every `rot` between two entries of the same weapon is valid. Values are stored as the 360° representative closest to that weapon's idle, so blends don't spin joints. Don't re-solve IK in the engine. The axe's off-hand rotations are baked so the rear hand stays on the haft at both pose endpoints. (Mid-blend it can drift a few px, since this isn't proven per frame.)
-- `pose_meta` gives each pose's kind, use, foot contact and fx.
+## A2 timing (30 fps) — `manifest.timing.per_weapon[weaponId]`
+A sequence is a list of segments `{to, frames, ease}`. Each segment blends from the previous key to `to` over `frames` frames. `hold` and `hit-stop` keep the pose frozen. Hit-stop freezes **both** bots, and is skipped on a miss.
 
-BotAssembler mapping (existing props unchanged): `weaponId` → `weapons[weaponId].asset` + grips; `paintId` → `paint_tokens`; `motionPose` → `poses` key (default `idle`); `facing` → mirror; `reducedMotion` → snap to the target pose, no tween, plates still shown.
+| weapon | windup (+hold) | strike | hit-stop | follow-through | recovery | back to idle | total attack |
+|---|---|---|---|---|---|---|---|
+| sword | 7 (+3) | 2 | 3 | 4 | 6 | 5 | 30 f = 1.00 s |
+| axe | 10 (+5) | 3 | 5 | 6 | 10 | 7 | 46 f = 1.53 s |
+| dagger | 4 (+1) | 2 | 2 | 3 | 4 | 3 | 19 f = 0.63 s |
 
-```ts
-// engine-agnostic sketch
-const pose = m.poses[motionPose ?? 'idle'][weaponId] ?? m.poses[motionPose ?? 'idle']['*'];
-const z = {...Object.fromEntries(m.assets.map(a => [a.id, a.z])), ...m.weapons[weaponId].z_overrides};
-for (const a of topoOrder(m.assets)) {               // torso first, parents before children
-  if (a.role === 'weapon' && a.id !== m.weapons[weaponId].asset) continue;
-  const rot = pose.parts[a.id]?.rot ?? 0;
-  M[a.id] = a.parent == null
-    ? T(m.root.position[0] + pose.root.x, m.root.position[1] + pose.root.y).mul(R(rot)).mul(T(-a.pivot[0], -a.pivot[1]))
-    : M[a.parent].mul(T(...socket(a))).mul(R(a.angle + rot)).mul(T(-a.pivot[0], -a.pivot[1]));
-}
-drawSortedBy(z);
-```
+- **Dodge:** sword 3 in, 4 hold, 6 out; axe 4/4/8; dagger 2/3/5.
+- **Hit react:** 2 frames snapping in, then the attacker's hit-stop, then a short hold, then 8–10 frames out.
+- **Knockout:** 3 in, KO hit-stop of 6/8/6, an 18-frame hold, then 12–14 frames easing into `defeat`, then roughly 1 s before the result overlay.
+- **Walk-in:** alternate `walk_in` and `idle` every 6/8/5 frames while translating the root.
+- **reducedMotion:** snap between keys, no walk bob, 0 hit-stop frames.
 
-## Result screen use
-- **Own bot on the result overlay**: render `victory` or `defeat` with the confirmed loadout/paint/weapon. During the defeat hold, optionally play `fx.defeat_sparks` frames 00→02 at its socket (`torso.shoulder_l` + offset, screen-up). Frame timing is not approved.
-- **Plates**: `plates.victory|defeat|new_record`. Sizes are in pt (300×96, 300×96, 220×64). Use the `accessibility_label` text. The plates are images, so an engine text label/announcement is still needed. NEW RECORD is a tilted stamp meant to overlap the plate's lower-right corner.
-- **Portraits**: render pose `portrait` without the weapon, crop square `crop_rect_canvas_px` [178, 37.4, 256, 256] (anchored to the world `torso.neck` + [-4,-16]), and downsample to 96/192/288. Samples are in `portraits/`. They are built from the rig, so any paint (or a future head part) keeps the framing.
+## Weapon reads
+- **Sword:** overhead diagonal slash. The windup is high with the blade back and up over the helmet, the strike ends forward-down, and the follow-through finishes low.
+- **Axe:** two-handed heavy chop. In the windup the head is raised behind the helmet with both hands low and back. The strike cuts forward at waist height and the follow-through ends by the front boot. The off hand is exact on `grip_off` in every A2 key.
+- **Dagger:** reverse-grip punch-stab. The windup is a chambered fist at the chest with the blade pointing forward, the strike is a lunge with the arm fully extended and the blade leading, and the follow-through dips down. It is a real stab, not the guard rotated.
 
-## Reproduce / verify
-Python 3, CairoSVG, Pillow, NumPy, SciPy:
-```
-python3 source/build_kit_v003.py      # parts, masks, poses (solved -> baked rots), fx, plates, portraits, manifest
-python3 source/previews_v003.py       # phone previews built ONLY from manifest + PNGs (source/mfasm.py)
-python3 source/validate_kit_v003.py   # 2178 checks, independent of the authoring code
-python3 source/negative_test_v003.py  # mutations that re-create the v002 bugs must fail validation
-python3 source/delta_v003.py && python3 source/seal_kit_v003.py
-```
-Poses are authored as world targets (grip position, weapon angle, planted feet) in `source/author_poses.py`, solved with least squares (`source/rig.py`), and shipped as plain rotations. Engines need no IK.
+## Files
+- `manifest.json`
+- `INTEGRATION-DELTA-v003-to-v003.1.md` + `.json`
+- `previews/`:
+  - `contact-sheet-390x844.png`
+  - `fight-sheet-{weapon}-390x844.png`
+  - `fight/a2-{weapon}-strip.gif` (30 fps)
+  - `fight/a2-{weapon}-strip@2x.mp4`
+  - `victory-v003-vs-v003.1.png`
+  - `defeat-v003-vs-v003.1.png`
+  - `ranking-portraits.png`
+  - `phone/*`
+- `portraits/{loadoutId}-{96|192|288}.png`
+- `validation/` (report, negative tests, visual review)
+- `source/` (full rebuild)
 
-## Honest quality boundary
-See `validation/visual-review.md`. In short: the guards and result poses read clearly at phone size, but they are static key poses. Nothing here is approved animation timing. The v002 combat poses are only carried over, and `heavy_windup` puts the sword or axe across the face. The axe haft is about 2.3× the sword's grip-to-pommel length rather than the ~1.6× asked for (the reason is in the review). Wrist hub rotations are large in some axe and victory poses. Likeness and finish are still a clean vector reconstruction and not approved. Rights caveats are in `PROVENANCE.md`.
+## Rebuild
+Run these from `source/`:
+
+1. `python3 author_v0031.py` (IK solve, about 3 min)
+2. `python3 build_kit_v0031.py`
+3. `python3 previews_v0031.py`
+4. `python3 validate_kit_v0031.py ../kit-v003.1`
+5. `python3 negative_test_v0031.py`
+6. `python3 delta_v0031.py`
+7. `python3 seal_kit_v0031.py`
+
+The build is deterministic and makes no network calls or paid generations.

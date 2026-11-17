@@ -16,8 +16,8 @@ import {
 
 const assetsRoot = join(__dirname, '../assets/result-plates');
 
-describe('A3 result plates + defeat + victory slot', () => {
-  it('ships VICTORY / DEFEAT / NEW RECORD PNG 1x/2x/3x from kit-v003', () => {
+describe('A3 result plates + victory/defeat poses (kit-v003.1)', () => {
+  it('ships VICTORY / DEFEAT / NEW RECORD PNG 1x/2x/3x (unchanged from v003)', () => {
     for (const kind of ['victory', 'defeat', 'new-record'] as const) {
       for (const dens of ['1x', '2x', '3x'] as const) {
         expect(existsSync(join(assetsRoot, 'png', dens, `${kind}.png`))).toBe(true);
@@ -49,16 +49,25 @@ describe('A3 result plates + defeat + victory slot', () => {
     expect(bot.layers.some((l) => l.role === 'weapon')).toBe(true);
   });
 
-  it('keeps victory as a pending raised-weapon slot (not full A3)', () => {
+  it('approves overhead victory MotionPose (fills former pending slot)', () => {
     const resolved = resolveResultBotPose('victory');
-    expect(VICTORY_POSE_ART_STATUS).toBe('slot-pending-raised-weapon');
+    expect(VICTORY_POSE_ART_STATUS).toBe('approved');
     expect(resolved.kind).toBe('victory');
-    expect(resolved.status).toBe('slot-pending-raised-weapon');
-    expect(resolved.motionPose).toBeNull();
-    if (resolved.kind === 'victory') {
-      expect(resolved.slotId).toBe(VICTORY_POSE_SLOT_ID);
+    expect(resolved.status).toBe('approved');
+    expect(resolved.motionPose).toBe('victory');
+    expect(resolved.slotId).toBe(VICTORY_POSE_SLOT_ID);
+    expect(isApprovedResultMotionPose(resolved)).toBe(true);
+    for (const weapon of ['weapon-sword', 'weapon-axe', 'weapon-dagger'] as const) {
+      const bot = assembleBot({
+        loadout: { chassis: 'chassis-basic', paint: 'paint-crimson', weapon },
+        facing: 'right',
+        motionPose: 'victory',
+      });
+      expect(bot.motionPose).toBe('victory');
+      expect(bot.kitPoseKey).toBe('victory');
+      expect(bot.canvas.width).toBe(800);
+      expect(bot.canvas.height).toBe(800);
+      expect(bot.layers.some((l) => l.role === 'weapon')).toBe(true);
     }
-    expect(isApprovedResultMotionPose(resolved)).toBe(false);
-    expect(VICTORY_POSE_SLOT_ID).toBe('result.victory.raised-weapon');
   });
 });

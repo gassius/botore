@@ -1,8 +1,8 @@
 /**
  * Adapter: Workshop Frame kit media schema → existing BotAssembler props/model.
  *
- * ACTIVE PIN: kit-v003 (coherent manifest + parts + provenance). Atomic swap —
- * NEVER mix v002/v001 tiles or pose numbers with v003 assets.
+ * ACTIVE PIN: kit-v003.1 (family workshop-frame-v003). Atomic swap —
+ * NEVER mix v002/v001 tiles or pose numbers with v003.x assets.
  *
  * Does NOT invent a parallel public component API. Maps kit paint/weapon/pose
  * ids onto F7 `assembleBot` / `BotAssemblerProps`. Catalogue ids stay
@@ -64,8 +64,9 @@ export const MOTION_POSE_TO_KIT: Readonly<Record<MotionPose, string>> = {
   dodge: 'dodge',
   hit: 'hit',
   defeat: 'defeat',
-  // A5: kit-v003 `portrait`. Weapon stays equipped (never sample sheets).
+  // A5: kit `portrait` (paint+weapon). A3: approved overhead `victory`.
   portrait: 'portrait',
+  victory: 'victory',
 };
 
 /** Resolve MotionPose → kit pose key; fall back when the active pin lacks the key. */
@@ -125,13 +126,17 @@ function resolveKitWeaponAssetId(weaponId: string): string {
 
 /**
  * v003 pose lookup: poses[poseId][weaponId] ?? poses[poseId]["*"].
+ * Follows pose_aliases when present (e.g. quick_attack → strike).
  * Do not port v002 flat delta numbers.
  */
 export function resolveWorkshopFramePose(
   kitPoseKey: string,
   weaponKind: KitWeaponKind,
 ): KitPoseEntry {
-  const table = WORKSHOP_FRAME_MANIFEST.poses[kitPoseKey];
+  const aliases = WORKSHOP_FRAME_MANIFEST.pose_aliases ?? {};
+  const resolvedKey = aliases[kitPoseKey] ?? kitPoseKey;
+  const table =
+    WORKSHOP_FRAME_MANIFEST.poses[resolvedKey] ?? WORKSHOP_FRAME_MANIFEST.poses[kitPoseKey];
   if (!table) return EMPTY_POSE;
   return table[weaponKind] ?? table['*'] ?? EMPTY_POSE;
 }
@@ -175,10 +180,14 @@ export function buildWorkshopFrameWorldMatrices(
     throw new Error(`${ACTIVE_WORKSHOP_FRAME_FAMILY} missing torso`);
   }
 
+  // v003.1 stage: translate the 640 rig into the 800 drawing surface.
+  const stageOriginX = manifest.stage?.rig_origin[0] ?? 0;
+  const stageOriginY = manifest.stage?.rig_origin[1] ?? 0;
+
   // torso.rot is the root rotation (replaces v002 root_angle).
   const rootAngle = torso.angle + poseRot(pose, 'torso');
-  const rootX = manifest.root.position[0] + (pose.root.x ?? 0);
-  const rootY = manifest.root.position[1] + (pose.root.y ?? 0);
+  const rootX = stageOriginX + manifest.root.position[0] + (pose.root.x ?? 0);
+  const rootY = stageOriginY + manifest.root.position[1] + (pose.root.y ?? 0);
   const torsoM = multiply(
     multiply(translate(rootX, rootY), rotateCwDeg(rootAngle)),
     translate(-torso.pivot[0], -torso.pivot[1]),
@@ -325,7 +334,8 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
 
   layers.sort((a, b) => a.zIndex - b.zIndex || a.id.localeCompare(b.id));
 
-  const canvas = WORKSHOP_FRAME_MANIFEST.canvas;
+  const stage = WORKSHOP_FRAME_MANIFEST.stage;
+  const canvas = stage?.size ?? WORKSHOP_FRAME_MANIFEST.canvas;
   const hand = assets.get('hand_r');
   const gripLocal = hand?.sockets.grip ?? ([60, 62] as const);
   const handM = matrices.get('hand_r') ?? identity();
@@ -357,20 +367,17 @@ export function workshopFramePaintToken(paintId: string): string {
 
 export function listWorkshopFrameGaps(): readonly string[] {
   return [
-    'ACTIVE pin is v003 only; kit-v002 kept as history — must_not_mix_versions (coords/pose format differ). Prefer sealed atomic packs so F7 never sees partial trees.',
+    'ACTIVE pin is v003.1 (family workshop-frame-v003); kit-v002 kept as history — must_not_mix_versions.',
     'Pose format is nested {weapon|"*": {root, parts.rot}}; do not port v002 flat pose numbers.',
+    'v003.1 stage is 800×800 with rig_origin [80,160]; rig numbers stay in 640 space. Mirror about stage centre (400).',
     'weapon_grip_rotation_degrees removed — weapons are normal children of hand_r.grip with per-weapon attach_angle.',
     'Always draw hand_l_wrap / hand_r_wrap; apply weapons[w].z_overrides (axe lifts hand_l_wrap to 91).',
-    'Paint path: under→mask-tint(color)→over via kit materials/masks (RN Image tintColor on mask alpha). Precomposited parts/{id}-{paint}.png retained as fallback/reference only — do not whole-sprite tint.',
-    'Attack/dodge/hit/heavy_* in v003 are v002 carry-overs pending A2 — integrate as shipped, not final art.',
+    'Paint path: under→mask-tint(color)→over via kit materials/masks. Precomposited parts/{id}-{paint}.png are fallback only.',
+    'A2 fight keyframes (timing / strike / windup / …) are a separate worker — aliases keep F7 MotionPose keys working.',
     'Shield/drone/decal are reserved only; assembler ignores loadout.shield/drone/decals.',
-    'l/r are view sides not anatomical — document for animators; mirror is whole-hierarchy scaleX about canvas centre.',
-    'motion_bounds are absolute relative-joint windows, not proven collision-free for arbitrary combos.',
-    'status=integration-prototype-not-accepted — not Carlos likeness / native perf / replay acceptance.',
-    'Atlas pack v3 publishes kit-v003 keys at parts/<hyphenatedPartId>/… (A1); Metro kit remains render fallback until Storage cold-fetch is proven on device. v1/v2 remain separate fallbacks.',
-    'Weapon media ids use underscores (weapon_sword); catalogue/F5 atlas partIds use hyphens (weapon-sword) — adapter maps both (documented, keep).',
-    'Float socket values are exact JSON serializations — consume as floats; do not round in the adapter.',
-    'MotionPose heavy_* is mapped (C11); heavy_windup / heavy_attack use nested per-weapon pose entries (not v002 root_y).',
-    'A5 exposes MotionPose `portrait` (weapon still drawn). Raised-weapon victory remains a result-art slot, not MotionPose.',
+    'Atlas pack v3 publishes kit media at parts/<hyphenatedPartId>/…; Metro kit remains render fallback until Storage cold-fetch is proven.',
+    'MotionPose heavy_* is mapped (C11); heavy_windup / heavy_attack use nested per-weapon pose entries (aliases → windup/strike on v003.1).',
+    'A5 MotionPose `portrait` + A3 MotionPose `victory`/`defeat` are approved on kit-v003.1.',
+    'Weapon media ids use underscores (weapon_sword); catalogue/F5 atlas partIds use hyphens (weapon-sword) — adapter maps both.',
   ];
 }

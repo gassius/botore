@@ -1,7 +1,14 @@
-/** Subset of kit-v003 manifest used by the F7 adapter (not a competing public API). */
+/** Subset of kit-v003.1 manifest used by the F7 adapter (not a competing public API). */
 
 export type KitPaintId = 'oxide' | 'petrol';
 export type KitWeaponKind = 'sword' | 'axe' | 'dagger';
+
+/** v003.1 drawing surface (rig stays 640; stage grows for victory / A2). */
+export interface KitStage {
+  readonly size: readonly [number, number];
+  readonly rig_origin: readonly [number, number];
+  readonly used_by?: readonly string[];
+}
 
 export interface KitAsset {
   readonly id: string;
@@ -62,7 +69,10 @@ export interface WorkshopFrameManifest {
   readonly version: string;
   readonly family?: string;
   readonly status: string;
+  /** Rig frame (640×640). Drawing surface may be larger via `stage`. */
   readonly canvas: readonly [number, number];
+  /** v003.1+: 800×800 stage with rig translated by rig_origin. */
+  readonly stage?: KitStage;
   readonly ground_y?: number;
   readonly root: { readonly asset: string; readonly position: readonly [number, number] };
   readonly paint_tokens: Readonly<Record<KitPaintId, string>>;
@@ -71,6 +81,7 @@ export interface WorkshopFrameManifest {
   readonly weapons: Readonly<Record<KitWeaponKind, KitWeaponDef>>;
   readonly poses: Readonly<Record<string, KitPoseTable>>;
   readonly pose_format?: Readonly<Record<string, string>>;
+  readonly pose_aliases?: Readonly<Record<string, string>>;
   readonly assets: readonly KitAsset[];
   readonly integration: {
     readonly component?: string;

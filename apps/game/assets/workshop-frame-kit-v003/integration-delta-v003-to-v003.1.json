@@ -1,0 +1,254 @@
+{
+  "from": {
+    "version": "v003",
+    "family": "workshop-frame-v003"
+  },
+  "to": {
+    "version": "v003.1",
+    "family": "workshop-frame-v003"
+  },
+  "rule": "Atomic swap of manifest.json (+ new previews/portraits). Parts, materials, masks, fx and plates PNGs are byte-identical to v003; v002 coordinates remain invalid.",
+  "unchanged": {
+    "part_geometry_pivots_sockets_z": true,
+    "part_png_paths": true,
+    "root.position": true,
+    "ground_y": true,
+    "canvas(rig frame)": true,
+    "weapons.grips": true,
+    "idle_poses_A1_approved": true,
+    "plates": true,
+    "fx": true
+  },
+  "added_fields": [
+    "stage",
+    "timing",
+    "pose_aliases",
+    "qa_regions",
+    "portrait.rule",
+    "portrait.inputs",
+    "portrait.samples[].loadout"
+  ],
+  "stage": {
+    "size": [
+      800,
+      800
+    ],
+    "rig_origin": [
+      80,
+      160
+    ],
+    "note": "v003.1 grows the DRAWING SURFACE, not the rig: the 640x640 rig frame and every manifest number are unchanged. Draw the rig translated by rig_origin inside an 800x800 stage (or allow overflow of 160 px above and 80 px on each side of the 640 frame). Victory and the A2 strike/follow-through/windup poses use this margin; idle and defeat stay inside the 640 frame. Mirror still happens about rig x=320 (stage x=400).",
+    "used_by": [
+      "victory",
+      "windup",
+      "strike",
+      "follow_through",
+      "walk_in",
+      "knockout"
+    ]
+  },
+  "poses": {
+    "defeat": "changed",
+    "dodge": "changed",
+    "follow_through": "added",
+    "heavy_attack": "changed (now alias of strike)",
+    "heavy_windup": "changed (now alias of windup)",
+    "hit": "changed (now alias of hit_react)",
+    "hit_react": "added",
+    "idle": "unchanged",
+    "knockout": "added",
+    "portrait": "changed",
+    "quick_attack": "changed (now alias of strike)",
+    "recovery": "added",
+    "strike": "added",
+    "victory": "changed",
+    "walk_in": "added",
+    "windup": "added"
+  },
+  "motion_bounds_widened": {
+    "torso": {
+      "v003": [
+        -75,
+        40
+      ],
+      "v003.1": [
+        -75,
+        35
+      ]
+    },
+    "head": {
+      "v003": [
+        -30,
+        35
+      ],
+      "v003.1": [
+        -35,
+        35
+      ]
+    },
+    "pelvis": {
+      "v003": [
+        -25,
+        15
+      ],
+      "v003.1": [
+        -30,
+        20
+      ]
+    },
+    "upper_arm_l": {
+      "v003": [
+        -150,
+        225
+      ],
+      "v003.1": [
+        -195,
+        180
+      ]
+    },
+    "forearm_l": {
+      "v003": [
+        -155,
+        40
+      ],
+      "v003.1": [
+        -370,
+        20
+      ]
+    },
+    "shin_l": {
+      "v003": [
+        -75,
+        110
+      ],
+      "v003.1": [
+        -65,
+        100
+      ]
+    },
+    "foot_l": {
+      "v003": [
+        -45,
+        55
+      ],
+      "v003.1": [
+        -95,
+        30
+      ]
+    },
+    "upper_arm_r": {
+      "v003": [
+        -100,
+        110
+      ],
+      "v003.1": [
+        -155,
+        220
+      ]
+    },
+    "forearm_r": {
+      "v003": [
+        -255,
+        20
+      ],
+      "v003.1": [
+        -395,
+        20
+      ]
+    },
+    "thigh_r": {
+      "v003": [
+        -95,
+        65
+      ],
+      "v003.1": [
+        -100,
+        65
+      ]
+    },
+    "shin_r": {
+      "v003": [
+        -65,
+        120
+      ],
+      "v003.1": [
+        -65,
+        125
+      ]
+    },
+    "foot_r": {
+      "v003": [
+        -30,
+        55
+      ],
+      "v003.1": [
+        -30,
+        40
+      ]
+    },
+    "hand_l": {
+      "v003": [
+        -45,
+        75
+      ],
+      "v003.1": [
+        -150,
+        180
+      ]
+    },
+    "hand_r": {
+      "v003": [
+        -115,
+        185
+      ],
+      "v003.1": [
+        -145,
+        290
+      ]
+    }
+  },
+  "portrait": {
+    "v003": {
+      "exclude_assets": [
+        "weapon_sword",
+        "weapon_axe",
+        "weapon_dagger"
+      ],
+      "crop_center_offset": [
+        -4,
+        -16
+      ],
+      "crop_size": 256,
+      "crop_rect_canvas_px": [
+        178.0,
+        37.4,
+        256,
+        256
+      ],
+      "pose": "single '*' entry, weapon excluded"
+    },
+    "v003.1": {
+      "exclude_assets": [],
+      "crop_center_offset": [
+        16,
+        -4
+      ],
+      "crop_size": 272,
+      "crop_rect_canvas_px": [
+        190.0,
+        41.4,
+        272,
+        272
+      ],
+      "rule": "Each bot's portrait is rendered from THAT bot's own loadout: its paintId (paint_tokens[paintId], or the paint's hex composited material_under + tinted paint_mask + material_over) and its weaponId (pose poses.portrait[weaponId], drawing weapons[weaponId].asset with the normal grip/z rules). Never reuse or recolour the shipped sample PNGs; they are references for QA only. Re-render whenever paintId or weaponId changes (cache key: kit version + paintId/hex + weaponId + size).",
+      "pose": "per weapon; own weapon drawn"
+    },
+    "sample_files": "renamed: portraits/{loadoutId}-{px}.png (oxide-sword, petrol-axe, scrapgreen-dagger). The v003 oxide-*/petrol-* files are gone."
+  },
+  "renderer_changes_required": [
+    "Allocate the 800x800 stage (or allow overflow 160 px above / 80 px each side of the 640 rig frame) and translate the rig by stage.rig_origin. Victory and the A2 attack keys otherwise clip.",
+    "Play A2 sequences from timing.per_weapon[weaponId] (30 fps segments, eases, hit-stop on contact for both bots). Old motionPose names still resolve (pose_aliases).",
+    "Portraits: render per bot from its own paintId/hex + weaponId with poses.portrait[weaponId] and portrait.crop_rect_canvas_px; never reuse the sample PNGs.",
+    "Blend all rots linearly as before; v003.1 rots are stored so every part turns the short way from idle (the axe no longer swings through the floor between idle and windup)."
+  ]
+}

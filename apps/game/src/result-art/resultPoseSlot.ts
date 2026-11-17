@@ -1,40 +1,34 @@
 /**
- * A3 partial — result bot poses for D2 overlay.
+ * A3 (kit-v003.1) — result bot poses for D2 overlay.
  *
- * APPROVED now: kneeling `defeat` (kit-v003; adapter maps MotionPose `defeat`).
- * NOT approved: raised-weapon `victory` art — expose a stable slot id only.
- * Do not claim full A3 done; do not treat kit `poses.victory` as product-ready.
+ * APPROVED: overhead raised-weapon `victory` (all three weapons; axe one-handed)
+ * and kneeling `defeat` (fixed feet/knees). Both map onto MotionPose.
  */
 
 import type { MotionPose } from '../assembler/types';
 
 export type ResultBotPoseKind = 'victory' | 'defeat';
 
-/** Flip to `'approved'` only after UI/UX + Art Supervisor accept raised-weapon victory. */
-export const VICTORY_POSE_ART_STATUS = 'slot-pending-raised-weapon' as const;
-
-/** Stable hook id for D2 / future raised-weapon victory wiring. */
+/** Stable hook id — D2 may still key layout off this nativeID. */
 export const VICTORY_POSE_SLOT_ID = 'result.victory.raised-weapon' as const;
 
-export type ApprovedDefeatPose = {
-  readonly kind: 'defeat';
+export const VICTORY_POSE_ART_STATUS = 'approved' as const;
+
+export type ApprovedResultBotPose = {
+  readonly kind: ResultBotPoseKind;
   readonly status: 'approved';
-  readonly motionPose: Extract<MotionPose, 'defeat'>;
+  readonly motionPose: Extract<MotionPose, 'victory' | 'defeat'>;
+  /** Present for victory so existing D2 hooks keep a stable id. */
+  readonly slotId?: typeof VICTORY_POSE_SLOT_ID;
 };
 
-export type PendingVictoryPoseSlot = {
-  readonly kind: 'victory';
-  readonly status: typeof VICTORY_POSE_ART_STATUS;
-  /** No MotionPose until raised-weapon art is approved. */
-  readonly motionPose: null;
-  readonly slotId: typeof VICTORY_POSE_SLOT_ID;
-};
+/** @deprecated Pending victory slot removed — A3 victory is approved on kit-v003.1. */
+export type PendingVictoryPoseSlot = never;
 
-export type ResolvedResultBotPose = ApprovedDefeatPose | PendingVictoryPoseSlot;
+export type ResolvedResultBotPose = ApprovedResultBotPose;
 
 /**
  * Resolve which bot pose D2 should mount on the result overlay.
- * Victory always returns the pending slot until art status flips.
  */
 export function resolveResultBotPose(kind: ResultBotPoseKind): ResolvedResultBotPose {
   if (kind === 'defeat') {
@@ -42,14 +36,14 @@ export function resolveResultBotPose(kind: ResultBotPoseKind): ResolvedResultBot
   }
   return {
     kind: 'victory',
-    status: VICTORY_POSE_ART_STATUS,
-    motionPose: null,
+    status: 'approved',
+    motionPose: 'victory',
     slotId: VICTORY_POSE_SLOT_ID,
   };
 }
 
 export function isApprovedResultMotionPose(
   resolved: ResolvedResultBotPose,
-): resolved is ApprovedDefeatPose {
+): resolved is ApprovedResultBotPose {
   return resolved.status === 'approved' && resolved.motionPose !== null;
 }
