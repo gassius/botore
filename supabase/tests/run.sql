@@ -151,7 +151,16 @@ begin
   perform tests.assert(v_count = 3, 'expected 3 active weapons (sword/axe/dagger)');
 
   select count(*) into v_count from public.current_bot_loadouts;
-  perform tests.assert(v_count = 4, 'expected 4 seeded current loadouts');
+  -- E2 NPC seed (seed.sql) adds more confirmed loadouts; still require the four
+  -- original seed.sql bots (hero + 3 opponents).
+  perform tests.assert(v_count >= 4, format('expected >=4 current loadouts, got %s', v_count));
+  perform tests.assert(
+    (
+      select count(*)::int from public.current_bot_loadouts
+       where character_id in ('player-hero', 'opp-sir-bot', 'opp-dex-bot', 'opp-hp-bot')
+    ) = 4,
+    'hero + 3 opponent loadouts present'
+  );
 
   select count(*) into v_count from public.inventory_balances
    where account_id = v_account;
@@ -2568,6 +2577,7 @@ declare
   v_res jsonb;
   v_res2 jsonb;
   v_character_id text;
+  v_botore_id text;
   v_loadout_id uuid;
   v_count integer;
   v_loadout_ok boolean;
@@ -2605,6 +2615,25 @@ begin
   perform tests.assert((v_res2->>'ok')::boolean, 'ensure idempotent ok');
   perform tests.assert((v_res2->>'created')::boolean = false, 'created=false on retry');
   perform tests.assert(v_res2->>'characterId' = v_character_id, 'same character id');
+
+  -- E2 Minor: player-facing botoreId / botId must not be bare UUID or 32-hex.
+  select p.botore_id into v_botore_id
+    from public.profiles p
+   where p.account_id = v_account;
+  perform tests.assert(
+    v_botore_id ~ '^garage-[0-9a-f]{12}$',
+    'ensure botoreId uses garage-<12 hex>'
+  );
+  perform tests.assert(
+    v_botore_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    and v_botore_id !~* '^[0-9a-f]{32}$',
+    'ensure botoreId rejects UUID / 32-hex shapes'
+  );
+  perform tests.assert(
+    v_character_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    and v_character_id !~* '^[0-9a-f]{32}$',
+    'ensure botId rejects bare UUID / 32-hex shapes'
+  );
 
   select count(*)::int into v_count
     from public.character_build_versions where character_id = v_character_id;
@@ -2886,7 +2915,7 @@ begin
 end $$;
 
 -- =========================================================================
--- 0029 / 1003 / E2: bot + botore ranking (W-L, NPC seed, tie-breaks, empty)
+-- 0029 / seed.sql E2: bot + botore ranking (W-L, NPC seed, tie-breaks, empty)
 -- =========================================================================
 do $$
 declare
@@ -2899,6 +2928,7 @@ declare
   v_patina_xp int;
   v_row jsonb;
   v_deleted_restore int;
+  v_npc_pw_usable int;
 begin
   perform tests.assert(
     has_function_privilege('authenticated', 'public.list_bot_ranking()', 'EXECUTE'),
@@ -2925,8 +2955,17 @@ begin
     'service_role must not EXECUTE list_botore_ranking'
   );
 
-  -- NPC seed density
+  -- NPC seed density (from supabase/seed.sql — not a 1xxx migration)
   reset role;
+  select count(*)::int into v_npc_pw_usable
+    from auth.users u
+    join public.accounts a on a.id = u.id
+   where a.is_npc
+     and coalesce(nullif(u.encrypted_password, ''), '') <> '';
+  perform tests.assert(
+    v_npc_pw_usable = 0,
+    'NPC auth.users have empty encrypted_password (no password login)'
+  );
   perform tests.assert(
     (select count(*)::int from public.accounts where is_npc) >= 12,
     'at least 12 NPC botores seeded'
@@ -2963,7 +3002,7 @@ begin
   );
 
   -- Early suite truncates progression_ledger (append-only cleanup). Restore the
-  -- 1003 NPC fight XP pack + Arc's extra rows so equal-wins tie-breaks by XP.
+  -- seed.sql NPC fight XP pack + Arc's extra rows so equal-wins tie-breaks by XP.
   if not exists (
     select 1 from public.progression_ledger where character_id = 'npc-bot-rivet'
   ) then

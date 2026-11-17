@@ -47,15 +47,7 @@ create unique index if not exists profiles_botore_id_uidx
     on public.profiles (botore_id)
     where botore_id is not null;
 
--- Backfill botore_id from owned character id when present (text ids, not raw uuid).
-update public.profiles p
-   set botore_id = 'botore-' || c.character_id
-  from public.characters c
- where p.botore_id is null
-   and c.account_id = p.account_id
-   and c.is_opponent = false;
-
--- Remaining profiles (no character yet): garage-<12 hex> — not UUID-shaped.
+-- Backfill missing botore_id as garage-<12 hex> (never embed character/account UUID).
 update public.profiles p
    set botore_id = 'garage-' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 12)
  where p.botore_id is null;
@@ -545,11 +537,11 @@ begin
                 v_created := false;
         end;
     else
-        -- Ensure profile botore_id exists for ranking payloads.
+        -- Ensure profile botore_id exists for ranking payloads (garage form only).
         update public.profiles
            set botore_id = coalesce(
                  botore_id,
-                 'botore-' || v_character_id
+                 'garage-' || substr(replace(gen_random_uuid()::text, '-', ''), 1, 12)
                ),
                emblem_id = coalesce(nullif(emblem_id, ''), 'emblem-default')
          where account_id = p_account_id;

@@ -26,23 +26,25 @@ pnpm exec supabase functions serve   # live /health + /combat-v1
 Postgres: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`  
 API gateway: `http://127.0.0.1:54321`
 
-`pnpm db:reset` applies `supabase/seed.sql` (parts catalogue + proof characters)
-and runs `scripts/seed-atlas-storage.mjs` via `infra/db-reset.sh`. Until both
-land, `backend_health_snapshot` / Edge `/health` stay **not ok** (HTTP **503**
-when Edge is served).
+`pnpm db:reset` applies `supabase/seed.sql` (parts catalogue + proof characters
+
+- E2 NPC ranking board density) and runs `scripts/seed-atlas-storage.mjs` via
+  `infra/db-reset.sh`. Until both land, `backend_health_snapshot` / Edge
+  `/health` stay **not ok** (HTTP **503** when Edge is served).
 
 ## Hosted Development bootstrap (`yrrytppmkykzhwelqmcs`)
 
 `[db.seed]` / `supabase/seed.sql` run on **local `db reset` only** — hosted
-`db push` does **not** seed the parts catalogue or proof accounts. Atlas
-payloads are never fabricated by SQL. After applying migrations on
-Development, Infra must run:
+`db push` does **not** seed the parts catalogue, proof accounts, or E2 NPC
+ranking fixtures. Atlas payloads are never fabricated by SQL. After applying
+migrations on Development, Infra must run:
 
 ```bash
 # 1) Migrations (no seed)
 pnpm exec supabase db push --project-ref yrrytppmkykzhwelqmcs
 
-# 2) Parts catalogue + proof characters / loadouts (same SQL as local seed)
+# 2) Parts catalogue + proof characters / loadouts + NPC ranking density
+#    (same SQL as local seed; NPC auth.users are password-less)
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/seed.sql
 
 # 3) Upload atlas/v1 placeholders + publish (Storage API)

@@ -83,12 +83,15 @@ Excludes `is_opponent` characters and soft-deleted accounts.
 Unchanged XP-only board for the current live Ranking adapter. Prefer the E2
 tab RPCs for new Bot / Botore UI work.
 
-## NPC seed (migration `1003`)
+## NPC seed (`supabase/seed.sql`)
 
 Idempotent seed of **12** NPC botores with **1–3** bots each (paint/weapon
 variation from the proof catalogue), flagged `is_npc`, plus synthetic
-confirmed battles and matching progression ledger rows. Applies on hosted
-`db push` (unlike local-only `seed.sql`).
+confirmed battles and matching progression ledger rows. Lives in
+`supabase/seed.sql` (local / CI via `[db.seed]` on `db reset`). Hosted
+`db push` does **not** apply it — Infra runs `seed.sql` manually after
+migrations (see `docs/backend/verify.md`). NPC `auth.users` rows use empty
+`encrypted_password` so email/password sign-in cannot act as those accounts.
 
 ## Verify
 
