@@ -25,7 +25,7 @@ import {
 } from '../src/audio';
 import { loadDevGoldenConfirmedResult } from '../src/replay';
 
-const packRoot = join(process.cwd(), 'assets/trial-audio-v001');
+const packRoot = join(process.cwd(), 'assets/trial-audio-v002');
 
 const sources: TrialAudioSources = {
   swing: 1,
@@ -48,21 +48,21 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-describe('F11 trial-audio-v001 pack seal', () => {
-  it('pins coherent trial-audio-v001 and lists the 8 trial clips', () => {
-    expect(ACTIVE_TRIAL_AUDIO_ASSET_VERSION).toBe('trial-audio-v001');
-    expect(TRIAL_AUDIO_MANIFEST.version).toBe('trial-audio-v001');
+describe('F11 trial-audio-v002 pack seal', () => {
+  it('pins coherent trial-audio-v002 and lists the 8 trial clips', () => {
+    expect(ACTIVE_TRIAL_AUDIO_ASSET_VERSION).toBe('trial-audio-v002');
+    expect(TRIAL_AUDIO_MANIFEST.version).toBe('trial-audio-v002');
     expect(TRIAL_AUDIO_CLIP_IDS).toHaveLength(8);
     for (const id of TRIAL_AUDIO_CLIP_IDS) {
       expect(TRIAL_AUDIO_MANIFEST.clips[id]).toBeTruthy();
-      expect(TRIAL_AUDIO_MANIFEST.clips[id].placeholder).toBe(true);
+      expect(TRIAL_AUDIO_MANIFEST.clips[id].placeholder).toBe(false);
     }
   });
 
   it('records provenance gate: no paid generation without product-owner go', () => {
-    expect(TRIAL_AUDIO_MANIFEST.paid_generation.used).toBe(false);
-    expect(TRIAL_AUDIO_MANIFEST.paid_generation.product_owner_go).toBe(false);
-    expect(TRIAL_AUDIO_MANIFEST.paid_generation.credit_cost).toBeNull();
+    expect(TRIAL_AUDIO_MANIFEST.paid_generation.used).toBe(true);
+    expect(TRIAL_AUDIO_MANIFEST.paid_generation.product_owner_go).toBe(true);
+    expect(TRIAL_AUDIO_MANIFEST.paid_generation.credit_cost).toBe(1192);
     expect(() => assertNoPaidGenerationWithoutGo()).not.toThrow();
     expect(existsSync(join(packRoot, 'PROVENANCE.md'))).toBe(true);
   });

@@ -1,6 +1,6 @@
-/** trial-audio-v001 manifest + sealed hashes (headless-safe). */
+/** trial-audio-v002 manifest + sealed hashes (headless-safe). */
 import { ACTIVE_TRIAL_AUDIO_ASSET_VERSION, type TrialAudioClipId } from './trialAudioPin';
-import manifestJson from '../../assets/trial-audio-v001/manifest.json';
+import manifestJson from '../../assets/trial-audio-v002/manifest.json';
 
 export interface TrialAudioClipSpec {
   readonly file: string;
@@ -39,17 +39,17 @@ if (TRIAL_AUDIO_MANIFEST.version !== ACTIVE_TRIAL_AUDIO_ASSET_VERSION) {
   );
 }
 
-/** Sealed runtime subset from trial-audio-v001 SHA256SUMS. */
+/** Sealed runtime subset from trial-audio-v002 SHA256SUMS. */
 export const TRIAL_AUDIO_SEALED_SHA256 = {
-  'manifest.json': '7760ed122b812d181b0f94c260576ae5b28d310d9f5cd6e23523ca87430d00b0',
-  'clips/swing.m4a': '6cd3305ed9b1b0a11d58126b031d5993162f9b5542131013efcfa48c7162a8c5',
-  'clips/hit.m4a': '6cd3305ed9b1b0a11d58126b031d5993162f9b5542131013efcfa48c7162a8c5',
-  'clips/dodge.m4a': '6cd3305ed9b1b0a11d58126b031d5993162f9b5542131013efcfa48c7162a8c5',
-  'clips/defeat.m4a': '6cd3305ed9b1b0a11d58126b031d5993162f9b5542131013efcfa48c7162a8c5',
-  'clips/hush.m4a': '6cd3305ed9b1b0a11d58126b031d5993162f9b5542131013efcfa48c7162a8c5',
-  'clips/ui-tap.m4a': '6cd3305ed9b1b0a11d58126b031d5993162f9b5542131013efcfa48c7162a8c5',
-  'clips/win.m4a': '6cd3305ed9b1b0a11d58126b031d5993162f9b5542131013efcfa48c7162a8c5',
-  'clips/music-loop.m4a': '6cd3305ed9b1b0a11d58126b031d5993162f9b5542131013efcfa48c7162a8c5',
+  'manifest.json': 'fc911b8c30089212348b0d7335dbdf2e57d232e6e061ffebac19ddb8015c2815',
+  'clips/swing.m4a': '7d2c305c6669eec85289ccd625dbbfcf208b9bc9be3ee98abe11963ad1b3f2de',
+  'clips/hit.m4a': 'e74a2f379af782e558a52cf7f6d80b5af48adc1ad2c3dc259469cfcfe7ed3314',
+  'clips/dodge.m4a': 'afb0e5de45ebc70c1c1380f6bd59511c66fc05c2f129fdddbc501a2d9efc0429',
+  'clips/defeat.m4a': '479ac3a4822403401baed02819441a590249525bce21893076928d6629eb1cb1',
+  'clips/hush.m4a': '6035a5887decacf916ce52996d75c62f538b44d28c5516ed7f3154f054ae131e',
+  'clips/ui-tap.m4a': '1ef47b9966fab0c900e16ad9de52017530f7cbf5951129a35419cd0d46db223b',
+  'clips/win.m4a': 'c29c87d98f31069bb7eb89715bc990cf9861049c854c091fe769ad44ab220947',
+  'clips/music-loop.m4a': 'eed28d558b8f7a1bd85b8f3e14650ddc50af87b376bd2a4dc3f453563d4134ff',
 } as const;
 
 export function trialAudioClipVolume(id: TrialAudioClipId): number {

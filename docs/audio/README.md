@@ -27,10 +27,12 @@ ships a **separate versioned trial audio pack** for CanonicalReplayPlayer:
 
 | Pack                        | Path                                 | Pin                                                          |
 | --------------------------- | ------------------------------------ | ------------------------------------------------------------ |
-| Trial base (7 SFX + 1 loop) | `apps/game/assets/trial-audio-v001/` | `ACTIVE_TRIAL_AUDIO_ASSET_VERSION` in `apps/game/src/audio/` |
+| Trial base (7 SFX + 1 loop) | `apps/game/assets/trial-audio-v002/` (v001 sealed, untouched) | `ACTIVE_TRIAL_AUDIO_ASSET_VERSION` in `apps/game/src/audio/` |
 
-Placeholders are silent AAC stubs with provenance in `PROVENANCE.md`. Mood is
-provisional. Missing/failed clips never block or desync playback.
+`trial-audio-v002` is real ElevenLabs AAC (Carlos go recorded in pack provenance).
+Missing/failed clips never block or desync playback. Equipped weapon/chassis
+part clips and arena ambient are Metro-bundled for the fight path; atlas Storage
+remains the download path for catalogue packs.
 
 Saved fights reference an **immutable asset version** so replays keep original
 sounds. Do not invent a Storage layout beyond this; the first real manifest

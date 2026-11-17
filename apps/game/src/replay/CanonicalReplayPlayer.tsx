@@ -203,6 +203,9 @@ export const CanonicalReplayPlayer = forwardRef<
     effectsEnabled,
     playing: playbackUi.playing,
     enabled: media.assetsAvailable,
+    attackerId: nearFighter.characterId,
+    defenderId: farFighter.characterId,
+    builds: result.builds,
   });
 
   const emitPlayback = useCallback(
