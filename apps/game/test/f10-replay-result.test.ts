@@ -257,9 +257,40 @@ describe('confirmed result integrity + server mapping', () => {
     expect(confirmed.label).toBe('CONFIRMED');
     expect(confirmed.xpAwarded).toBe(2);
     expect(confirmed.allowancesRemaining).toBe(1);
+    // Win with XP but no server record signal → no NEW RECORD stamp/cue.
+    expect(confirmed.newRecord).toBeNull();
     expect(confirmed.builds.attacker.paint).toBe(base.builds.attacker.paint);
     const media = resolvePlaybackMedia(confirmed);
     expect(media.usesStoredVersions).toBe(true);
+  });
+
+  it('maps explicit server newRecord without inventing it from XP', () => {
+    const base = loadDevGoldenConfirmedResult(0);
+    const withRecord = {
+      battleId: base.replay.battleId,
+      status: 'completed',
+      rulesVersion: base.replay.rulesVersion,
+      seed: base.replay.seed,
+      outcome: {
+        winner: base.replay.outcome.winner,
+        reason: base.replay.outcome.reason,
+      },
+      replay: base.replay,
+      replayChecksum: base.replay.checksum,
+      xpAwarded: 2,
+      newRecord: true,
+      loadoutVersionIds: {
+        attacker: '22222222-2222-4222-8222-222222222222',
+        defender: '33333333-3333-4333-8333-333333333333',
+      },
+      atlasVersions: { attacker: 'v1', defender: 'v1' },
+      allowancesRemaining: 1,
+      utcDay: '2026-11-08',
+      persistence: 'persisted',
+      repeated: false,
+      service: 'combat-v1',
+    } as unknown as FightComputeResponse;
+    expect(confirmedResultFromFightResponse(withRecord, base.builds).newRecord).toBe(true);
   });
 
   it('rejects tampered checksum before confirmation', () => {

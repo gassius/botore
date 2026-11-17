@@ -60,6 +60,7 @@ export {
   XP_TICK_VOLUME_SCALE_MIN,
   createXpTickGate,
   isAttackerWin,
+  readServerNewRecordSignal,
   resolveUiCuePlay,
   shouldPlayEquipCue,
   shouldPlayNewRecordCue,

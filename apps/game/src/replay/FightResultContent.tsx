@@ -45,17 +45,10 @@ export function FightResultContent({
     confirmed.outcome.reason === 'defeat'
       ? confirmed.outcome.winner
       : confirmed.outcome.winnerByTiebreak;
-  const attackerId = confirmed.replay.fighters[0]?.characterId ?? '';
   const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const showNewRecord = useMemo(
-    () =>
-      shouldShowNewRecordStamp({
-        outcome: confirmed.outcome,
-        attackerId,
-        serverConfirmed: confirmed.serverConfirmed,
-        xpAwarded: confirmed.xpAwarded,
-      }),
-    [attackerId, confirmed.outcome, confirmed.serverConfirmed, confirmed.xpAwarded],
+    () => shouldShowNewRecordStamp({ serverNewRecord: confirmed.newRecord }),
+    [confirmed.newRecord],
   );
   const xpTarget = confirmed.serverConfirmed ? Math.max(0, confirmed.xpAwarded ?? 0) : 0;
   const [stampVisible, setStampVisible] = useState(false);
@@ -132,11 +125,13 @@ export function FightResultContent({
         testID={`${testID}-outcome`}
       />
 
-      {stampVisible ? (
-        <Text style={styles.newRecord} testID={`${testID}-new-record`} allowFontScaling>
-          NEW RECORD
-        </Text>
-      ) : null}
+      <View style={styles.stampSlot} testID={`${testID}-new-record-slot`}>
+        {stampVisible ? (
+          <Text style={styles.newRecord} testID={`${testID}-new-record`} allowFontScaling>
+            NEW RECORD
+          </Text>
+        ) : null}
+      </View>
 
       <GaragePanel style={styles.panel} testID={`${testID}-progression`}>
         <Text style={styles.panelTitle} allowFontScaling>
@@ -222,6 +217,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 12,
     letterSpacing: 0.4,
+  },
+  stampSlot: {
+    minHeight: 28,
+    justifyContent: 'center',
   },
   newRecord: {
     color: garageTag.oxide,

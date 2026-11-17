@@ -9,6 +9,7 @@ import {
   createXpTickGate,
   resolveUiCuePlay,
   isAttackerWin,
+  readServerNewRecordSignal,
   shouldPlayEquipCue,
   shouldPlayNewRecordCue,
   shouldPlaySelectCue,
@@ -83,37 +84,21 @@ describe('C14 UI cue helpers for D2/D3', () => {
     expect(shouldPlaySelectCue(false)).toBe(false);
   });
 
-  it('shows NEW RECORD stamp for attacker wins (server needs XP)', () => {
+  it('shows NEW RECORD stamp only on explicit server record signal', () => {
     const win = {
       winner: 'hero',
       loser: 'foe',
       reason: 'defeat' as const,
     };
     expect(isAttackerWin(win, 'hero')).toBe(true);
-    expect(
-      shouldShowNewRecordStamp({
-        outcome: win,
-        attackerId: 'hero',
-        serverConfirmed: true,
-        xpAwarded: 2,
-      }),
-    ).toBe(true);
-    expect(
-      shouldShowNewRecordStamp({
-        outcome: win,
-        attackerId: 'hero',
-        serverConfirmed: true,
-        xpAwarded: 0,
-      }),
-    ).toBe(false);
-    expect(
-      shouldShowNewRecordStamp({
-        outcome: win,
-        attackerId: 'hero',
-        serverConfirmed: false,
-        xpAwarded: null,
-      }),
-    ).toBe(true);
+    // Win with XP but no record → no stamp, no cue.
+    expect(shouldShowNewRecordStamp({ serverNewRecord: null })).toBe(false);
+    expect(shouldShowNewRecordStamp({ serverNewRecord: false })).toBe(false);
+    expect(shouldShowNewRecordStamp({ serverNewRecord: undefined })).toBe(false);
+    expect(shouldShowNewRecordStamp({ serverNewRecord: true })).toBe(true);
+    expect(readServerNewRecordSignal({ xpAwarded: 2, outcome: win })).toBe(null);
+    expect(readServerNewRecordSignal({ xpAwarded: 2, newRecord: true })).toBe(true);
+    expect(readServerNewRecordSignal({ isNewRecord: false })).toBe(false);
   });
 
   it('playCue applies xpTickVariation rate/volume when unmuted', async () => {

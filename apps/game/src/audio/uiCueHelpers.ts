@@ -94,18 +94,25 @@ export function isAttackerWin(outcome: BattleOutcome, attackerId: string): boole
 }
 
 /**
- * NEW RECORD stamp: attacker win with positive XP (server) or any attacker win
- * on DEV fixtures so the cue is hearable without inventing XP numbers.
+ * NEW RECORD stamp + cue only when the server explicitly reports a record.
+ * Win + XP alone is not a record. Missing/unknown → no stamp, no cue.
  */
 export function shouldShowNewRecordStamp(input: {
-  readonly outcome: BattleOutcome;
-  readonly attackerId: string;
-  readonly serverConfirmed: boolean;
-  readonly xpAwarded: number | null;
+  readonly serverNewRecord: boolean | null | undefined;
 }): boolean {
-  if (!isAttackerWin(input.outcome, input.attackerId)) return false;
-  if (!input.serverConfirmed) return true;
-  return (input.xpAwarded ?? 0) > 0;
+  return input.serverNewRecord === true;
+}
+
+/**
+ * Read an optional forward-compat `newRecord` / `isNewRecord` boolean from a
+ * fight payload. Absent or non-boolean → null (do not invent a record).
+ */
+export function readServerNewRecordSignal(payload: unknown): boolean | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const rec = payload as Record<string, unknown>;
+  if (typeof rec['newRecord'] === 'boolean') return rec['newRecord'];
+  if (typeof rec['isNewRecord'] === 'boolean') return rec['isNewRecord'];
+  return null;
 }
 
 /** Part / weapon card selection SFX. */

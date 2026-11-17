@@ -33,7 +33,8 @@ ships a **separate versioned trial audio pack** for CanonicalReplayPlayer:
 Result/Customise UI cues (`newRecord`, `xpTick`, `equip`, `select`) via
 `TrialAudioSession.playCue` (optional rate/volumeScale for XP ticks). Customise
 plays `select` on card tap and `equip` after a successful save; Result plays
-`newRecord` when the NEW RECORD stamp lands and gated `xpTick` on the XP bar.
+`newRecord` only when the server sets an explicit NEW RECORD signal (win/XP
+alone is not enough) and gated `xpTick` on the XP bar.
 Missing/failed clips never block or desync playback. Equipped weapon/chassis
 part clips and arena ambient are Metro-bundled for the fight path; atlas Storage
 remains the download path for catalogue packs.
