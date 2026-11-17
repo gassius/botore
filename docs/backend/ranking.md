@@ -8,14 +8,14 @@ Player-facing payloads never include account UUIDs.
 
 ## Schema (migration `0029`)
 
-| Column / object | Purpose |
-| --- | --- |
-| `accounts.is_npc` | NPC botore flag (seeded ranking density) |
-| `profiles.botore_id` | Stable text botore id (unique when set) |
-| `profiles.emblem_id` | Emblem asset/key for botore rows |
-| `characters.owner_is_npc` | Allows 1–3 bots per NPC botore |
-| `bot_fight_records` | Per-bot wins/losses view |
-| `admin_bot_ranking` / `admin_botore_ranking` | Dashboard reuse (`service_role`) |
+| Column / object                              | Purpose                                  |
+| -------------------------------------------- | ---------------------------------------- |
+| `accounts.is_npc`                            | NPC botore flag (seeded ranking density) |
+| `profiles.botore_id`                         | Stable text botore id (unique when set)  |
+| `profiles.emblem_id`                         | Emblem asset/key for botore rows         |
+| `characters.owner_is_npc`                    | Allows 1–3 bots per NPC botore           |
+| `bot_fight_records`                          | Per-bot wins/losses view                 |
+| `admin_bot_ranking` / `admin_botore_ranking` | Dashboard reuse (`service_role`)         |
 
 Humans still have at most one player character
 (`one_character_per_human_player`). NPC accounts may own multiple.

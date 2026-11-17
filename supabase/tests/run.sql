@@ -2962,6 +2962,56 @@ begin
     'rivet has derived wins from confirmed fights'
   );
 
+  -- Early suite truncates progression_ledger (append-only cleanup). Restore the
+  -- 1003 NPC fight XP pack + Arc's extra rows so equal-wins tie-breaks by XP.
+  if not exists (
+    select 1 from public.progression_ledger where character_id = 'npc-bot-rivet'
+  ) then
+    insert into public.progression_ledger (
+      account_id, character_id, battle_id, delta_xp, reason
+    )
+    select
+        c.account_id,
+        bp.character_id,
+        bp.battle_id,
+        case when b.winner_id = bp.character_id then 2 else 1 end,
+        'battle'
+      from public.battle_participants bp
+      join public.battles b on b.battle_id = bp.battle_id
+      join public.characters c on c.character_id = bp.character_id
+     where b.battle_id >= 'a0000000-0000-4000-8000-000000000001'
+       and b.battle_id <= 'a0000000-0000-4000-8000-000000000014'
+       and b.winner_id is not null
+       and c.account_id is not null
+       and c.owner_is_npc;
+  end if;
+  if not exists (
+    select 1
+      from public.progression_ledger
+     where character_id = 'npc-bot-arc'
+       and battle_id is null
+       and delta_xp = 2
+  ) then
+    insert into public.progression_ledger (
+      account_id, character_id, battle_id, delta_xp, reason
+    ) values
+      ('00000000-0000-4000-8000-000000001104', 'npc-bot-arc', null, 2, 'battle'),
+      ('00000000-0000-4000-8000-000000001104', 'npc-bot-arc', null, 2, 'battle');
+  end if;
+  perform tests.assert(
+    (
+      select coalesce(sum(delta_xp), 0)
+        from public.progression_ledger
+       where character_id = 'npc-bot-arc'
+    ) >
+    (
+      select coalesce(sum(delta_xp), 0)
+        from public.progression_ledger
+       where character_id = 'npc-bot-patina'
+    ),
+    'restored arc XP above patina for tie-break'
+  );
+
   -- Admin views are service_role only
   perform tests.assert(
     has_table_privilege('service_role', 'public.admin_bot_ranking', 'SELECT'),
