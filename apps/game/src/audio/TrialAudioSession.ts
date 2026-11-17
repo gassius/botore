@@ -14,7 +14,7 @@ import { shouldStartMusicLoop, shouldStopMusicLoop } from './cueFromCommand';
 import type { AudioSource, LoopHandle, OneShotHandle, TrialAudioBackend } from './audioBackend';
 import { createNoopAudioBackend } from './audioBackend';
 import { trialAudioClipVolume } from './trialAudioManifest';
-import type { TrialAudioClipId } from './trialAudioPin';
+import type { TrialAudioClipId, TrialAudioUiCueId } from './trialAudioPin';
 import {
   ARENA_AMBIENT_VOLUME,
   resolveOneShotCue,
@@ -49,6 +49,8 @@ export type TrialAudioSessionOptions = {
 export type TrialAudioSession = {
   notifyCommand: (cmd: AnimationCommand) => void;
   playUiTap: () => void;
+  /** Result overlay / Customise one-shots (new record, XP tick, equip, card select). Fire-and-forget. */
+  playCue: (id: TrialAudioUiCueId) => void;
   setMuted: (muted: boolean) => void;
   setMusicEnabled: (enabled: boolean) => void;
   setEffectsEnabled: (enabled: boolean) => void;
@@ -357,6 +359,9 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     },
     playUiTap: () => {
       playClip('uiTap');
+    },
+    playCue: (id) => {
+      playClip(id);
     },
     setMuted: (next) => {
       muted = Boolean(next);

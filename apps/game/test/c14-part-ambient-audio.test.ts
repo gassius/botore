@@ -25,6 +25,10 @@ const sources: TrialAudioSources = {
   uiTap: 6,
   win: 7,
   musicLoop: 8,
+  newRecord: 9,
+  xpTick: 10,
+  equip: 11,
+  select: 12,
 };
 
 function deferred<T>() {

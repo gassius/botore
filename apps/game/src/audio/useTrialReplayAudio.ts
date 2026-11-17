@@ -13,10 +13,12 @@ import {
   TRIAL_PART_AUDIO_METRO_SOURCES,
 } from './trialPartAudioMetroAssets';
 import { profilesFromFightBuilds } from './partAudioResolve';
+import type { TrialAudioUiCueId } from './trialAudioPin';
 
 export type TrialReplayAudioApi = {
   onCommand: (cmd: AnimationCommand) => void;
   playUiTap: () => void;
+  playCue: (id: TrialAudioUiCueId) => void;
   reset: () => void;
 };
 
@@ -113,6 +115,14 @@ export function useTrialReplayAudio(opts: {
     }
   }, []);
 
+  const playCue = useCallback((id: TrialAudioUiCueId) => {
+    try {
+      sessionRef.current?.playCue(id);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const reset = useCallback(() => {
     try {
       sessionRef.current?.reset();
@@ -121,5 +131,5 @@ export function useTrialReplayAudio(opts: {
     }
   }, []);
 
-  return { onCommand, playUiTap, reset };
+  return { onCommand, playUiTap, playCue, reset };
 }

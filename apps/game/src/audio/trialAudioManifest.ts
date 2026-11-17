@@ -1,6 +1,6 @@
-/** trial-audio-v002 manifest + sealed hashes (headless-safe). */
+/** trial-audio-v003 manifest + sealed hashes (headless-safe). */
 import { ACTIVE_TRIAL_AUDIO_ASSET_VERSION, type TrialAudioClipId } from './trialAudioPin';
-import manifestJson from '../../assets/trial-audio-v002/manifest.json';
+import manifestJson from '../../assets/trial-audio-v003/manifest.json';
 
 export interface TrialAudioClipSpec {
   readonly file: string;
@@ -39,9 +39,9 @@ if (TRIAL_AUDIO_MANIFEST.version !== ACTIVE_TRIAL_AUDIO_ASSET_VERSION) {
   );
 }
 
-/** Sealed runtime subset from trial-audio-v002 SHA256SUMS. */
+/** Sealed runtime subset from trial-audio-v003 SHA256SUMS. */
 export const TRIAL_AUDIO_SEALED_SHA256 = {
-  'manifest.json': 'fc911b8c30089212348b0d7335dbdf2e57d232e6e061ffebac19ddb8015c2815',
+  'manifest.json': '01de2413c9d0fd7ac868f1cbdd57f62f8f6cd1d5f83ca95b291b21b55bb2bef0',
   'clips/swing.m4a': '7d2c305c6669eec85289ccd625dbbfcf208b9bc9be3ee98abe11963ad1b3f2de',
   'clips/hit.m4a': 'e74a2f379af782e558a52cf7f6d80b5af48adc1ad2c3dc259469cfcfe7ed3314',
   'clips/dodge.m4a': 'afb0e5de45ebc70c1c1380f6bd59511c66fc05c2f129fdddbc501a2d9efc0429',
@@ -50,6 +50,10 @@ export const TRIAL_AUDIO_SEALED_SHA256 = {
   'clips/ui-tap.m4a': '1ef47b9966fab0c900e16ad9de52017530f7cbf5951129a35419cd0d46db223b',
   'clips/win.m4a': 'c29c87d98f31069bb7eb89715bc990cf9861049c854c091fe769ad44ab220947',
   'clips/music-loop.m4a': 'eed28d558b8f7a1bd85b8f3e14650ddc50af87b376bd2a4dc3f453563d4134ff',
+  'clips/new-record.m4a': '9def452c5be4a8f20d21d04bc781a2a44224c71e28944b3144cc93b90bc67417',
+  'clips/xp-tick.m4a': 'a1900f7f24b0057c44311370bab329a374d634059fcf14e1bdd9e1667f435634',
+  'clips/equip.m4a': 'c30f16736c6af67427ed6df4efe8d8f05e718540fc1c12a9a702e8794bc54a99',
+  'clips/select.m4a': 'b02be1576dee9ba37d07b88bb06cd2bb879e0ce6fefc35f15331e7ae24752671',
 } as const;
 
 export function trialAudioClipVolume(id: TrialAudioClipId): number {

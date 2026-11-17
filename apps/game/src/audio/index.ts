@@ -2,8 +2,10 @@
 export {
   ACTIVE_TRIAL_AUDIO_ASSET_VERSION,
   TRIAL_AUDIO_CLIP_IDS,
+  TRIAL_AUDIO_UI_CUE_IDS,
   type ActiveTrialAudioAssetVersion,
   type TrialAudioClipId,
+  type TrialAudioUiCueId,
 } from './trialAudioPin';
 export {
   TRIAL_AUDIO_MANIFEST,
@@ -49,3 +51,19 @@ export {
   type ExpoAvBackendOptions,
   type ExpoAvModule,
 } from './expoAvBackend';
+export {
+  XP_TICK_MIN_INTERVAL_MS,
+  XP_TICK_RATE_MAX,
+  XP_TICK_RATE_MIN,
+  XP_TICK_VOLUME_SCALE_MAX,
+  XP_TICK_VOLUME_SCALE_MIN,
+  createXpTickGate,
+  resolveUiCuePlay,
+  shouldPlayEquipCue,
+  shouldPlayNewRecordCue,
+  shouldPlaySelectCue,
+  xpTickVariation,
+  type UiCuePlayRequest,
+  type XpTickGate,
+  type XpTickVariation,
+} from './uiCueHelpers';

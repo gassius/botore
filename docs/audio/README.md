@@ -25,14 +25,15 @@ manifest** as part art.
 Until atlas base-pack download is wired on the F10 replay path, the client also
 ships a **separate versioned trial audio pack** for CanonicalReplayPlayer:
 
-| Pack                        | Path                                                          | Pin                                                          |
-| --------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------ |
-| Trial base (7 SFX + 1 loop) | `apps/game/assets/trial-audio-v002/` (v001 sealed, untouched) | `ACTIVE_TRIAL_AUDIO_ASSET_VERSION` in `apps/game/src/audio/` |
+| Pack                  | Path                                                                     | Pin                                                          |
+| --------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| Trial base (12 clips) | `apps/game/assets/trial-audio-v003/` (v001 sealed; v002 kept as history) | `ACTIVE_TRIAL_AUDIO_ASSET_VERSION` in `apps/game/src/audio/` |
 
-`trial-audio-v002` is real ElevenLabs AAC (Carlos go recorded in pack provenance).
-Missing/failed clips never block or desync playback. Equipped weapon/chassis
-part clips and arena ambient are Metro-bundled for the fight path; atlas Storage
-remains the download path for catalogue packs.
+`trial-audio-v003` is real ElevenLabs AAC (Carlos go; supersedes v002 pin) with
+Result/Customise UI cues (`newRecord`, `xpTick`, `equip`, `select`) via
+`TrialAudioSession.playCue`. Missing/failed clips never block or desync
+playback. Equipped weapon/chassis part clips and arena ambient are Metro-bundled
+for the fight path; atlas Storage remains the download path for catalogue packs.
 
 Saved fights reference an **immutable asset version** so replays keep original
 sounds. Do not invent a Storage layout beyond this; the first real manifest
