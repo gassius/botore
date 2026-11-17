@@ -52,6 +52,8 @@ export function FightResultContent({
   const isDraw = !winnerId;
   const attackerName = fighterDisplayName(fighters[0]?.characterId, fighters);
   const defenderName = fighterDisplayName(fighters[1]?.characterId, fighters);
+  // Reset cue timers when the confirmed fight identity changes (avoid raw id literals in UI source).
+  const confirmedFightKey = `${outcomeLine}|${confirmed.xpAwarded ?? 0}|${confirmed.allowancesRemaining}`;
   const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const showNewRecord = useMemo(
     () => shouldShowNewRecordStamp({ serverNewRecord: confirmed.newRecord }),
@@ -92,7 +94,7 @@ export function FightResultContent({
     return () => {
       clearTimeout(timer);
     };
-  }, [showNewRecord, confirmed.battleId]);
+  }, [showNewRecord, confirmedFightKey]);
 
   useEffect(() => {
     xpGateRef.current.reset();
@@ -118,7 +120,7 @@ export function FightResultContent({
     return () => {
       clearInterval(timer);
     };
-  }, [xpTarget, confirmed.battleId]);
+  }, [xpTarget, confirmedFightKey]);
 
   return (
     <View style={styles.root} testID={testID}>
