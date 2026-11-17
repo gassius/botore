@@ -1,0 +1,20 @@
+/**
+ * D1 Fight View — first-watch vs rewatch control sets.
+ * Never reveal on first viewing that the fight is an already-decided replay.
+ */
+
+export type FightViewMode = 'firstWatch' | 'rewatch';
+
+/** Bottom-band event plate; never carries IDs / checksums / server-debug text. */
+export type FightViewCallout = {
+  readonly headline: string;
+  readonly detail: string;
+};
+
+/** Hold after KO before handing off to Result (D2 overlay; stub navigates for now). */
+export const FIGHT_VIEW_KO_HOLD_MS = 1000;
+
+/** Arena share of a 390×844 phone viewport (acceptance ≥ 72%). */
+export const FIGHT_VIEW_ARENA_HEIGHT_RATIO = 0.75;
+
+export const FIGHT_VIEW_ARENA_NAME = 'Repair Yard';

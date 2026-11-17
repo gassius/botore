@@ -6,6 +6,7 @@ import {
   readDesignCaptureSessionFailure,
 } from '../design-capture';
 import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
+import type { FightViewMode } from '../fight-view';
 import { usePlayerSettings } from '../settings';
 import { nextRoute, prevRoute, type FirstRunRoute } from './routes';
 
@@ -46,6 +47,12 @@ export type FirstRunContextValue = {
    */
   sessionFailureCapture: DesignCaptureSessionFailure | null;
   setSessionFailureCapture: (failure: DesignCaptureSessionFailure | null) => void;
+  /**
+   * D1 Fight View mode — firstWatch hides transport/back; rewatch shows back + Replay only.
+   * Set by ConfirmFight (firstWatch) / Result Watch again (rewatch).
+   */
+  fightViewMode: FightViewMode;
+  setFightViewMode: (mode: FightViewMode) => void;
 };
 
 /** Exported so design-capture session-failure can read live overrides without a hard throw. */
@@ -74,6 +81,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
     useState<DesignCaptureSessionFailure | null>(
       () => pending.sessionFailure ?? readDesignCaptureSessionFailure(),
     );
+  const [fightViewMode, setFightViewMode] = useState<FightViewMode>('firstWatch');
 
   const value = useMemo<FirstRunContextValue>(
     () => ({
@@ -87,6 +95,15 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
         // Settings is side-entry — Back always returns to Stable chrome.
         if (route === 'Settings') {
           setRoute('Stable');
+          return;
+        }
+        // First watch: hardware / chrome back must not leave the fight.
+        if (route === 'Replay' && fightViewMode === 'firstWatch') {
+          return;
+        }
+        // Rewatch back returns to Result, not ConfirmFight.
+        if (route === 'Replay' && fightViewMode === 'rewatch') {
+          setRoute('FightResult');
           return;
         }
         const p = prevRoute(route);
@@ -114,9 +131,12 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       setRankingCaptureScenario,
       sessionFailureCapture,
       setSessionFailureCapture,
+      fightViewMode,
+      setFightViewMode,
     }),
     [
       route,
+      fightViewMode,
       settings.muted,
       settings.setMuted,
       settings.toggleMute,

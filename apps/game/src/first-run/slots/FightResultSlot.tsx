@@ -17,7 +17,8 @@ import { useFirstRun } from '../FirstRunContext';
  * C17: no Domain/F10/combat-v1 debug chrome on the player-facing Result route.
  */
 export function FightResultSlot(): React.ReactElement {
-  const { goTo, goNext, goBack, muted, musicEnabled, effectsEnabled } = useFirstRun();
+  const { goTo, goNext, goBack, muted, musicEnabled, effectsEnabled, setFightViewMode } =
+    useFirstRun();
   const { lastFight } = useFightSession();
 
   const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
@@ -58,7 +59,10 @@ export function FightResultSlot(): React.ReactElement {
           />
           <SecondaryButton
             label="Watch again"
-            onPress={() => goTo('Replay')}
+            onPress={() => {
+              setFightViewMode('rewatch');
+              goTo('Replay');
+            }}
             testID="result-watch"
           />
           <SecondaryButton label="Ranking" onPress={goNext} testID="result-ranking" />

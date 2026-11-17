@@ -21,7 +21,7 @@ export const ROUTE_TITLES: Record<FirstRunRoute, string> = {
   Customise: 'Customise',
   Opponents: 'Opponents',
   ConfirmFight: 'Confirm Fight',
-  Replay: 'Fight Replay',
+  Replay: 'Fight View',
   FightResult: 'Fight Result',
   Ranking: 'Ranking',
   Settings: 'Settings',

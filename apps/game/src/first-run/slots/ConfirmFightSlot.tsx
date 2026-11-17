@@ -4,11 +4,13 @@ import { useFirstRun } from '../FirstRunContext';
 
 /** Route slot: ConfirmFight — F9 owns cost + start request via combat-v1. */
 export function ConfirmFightSlot(): React.ReactElement {
-  const { goBack, goNext } = useFirstRun();
+  const { goBack, goNext, setFightViewMode } = useFirstRun();
   return (
     <ConfirmFightScreen
       onBack={goBack}
       onFightStarted={() => {
+        // Fresh fight → immersive first watch (no back / transport / Continue).
+        setFightViewMode('firstWatch');
         goNext();
       }}
     />
