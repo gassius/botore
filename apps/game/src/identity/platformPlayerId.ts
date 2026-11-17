@@ -1,15 +1,21 @@
 /**
- * C16 — Platform player IDs must never appear in player-facing UI.
+ * C16 / C17 — Platform player IDs and raw internal bot ids must never appear
+ * in player-facing UI.
  *
- * Game Center `teamPlayerID`, Play Games `player_id`, device-fallback ids, and
- * synthetic `*@players.botore.internal` emails stay on the auth / Edge path.
- * Product surfaces (stable, ranking, settings, fight, replay) show display
- * names or botore character ids only.
+ * Game Center `teamPlayerID`, Play Games `player_id`, device-fallback ids,
+ * synthetic `*@players.botore.internal` emails, UUIDs (incl. nil / embedded),
+ * long hex runs, checksums, and seeded character ids (`player-hero`, `opp-*`)
+ * stay off nameplates. Product surfaces show human display names only
+ * (fallback {@link PLAYER_FACING_NAME_FALLBACK}).
  */
 
 export const PLAYER_FACING_NAME_FALLBACK = 'Pilot';
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/** Any UUID shape, including nil (`00000000-…`) — not RFC version-gated. */
+const UUID_ANYWHERE_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+/** Opaque hex id run (checksum / botore-player-<hex> fragments). */
+const LONG_HEX_RUN_RE = /[0-9a-f]{24,}/i;
 
 /**
  * True when `value` looks like a platform / synthetic auth identifier that
@@ -28,8 +34,8 @@ export function looksLikePlatformPlayerId(value: string): boolean {
 
   // Game Center legacy player id / teamPlayerID shapes.
   if (/^G:\d+$/i.test(v)) return true;
-  // Opaque teamPlayerID is commonly a UUID.
-  if (UUID_RE.test(v)) return true;
+  // Opaque teamPlayerID / embedded UUID (incl. nil).
+  if (UUID_ANYWHERE_RE.test(v)) return true;
 
   // Play Games `player_id`: long numeric, or common `g` + digits form.
   if (/^\d{10,}$/.test(v)) return true;
@@ -47,16 +53,49 @@ export function looksLikePlatformPlayerId(value: string): boolean {
 }
 
 /**
- * Resolve a player-facing label. Platform ids and empty values become the
- * fallback (default {@link PLAYER_FACING_NAME_FALLBACK}).
+ * True when `value` is a raw botore / catalogue / checksum id that must never
+ * render as a player-facing name (C17).
+ */
+export function looksLikeInternalCharacterId(value: string): boolean {
+  const v = value.trim();
+  if (!v) return false;
+  if (looksLikePlatformPlayerId(v)) return true;
+
+  // Seeded proof / opponent character ids.
+  if (/^player-hero$/i.test(v)) return true;
+  if (/^(player|opp|bot)-[a-z0-9-]+$/i.test(v)) return true;
+
+  // Catalogue part ids accidentally bound as labels.
+  if (/^(paint|weapon|chassis|shield|drone)-[a-z0-9-]+$/i.test(v)) return true;
+
+  // Checksum / opaque hex runs (whole label or embedded, 24+ hex).
+  if (LONG_HEX_RUN_RE.test(v)) return true;
+
+  return false;
+}
+
+/**
+ * Resolve a player-facing label. Platform ids, raw character ids, empty values,
+ * and forbidden fallbacks become {@link PLAYER_FACING_NAME_FALLBACK}.
  */
 export function playerFacingDisplayName(
   raw: string | null | undefined,
   fallback: string = PLAYER_FACING_NAME_FALLBACK,
 ): string {
-  if (raw == null) return fallback;
+  if (raw == null) {
+    return sanitizeFallback(fallback);
+  }
   const trimmed = raw.trim();
-  if (!trimmed) return fallback;
-  if (looksLikePlatformPlayerId(trimmed)) return fallback;
+  if (!trimmed || looksLikeInternalCharacterId(trimmed)) {
+    return sanitizeFallback(fallback);
+  }
   return trimmed;
+}
+
+function sanitizeFallback(fallback: string): string {
+  const fb = fallback.trim();
+  if (!fb || looksLikeInternalCharacterId(fb)) {
+    return PLAYER_FACING_NAME_FALLBACK;
+  }
+  return fb;
 }

@@ -35,7 +35,7 @@ export const ReplaySlotScreen: React.FC<ReplaySlotScreenProps> = ({
       <View style={styles.root} testID="replay-slot-screen-blocked">
         <StatusErrorBanner
           title="Server fight required"
-          detail="No sealed combat-v1 replay is available. Playable builds do not load DEV golden fixtures."
+          detail="No sealed fight replay is available. Playable builds do not load sample fixtures."
           testID="replay-slot-misconfigured"
         />
       </View>
@@ -56,7 +56,7 @@ export const ReplaySlotScreen: React.FC<ReplaySlotScreenProps> = ({
       />
       {finished ? (
         <Text style={styles.done} testID="replay-slot-finished">
-          Playback finished · same checksum on repeat
+          Playback finished
         </Text>
       ) : null}
     </View>

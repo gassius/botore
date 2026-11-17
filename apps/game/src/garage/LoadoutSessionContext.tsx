@@ -141,10 +141,8 @@ export function GarageSessionProvider(props: {
           accountId: current.userId,
           characterId: owned.character.characterId,
           // C16: never hold platform player ids in garage UI state.
-          displayName: playerFacingDisplayName(
-            owned.character.displayName,
-            owned.character.characterId,
-          ),
+          // C17: never fall back to character UUID / player-hero as a label.
+          displayName: playerFacingDisplayName(owned.character.displayName),
           confirmedLoadout: fetched.snapshot.loadout,
           confirmedVersionId: fetched.snapshot.loadoutVersionId,
           atlasVersion: fetched.snapshot.atlasVersion,
@@ -169,10 +167,7 @@ export function GarageSessionProvider(props: {
         markHydrationUnavailable(prev, {
           accountId: current.userId,
           characterId: owned.character.characterId,
-          displayName: playerFacingDisplayName(
-            owned.character.displayName,
-            owned.character.characterId,
-          ),
+          displayName: playerFacingDisplayName(owned.character.displayName),
           message: fetched.message,
           code: fetched.code,
         }),

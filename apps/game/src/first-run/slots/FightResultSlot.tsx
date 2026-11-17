@@ -10,15 +10,15 @@ import { useFightSession } from '../../fight';
 import { FightResultContent } from '../../replay/FightResultContent';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
 import { useFirstRun } from '../FirstRunContext';
-import { DomainNote } from './DomainNote';
 
 /**
  * Shell FightResult slot — Garage Tag chrome owns the frame.
- * Progression XP / allowances only from server-confirmed combat-v1 — never REF samples.
+ * Progression XP / allowances only from server-confirmed fights — never REF samples.
+ * C17: no Domain/F10/combat-v1 debug chrome on the player-facing Result route.
  */
 export function FightResultSlot(): React.ReactElement {
   const { goTo, goNext, goBack, muted, musicEnabled, effectsEnabled } = useFirstRun();
-  const { lastFight, fightKind } = useFightSession();
+  const { lastFight } = useFightSession();
 
   const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
 
@@ -39,13 +39,6 @@ export function FightResultSlot(): React.ReactElement {
           title="Backend result required"
           detail={resolution.message}
           testID="result-blocked"
-        />
-        <DomainNote
-          text={
-            fightKind === 'dev' || fightKind === 'unavailable'
-              ? 'Domain: F10 · blocked — XP/cost stay withheld until a live combat-v1 fight.'
-              : `Domain: F10 · blocked (${resolution.reason}) — no sample XP.`
-          }
         />
       </ScreenChrome>
     );
@@ -80,7 +73,6 @@ export function FightResultSlot(): React.ReactElement {
         effectsEnabled={effectsEnabled}
         testID="fight-result"
       />
-      <DomainNote text="Domain: F10 fight result — XP and allowances from combat-v1 only. Never invent REF samples." />
     </ScreenChrome>
   );
 }

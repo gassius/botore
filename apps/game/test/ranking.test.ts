@@ -149,12 +149,12 @@ describe('ranking session state machine', () => {
     expect(result.kind).toBe('unavailable_contract');
   });
 
-  it('builds accessibility labels with ownership and DEV source', () => {
+  it('builds accessibility labels with ownership and without source/debug tags', () => {
     const row: RankingRow = DEV_POPULATED_RANKING_ROWS[2]!;
     const label = rankingRowAccessibilityLabel(row);
     expect(label).toContain('Rank 3');
     expect(label).toContain('your bot');
-    expect(label).toContain('development fixture');
+    expect(label).not.toMatch(/development fixture|LIVE ·/i);
   });
 });
 

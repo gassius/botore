@@ -1,5 +1,6 @@
 import type { GarageLoadout } from './loadoutTypes';
 import type { WeaponGlyphId } from '../../garage-tag';
+import { resolvePaintVisual } from '../../assembler/paints';
 import { WORKSHOP_FRAME_ATLAS_VERSION } from '../../atlas/workshop-frame-paths';
 
 /**
@@ -54,6 +55,11 @@ export function paintUiAlias(paintId: string): 'oxide' | 'petrol' | string {
   return paintId;
 }
 
+/** Player-facing paint label (Oxide / Petrol) — never catalogue ids. */
+export function paintDisplayLabel(paintId: string): string {
+  return resolvePaintVisual(paintId).label;
+}
+
 export function weaponCatalogueId(aliasOrId: string): string {
   if (aliasOrId === 'sword') return 'weapon-sword';
   if (aliasOrId === 'axe') return 'weapon-axe';
@@ -65,6 +71,14 @@ export function weaponUiAlias(weaponId: string): WeaponGlyphId {
   if (weaponId === 'weapon-axe' || weaponId === 'axe') return 'axe';
   if (weaponId === 'weapon-dagger' || weaponId === 'dagger') return 'dagger';
   return 'sword';
+}
+
+/** Player-facing weapon label (Sword / Axe / Dagger) — never catalogue ids. */
+export function weaponDisplayLabel(weaponId: string): string {
+  const alias = weaponUiAlias(weaponId);
+  if (alias === 'axe') return 'Axe';
+  if (alias === 'dagger') return 'Dagger';
+  return 'Sword';
 }
 
 export function soundTagsFor(loadout: Pick<GarageLoadout, 'chassis' | 'weapon'>): string[] {

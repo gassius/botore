@@ -9,12 +9,14 @@ import {
   verifyReplay,
   type BattleOutcome,
   type BattleReplay,
+  type FighterSnapshot,
 } from '@botore/replay';
 import type { FightComputeResponse } from '@botore/contracts';
 import { readServerNewRecordSignal } from '../audio/uiCueHelpers';
 import type { FightSuccess } from '../fight/request/types';
 import { ACTIVE_ENVIRONMENT_ASSET_VERSION } from '../arena/environmentPin';
 import { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from '../assembler/workshopFramePin';
+import { playerFacingDisplayName } from '../identity/platformPlayerId';
 import { sealedBuildsForDevReplay, type SealedFightBuilds } from './fighterLoadout';
 
 export type ResultSource = 'server' | 'dev-fixture';
@@ -290,11 +292,33 @@ export function resolvePlaybackMedia(result: ConfirmedFightResult): PlaybackMedi
   };
 }
 
-export function formatOutcomeLine(outcome: BattleOutcome): string {
+/**
+ * Resolve a fight participant id to a player-facing bot display name.
+ * Never returns raw character ids (e.g. `player-hero`), UUIDs, or checksums.
+ */
+export function fighterDisplayName(
+  characterId: string | null | undefined,
+  fighters: readonly Pick<FighterSnapshot, 'characterId' | 'displayName'>[] = [],
+): string {
+  if (!characterId) return playerFacingDisplayName(null);
+  const match = fighters.find((f) => f.characterId === characterId);
+  if (match) {
+    // Prefer displayName; if it is itself an internal id, fall back to Pilot.
+    return playerFacingDisplayName(match.displayName);
+  }
+  // Bare character ids are not player-facing labels.
+  return playerFacingDisplayName(null);
+}
+
+/** Player-facing outcome line — display names only, never raw character ids. */
+export function formatOutcomeLine(
+  outcome: BattleOutcome,
+  fighters: readonly Pick<FighterSnapshot, 'characterId' | 'displayName'>[] = [],
+): string {
   if (outcome.reason === 'action_limit_tiebreak') {
     return outcome.winnerByTiebreak
-      ? `Tiebreak → ${outcome.winnerByTiebreak}`
+      ? `Tiebreak → ${fighterDisplayName(outcome.winnerByTiebreak, fighters)}`
       : 'Action-limit draw';
   }
-  return outcome.winner ? `Winner: ${outcome.winner}` : 'No winner';
+  return outcome.winner ? `Winner: ${fighterDisplayName(outcome.winner, fighters)}` : 'No winner';
 }
