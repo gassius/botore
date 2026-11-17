@@ -2886,7 +2886,7 @@ begin
 end $$;
 
 -- =========================================================================
--- 0028 / 1003 / E2: bot + botore ranking (W-L, NPC seed, tie-breaks, empty)
+-- 0029 / 1003 / E2: bot + botore ranking (W-L, NPC seed, tie-breaks, empty)
 -- =========================================================================
 do $$
 declare

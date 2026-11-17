@@ -1,4 +1,5 @@
--- 0028: E2 Ranking backend — bot / botore win-loss + ranking RPCs
+-- 0029: E2 Ranking backend — bot / botore win-loss + ranking RPCs
+-- Prefix 0029: E1 #67 owns 0028_save_loadout_current_atlas_repin.
 --
 -- ClickUp: E2 Ranking backend (1amjtrezaj2)
 --

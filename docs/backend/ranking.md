@@ -6,7 +6,7 @@ Win-loss is **derived** from server-confirmed `battles.winner_id` (via
 `battle_participants`). XP remains `sum(progression_ledger.delta_xp)`.
 Player-facing payloads never include account UUIDs.
 
-## Schema (migration `0028`)
+## Schema (migration `0029`)
 
 | Column / object | Purpose |
 | --- | --- |

@@ -33,7 +33,7 @@ server-owned: player characters by `sum(progression_ledger.delta_xp)` desc,
 then `character_id` asc; client must not re-sort.
 
 E2 tab boards (`list_bot_ranking` / `list_botore_ranking`) are migration
-`0028_ranking_win_loss.sql` (+ NPC seed `1003_seed_npc_ranking.sql`). Full
+`0029_ranking_win_loss.sql` (+ NPC seed `1003_seed_npc_ranking.sql`). Full
 field contracts and tie-breaks: `docs/backend/ranking.md`.
 
 All are `SECURITY DEFINER` with `set search_path = public, extensions`.
