@@ -237,7 +237,9 @@ function main() {
     // Atlas pack target stays `v003` (family workshop-frame-v003); kit pin may
     // be v003.1 (same PNG parts, superseding poses/stage/portrait).
     const accepted =
-      kitVersion === 'v003' ? raw.version === 'v003' || raw.version === 'v003.1' : raw.version === kitVersion;
+      kitVersion === 'v003'
+        ? raw.version === 'v003' || raw.version === 'v003.1'
+        : raw.version === kitVersion;
     if (!accepted) {
       fail(`kit version ${raw.version} incompatible with pack kitVersion ${kitVersion}`);
     }
