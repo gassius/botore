@@ -18,6 +18,8 @@ export type FightViewHudSide = {
 export type FightViewHudProps = {
   readonly near: FightViewHudSide;
   readonly far: FightViewHudSide;
+  /** Safe-area top inset — arena stays full-bleed; HUD pads below the notch. */
+  readonly topInset?: number;
   readonly testID?: string;
 };
 
@@ -113,15 +115,20 @@ function HudSide({
 export function FightViewHud({
   near,
   far,
+  topInset = 0,
   testID = 'fight-view-hud',
 }: FightViewHudProps): React.ReactElement {
   return (
-    <View style={styles.root} pointerEvents="box-none" testID={testID}>
+    <View
+      style={[styles.root, { paddingTop: 12 + topInset }]}
+      pointerEvents="box-none"
+      testID={testID}
+    >
       <View style={styles.row} pointerEvents="box-none">
         <HudSide side={near} align="left" testID={`${testID}-near`} />
         <HudSide side={far} align="right" testID={`${testID}-far`} />
       </View>
-      <Text style={styles.vs} allowFontScaling testID={`${testID}-vs`}>
+      <Text style={[styles.vs, { top: 14 + topInset }]} allowFontScaling testID={`${testID}-vs`}>
         VS
       </Text>
     </View>
@@ -134,7 +141,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    paddingTop: 12,
     paddingHorizontal: 12,
     paddingBottom: 26,
     backgroundColor: 'rgba(36,33,29,0.72)',
@@ -203,7 +209,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 14,
     textAlign: 'center',
     color: garageTag.mustard,
     fontWeight: '900',

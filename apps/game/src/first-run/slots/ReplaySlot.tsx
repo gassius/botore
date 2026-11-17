@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   PrimaryButton,
   ScreenChrome,
@@ -14,11 +14,14 @@ import { useFightSession } from '../../fight';
 import type { ArenaFxFamily } from '../../arena/environmentPin';
 import {
   calloutFromCommand,
+  createOnceHandoff,
   FightViewBottomBand,
   FightViewHud,
   FightViewMuteControl,
   FIGHT_VIEW_ARENA_HEIGHT_RATIO,
+  FIGHT_VIEW_HUD_BELOW_INSET,
   FIGHT_VIEW_KO_HOLD_MS,
+  shouldScheduleKoHandoff,
   updateCalloutAttackContext,
   type FightViewCallout,
 } from '../../fight-view';
@@ -62,6 +65,7 @@ export function ReplaySlot(): React.ReactElement {
     reducedMotion,
     fightViewMode,
   } = useFirstRun();
+  const insets = useSafeAreaInsets();
   const { lastFight } = useFightSession();
   const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
   const fxHoldRef = useRef<FxCaptureHoldState>(initialFxCaptureHoldState());
@@ -74,9 +78,15 @@ export function ReplaySlot(): React.ReactElement {
   });
   const [callout, setCallout] = useState<FightViewCallout | null>(null);
   const [hp, setHp] = useState({ near: 1, far: 1 });
-  const [resultHandoffArmed, setResultHandoffArmed] = useState(false);
+  const handOffOnceRef = useRef(createOnceHandoff(() => goNext()));
   const liveCapture = isLiveFightCaptureEnabled();
   const isRewatch = fightViewMode === 'rewatch';
+  const topInset = insets.top;
+
+  // Refresh the once-handoff when goNext identity changes (provider remount).
+  useEffect(() => {
+    handOffOnceRef.current = createOnceHandoff(() => goNext());
+  }, [goNext]);
 
   const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
   const replayChecksum =
@@ -138,12 +148,15 @@ export function ReplaySlot(): React.ReactElement {
       attackCtxRef.current = updateCalloutAttackContext(cmd, attackCtxRef.current);
       const fighters =
         resolution.status === 'confirmed' ? resolution.confirmed.replay.fighters : [];
-      setCallout(
-        calloutFromCommand(cmd, fighters, {
-          lastAttackerId: attackCtxRef.current.lastAttackerId,
-          wasHeavy: attackCtxRef.current.wasHeavy,
-        }),
-      );
+      // Keep the KO plate through victory_screen (null) until the Result handoff.
+      if (cmd.kind !== 'victory_screen') {
+        setCallout(
+          calloutFromCommand(cmd, fighters, {
+            lastAttackerId: attackCtxRef.current.lastAttackerId,
+            wasHeavy: attackCtxRef.current.wasHeavy,
+          }),
+        );
+      }
       setHp({ near: presentation.hp.near, far: presentation.hp.far });
     },
     [resolution],
@@ -153,19 +166,13 @@ export function ReplaySlot(): React.ReactElement {
    * D2 stub — Result overlay owns the post-KO presentation.
    * Until D2 lands, auto-transition to the FightResult route after the KO hold.
    */
-  const handOffToResult = useCallback(() => {
-    if (resultHandoffArmed) return;
-    setResultHandoffArmed(true);
-    goNext();
-  }, [goNext, resultHandoffArmed]);
-
   const onFinished = useCallback(() => {
-    if (isRewatch) return;
+    if (!shouldScheduleKoHandoff(fightViewMode)) return;
     if (koHoldTimerRef.current) clearTimeout(koHoldTimerRef.current);
     koHoldTimerRef.current = setTimeout(() => {
-      handOffToResult();
+      handOffOnceRef.current();
     }, FIGHT_VIEW_KO_HOLD_MS);
-  }, [handOffToResult, isRewatch]);
+  }, [fightViewMode]);
 
   if (resolution.status === 'blocked') {
     return (
@@ -193,6 +200,7 @@ export function ReplaySlot(): React.ReactElement {
   const arenaOverlay = (
     <>
       <FightViewHud
+        topInset={topInset}
         near={{
           botName: nearName,
           ownerLabel: 'You',
@@ -206,7 +214,10 @@ export function ReplaySlot(): React.ReactElement {
         }}
       />
       {isRewatch ? (
-        <View style={styles.backWrap} testID="fight-view-back-wrap">
+        <View
+          style={[styles.backWrap, { top: topInset + FIGHT_VIEW_HUD_BELOW_INSET + 4 }]}
+          testID="fight-view-back-wrap"
+        >
           <GlyphButton
             source={uiKitAssets.glyphBack}
             accessibilityLabel="Back"
@@ -290,7 +301,6 @@ const styles = StyleSheet.create({
   },
   backWrap: {
     position: 'absolute',
-    top: 10,
     left: 10,
     zIndex: 8,
   },

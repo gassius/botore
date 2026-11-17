@@ -27,9 +27,10 @@ export function calloutFromCommand(
     case 'attack_anim': {
       if (cmd.attack === 'weapon' && cmd.heavyPhase === 'strike') {
         const actor = nameOf(cmd.actor, fighters);
+        // Strike phase is not a confirmed hit — keep "Heavy hit!" for damage_pop only.
         return {
-          headline: 'Heavy hit!',
-          detail: `${actor} winds up a heavy strike`,
+          headline: 'Heavy strike!',
+          detail: `${actor} unleashes a heavy strike`,
         };
       }
       if (cmd.attack === 'weapon' && cmd.heavyPhase === 'windup') {

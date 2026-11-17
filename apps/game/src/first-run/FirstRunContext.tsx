@@ -6,7 +6,7 @@ import {
   readDesignCaptureSessionFailure,
 } from '../design-capture';
 import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
-import type { FightViewMode } from '../fight-view';
+import { resolveFirstRunGoBackTarget, type FightViewMode } from '../fight-view';
 import { usePlayerSettings } from '../settings';
 import { nextRoute, prevRoute, type FirstRunRoute } from './routes';
 
@@ -92,22 +92,8 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
         if (n) setRoute(n);
       },
       goBack: () => {
-        // Settings is side-entry — Back always returns to Stable chrome.
-        if (route === 'Settings') {
-          setRoute('Stable');
-          return;
-        }
-        // First watch: hardware / chrome back must not leave the fight.
-        if (route === 'Replay' && fightViewMode === 'firstWatch') {
-          return;
-        }
-        // Rewatch back returns to Result, not ConfirmFight.
-        if (route === 'Replay' && fightViewMode === 'rewatch') {
-          setRoute('FightResult');
-          return;
-        }
-        const p = prevRoute(route);
-        if (p) setRoute(p);
+        const target = resolveFirstRunGoBackTarget(route, fightViewMode, prevRoute(route));
+        if (target) setRoute(target);
       },
       muted: settings.muted,
       setMuted: settings.setMuted,

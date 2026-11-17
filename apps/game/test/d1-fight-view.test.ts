@@ -3,13 +3,22 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   calloutFromCommand,
   updateCalloutAttackContext,
 } from '../src/fight-view/calloutFromCommand';
-import { FIGHT_VIEW_ARENA_HEIGHT_RATIO, FIGHT_VIEW_KO_HOLD_MS } from '../src/fight-view/types';
-import { ROUTE_TITLES } from '../src/first-run/routes';
+import {
+  createOnceHandoff,
+  resolveFirstRunGoBackTarget,
+  shouldScheduleKoHandoff,
+} from '../src/fight-view/fightViewNavigation';
+import {
+  FIGHT_VIEW_ARENA_HEIGHT_RATIO,
+  FIGHT_VIEW_HUD_BELOW_INSET,
+  FIGHT_VIEW_KO_HOLD_MS,
+} from '../src/fight-view/types';
+import { prevRoute, ROUTE_TITLES } from '../src/first-run/routes';
 import type { AnimationCommand } from '../src/replay-playback';
 
 const fighters = [
@@ -30,6 +39,7 @@ describe('D1 Fight View rename + layout constants', () => {
   it('arena height ratio meets acceptance (≥ 72%)', () => {
     expect(FIGHT_VIEW_ARENA_HEIGHT_RATIO).toBeGreaterThanOrEqual(0.72);
     expect(FIGHT_VIEW_KO_HOLD_MS).toBe(1000);
+    expect(FIGHT_VIEW_HUD_BELOW_INSET).toBeGreaterThan(80);
   });
 });
 
@@ -57,11 +67,14 @@ describe('D1 first-watch vs rewatch control sets', () => {
     expect(slot).toContain("fightViewMode === 'rewatch'");
   });
 
-  it('first watch arms KO hold then Result handoff stub for D2', () => {
-    expect(slot).toContain('FIGHT_VIEW_KO_HOLD_MS');
-    expect(slot).toContain('handOffToResult');
-    expect(slot).toContain('D2 stub');
-    expect(slot).toContain("BackHandler.addEventListener('hardwareBackPress'");
+  it('offsets HUD + rewatch Back by safe-area top inset', () => {
+    expect(slot).toContain('useSafeAreaInsets');
+    expect(slot).toContain('topInset={topInset}');
+    expect(slot).toContain('FIGHT_VIEW_HUD_BELOW_INSET');
+  });
+
+  it('keeps KO plate through victory_screen until Result handoff', () => {
+    expect(slot).toContain("cmd.kind !== 'victory_screen'");
   });
 
   it('ConfirmFight sets firstWatch; Result Watch again sets rewatch', () => {
@@ -73,13 +86,88 @@ describe('D1 first-watch vs rewatch control sets', () => {
 
   it('player-facing first-watch copy never says Fight Replay', () => {
     expect(slot).not.toContain('Fight Replay');
-    // Blocked path title is Fight View.
     expect(slot).toContain('Fight View');
   });
 });
 
+describe('D1 goBack routing (behavioural)', () => {
+  it('first-watch Replay goBack is a noop', () => {
+    expect(resolveFirstRunGoBackTarget('Replay', 'firstWatch', prevRoute('Replay'))).toBeNull();
+  });
+
+  it('rewatch Replay goBack returns FightResult (not ConfirmFight)', () => {
+    expect(resolveFirstRunGoBackTarget('Replay', 'rewatch', prevRoute('Replay'))).toBe(
+      'FightResult',
+    );
+    expect(prevRoute('Replay')).toBe('ConfirmFight');
+  });
+
+  it('Settings goBack returns Stable', () => {
+    expect(resolveFirstRunGoBackTarget('Settings', 'firstWatch', null)).toBe('Stable');
+  });
+
+  it('other routes use the linear prev when present', () => {
+    expect(
+      resolveFirstRunGoBackTarget('ConfirmFight', 'firstWatch', prevRoute('ConfirmFight')),
+    ).toBe('Opponents');
+  });
+});
+
+describe('D1 KO hold → Result handoff (behavioural)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('first watch schedules handoff; rewatch never does', () => {
+    expect(shouldScheduleKoHandoff('firstWatch')).toBe(true);
+    expect(shouldScheduleKoHandoff('rewatch')).toBe(false);
+  });
+
+  it('hands off exactly once after the KO hold on first watch', () => {
+    vi.useFakeTimers();
+    const handOff = vi.fn();
+    const once = createOnceHandoff(handOff);
+
+    if (shouldScheduleKoHandoff('firstWatch')) {
+      setTimeout(once, FIGHT_VIEW_KO_HOLD_MS);
+    }
+    expect(handOff).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(FIGHT_VIEW_KO_HOLD_MS - 1);
+    expect(handOff).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(handOff).toHaveBeenCalledTimes(1);
+    once();
+    once();
+    expect(handOff).toHaveBeenCalledTimes(1);
+  });
+
+  it('rewatch never arms a KO handoff timer', () => {
+    vi.useFakeTimers();
+    const handOff = vi.fn();
+    const once = createOnceHandoff(handOff);
+    if (shouldScheduleKoHandoff('rewatch')) {
+      setTimeout(once, FIGHT_VIEW_KO_HOLD_MS);
+    }
+    vi.advanceTimersByTime(FIGHT_VIEW_KO_HOLD_MS * 5);
+    expect(handOff).not.toHaveBeenCalled();
+  });
+});
+
 describe('D1 call-out mapping (no IDs / checksums)', () => {
-  it('maps heavy damage to a Heavy hit call-out with display names', () => {
+  it('strike phase is Heavy strike!, not a confirmed Heavy hit!', () => {
+    const strike: AnimationCommand = {
+      kind: 'attack_anim',
+      actor: 'player-hero',
+      attack: 'weapon',
+      heavyPhase: 'strike',
+    };
+    const callout = calloutFromCommand(strike, fighters);
+    expect(callout?.headline).toBe('Heavy strike!');
+    expect(callout?.headline).not.toBe('Heavy hit!');
+    expect(callout?.detail).toContain('Chispa');
+  });
+
+  it('maps heavy damage_pop to Heavy hit! with display names', () => {
     const attack: AnimationCommand = {
       kind: 'attack_anim',
       actor: 'player-hero',
@@ -100,6 +188,25 @@ describe('D1 call-out mapping (no IDs / checksums)', () => {
     expect(callout?.detail).toContain('Sir Bot');
     expect(callout?.detail).not.toContain('player-hero');
     expect(callout?.detail).not.toContain('opp-1');
+  });
+
+  it('strike then dodge never claims a Heavy hit', () => {
+    const strike: AnimationCommand = {
+      kind: 'attack_anim',
+      actor: 'player-hero',
+      attack: 'weapon',
+      heavyPhase: 'strike',
+    };
+    expect(calloutFromCommand(strike, fighters)?.headline).toBe('Heavy strike!');
+    const dodge = calloutFromCommand({ kind: 'dodge_anim', actor: 'opp-1' }, fighters);
+    expect(dodge?.headline).toBe('Dodge!');
+    expect(dodge?.headline).not.toBe('Heavy hit!');
+  });
+
+  it('victory_screen callout is null (slot keeps prior KO plate)', () => {
+    expect(
+      calloutFromCommand({ kind: 'victory_screen', winner: 'player-hero' }, fighters),
+    ).toBeNull();
   });
 
   it('maps KO / dodge without leaking character ids', () => {

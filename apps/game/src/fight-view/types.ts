@@ -17,4 +17,10 @@ export const FIGHT_VIEW_KO_HOLD_MS = 1000;
 /** Arena share of a 390×844 phone viewport (acceptance ≥ 72%). */
 export const FIGHT_VIEW_ARENA_HEIGHT_RATIO = 0.75;
 
+/**
+ * HUD chrome height below the safe-area inset (pads + name + owner + HP).
+ * Rewatch Back sits just under this strip so it never covers near-side name/HP.
+ */
+export const FIGHT_VIEW_HUD_BELOW_INSET = 97;
+
 export const FIGHT_VIEW_ARENA_NAME = 'Repair Yard';
