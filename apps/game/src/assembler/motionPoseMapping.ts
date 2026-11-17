@@ -49,6 +49,7 @@ export const MOTION_POSES: readonly MotionPose[] = [
   'dodge',
   'hit',
   'defeat',
+  'portrait',
 ] as const;
 
 export function isMotionPose(value: unknown): value is MotionPose {

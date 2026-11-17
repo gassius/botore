@@ -20,9 +20,20 @@ export type BotFacing = 'left' | 'right';
  * - `attack` → kit `quick_attack` (sealed `attack_selected.attack: 'basic'`)
  * - `heavy_windup` / `heavy_attack` → same-named kit keys
  *   (sealed `attack_selected.attack: 'weapon'`, windup then strike)
+ * - `portrait` → kit `portrait` (A5 ranking head-and-shoulders on kit-v003).
+ *   Weapon stays equipped (never sample sheets), even if kit samples omitted it.
+ * - Raised-weapon `victory` is **not** a MotionPose yet — A3 victory art is a
+ *   pending slot (`result-art/resultPoseSlot.ts`), not an approved pose key.
  */
 export type MotionPose =
-  'idle' | 'attack' | 'heavy_windup' | 'heavy_attack' | 'dodge' | 'hit' | 'defeat';
+  | 'idle'
+  | 'attack'
+  | 'heavy_windup'
+  | 'heavy_attack'
+  | 'dodge'
+  | 'hit'
+  | 'defeat'
+  | 'portrait';
 
 /**
  * First-proof sample paints (Art Direction v0.3).

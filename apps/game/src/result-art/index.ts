@@ -14,11 +14,12 @@ export {
   resolveResultBotPose,
 } from './resultPoseSlot';
 export type {
-  ApprovedResultBotPose,
+  ApprovedDefeatPose,
+  PendingVictoryPoseSlot,
   ResolvedResultBotPose,
   ResultBotPoseKind,
 } from './resultPoseSlot';
 export { ResultDefeatPose } from './ResultDefeatPose';
 export type { ResultDefeatPoseProps } from './ResultDefeatPose';
-export { ResultVictoryPose, ResultVictoryPoseSlot } from './ResultVictoryPoseSlot';
-export type { ResultVictoryPoseProps, ResultVictoryPoseSlotProps } from './ResultVictoryPoseSlot';
+export { ResultVictoryPoseSlot } from './ResultVictoryPoseSlot';
+export type { ResultVictoryPoseSlotProps } from './ResultVictoryPoseSlot';

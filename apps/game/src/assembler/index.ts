@@ -34,6 +34,7 @@ export {
   WORKSHOP_FRAME_MANIFEST,
   assembleWorkshopFrame,
   listWorkshopFrameGaps,
+  resolveKitPoseKey,
   resolveWorkshopFramePose,
 } from './workshopFrameAdapter';
 export { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from './workshopFramePin';

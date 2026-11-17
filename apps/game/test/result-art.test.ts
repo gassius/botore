@@ -16,8 +16,8 @@ import {
 
 const assetsRoot = join(__dirname, '../assets/result-plates');
 
-describe('A3 result plates + victory/defeat poses (D2 stack interim)', () => {
-  it('ships VICTORY / DEFEAT / NEW RECORD PNG 1x/2x/3x', () => {
+describe('A3 result plates + defeat + victory slot', () => {
+  it('ships VICTORY / DEFEAT / NEW RECORD PNG 1x/2x/3x from kit-v003', () => {
     for (const kind of ['victory', 'defeat', 'new-record'] as const) {
       for (const dens of ['1x', '2x', '3x'] as const) {
         expect(existsSync(join(assetsRoot, 'png', dens, `${kind}.png`))).toBe(true);
@@ -28,7 +28,7 @@ describe('A3 result plates + victory/defeat poses (D2 stack interim)', () => {
     expect(RESULT_PLATE_SPECS.defeat.sizePt).toEqual([300, 96]);
     expect(RESULT_PLATE_SPECS.new_record.sizePt).toEqual([220, 64]);
     expect(RESULT_PLATE_SPECS.victory.accessibilityLabel).toBe('Victory');
-    expect(NEW_RECORD_STAMP_ROTATION_DEG).toBe(12);
+    expect(NEW_RECORD_STAMP_ROTATION_DEG).toBe(-12);
     expect(resultPlateDensityBucket(1)).toBe(1);
     expect(resultPlateDensityBucket(2)).toBe(2);
     expect(resultPlateDensityBucket(3)).toBe(3);
@@ -49,23 +49,16 @@ describe('A3 result plates + victory/defeat poses (D2 stack interim)', () => {
     expect(bot.layers.some((l) => l.role === 'weapon')).toBe(true);
   });
 
-  it('maps victory to interim heavy_windup until kit-v003.1 lands on this stack', () => {
+  it('keeps victory as a pending raised-weapon slot (not full A3)', () => {
     const resolved = resolveResultBotPose('victory');
-    expect(VICTORY_POSE_ART_STATUS).toBe('interim_heavy_windup');
+    expect(VICTORY_POSE_ART_STATUS).toBe('slot-pending-raised-weapon');
     expect(resolved.kind).toBe('victory');
-    expect(resolved.status).toBe('interim');
-    expect(resolved.motionPose).toBe('heavy_windup');
-    expect(resolved.slotId).toBe(VICTORY_POSE_SLOT_ID);
-    expect(isApprovedResultMotionPose(resolved)).toBe(true);
-    for (const weapon of ['weapon-sword', 'weapon-axe', 'weapon-dagger'] as const) {
-      const bot = assembleBot({
-        loadout: { chassis: 'chassis-basic', paint: 'paint-crimson', weapon },
-        facing: 'right',
-        motionPose: 'heavy_windup',
-      });
-      expect(bot.motionPose).toBe('heavy_windup');
-      expect(bot.kitPoseKey).toBe('heavy_windup');
-      expect(bot.layers.some((l) => l.role === 'weapon')).toBe(true);
+    expect(resolved.status).toBe('slot-pending-raised-weapon');
+    expect(resolved.motionPose).toBeNull();
+    if (resolved.kind === 'victory') {
+      expect(resolved.slotId).toBe(VICTORY_POSE_SLOT_ID);
     }
+    expect(isApprovedResultMotionPose(resolved)).toBe(false);
+    expect(VICTORY_POSE_SLOT_ID).toBe('result.victory.raised-weapon');
   });
 });

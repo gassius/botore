@@ -64,7 +64,24 @@ export const MOTION_POSE_TO_KIT: Readonly<Record<MotionPose, string>> = {
   dodge: 'dodge',
   hit: 'hit',
   defeat: 'defeat',
+  // A5: kit-v003 `portrait`. Weapon stays equipped (never sample sheets).
+  portrait: 'portrait',
 };
+
+/** Resolve MotionPose → kit pose key; fall back when the active pin lacks the key. */
+export function resolveKitPoseKey(
+  motionPose: MotionPose,
+  manifest: WorkshopFrameManifest = WORKSHOP_FRAME_MANIFEST,
+): string {
+  const preferred = MOTION_POSE_TO_KIT[motionPose] ?? 'idle';
+  if (manifest.poses[preferred]) {
+    return preferred;
+  }
+  if (motionPose === 'portrait' && manifest.poses.idle) {
+    return 'idle';
+  }
+  return manifest.poses.idle ? 'idle' : preferred;
+}
 
 /** Body parts + hand wraps (finger layers). Weapons resolved separately. */
 const DRAW_PART_IDS = [
@@ -146,7 +163,7 @@ export function buildWorkshopFrameWorldMatrices(
   const paint = resolveKitPaint(paintId);
   const weaponKind = resolveKitWeaponKind(weaponId);
   const weaponAssetId = resolveKitWeaponAssetId(weaponId);
-  const kitPoseKey = MOTION_POSE_TO_KIT[motionPose] ?? 'idle';
+  const kitPoseKey = resolveKitPoseKey(motionPose, manifest);
   const pose = resolveWorkshopFramePose(kitPoseKey, weaponKind);
   const weaponDef = manifest.weapons[weaponKind];
 
@@ -282,11 +299,8 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
   const paintVisual = resolvePaintVisual(paintId);
   const weapon = resolveWeaponKit(weaponId);
 
-  const { paint, weaponKind, weaponAssetId, matrices, anglesCw } = buildWorkshopFrameWorldMatrices(
-    paintId,
-    weaponId,
-    motionPose,
-  );
+  const { paint, weaponKind, weaponAssetId, kitPoseKey, matrices, anglesCw } =
+    buildWorkshopFrameWorldMatrices(paintId, weaponId, motionPose);
 
   const assets = assetMap(WORKSHOP_FRAME_MANIFEST);
   const zOverrides = WORKSHOP_FRAME_MANIFEST.weapons[weaponKind]?.z_overrides ?? {};
@@ -332,7 +346,7 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
     grip: { x: gripWorld.x, y: gripWorld.y, provisional: true },
     layers,
     kitId: WORKSHOP_FRAME_KIT_ID,
-    kitPoseKey: MOTION_POSE_TO_KIT[motionPose],
+    kitPoseKey,
   };
 }
 
@@ -357,6 +371,6 @@ export function listWorkshopFrameGaps(): readonly string[] {
     'Weapon media ids use underscores (weapon_sword); catalogue/F5 atlas partIds use hyphens (weapon-sword) — adapter maps both (documented, keep).',
     'Float socket values are exact JSON serializations — consume as floats; do not round in the adapter.',
     'MotionPose heavy_* is mapped (C11); heavy_windup / heavy_attack use nested per-weapon pose entries (not v002 root_y).',
-    'victory/portrait kit poses exist but are not yet on the public MotionPose set.',
+    'A5 exposes MotionPose `portrait` (weapon still drawn). Raised-weapon victory remains a result-art slot, not MotionPose.',
   ];
 }

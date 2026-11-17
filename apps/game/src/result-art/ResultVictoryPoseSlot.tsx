@@ -1,72 +1,57 @@
 /**
- * A3 victory pose slot for D2.
- * Until kit-v003.1 MotioPose `victory` lands on this stack, mounts interim
- * `heavy_windup` (ClickUp D2 interim) while keeping VICTORY_POSE_SLOT_ID.
+ * A3 victory pose slot — raised-weapon art is NOT approved yet.
+ *
+ * Reserves a clear mount point (slotId) for D2. Renders no victory pose art
+ * and never falls back to heavy_windup / sample plates-as-pose stand-ins.
  */
 
 import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { BotAssembler, type AssemblerLoadoutInput, type BotFacing } from '../assembler';
-import { VICTORY_POSE_SLOT_ID, resolveResultBotPose } from './resultPoseSlot';
+import {
+  VICTORY_POSE_SLOT_ID,
+  resolveResultBotPose,
+  type PendingVictoryPoseSlot,
+} from './resultPoseSlot';
 
 export type ResultVictoryPoseSlotProps = {
-  readonly loadout: AssemblerLoadoutInput;
-  readonly paintId?: string;
-  readonly weaponId?: string;
-  readonly facing?: BotFacing;
-  /** Display width in pt over the 640 rig. */
+  /** Reserved display size so D2 layout can size the future pose. */
   readonly size?: number;
-  readonly reducedMotion?: boolean;
   readonly style?: StyleProp<ViewStyle>;
   readonly testID?: string;
+  /** Optional children once raised-weapon art lands (still gated by slot status). */
+  readonly children?: React.ReactNode;
 };
 
 export function ResultVictoryPoseSlot({
-  loadout,
-  paintId,
-  weaponId,
-  facing = 'right',
   size = 280,
-  reducedMotion = false,
   style,
   testID = 'result-victory-pose-slot',
+  children,
 }: ResultVictoryPoseSlotProps): React.ReactElement {
-  const resolved = resolveResultBotPose('victory');
-  if (resolved.motionPose !== 'heavy_windup' && resolved.motionPose !== 'defeat') {
-    throw new Error('result victory pose must resolve to an available MotionPose');
-  }
-  const paint = paintId ?? loadout.paint;
-  const weapon = weaponId ?? loadout.weapon;
+  const resolved = resolveResultBotPose('victory') as PendingVictoryPoseSlot;
 
   return (
     <View
-      style={[styles.wrap, style]}
-      accessibilityLabel="victory pose"
+      style={[styles.slot, { width: size, minHeight: size }, style]}
+      accessibilityLabel="Victory pose slot pending raised weapon art"
+      accessibilityHint={resolved.slotId}
       testID={testID}
-      nativeID={resolved.slotId ?? VICTORY_POSE_SLOT_ID}
+      nativeID={resolved.slotId}
     >
-      <BotAssembler
-        loadout={loadout}
-        facing={facing}
-        paintId={paint}
-        weaponId={weapon}
-        motionPose={resolved.motionPose}
-        reducedMotion={reducedMotion}
-        placeholder={false}
-        size={size}
-        testID={`${testID}-assembler`}
-      />
+      {/* Stable hook id for D2 / future raised-weapon art drop-in. */}
+      <View testID={`${testID}-hook`} nativeID={VICTORY_POSE_SLOT_ID} style={styles.hook} />
+      {children ?? null}
     </View>
   );
 }
 
-/** Alias for D2 consumers that prefer a non-Slot name. */
-export const ResultVictoryPose = ResultVictoryPoseSlot;
-export type ResultVictoryPoseProps = ResultVictoryPoseSlotProps;
-
 const styles = StyleSheet.create({
-  wrap: {
+  slot: {
     alignItems: 'center',
-    overflow: 'visible',
+    justifyContent: 'center',
+  },
+  hook: {
+    width: 0,
+    height: 0,
   },
 });
