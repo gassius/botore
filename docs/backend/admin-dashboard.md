@@ -78,6 +78,8 @@ plus `service: "health"` and `checks.edge_functions` probes).
 | ----------------------------- | ----------------------------------------------------- |
 | `admin_players_overview`      | Accounts, character, allowances, fight/XP totals      |
 | `admin_bots_overview`         | Player + opponent bots with build, loadout, readiness |
+| `admin_bot_ranking`           | E2 bot ranking (W-L, XP, portrait parts)              |
+| `admin_botore_ranking`        | E2 botore ranking (emblem, aggregate W-L, bots owned) |
 | `admin_fight_stats`           | Single-row aggregates (battles, win rate, allowances) |
 | `admin_daily_active_accounts` | Distinct initiators per UTC day (last 30)             |
 | `admin_recent_battles`        | Persisted fights + atlas pins + outbox pending        |

@@ -16,9 +16,16 @@ on conflict (id) do nothing;
 insert into public.accounts (id) values ('00000000-0000-4000-8000-000000000001')
 on conflict do nothing;
 
-insert into public.profiles (account_id, display_name)
-values ('00000000-0000-4000-8000-000000000001', 'Dev Player')
-on conflict do nothing;
+insert into public.profiles (account_id, display_name, botore_id, emblem_id)
+values (
+  '00000000-0000-4000-8000-000000000001',
+  'Dev Player',
+  'botore-dev-player',
+  'emblem-default'
+)
+on conflict (account_id) do update
+  set botore_id = coalesce(public.profiles.botore_id, excluded.botore_id),
+      emblem_id = coalesce(nullif(public.profiles.emblem_id, ''), excluded.emblem_id);
 
 -- Characters -----------------------------------------------------------------
 insert into public.characters (character_id, account_id, display_name, is_opponent) values
@@ -202,12 +209,14 @@ insert into public.accounts (id) values
   ('00000000-0000-4000-8000-000000000013')
 on conflict do nothing;
 
-insert into public.profiles (account_id, display_name)
+insert into public.profiles (account_id, display_name, botore_id, emblem_id)
 values
-  ('00000000-0000-4000-8000-000000000011', 'Rank Peer A'),
-  ('00000000-0000-4000-8000-000000000012', 'Rank Peer B'),
-  ('00000000-0000-4000-8000-000000000013', 'Rank Peer C')
-on conflict do nothing;
+  ('00000000-0000-4000-8000-000000000011', 'Rank Peer A', 'botore-peer-bolt', 'emblem-default'),
+  ('00000000-0000-4000-8000-000000000012', 'Rank Peer B', 'botore-peer-clank', 'emblem-default'),
+  ('00000000-0000-4000-8000-000000000013', 'Rank Peer C', 'botore-peer-rivet', 'emblem-default')
+on conflict (account_id) do update
+  set botore_id = coalesce(public.profiles.botore_id, excluded.botore_id),
+      emblem_id = coalesce(nullif(public.profiles.emblem_id, ''), excluded.emblem_id);
 
 insert into public.characters (character_id, account_id, display_name, is_opponent) values
   ('peer-bolt', '00000000-0000-4000-8000-000000000011', 'Bolt', false),

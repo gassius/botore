@@ -16,11 +16,10 @@ Tickets: [E2 Ranking backend](https://app.clickup.com/t/1amjtrezaj2) · [D4 Rank
 
 ## Merge order
 
-**#71 (0029) must merge before #80.** D4 only calls the E2 RPC names; it does not
-carry the migration. Until 0029 is applied, live authed clients get transport
-errors and the factory falls back to capture/DEV fixtures when scaffolds allow
-(or fail closed on playable builds). Do **not** restack #71 onto stack 70 —
-merge #71 independently first.
+D4 Ranking UI (#80) is already on `main` and calls these E2 RPC names. **#71 must
+still land `0029_ranking_win_loss.sql`** so live authed clients get real boards
+instead of transport errors / fixture fallback. C5 `list_ranking()` remains for
+legacy adapters; D4 uses the E2 tab RPCs only.
 
 ## Legacy
 
