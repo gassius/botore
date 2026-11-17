@@ -130,7 +130,7 @@ describe('A2 frame-marker audio cues', () => {
     );
   });
 
-  it('skips hit-stop (and hit cue) on a miss; reducedMotion drops hit-stop', () => {
+  it('skips hit-stop (and hit cue) on a miss; reducedMotion keeps hit on strike', () => {
     const miss = expandWeaponSequence('axe', 'attack', { hitConnects: false });
     expect(miss.some((b) => b.hitStop)).toBe(false);
     expect(miss.some((b) => b.markers.includes('hit'))).toBe(false);
@@ -143,6 +143,33 @@ describe('A2 frame-marker audio cues', () => {
     });
     expect(reduced.some((b) => b.hitStop)).toBe(false);
     expect(reduced.every((b) => b.frames === 1)).toBe(true);
+    // Hit clank must survive reduced motion (marker rides the strike beat).
+    const strike = reduced.find((b) => b.markers.includes('swing'));
+    expect(strike?.markers).toContain('hit');
+    expect(expandWeaponSequence('sword', 'dodge', { reducedMotion: true })[0]?.markers).toEqual([
+      'dodge',
+    ]);
+    expect(expandWeaponSequence('sword', 'knockout', { reducedMotion: true })[0]?.markers).toEqual([
+      'defeat',
+    ]);
+  });
+
+  it('trims windup/hold for basic; weapon keeps full anticipation', () => {
+    const basic = expandWeaponSequence('sword', 'attack', {
+      hitConnects: true,
+      attack: 'basic',
+    });
+    const heavy = expandWeaponSequence('sword', 'attack', {
+      hitConnects: true,
+      attack: 'weapon',
+    });
+    expect(basic.some((b) => b.poseKey === 'windup')).toBe(false);
+    expect(heavy.some((b) => b.poseKey === 'windup')).toBe(true);
+    expect(basic.reduce((n, b) => n + b.frames, 0)).toBeLessThan(
+      heavy.reduce((n, b) => n + b.frames, 0),
+    );
+    expect(basic.some((b) => b.markers.includes('swing'))).toBe(true);
+    expect(heavy.some((b) => b.markers.includes('swing'))).toBe(true);
   });
 
   it('marks dodge on first dodge frame and defeat on first knockout frame', () => {
@@ -175,6 +202,38 @@ describe('A2 frame-marker audio cues', () => {
       sfxClipFromCommand({ kind: 'damage_pop', target: 'far', amount: 1, hpAfter: 1 }),
     ).toBeNull();
     expect(sfxClipFromCommand({ kind: 'defeat_anim', characterId: 'far' })).toBeNull();
+  });
+
+  it('interleaves damage_pop on the hit frame and dodge on the strike frame', () => {
+    const queue = compileAnimationQueue(swordConnectReplay());
+    const hitIdx = queue.findIndex(
+      (c) => c.kind === 'motion_beat' && c.markers.includes('hit'),
+    );
+    const damageIdx = queue.findIndex((c) => c.kind === 'damage_pop');
+    expect(hitIdx).toBeGreaterThan(0);
+    expect(damageIdx).toBe(hitIdx - 1);
+
+    const swingIdx = queue.findIndex(
+      (c) =>
+        c.kind === 'motion_beat' &&
+        c.actor === 'far' &&
+        c.markers.includes('swing'),
+    );
+    const dodgeIdx = queue.findIndex(
+      (c) => c.kind === 'motion_beat' && c.markers.includes('dodge'),
+    );
+    expect(swingIdx).toBeGreaterThan(0);
+    expect(dodgeIdx).toBe(swingIdx + 1);
+
+    // reducedMotion still emits hit/dodge/defeat SFX.
+    const reduced = compileAnimationQueue(swordConnectReplay(), { reducedMotion: true });
+    const reducedMarkers = reduced.flatMap((c) =>
+      c.kind === 'motion_beat' ? [...c.markers] : [],
+    );
+    expect(reducedMarkers).toContain('hit');
+    expect(reducedMarkers).toContain('dodge');
+    expect(reducedMarkers).toContain('defeat');
+    expect(reduced.some((c) => c.kind === 'motion_beat' && c.hitStop)).toBe(false);
   });
 
   it('durations follow frame counts at 30 fps (not hard-coded attack ms)', () => {

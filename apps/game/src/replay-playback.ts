@@ -97,6 +97,56 @@ function attackHitConnects(events: readonly BattleEvent[], fromIndex: number): b
   return true;
 }
 
+/** Index of the sealed outcome event for this attack, or -1. */
+function lookAheadOutcomeIndex(
+  events: readonly BattleEvent[],
+  fromIndex: number,
+  type: 'damage_applied' | 'dodged',
+): number {
+  for (let i = fromIndex + 1; i < events.length; i += 1) {
+    const ev = events[i]!;
+    if (ev.type === type) return i;
+    if (
+      ev.type === 'attack_selected' ||
+      ev.type === 'turn_started' ||
+      ev.type === 'character_defeated' ||
+      ev.type === 'battle_ended' ||
+      ev.type === 'damage_applied' ||
+      ev.type === 'dodged'
+    ) {
+      break;
+    }
+  }
+  return -1;
+}
+
+function pushMotionBeat(
+  queue: AnimationCommand[],
+  actor: string,
+  beat: FightTimelineBeat,
+  extras: {
+    readonly victimId?: string;
+    readonly victimPoseKey?: string;
+    readonly fxFamily?: 'hit' | 'dodge' | 'defeat';
+  } = {},
+): void {
+  const hitContact =
+    beat.hitStop || (beat.markers.includes('hit') && extras.victimId != null);
+  const victimId = hitContact ? extras.victimId : undefined;
+  const victimPoseKey = hitContact ? extras.victimPoseKey : undefined;
+  queue.push({
+    kind: 'motion_beat',
+    actor,
+    poseKey: beat.poseKey,
+    frames: beat.frames,
+    markers: beat.markers,
+    ...(beat.hitStop ? { hitStop: true } : {}),
+    ...(victimId ? { victimId } : {}),
+    ...(victimPoseKey ? { victimPoseKey } : {}),
+    ...(extras.fxFamily ? { fxFamily: extras.fxFamily } : {}),
+  });
+}
+
 function pushBeats(
   queue: AnimationCommand[],
   actor: string,
@@ -104,21 +154,13 @@ function pushBeats(
   extras: {
     readonly victimId?: string;
     readonly victimPoseKey?: string;
-    readonly fxOnFirst?: 'dodge' | 'defeat';
+    readonly fxOnFirst?: 'hit' | 'dodge' | 'defeat';
   } = {},
 ): void {
   beats.forEach((beat, index) => {
-    const victimId = beat.hitStop ? extras.victimId : undefined;
-    const victimPoseKey = beat.hitStop ? extras.victimPoseKey : undefined;
-    queue.push({
-      kind: 'motion_beat',
-      actor,
-      poseKey: beat.poseKey,
-      frames: beat.frames,
-      markers: beat.markers,
-      ...(beat.hitStop ? { hitStop: true } : {}),
-      ...(victimId ? { victimId } : {}),
-      ...(victimPoseKey ? { victimPoseKey } : {}),
+    pushMotionBeat(queue, actor, beat, {
+      ...(extras.victimId ? { victimId: extras.victimId } : {}),
+      ...(extras.victimPoseKey ? { victimPoseKey: extras.victimPoseKey } : {}),
       ...(index === 0 && extras.fxOnFirst ? { fxFamily: extras.fxOnFirst } : {}),
     });
   });
@@ -139,8 +181,8 @@ export function commandDuration(cmd: AnimationCommand): number {
     case 'dodge_anim':
       return 0;
     case 'damage_pop':
-      // HP/FX tick only — hit SFX + hit_react pose ride the attack hit-stop beat.
-      return 120;
+      // HP/FX tick — interleaved on the hit frame; 0 ms so spark/HP share the contact beat.
+      return 0;
     case 'defeat_anim':
       return 0;
     case 'victory_screen':
@@ -174,6 +216,9 @@ export function compileAnimationQueue(
   }
 
   const events = replay.events as readonly BattleEvent[];
+  /** Outcome events interleaved into an attack beat stream — skip when reached. */
+  const consumed = new Set<number>();
+
   for (let i = 0; i < events.length; i += 1) {
     const ev = events[i]!;
     switch (ev.type) {
@@ -186,21 +231,65 @@ export function compileAnimationQueue(
         const weapon = weaponKindFor(replay, ev.actor);
         const hitConnects = attackHitConnects(events, i);
         const victimId = opponentOf(replay, ev.actor);
-        const beats = expandWeaponSequence(weapon, 'attack', { hitConnects, reducedMotion });
-        pushBeats(queue, ev.actor, beats, {
-          ...(victimId ? { victimId, victimPoseKey: 'hit_react' } : {}),
+        const beats = expandWeaponSequence(weapon, 'attack', {
+          hitConnects,
+          reducedMotion,
+          attack: ev.attack,
         });
+
+        const damageIdx = hitConnects ? lookAheadOutcomeIndex(events, i, 'damage_applied') : -1;
+        const dodgeIdx = !hitConnects ? lookAheadOutcomeIndex(events, i, 'dodged') : -1;
+        let damageInserted = false;
+        let dodgeInserted = false;
+
+        for (const beat of beats) {
+          const isContact = beat.hitStop || beat.markers.includes('hit');
+          // HP + spark immediately before the hit-marker beat so they share the
+          // contact frame with hit SFX / victim hit_react (damage_pop is 0 ms).
+          if (!damageInserted && damageIdx >= 0 && isContact) {
+            const dmg = events[damageIdx]!;
+            if (dmg.type === 'damage_applied') {
+              queue.push({
+                kind: 'damage_pop',
+                target: dmg.target,
+                amount: dmg.amount,
+                hpAfter: dmg.targetHpAfter,
+              });
+              consumed.add(damageIdx);
+              damageInserted = true;
+            }
+          }
+
+          pushMotionBeat(queue, ev.actor, beat, {
+            ...(victimId ? { victimId, victimPoseKey: 'hit_react' } : {}),
+            // Refresh spark on the marker beat so FX capture / presentation
+            // still see hit on the same command as the hit SFX marker.
+            ...(isContact ? { fxFamily: 'hit' as const } : {}),
+          });
+
+          // Whiff: defender dodge starts on the attacker's strike (swing) frame.
+          if (!dodgeInserted && dodgeIdx >= 0 && beat.markers.includes('swing')) {
+            const dodgeEv = events[dodgeIdx]!;
+            if (dodgeEv.type === 'dodged') {
+              const dodgeWeapon = weaponKindFor(replay, dodgeEv.actor);
+              const dodgeBeats = expandWeaponSequence(dodgeWeapon, 'dodge', { reducedMotion });
+              pushBeats(queue, dodgeEv.actor, dodgeBeats, { fxOnFirst: 'dodge' });
+              consumed.add(dodgeIdx);
+              dodgeInserted = true;
+            }
+          }
+        }
         break;
       }
       case 'dodged': {
+        if (consumed.has(i)) break;
         const weapon = weaponKindFor(replay, ev.actor);
         const beats = expandWeaponSequence(weapon, 'dodge', { reducedMotion });
         pushBeats(queue, ev.actor, beats, { fxOnFirst: 'dodge' });
-        // Keep a zero-duration dodge_anim so older FX helpers still see the kind
-        // if no motion_beat.fxFamily is read — primary path uses fxFamily.
         break;
       }
       case 'damage_applied':
+        if (consumed.has(i)) break;
         queue.push({
           kind: 'damage_pop',
           target: ev.target,

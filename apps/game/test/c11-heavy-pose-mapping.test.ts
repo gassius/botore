@@ -122,7 +122,8 @@ describe('C11 heavy-hit pose mapping', () => {
     const farBeats = queue.filter(
       (c) => c.kind === 'motion_beat' && c.actor === 'far' && c.poseKey !== 'walk_in',
     );
-    expect(nearBeats.some((c) => c.kind === 'motion_beat' && c.poseKey === 'windup')).toBe(true);
+    // basic trims anticipation; weapon keeps full windup so quick vs heavy stay readable.
+    expect(nearBeats.some((c) => c.kind === 'motion_beat' && c.poseKey === 'windup')).toBe(false);
     expect(nearBeats.some((c) => c.kind === 'motion_beat' && c.markers.includes('swing'))).toBe(
       true,
     );
@@ -130,6 +131,15 @@ describe('C11 heavy-hit pose mapping', () => {
     expect(farBeats.some((c) => c.kind === 'motion_beat' && c.markers.includes('swing'))).toBe(
       true,
     );
+    const nearFrames = nearBeats.reduce(
+      (n, c) => n + (c.kind === 'motion_beat' ? c.frames : 0),
+      0,
+    );
+    const farFrames = farBeats.reduce(
+      (n, c) => n + (c.kind === 'motion_beat' ? c.frames : 0),
+      0,
+    );
+    expect(nearFrames).toBeLessThan(farFrames);
     // Legacy coarse attack_anim mapping still works for SFX helpers.
     expect(sfxClipFromCommand({ kind: 'attack_anim', actor: 'a', attack: 'basic' })).toBe('swing');
     expect(

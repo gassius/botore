@@ -172,23 +172,17 @@ export const CanonicalReplayPlayer = forwardRef<
     [farFighter.hp, nearFighter.hp],
   );
 
-  const queue = useMemo(() => compileAnimationQueue(result.replay), [result.replay]);
   const media = useMemo(() => resolvePlaybackMedia(result), [result]);
 
   const [presentation, setPresentation] = useState<ReplayPresentationState>(() =>
     initialPresentationState(nearFighter.characterId, farFighter.characterId),
   );
   const [fxCues, setFxCues] = useState<ActiveFxCue[]>([]);
-  const [playbackUi, setPlaybackUi] = useState<PlaybackUiState>(() =>
-    initialPlaybackUi(queue.length),
-  );
   const [osReducedMotion, setOsReducedMotion] = useState(false);
   const playbackRef = useRef<PlaybackController | null>(null);
   const waitUntilRef = useRef(0);
   const cueSeqRef = useRef(0);
   const rafRef = useRef<number | null>(null);
-  const playbackUiRef = useRef(playbackUi);
-  playbackUiRef.current = playbackUi;
   const presentationRef = useRef(presentation);
   presentationRef.current = presentation;
   const perfEnabled = isPerfSampleEnabled();
@@ -198,6 +192,15 @@ export const CanonicalReplayPlayer = forwardRef<
   const perfPlayReadyMarkedRef = useRef(false);
 
   const reducedMotion = reducedMotionProp ?? osReducedMotion;
+  const queue = useMemo(
+    () => compileAnimationQueue(result.replay, { reducedMotion }),
+    [reducedMotion, result.replay],
+  );
+  const [playbackUi, setPlaybackUi] = useState<PlaybackUiState>(() =>
+    initialPlaybackUi(queue.length),
+  );
+  const playbackUiRef = useRef(playbackUi);
+  playbackUiRef.current = playbackUi;
 
   useEffect(() => {
     if (!perfEnabled || !perfSamplerRef.current) return;

@@ -39,8 +39,13 @@ export type ExpandTimingOptions = {
   readonly sequence: FightTimingSequenceName;
   /** Attack only: include hit-stop segments when the sealed hit connects. */
   readonly hitConnects?: boolean;
-  /** Snap keys, drop hit-stop, no walk bob (kit reducedMotion note). */
+  /** Snap keys, drop hit-stop hold, no walk bob (kit reducedMotion note). */
   readonly reducedMotion?: boolean;
+  /**
+   * Attack only: sealed `basic` trims anticipation windup/hold; `weapon` keeps
+   * the full kit windup so quick vs heavy stay readable.
+   */
+  readonly attack?: 'basic' | 'weapon';
 };
 
 type WeaponTimingTable = {
@@ -115,6 +120,9 @@ export function weaponTiming(
  * Expand kit timing segments into playback beats + audio markers.
  * Skipping hit-stop on a miss and reducedMotion are handled here so callers
  * stay free of hard-coded frame counts.
+ *
+ * reducedMotion drops hit-stop *hold* but keeps hit/dodge/defeat markers on
+ * the surviving strike / dodge / knockout beat so SFX never go silent.
  */
 export function expandTimingSegments(
   segments: readonly FightTimingSegment[],
@@ -122,6 +130,7 @@ export function expandTimingSegments(
 ): FightTimelineBeat[] {
   const reduced = Boolean(opts.reducedMotion);
   const hitConnects = opts.hitConnects !== false;
+  const quickAttack = opts.sequence === 'attack' && opts.attack === 'basic';
   const beats: FightTimelineBeat[] = [];
 
   let sawStrike = false;
@@ -133,27 +142,39 @@ export function expandTimingSegments(
   for (const segment of segments) {
     const ease = segment.ease;
     const isHitStop = ease === 'hit-stop';
+    const poseKey = segment.to;
+    const canonical = canonicalKitPoseKey(poseKey);
+
     if (opts.sequence === 'attack' && isHitStop && !hitConnects) {
       continue;
     }
+    // Quick (basic): drop anticipation windup + hold before the first strike.
+    if (quickAttack && !sawStrike) {
+      if (canonical === 'windup') continue;
+      if (ease === 'hold') continue;
+    }
+    // reducedMotion: skip hit-stop freeze; hit marker moves onto the strike beat.
     if (reduced && isHitStop) {
       continue;
     }
 
     let frames = Math.max(0, Math.floor(segment.frames));
     if (reduced) {
-      // Snap between keys; hold/hit-stop already skipped or zeroed.
+      // Snap between keys; hold already truncated.
       frames = ease === 'hold' ? Math.min(frames, 1) : 1;
     }
     if (frames <= 0) continue;
 
-    const poseKey = segment.to;
-    const canonical = canonicalKitPoseKey(poseKey);
     const markers: FightAudioMarker[] = [];
 
     if (opts.sequence === 'attack' && canonical === 'strike' && !isHitStop && !sawStrike) {
       markers.push('swing');
       sawStrike = true;
+      // When hit-stop is dropped for reduced motion, keep the hit clank on strike.
+      if (reduced && hitConnects && !sawHitStop) {
+        markers.push('hit');
+        sawHitStop = true;
+      }
     }
     if (opts.sequence === 'attack' && isHitStop && !sawHitStop) {
       markers.push('hit');

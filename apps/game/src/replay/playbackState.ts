@@ -117,8 +117,11 @@ export function applyAnimationCommand(
       if (cmd.victimId && cmd.victimPoseKey) {
         next = withPose(next, cmd.victimId, motionPoseFromKitKey(cmd.victimPoseKey));
       }
-      if (cmd.fxFamily === 'dodge' || cmd.fxFamily === 'defeat') {
-        const slot = slotFor(cmd.actor, state.near.characterId, state.far.characterId);
+      if (cmd.fxFamily === 'hit' || cmd.fxFamily === 'dodge' || cmd.fxFamily === 'defeat') {
+        const slot =
+          cmd.fxFamily === 'hit'
+            ? ('contact' as const)
+            : slotFor(cmd.actor, state.near.characterId, state.far.characterId);
         return {
           ...next,
           activeFx: [

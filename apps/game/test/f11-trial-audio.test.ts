@@ -130,8 +130,8 @@ describe('F11 cue mapping from replay commands', () => {
     });
     expect(sfx[0]).toBe('hush');
     expect(sfx).toContain('swing');
-    // Hit only when a sealed connect produces a hit-stop marker beat.
-    expect(sfx.includes('hit') || sfx.includes('dodge') || sfx.includes('defeat')).toBe(true);
+    // Golden 0 has connecting hits — hit clank must be present.
+    expect(sfx).toContain('hit');
     expect(sfx[sfx.length - 1] === 'win' || sfx.includes('defeat')).toBe(true);
     const again = compileAnimationQueue(result.replay).map((cmd) => sfxClipFromCommand(cmd));
     expect(again).toEqual(queue.map((cmd) => sfxClipFromCommand(cmd)));
