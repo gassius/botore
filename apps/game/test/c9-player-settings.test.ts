@@ -28,6 +28,10 @@ const sources = {
   defeat: { uri: 'defeat' },
   win: { uri: 'win' },
   musicLoop: { uri: 'music' },
+  newRecord: { uri: 'new-record' },
+  xpTick: { uri: 'xp-tick' },
+  equip: { uri: 'equip' },
+  select: { uri: 'select' },
 } as unknown as TrialAudioSources;
 
 describe('C9 player settings prefs', () => {

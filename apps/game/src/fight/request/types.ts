@@ -28,6 +28,12 @@ export type FightSuccess = {
   readonly utcDay: string;
   readonly repeated: boolean;
   readonly persistence: 'persisted' | 'repeated' | string;
+  /**
+   * Optional forward-compat NEW RECORD flag from combat-v1.
+   * Absent today — client must not invent a record from win/XP alone.
+   */
+  readonly newRecord?: boolean;
+  readonly isNewRecord?: boolean;
   readonly loadoutVersionIds: {
     readonly attacker: string | null;
     readonly defender: string | null;

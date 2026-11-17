@@ -21,6 +21,8 @@ import {
   View,
 } from 'react-native';
 import { useTrialReplayAudio } from '../audio/useTrialReplayAudio';
+import type { PlayCueOptions } from '../audio/TrialAudioSession';
+import type { TrialAudioUiCueId } from '../audio/trialAudioPin';
 import { BotAssembler } from '../assembler';
 import {
   ENVIRONMENT_LAYER_Z,
@@ -97,6 +99,8 @@ export type CanonicalReplayPlayerHandle = {
   pause: () => void;
   replay: () => void;
   playUiTap: () => void;
+  /** Result/Customise UI cues (newRecord / xpTick / equip / select). */
+  playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
   getPlaybackState: () => PlaybackUiState;
   /** Present only when `EXPO_PUBLIC_PERF_SAMPLE=1`; otherwise returns null. */
   getPerfSummary: () => FrameSampleSummary | null;
@@ -203,6 +207,9 @@ export const CanonicalReplayPlayer = forwardRef<
     effectsEnabled,
     playing: playbackUi.playing,
     enabled: media.assetsAvailable,
+    attackerId: nearFighter.characterId,
+    defenderId: farFighter.characterId,
+    builds: result.builds,
   });
 
   const emitPlayback = useCallback(
@@ -436,6 +443,13 @@ export const CanonicalReplayPlayer = forwardRef<
           // ignore
         }
       },
+      playCue: (id, options) => {
+        try {
+          trialAudio.playCue(id, options);
+        } catch {
+          // ignore
+        }
+      },
       getPlaybackState: () => playbackUiRef.current,
       getPerfSummary: () => {
         if (!perfSamplerRef.current) return null;
@@ -447,7 +461,7 @@ export const CanonicalReplayPlayer = forwardRef<
         );
       },
     }),
-    [emitPlayback, perfLoadKind, resetPlayback, trialAudio.playUiTap],
+    [emitPlayback, perfLoadKind, resetPlayback, trialAudio.playCue, trialAudio.playUiTap],
   );
 
   const onStageLayout = (e: LayoutChangeEvent) => {

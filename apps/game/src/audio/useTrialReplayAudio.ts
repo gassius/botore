@@ -2,15 +2,27 @@
  * Hook that binds a TrialAudioSession to CanonicalReplayPlayer lifecycle.
  * Failures never surface to the fight clock.
  */
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { AnimationCommand } from '../replay-playback';
+import type { SealedFightBuilds } from '../replay/fighterLoadout';
 import { createExpoAvBackend } from './expoAvBackend';
-import { createTrialAudioSession, type TrialAudioSession } from './TrialAudioSession';
+import {
+  createTrialAudioSession,
+  type PlayCueOptions,
+  type TrialAudioSession,
+} from './TrialAudioSession';
 import { TRIAL_AUDIO_METRO_SOURCES } from './trialAudioMetroAssets';
+import {
+  TRIAL_AMBIENT_METRO_SOURCE,
+  TRIAL_PART_AUDIO_METRO_SOURCES,
+} from './trialPartAudioMetroAssets';
+import { profilesFromFightBuilds } from './partAudioResolve';
+import type { TrialAudioUiCueId } from './trialAudioPin';
 
 export type TrialReplayAudioApi = {
   onCommand: (cmd: AnimationCommand) => void;
   playUiTap: () => void;
+  playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
   reset: () => void;
 };
 
@@ -20,6 +32,11 @@ export function useTrialReplayAudio(opts: {
   effectsEnabled?: boolean;
   playing: boolean;
   enabled?: boolean;
+  /** Attacker / defender character ids from the sealed replay. */
+  attackerId?: string;
+  defenderId?: string;
+  /** Sealed builds for part-tagged swing / chassis hit. */
+  builds?: SealedFightBuilds;
 }): TrialReplayAudioApi {
   const sessionRef = useRef<TrialAudioSession | null>(null);
   const mutedRef = useRef(opts.muted);
@@ -32,6 +49,21 @@ export function useTrialReplayAudio(opts: {
   playingRef.current = opts.playing;
   const enabled = opts.enabled !== false;
 
+  const fighterProfiles = useMemo(() => {
+    if (!opts.builds || !opts.attackerId || !opts.defenderId) return [];
+    return profilesFromFightBuilds({
+      attackerId: opts.attackerId,
+      defenderId: opts.defenderId,
+      attacker: opts.builds.attacker,
+      defender: opts.builds.defender,
+    });
+  }, [opts.attackerId, opts.defenderId, opts.builds]);
+
+  // Profiles are baked into the session at create time; recreate when they change.
+  const profileKey = fighterProfiles
+    .map((p) => `${p.characterId}:${p.weaponSwingCue ?? ''}:${p.chassisHitCue ?? ''}`)
+    .join('|');
+
   useEffect(() => {
     if (!enabled) {
       sessionRef.current = null;
@@ -40,6 +72,9 @@ export function useTrialReplayAudio(opts: {
     const session = createTrialAudioSession({
       backend: createExpoAvBackend(),
       sources: TRIAL_AUDIO_METRO_SOURCES,
+      partSources: TRIAL_PART_AUDIO_METRO_SOURCES,
+      ambientSource: TRIAL_AMBIENT_METRO_SOURCE,
+      fighterProfiles,
       muted: mutedRef.current,
       musicEnabled: musicEnabledRef.current,
       effectsEnabled: effectsEnabledRef.current,
@@ -50,7 +85,7 @@ export function useTrialReplayAudio(opts: {
       session.dispose();
       if (sessionRef.current === session) sessionRef.current = null;
     };
-  }, [enabled]);
+  }, [enabled, profileKey, fighterProfiles]);
 
   useEffect(() => {
     sessionRef.current?.setMuted(opts.muted);
@@ -84,6 +119,14 @@ export function useTrialReplayAudio(opts: {
     }
   }, []);
 
+  const playCue = useCallback((id: TrialAudioUiCueId, options?: PlayCueOptions) => {
+    try {
+      sessionRef.current?.playCue(id, options);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const reset = useCallback(() => {
     try {
       sessionRef.current?.reset();
@@ -92,5 +135,5 @@ export function useTrialReplayAudio(opts: {
     }
   }, []);
 
-  return { onCommand, playUiTap, reset };
+  return { onCommand, playUiTap, playCue, reset };
 }

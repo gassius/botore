@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Text, StyleSheet, View } from 'react-native';
+import { shouldPlayEquipCue, shouldPlaySelectCue } from '../../audio';
+import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import {
   PaintSwatch,
@@ -15,6 +17,7 @@ import {
 } from '../../garage-tag';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
+import { useFirstRun } from '../../first-run/FirstRunContext';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import {
   paintCatalogueId,
@@ -41,6 +44,8 @@ export function CustomiseScreen(props: {
     retryHydration,
     signOut,
   } = useGarageSession();
+  const { muted, musicEnabled, effectsEnabled } = useFirstRun();
+  const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const forced = useForcedSessionFailure();
   const [tab, setTab] = useState<CustomiseTab>('paint');
   const preview = loadout.pendingLoadout;
@@ -63,8 +68,21 @@ export function CustomiseScreen(props: {
     props.onBack();
   };
 
+  const onSelectPaint = (paintId: string) => {
+    if (editingLocked) return;
+    selectPaint(paintId);
+    if (shouldPlaySelectCue(true)) uiAudio.playCue('select');
+  };
+
+  const onSelectWeapon = (weaponId: string) => {
+    if (editingLocked) return;
+    selectWeapon(weaponId);
+    if (shouldPlaySelectCue(true)) uiAudio.playCue('select');
+  };
+
   const onSave = async () => {
     const ok = await save();
+    if (shouldPlayEquipCue(ok)) uiAudio.playCue('equip');
     if (ok) props.onSaved?.();
   };
 
@@ -215,7 +233,7 @@ export function CustomiseScreen(props: {
             color={garageTag.oxide}
             selected={previewPaint === 'oxide'}
             onPress={() => {
-              if (!editingLocked) selectPaint(paintCatalogueId('oxide'));
+              onSelectPaint(paintCatalogueId('oxide'));
             }}
           />
           <PaintSwatch
@@ -224,7 +242,7 @@ export function CustomiseScreen(props: {
             color={garageTag.petrol}
             selected={previewPaint === 'petrol'}
             onPress={() => {
-              if (!editingLocked) selectPaint(paintCatalogueId('petrol'));
+              onSelectPaint(paintCatalogueId('petrol'));
             }}
           />
         </View>
@@ -237,7 +255,7 @@ export function CustomiseScreen(props: {
               label={id}
               selected={previewWeapon === id}
               onPress={() => {
-                if (!editingLocked) selectWeapon(weaponCatalogueId(id));
+                onSelectWeapon(weaponCatalogueId(id));
               }}
             />
           ))}

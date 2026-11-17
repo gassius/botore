@@ -1,13 +1,24 @@
 /**
  * Active trial audio pack pin for F11 replay SFX + fight loop.
- * Placeholders only — mood provisional; not final / not native-accepted.
+ * trial-audio-v003: v002 + Result/Customise UI cues; real ElevenLabs audio, pending ear approval on phone.
  */
-export const ACTIVE_TRIAL_AUDIO_ASSET_VERSION = 'trial-audio-v001' as const;
+export const ACTIVE_TRIAL_AUDIO_ASSET_VERSION = 'trial-audio-v003' as const;
 export type ActiveTrialAudioAssetVersion = typeof ACTIVE_TRIAL_AUDIO_ASSET_VERSION;
 
-/** Clip ids matching trial-audio-v001 manifest. */
+/** Clip ids matching trial-audio-v003 manifest. */
 export type TrialAudioClipId =
-  'swing' | 'hit' | 'dodge' | 'defeat' | 'hush' | 'uiTap' | 'win' | 'musicLoop';
+  | 'swing'
+  | 'hit'
+  | 'dodge'
+  | 'defeat'
+  | 'hush'
+  | 'uiTap'
+  | 'win'
+  | 'musicLoop'
+  | 'newRecord'
+  | 'xpTick'
+  | 'equip'
+  | 'select';
 
 export const TRIAL_AUDIO_CLIP_IDS: readonly TrialAudioClipId[] = [
   'swing',
@@ -18,4 +29,18 @@ export const TRIAL_AUDIO_CLIP_IDS: readonly TrialAudioClipId[] = [
   'uiTap',
   'win',
   'musicLoop',
+  'newRecord',
+  'xpTick',
+  'equip',
+  'select',
+] as const;
+
+/** Screen-driven one-shots (Result overlay + Customise), played via TrialAudioSession.playCue. */
+export type TrialAudioUiCueId = 'newRecord' | 'xpTick' | 'equip' | 'select';
+
+export const TRIAL_AUDIO_UI_CUE_IDS: readonly TrialAudioUiCueId[] = [
+  'newRecord',
+  'xpTick',
+  'equip',
+  'select',
 ] as const;

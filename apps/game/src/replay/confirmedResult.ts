@@ -11,6 +11,7 @@ import {
   type BattleReplay,
 } from '@botore/replay';
 import type { FightComputeResponse } from '@botore/contracts';
+import { readServerNewRecordSignal } from '../audio/uiCueHelpers';
 import type { FightSuccess } from '../fight/request/types';
 import { ACTIVE_ENVIRONMENT_ASSET_VERSION } from '../arena/environmentPin';
 import { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from '../assembler/workshopFramePin';
@@ -43,6 +44,12 @@ export interface ConfirmedFightResult {
   readonly allowancesRemaining: number | null;
   readonly utcDay: string | null;
   readonly persistence: 'persisted' | 'repeated' | null;
+  /**
+   * Explicit server NEW RECORD signal when present.
+   * `true` only when combat-v1 reports a real record; `null` when absent
+   * (do not treat win/XP as a record).
+   */
+  readonly newRecord: boolean | null;
   readonly media: HistoricalMediaVersions;
   /** Authoritative sealed builds for assembler — not scene paint aliases. */
   readonly builds: SealedFightBuilds;
@@ -142,6 +149,7 @@ export function confirmedResultFromFightResponse(
     allowancesRemaining: response.allowancesRemaining,
     utcDay: response.utcDay,
     persistence: response.persistence,
+    newRecord: readServerNewRecordSignal(response),
     media: {
       environmentVersion: ACTIVE_ENVIRONMENT_ASSET_VERSION,
       kitVersion: ACTIVE_WORKSHOP_FRAME_ASSET_VERSION,
@@ -190,6 +198,7 @@ export function confirmedResultFromFightSuccess(fight: FightSuccess): ConfirmedF
     allowancesRemaining: fight.allowancesRemaining,
     utcDay: fight.utcDay,
     persistence,
+    newRecord: readServerNewRecordSignal(fight),
     media: {
       environmentVersion: ACTIVE_ENVIRONMENT_ASSET_VERSION,
       kitVersion: ACTIVE_WORKSHOP_FRAME_ASSET_VERSION,
@@ -223,6 +232,7 @@ export function confirmedResultFromDevReplay(
     allowancesRemaining: null,
     utcDay: null,
     persistence: null,
+    newRecord: null,
     media: {
       environmentVersion: media?.environmentVersion ?? ACTIVE_ENVIRONMENT_ASSET_VERSION,
       kitVersion: media?.kitVersion ?? ACTIVE_WORKSHOP_FRAME_ASSET_VERSION,

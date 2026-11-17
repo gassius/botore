@@ -2,22 +2,47 @@
  * Fire-and-forget trial audio session for CanonicalReplayPlayer.
  * Never throws; never awaits on the fight clock.
  *
- * Music starts use a generation token invalidated by reset / victory stop /
- * dispose so deferred startLoop completions cannot leak or revive audio.
- * One-shots are owned until natural end, mute, reset, or dispose.
+ * Music + arena ambient start use a generation token invalidated by reset /
+ * victory stop / dispose so deferred startLoop completions cannot leak or
+ * revive audio. One-shots are owned until natural end, mute, reset, or dispose.
+ *
+ * Part swings / chassis hits prefer equipped sound tags when sources exist;
+ * otherwise fall back to base trial clips.
  */
 import type { AnimationCommand } from '../replay-playback';
-import { sfxClipFromCommand, shouldStartMusicLoop, shouldStopMusicLoop } from './cueFromCommand';
+import { shouldStartMusicLoop, shouldStopMusicLoop } from './cueFromCommand';
 import type { AudioSource, LoopHandle, OneShotHandle, TrialAudioBackend } from './audioBackend';
 import { createNoopAudioBackend } from './audioBackend';
 import { trialAudioClipVolume } from './trialAudioManifest';
-import type { TrialAudioClipId } from './trialAudioPin';
+import type { TrialAudioClipId, TrialAudioUiCueId } from './trialAudioPin';
+import {
+  ARENA_AMBIENT_VOLUME,
+  resolveOneShotCue,
+  shouldStartAmbientLoop,
+  shouldStopAmbientLoop,
+  type FighterAudioProfile,
+  type PartAudioCueId,
+} from './partAudioResolve';
 
 export type TrialAudioSources = Readonly<Record<TrialAudioClipId, AudioSource | null>>;
+
+export type TrialPartAudioSources = Readonly<Partial<Record<PartAudioCueId, AudioSource | null>>>;
+
+/** Optional pitch/volume multipliers for UI cues (e.g. XP tick variation). */
+export type PlayCueOptions = {
+  readonly rate?: number;
+  readonly volumeScale?: number;
+};
 
 export type TrialAudioSessionOptions = {
   readonly backend?: TrialAudioBackend;
   readonly sources: TrialAudioSources;
+  /** Optional equipped-part oneshots (weapon swing / chassis hit). */
+  readonly partSources?: TrialPartAudioSources;
+  /** Optional arena ambient loop (Music channel). */
+  readonly ambientSource?: AudioSource | null;
+  /** Character → equipped sound profile for part cue lookup. */
+  readonly fighterProfiles?: readonly FighterAudioProfile[];
   /** Master mute — silences music + effects. */
   readonly muted?: boolean;
   /** Independent music channel (default true). Master mute still wins. */
@@ -30,6 +55,8 @@ export type TrialAudioSessionOptions = {
 export type TrialAudioSession = {
   notifyCommand: (cmd: AnimationCommand) => void;
   playUiTap: () => void;
+  /** Result overlay / Customise one-shots (new record, XP tick, equip, card select). Fire-and-forget. */
+  playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
   setMuted: (muted: boolean) => void;
   setMusicEnabled: (enabled: boolean) => void;
   setEffectsEnabled: (enabled: boolean) => void;
@@ -55,6 +82,9 @@ function safeRun(label: string, fn: () => Promise<void>, onFail: () => void): vo
 export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAudioSession {
   const backend = opts.backend ?? createNoopAudioBackend();
   const sources = opts.sources;
+  const partSources = opts.partSources ?? {};
+  const ambientSource = opts.ambientSource ?? null;
+  const fighterProfiles = opts.fighterProfiles ?? [];
   let muted = Boolean(opts.muted);
   let musicEnabled = opts.musicEnabled !== false;
   let effectsEnabled = opts.effectsEnabled !== false;
@@ -64,6 +94,9 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
   let musicStarted = false;
   /** Bumped on stopMusic / reset / dispose — invalidates in-flight startLoop. */
   let musicGeneration = 0;
+  let ambient: LoopHandle | null = null;
+  let ambientStarted = false;
+  let ambientGeneration = 0;
   let modeEnsured = false;
   const oneshots = new Set<OneShotHandle>();
   const stats = { cues: 0, failures: 0 };
@@ -101,22 +134,29 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     }
   };
 
-  const playClip = (id: TrialAudioClipId) => {
+  const playSource = (
+    label: string,
+    source: AudioSource | null | undefined,
+    volume: number,
+    rate?: number,
+  ) => {
     if (disposed) return;
     stats.cues += 1;
     if (effectsChannelMuted()) return;
-    const source = sources[id];
     if (source == null) {
       stats.failures += 1;
       return;
     }
     ensureMode();
-    const volume = trialAudioClipVolume(id);
     const channelMuted = effectsChannelMuted();
+    const shotOpts =
+      typeof rate === 'number' && Number.isFinite(rate)
+        ? { volume, muted: channelMuted, rate }
+        : { volume, muted: channelMuted };
     safeRun(
-      id,
+      label,
       async () => {
-        const handle = await backend.playOneShot(source, { volume, muted: channelMuted });
+        const handle = await backend.playOneShot(source, shotOpts);
         if (!handle) {
           stats.failures += 1;
           return;
@@ -146,6 +186,38 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
         stats.failures += 1;
       },
     );
+  };
+
+  const playClip = (id: TrialAudioClipId, options?: PlayCueOptions) => {
+    const scale =
+      typeof options?.volumeScale === 'number' && Number.isFinite(options.volumeScale)
+        ? options.volumeScale
+        : 1;
+    const volume = Math.max(0, Math.min(1, trialAudioClipVolume(id) * scale));
+    const rate =
+      typeof options?.rate === 'number' && Number.isFinite(options.rate) ? options.rate : undefined;
+    playSource(id, sources[id], volume, rate);
+  };
+
+  const playResolved = (cmd: AnimationCommand) => {
+    const cue = resolveOneShotCue(cmd, fighterProfiles);
+    if (!cue) return;
+    if (cue.kind === 'part') {
+      const partSource = partSources[cue.id];
+      if (partSource != null) {
+        // Part clips ship at unity gain; match base swing/hit volume from the trial manifest.
+        const volume =
+          cue.id === 'chassisBasicHit'
+            ? trialAudioClipVolume('hit')
+            : trialAudioClipVolume('swing');
+        playSource(cue.id, partSource, volume);
+        return;
+      }
+      // Missing part source → base fallback (never block).
+      playClip(cue.id === 'chassisBasicHit' ? 'hit' : 'swing');
+      return;
+    }
+    playClip(cue.id);
   };
 
   const reconcileMusic = async (handle: LoopHandle) => {
@@ -200,6 +272,47 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     );
   };
 
+  const startAmbient = () => {
+    if (disposed || ambientStarted) return;
+    ambientStarted = true;
+    const generation = ambientGeneration;
+    if (ambientSource == null) {
+      // Ambient is optional — missing source is not a failure for the fight clock.
+      ambientStarted = false;
+      return;
+    }
+    ensureMode();
+    safeRun(
+      'ambient',
+      async () => {
+        const handle = await backend.startLoop(ambientSource, { volume: ARENA_AMBIENT_VOLUME });
+        if (!handle) {
+          if (generation === ambientGeneration) ambientStarted = false;
+          stats.failures += 1;
+          return;
+        }
+        if (disposed || generation !== ambientGeneration) {
+          await handle.stop();
+          return;
+        }
+        ambient = handle;
+        try {
+          await reconcileMusic(handle);
+        } catch {
+          stats.failures += 1;
+        }
+        if (disposed || generation !== ambientGeneration) {
+          if (ambient === handle) ambient = null;
+          await handle.stop();
+        }
+      },
+      () => {
+        stats.failures += 1;
+        if (generation === ambientGeneration) ambientStarted = false;
+      },
+    );
+  };
+
   const reconcileOwnedOneShots = () => {
     const channelMuted = effectsChannelMuted();
     for (const handle of oneshots) {
@@ -214,15 +327,16 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
   };
 
   const reconcileOwnedMusic = () => {
-    const handle = music;
-    if (!handle) return;
-    safeRun(
-      'setMuted',
-      () => reconcileMusic(handle),
-      () => {
-        stats.failures += 1;
-      },
-    );
+    for (const handle of [music, ambient]) {
+      if (!handle) continue;
+      safeRun(
+        'setMuted',
+        () => reconcileMusic(handle),
+        () => {
+          stats.failures += 1;
+        },
+      );
+    }
   };
 
   const stopMusic = () => {
@@ -240,17 +354,36 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     );
   };
 
+  const stopAmbient = () => {
+    ambientGeneration += 1;
+    const handle = ambient;
+    ambient = null;
+    ambientStarted = false;
+    if (!handle) return;
+    safeRun(
+      'stopAmbient',
+      () => handle.stop(),
+      () => {
+        stats.failures += 1;
+      },
+    );
+  };
+
   return {
     stats,
     notifyCommand: (cmd) => {
       if (disposed) return;
-      const sfx = sfxClipFromCommand(cmd);
-      if (sfx) playClip(sfx);
+      playResolved(cmd);
       if (shouldStartMusicLoop(cmd)) startMusic();
+      if (shouldStartAmbientLoop(cmd)) startAmbient();
       if (shouldStopMusicLoop(cmd)) stopMusic();
+      if (shouldStopAmbientLoop(cmd)) stopAmbient();
     },
     playUiTap: () => {
       playClip('uiTap');
+    },
+    playCue: (id, options) => {
+      playClip(id, options);
     },
     setMuted: (next) => {
       muted = Boolean(next);
@@ -267,26 +400,29 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     },
     setPlaying: (next) => {
       playing = Boolean(next);
-      const handle = music;
-      if (!handle) return;
-      safeRun(
-        'setPlaying',
-        () => handle.setPaused(!playing),
-        () => {
-          stats.failures += 1;
-        },
-      );
+      for (const handle of [music, ambient]) {
+        if (!handle) continue;
+        safeRun(
+          'setPlaying',
+          () => handle.setPaused(!playing),
+          () => {
+            stats.failures += 1;
+          },
+        );
+      }
     },
     reset: () => {
       if (disposed) return;
       stopOwnedOneShots();
       stopMusic();
+      stopAmbient();
     },
     dispose: () => {
       if (disposed) return;
       disposed = true;
       stopOwnedOneShots();
       stopMusic();
+      stopAmbient();
     },
   };
 }

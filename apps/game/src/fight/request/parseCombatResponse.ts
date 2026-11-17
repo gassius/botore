@@ -38,6 +38,8 @@ export function parseCombatSuccess(
     utcDay: String(body.utcDay ?? ''),
     repeated: body.repeated === true,
     persistence: String(body.persistence ?? (body.repeated === true ? 'repeated' : 'persisted')),
+    ...(typeof body.newRecord === 'boolean' ? { newRecord: body.newRecord } : {}),
+    ...(typeof body.isNewRecord === 'boolean' ? { isNewRecord: body.isNewRecord } : {}),
     loadoutVersionIds: {
       attacker: typeof loadoutVersionIds?.attacker === 'string' ? loadoutVersionIds.attacker : null,
       defender: typeof loadoutVersionIds?.defender === 'string' ? loadoutVersionIds.defender : null,

@@ -6,6 +6,7 @@ import { compileAnimationQueue } from '../src/replay-playback';
 import {
   ACTIVE_TRIAL_AUDIO_ASSET_VERSION,
   TRIAL_AUDIO_CLIP_IDS,
+  TRIAL_AUDIO_UI_CUE_IDS,
   TRIAL_AUDIO_MANIFEST,
   TRIAL_AUDIO_PLATFORM_MODE,
   TRIAL_AUDIO_SEALED_SHA256,
@@ -25,7 +26,7 @@ import {
 } from '../src/audio';
 import { loadDevGoldenConfirmedResult } from '../src/replay';
 
-const packRoot = join(process.cwd(), 'assets/trial-audio-v001');
+const packRoot = join(process.cwd(), 'assets/trial-audio-v003');
 
 const sources: TrialAudioSources = {
   swing: 1,
@@ -36,6 +37,10 @@ const sources: TrialAudioSources = {
   uiTap: 6,
   win: 7,
   musicLoop: 8,
+  newRecord: 9,
+  xpTick: 10,
+  equip: 11,
+  select: 12,
 };
 
 function deferred<T>() {
@@ -48,21 +53,21 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-describe('F11 trial-audio-v001 pack seal', () => {
-  it('pins coherent trial-audio-v001 and lists the 8 trial clips', () => {
-    expect(ACTIVE_TRIAL_AUDIO_ASSET_VERSION).toBe('trial-audio-v001');
-    expect(TRIAL_AUDIO_MANIFEST.version).toBe('trial-audio-v001');
-    expect(TRIAL_AUDIO_CLIP_IDS).toHaveLength(8);
+describe('F11 trial-audio-v003 pack seal', () => {
+  it('pins coherent trial-audio-v003 and lists the 12 trial clips', () => {
+    expect(ACTIVE_TRIAL_AUDIO_ASSET_VERSION).toBe('trial-audio-v003');
+    expect(TRIAL_AUDIO_MANIFEST.version).toBe('trial-audio-v003');
+    expect(TRIAL_AUDIO_CLIP_IDS).toHaveLength(12);
     for (const id of TRIAL_AUDIO_CLIP_IDS) {
       expect(TRIAL_AUDIO_MANIFEST.clips[id]).toBeTruthy();
-      expect(TRIAL_AUDIO_MANIFEST.clips[id].placeholder).toBe(true);
+      expect(TRIAL_AUDIO_MANIFEST.clips[id].placeholder).toBe(false);
     }
   });
 
   it('records provenance gate: no paid generation without product-owner go', () => {
-    expect(TRIAL_AUDIO_MANIFEST.paid_generation.used).toBe(false);
-    expect(TRIAL_AUDIO_MANIFEST.paid_generation.product_owner_go).toBe(false);
-    expect(TRIAL_AUDIO_MANIFEST.paid_generation.credit_cost).toBeNull();
+    expect(TRIAL_AUDIO_MANIFEST.paid_generation.used).toBe(true);
+    expect(TRIAL_AUDIO_MANIFEST.paid_generation.product_owner_go).toBe(true);
+    expect(TRIAL_AUDIO_MANIFEST.paid_generation.credit_cost).toBe(1216);
     expect(() => assertNoPaidGenerationWithoutGo()).not.toThrow();
     expect(existsSync(join(packRoot, 'PROVENANCE.md'))).toBe(true);
   });
@@ -119,6 +124,10 @@ describe('F11 TrialAudioSession never blocks / desyncs', () => {
     uiTap: null,
     win: null,
     musicLoop: null,
+    newRecord: null,
+    xpTick: null,
+    equip: null,
+    select: null,
   };
 
   it('missing sources increment failures but notifyCommand does not throw', async () => {
@@ -166,6 +175,80 @@ describe('F11 TrialAudioSession never blocks / desyncs', () => {
     expect(oneshotCreates).toBe(1);
     expect(trialAudioClipVolume('musicLoop')).toBeGreaterThan(0);
     expect(trialAudioClipVolume('musicLoop')).toBeLessThanOrEqual(1);
+    session.dispose();
+  });
+
+  it('playCue plays each Result/Customise cue and respects master mute', async () => {
+    const played: unknown[] = [];
+    const backend: TrialAudioBackend = {
+      ensureMode: async () => undefined,
+      playOneShot: async (source) => {
+        played.push(source);
+        return {
+          setMuted: async () => undefined,
+          play: async () => undefined,
+          stop: async () => undefined,
+        };
+      },
+      startLoop: async () => ({
+        setMuted: async () => undefined,
+        setPaused: async () => undefined,
+        stop: async () => undefined,
+      }),
+    };
+    const session = createTrialAudioSession({ backend, sources, muted: true });
+    for (const id of TRIAL_AUDIO_UI_CUE_IDS) session.playCue(id);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(played).toHaveLength(0);
+    session.setMuted(false);
+    for (const id of TRIAL_AUDIO_UI_CUE_IDS) session.playCue(id);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(played).toEqual([9, 10, 11, 12]);
+    for (const id of TRIAL_AUDIO_UI_CUE_IDS) {
+      expect(TRIAL_AUDIO_MANIFEST.clips[id].kind).toBe('oneshot');
+      expect(trialAudioClipVolume(id)).toBeGreaterThan(0);
+    }
+    session.dispose();
+  });
+
+  it('playCue applies rate/volumeScale for xpTick and stays silent when muted', async () => {
+    const shots: Array<{ source: unknown; volume: number; rate?: number }> = [];
+    const backend: TrialAudioBackend = {
+      ensureMode: async () => undefined,
+      playOneShot: async (source, opts) => {
+        shots.push({
+          source,
+          volume: opts.volume,
+          ...(opts.rate !== undefined ? { rate: opts.rate } : {}),
+        });
+        return {
+          setMuted: async () => undefined,
+          play: async () => undefined,
+          stop: async () => undefined,
+        };
+      },
+      startLoop: async () => ({
+        setMuted: async () => undefined,
+        setPaused: async () => undefined,
+        stop: async () => undefined,
+      }),
+    };
+    const session = createTrialAudioSession({ backend, sources, muted: false });
+    const base = trialAudioClipVolume('xpTick');
+    session.playCue('xpTick', { rate: 1.05, volumeScale: 0.8 });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toEqual([{ source: 10, volume: base * 0.8, rate: 1.05 }]);
+
+    session.setMuted(true);
+    session.playCue('xpTick', { rate: 0.95, volumeScale: 1.2 });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toHaveLength(1);
+
+    session.setMuted(false);
+    session.setEffectsEnabled(false);
+    session.playCue('xpTick', { rate: 1.02, volumeScale: 1 });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toHaveLength(1);
     session.dispose();
   });
 
