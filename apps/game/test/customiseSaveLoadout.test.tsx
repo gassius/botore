@@ -64,6 +64,22 @@ vi.mock('../src/session-failure/useForcedSessionFailure', () => ({
   useForcedSessionFailure: () => null,
 }));
 
+/** C14 wired UI cues into Customise; vitest cannot parse Metro `require(.m4a)`. */
+vi.mock('../src/audio/useTrialUiAudio', () => ({
+  useTrialUiAudio: () => ({
+    playUiTap: () => undefined,
+    playCue: () => undefined,
+  }),
+}));
+
+vi.mock('../src/first-run/FirstRunContext', () => ({
+  useFirstRun: () => ({
+    muted: true,
+    musicEnabled: false,
+    effectsEnabled: false,
+  }),
+}));
+
 import TestRenderer, { ReactTestRenderer, act } from 'react-test-renderer';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { measureScreenChromeLayout } from '../src/garage-tag/screenChromeLayout';
