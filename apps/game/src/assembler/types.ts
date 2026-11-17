@@ -23,6 +23,11 @@ export type BotFacing = 'left' | 'right';
  * - `portrait` → kit `portrait` (A5 ranking head-and-shoulders; paint+weapon).
  * - `victory` → kit `victory` (A3 approved overhead raised-weapon on kit-v003.1).
  * - `defeat` → kit `defeat` (A3 approved kneeling KO).
+ * - A2 fight keys (kit-v003.1 first pass): `walk_in`, `windup`, `strike`,
+ *   `follow_through`, `recovery`, `hit_react`, `knockout`. Legacy
+ *   `attack` / `heavy_*` / `hit` remain and alias onto strike/windup/hit_react.
+ *   Future in-between / fall pose keys pass through via timing data without
+ *   extending this union (see `motionPoseFromKitKey`).
  */
 export type MotionPose =
   | 'idle'
@@ -33,7 +38,14 @@ export type MotionPose =
   | 'hit'
   | 'defeat'
   | 'portrait'
-  | 'victory';
+  | 'victory'
+  | 'walk_in'
+  | 'windup'
+  | 'strike'
+  | 'follow_through'
+  | 'recovery'
+  | 'hit_react'
+  | 'knockout';
 
 /**
  * First-proof sample paints (Art Direction v0.3).

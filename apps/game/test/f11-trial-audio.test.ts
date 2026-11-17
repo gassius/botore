@@ -85,11 +85,31 @@ describe('F11 cue mapping from replay commands', () => {
   it('maps combat animation commands to trial SFX ids', () => {
     expect(sfxClipFromCommand({ kind: 'show_battle', attacker: 'a', defender: 'b' })).toBe('hush');
     expect(sfxClipFromCommand({ kind: 'attack_anim', actor: 'a', attack: 'basic' })).toBe('swing');
-    expect(sfxClipFromCommand({ kind: 'dodge_anim', actor: 'a' })).toBe('dodge');
-    expect(sfxClipFromCommand({ kind: 'damage_pop', target: 'b', amount: 3, hpAfter: 7 })).toBe(
-      'hit',
-    );
-    expect(sfxClipFromCommand({ kind: 'defeat_anim', characterId: 'b' })).toBe('defeat');
+    // A2: dodge/hit/defeat fire from motion_beat frame markers, not coarse commands.
+    expect(sfxClipFromCommand({ kind: 'dodge_anim', actor: 'a' })).toBeNull();
+    expect(
+      sfxClipFromCommand({ kind: 'damage_pop', target: 'b', amount: 3, hpAfter: 7 }),
+    ).toBeNull();
+    expect(sfxClipFromCommand({ kind: 'defeat_anim', characterId: 'b' })).toBeNull();
+    expect(
+      sfxClipFromCommand({
+        kind: 'motion_beat',
+        actor: 'a',
+        poseKey: 'strike',
+        frames: 2,
+        markers: ['swing'],
+      }),
+    ).toBe('swing');
+    expect(
+      sfxClipFromCommand({
+        kind: 'motion_beat',
+        actor: 'a',
+        poseKey: 'strike',
+        frames: 3,
+        markers: ['hit'],
+        hitStop: true,
+      }),
+    ).toBe('hit');
     expect(sfxClipFromCommand({ kind: 'victory_screen', winner: 'a' })).toBe('win');
     expect(sfxClipFromCommand({ kind: 'victory_screen', winner: null })).toBeNull();
     expect(sfxClipFromCommand({ kind: 'turn_banner', actor: 'a' })).toBeNull();
@@ -104,10 +124,14 @@ describe('F11 cue mapping from replay commands', () => {
   it('golden replay queue yields the expected SFX sequence (determinism)', () => {
     const result = loadDevGoldenConfirmedResult(0);
     const queue = compileAnimationQueue(result.replay);
-    const sfx = queue.map((cmd) => sfxClipFromCommand(cmd)).filter(Boolean);
+    const sfx = queue.flatMap((cmd) => {
+      const clip = sfxClipFromCommand(cmd);
+      return clip ? [clip] : [];
+    });
     expect(sfx[0]).toBe('hush');
     expect(sfx).toContain('swing');
-    expect(sfx).toContain('hit');
+    // Hit only when a sealed connect produces a hit-stop marker beat.
+    expect(sfx.includes('hit') || sfx.includes('dodge') || sfx.includes('defeat')).toBe(true);
     expect(sfx[sfx.length - 1] === 'win' || sfx.includes('defeat')).toBe(true);
     const again = compileAnimationQueue(result.replay).map((cmd) => sfxClipFromCommand(cmd));
     expect(again).toEqual(queue.map((cmd) => sfxClipFromCommand(cmd)));
@@ -170,7 +194,14 @@ describe('F11 TrialAudioSession never blocks / desyncs', () => {
     session.playUiTap();
     expect(oneshotCreates).toBe(0);
     session.setMuted(false);
-    session.notifyCommand({ kind: 'damage_pop', target: 'b', amount: 1, hpAfter: 9 });
+    session.notifyCommand({
+      kind: 'motion_beat',
+      actor: 'a',
+      poseKey: 'strike',
+      frames: 3,
+      markers: ['hit'],
+      hitStop: true,
+    });
     await new Promise((r) => setTimeout(r, 0));
     expect(oneshotCreates).toBe(1);
     expect(trialAudioClipVolume('musicLoop')).toBeGreaterThan(0);
@@ -446,7 +477,14 @@ describe('F11 deferred load / control transitions (PRR blockers)', () => {
     };
     const session = createTrialAudioSession({ backend, sources, muted: false });
     // Fire and continue immediately — must not block.
-    session.notifyCommand({ kind: 'damage_pop', target: 'b', amount: 1, hpAfter: 9 });
+    session.notifyCommand({
+      kind: 'motion_beat',
+      actor: 'a',
+      poseKey: 'strike',
+      frames: 3,
+      markers: ['hit'],
+      hitStop: true,
+    });
     session.setMuted(true);
     session.dispose();
     shot.resolve(handle);

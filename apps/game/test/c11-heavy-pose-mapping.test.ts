@@ -30,6 +30,13 @@ describe('C11 heavy-hit pose mapping', () => {
       'defeat',
       'portrait',
       'victory',
+      'walk_in',
+      'windup',
+      'strike',
+      'follow_through',
+      'recovery',
+      'hit_react',
+      'knockout',
     ]);
     expect(isMotionPose('heavy_windup')).toBe(true);
     expect(isMotionPose('heavy_attack')).toBe(true);
@@ -106,17 +113,36 @@ describe('C11 heavy-hit pose mapping', () => {
     });
 
     const queue = compileAnimationQueue(replay);
+    // A2: sealed attacks expand to kit timing motion_beats (not coarse attack_anim).
     const attacks = queue.filter((c) => c.kind === 'attack_anim');
-    expect(attacks).toEqual([
-      { kind: 'attack_anim', actor: 'near', attack: 'basic' },
-      { kind: 'attack_anim', actor: 'far', attack: 'weapon', heavyPhase: 'windup' },
-      { kind: 'attack_anim', actor: 'far', attack: 'weapon', heavyPhase: 'strike' },
-    ]);
-    expect(commandDuration(attacks[1]!)).toBe(280);
-    expect(commandDuration(attacks[2]!)).toBe(420);
-    expect(sfxClipFromCommand(attacks[1]!)).toBeNull();
-    expect(sfxClipFromCommand(attacks[2]!)).toBe('swing');
-    expect(sfxClipFromCommand(attacks[0]!)).toBe('swing');
+    expect(attacks).toEqual([]);
+    const nearBeats = queue.filter(
+      (c) => c.kind === 'motion_beat' && c.actor === 'near' && c.poseKey !== 'walk_in',
+    );
+    const farBeats = queue.filter(
+      (c) => c.kind === 'motion_beat' && c.actor === 'far' && c.poseKey !== 'walk_in',
+    );
+    expect(nearBeats.some((c) => c.kind === 'motion_beat' && c.poseKey === 'windup')).toBe(true);
+    expect(nearBeats.some((c) => c.kind === 'motion_beat' && c.markers.includes('swing'))).toBe(
+      true,
+    );
+    expect(farBeats.some((c) => c.kind === 'motion_beat' && c.poseKey === 'windup')).toBe(true);
+    expect(farBeats.some((c) => c.kind === 'motion_beat' && c.markers.includes('swing'))).toBe(
+      true,
+    );
+    // Legacy coarse attack_anim mapping still works for SFX helpers.
+    expect(sfxClipFromCommand({ kind: 'attack_anim', actor: 'a', attack: 'basic' })).toBe('swing');
+    expect(
+      sfxClipFromCommand({
+        kind: 'attack_anim',
+        actor: 'a',
+        attack: 'weapon',
+        heavyPhase: 'windup',
+      }),
+    ).toBeNull();
+    expect(
+      commandDuration({ kind: 'attack_anim', actor: 'a', attack: 'weapon', heavyPhase: 'windup' }),
+    ).toBe(280);
   });
 
   it('drives presentation poses from sealed attack_anim commands', () => {

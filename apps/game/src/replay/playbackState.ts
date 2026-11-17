@@ -4,6 +4,7 @@
  */
 import type { AnimationCommand } from '../replay-playback';
 import { motionPoseFromSealedAttack } from '../assembler/motionPoseMapping';
+import { motionPoseFromKitKey } from '../fight/a2FightTimeline';
 import type { MotionPose } from '../assembler/types';
 import type { FxFamily } from '../arena';
 
@@ -109,6 +110,23 @@ export function applyAnimationCommand(
         ...withPose(state, cmd.characterId, 'defeat'),
         activeFx: [{ family: 'defeat', targetSlot: slot, cueKey: `defeat-${cueSeq}` }],
       };
+    }
+    case 'motion_beat': {
+      const pose = motionPoseFromKitKey(cmd.poseKey);
+      let next = withPose(state, cmd.actor, pose);
+      if (cmd.victimId && cmd.victimPoseKey) {
+        next = withPose(next, cmd.victimId, motionPoseFromKitKey(cmd.victimPoseKey));
+      }
+      if (cmd.fxFamily === 'dodge' || cmd.fxFamily === 'defeat') {
+        const slot = slotFor(cmd.actor, state.near.characterId, state.far.characterId);
+        return {
+          ...next,
+          activeFx: [
+            { family: cmd.fxFamily, targetSlot: slot, cueKey: `${cmd.fxFamily}-${cueSeq}` },
+          ],
+        };
+      }
+      return { ...next, activeFx: [] };
     }
     case 'victory_screen':
       return {

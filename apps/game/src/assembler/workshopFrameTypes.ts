@@ -82,6 +82,50 @@ export interface WorkshopFrameManifest {
   readonly poses: Readonly<Record<string, KitPoseTable>>;
   readonly pose_format?: Readonly<Record<string, string>>;
   readonly pose_aliases?: Readonly<Record<string, string>>;
+  /** A2 30 fps sequences per weapon (segments `{to, frames, ease}`). */
+  readonly timing?: {
+    readonly fps: number;
+    readonly per_weapon: Readonly<
+      Record<
+        string,
+        {
+          readonly hit_stop_frames?: number;
+          readonly attack_total_frames?: number;
+          readonly walk_in?: readonly {
+            readonly to: string;
+            readonly frames: number;
+            readonly ease: string;
+            readonly note?: string;
+          }[];
+          readonly attack?: readonly {
+            readonly to: string;
+            readonly frames: number;
+            readonly ease: string;
+            readonly note?: string;
+          }[];
+          readonly dodge?: readonly {
+            readonly to: string;
+            readonly frames: number;
+            readonly ease: string;
+            readonly note?: string;
+          }[];
+          readonly hit_react?: readonly {
+            readonly to: string;
+            readonly frames: number;
+            readonly ease: string;
+            readonly note?: string;
+          }[];
+          readonly knockout?: readonly {
+            readonly to: string;
+            readonly frames: number;
+            readonly ease: string;
+            readonly note?: string;
+          }[];
+        }
+      >
+    >;
+    readonly how_to_play?: string;
+  };
   readonly assets: readonly KitAsset[];
   readonly integration: {
     readonly component?: string;

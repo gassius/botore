@@ -54,7 +54,7 @@ export const ACTIVE_WORKSHOP_FRAME_FAMILY =
  * F7 MotionPose → kit pose key (sketch motion).
  * Combat authority is sealed replay events → MotionPose (see
  * `motionPoseFromSealedAttack`); this table only resolves kit geometry.
- * Attack/dodge/hit in v003 are v002 carry-overs (A2 later) — integrate as shipped.
+ * Legacy attack / heavy_* / hit keys remain; pose_aliases map them onto A2 keys.
  */
 export const MOTION_POSE_TO_KIT: Readonly<Record<MotionPose, string>> = {
   idle: 'idle',
@@ -67,6 +67,14 @@ export const MOTION_POSE_TO_KIT: Readonly<Record<MotionPose, string>> = {
   // A5: kit `portrait` (paint+weapon). A3: approved overhead `victory`.
   portrait: 'portrait',
   victory: 'victory',
+  // A2 first-pass fight keys (kit-v003.1 timing).
+  walk_in: 'walk_in',
+  windup: 'windup',
+  strike: 'strike',
+  follow_through: 'follow_through',
+  recovery: 'recovery',
+  hit_react: 'hit_react',
+  knockout: 'knockout',
 };
 
 /** Resolve MotionPose → kit pose key; fall back when the active pin lacks the key. */
@@ -373,7 +381,7 @@ export function listWorkshopFrameGaps(): readonly string[] {
     'weapon_grip_rotation_degrees removed — weapons are normal children of hand_r.grip with per-weapon attach_angle.',
     'Always draw hand_l_wrap / hand_r_wrap; apply weapons[w].z_overrides (axe lifts hand_l_wrap to 91).',
     'Paint path: under→mask-tint(color)→over via kit materials/masks. Precomposited parts/{id}-{paint}.png are fallback only.',
-    'A2 fight keyframes (timing / strike / windup / …) are a separate worker — aliases keep F7 MotionPose keys working.',
+    'A2 first-pass wires kit timing.per_weapon (30 fps) into Fight View; in-betweens / KO fall frames drop in via timing+poses with no code change.',
     'Shield/drone/decal are reserved only; assembler ignores loadout.shield/drone/decals.',
     'Atlas pack v3 publishes kit media at parts/<hyphenatedPartId>/…; Metro kit remains render fallback until Storage cold-fetch is proven.',
     'MotionPose heavy_* is mapped (C11); heavy_windup / heavy_attack use nested per-weapon pose entries (aliases → windup/strike on v003.1).',

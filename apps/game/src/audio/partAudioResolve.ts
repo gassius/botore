@@ -107,34 +107,76 @@ function profileFor(
   return profiles.find((p) => p.characterId === characterId);
 }
 
-/** Resolve swing/hit to a part cue when known; otherwise base trial clip. */
-export function resolveOneShotCue(
-  cmd: AnimationCommand,
-  profiles: readonly FighterAudioProfile[] = [],
+function cueForMotionMarker(
+  cmd: Extract<AnimationCommand, { kind: 'motion_beat' }>,
+  marker: string,
+  profiles: readonly FighterAudioProfile[],
 ): ResolvedOneShotCue | null {
-  switch (cmd.kind) {
-    case 'show_battle':
-      return { kind: 'base', id: 'hush' };
-    case 'attack_anim': {
-      if (cmd.attack === 'weapon' && cmd.heavyPhase === 'windup') return null;
+  switch (marker) {
+    case 'swing': {
       const part = profileFor(profiles, cmd.actor)?.weaponSwingCue;
       if (part) return { kind: 'part', id: part };
       return { kind: 'base', id: 'swing' };
     }
-    case 'dodge_anim':
-      return { kind: 'base', id: 'dodge' };
-    case 'damage_pop': {
-      const part = profileFor(profiles, cmd.target)?.chassisHitCue;
+    case 'hit': {
+      const targetId = cmd.victimId ?? cmd.actor;
+      const part = profileFor(profiles, targetId)?.chassisHitCue;
       if (part) return { kind: 'part', id: part };
       return { kind: 'base', id: 'hit' };
     }
-    case 'defeat_anim':
+    case 'dodge':
+      return { kind: 'base', id: 'dodge' };
+    case 'defeat':
       return { kind: 'base', id: 'defeat' };
-    case 'victory_screen':
-      return cmd.winner != null ? { kind: 'base', id: 'win' } : null;
-    case 'turn_banner':
+    default:
       return null;
   }
+}
+
+/**
+ * Resolve all one-shot cues for a command.
+ * A2: fight SFX ride `motion_beat` frame markers; coarse dodge/damage/defeat
+ * commands no longer emit clips (still typed for legacy callers).
+ */
+export function resolveOneShotCues(
+  cmd: AnimationCommand,
+  profiles: readonly FighterAudioProfile[] = [],
+): readonly ResolvedOneShotCue[] {
+  switch (cmd.kind) {
+    case 'show_battle':
+      return [{ kind: 'base', id: 'hush' }];
+    case 'motion_beat': {
+      const cues: ResolvedOneShotCue[] = [];
+      for (const marker of cmd.markers) {
+        const cue = cueForMotionMarker(cmd, marker, profiles);
+        if (cue) cues.push(cue);
+      }
+      return cues;
+    }
+    case 'attack_anim': {
+      // Legacy coarse path (tests / old queues). A2 compile uses motion_beat.
+      if (cmd.attack === 'weapon' && cmd.heavyPhase === 'windup') return [];
+      const part = profileFor(profiles, cmd.actor)?.weaponSwingCue;
+      if (part) return [{ kind: 'part', id: part }];
+      return [{ kind: 'base', id: 'swing' }];
+    }
+    case 'dodge_anim':
+    case 'damage_pop':
+    case 'defeat_anim':
+      return [];
+    case 'victory_screen':
+      return cmd.winner != null ? [{ kind: 'base', id: 'win' }] : [];
+    case 'turn_banner':
+      return [];
+  }
+}
+
+/** First one-shot cue for a command (may be null). */
+export function resolveOneShotCue(
+  cmd: AnimationCommand,
+  profiles: readonly FighterAudioProfile[] = [],
+): ResolvedOneShotCue | null {
+  return resolveOneShotCues(cmd, profiles)[0] ?? null;
 }
 
 export function shouldStartAmbientLoop(cmd: AnimationCommand): boolean {

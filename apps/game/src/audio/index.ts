@@ -15,7 +15,12 @@ export {
   type TrialAudioClipSpec,
   type TrialAudioManifest,
 } from './trialAudioManifest';
-export { sfxClipFromCommand, shouldStartMusicLoop, shouldStopMusicLoop } from './cueFromCommand';
+export {
+  sfxClipFromCommand,
+  sfxClipsFromCommand,
+  shouldStartMusicLoop,
+  shouldStopMusicLoop,
+} from './cueFromCommand';
 export {
   ARENA_AMBIENT_VOLUME,
   PART_AUDIO_CUE_IDS,
@@ -23,6 +28,7 @@ export {
   fighterAudioProfile,
   profilesFromFightBuilds,
   resolveOneShotCue,
+  resolveOneShotCues,
   shouldStartAmbientLoop,
   shouldStopAmbientLoop,
   weaponSwingCueFromBuild,

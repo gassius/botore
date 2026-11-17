@@ -68,6 +68,8 @@ export class BattleReplayController {
         break;
       case 'dodge_anim':
         break;
+      case 'motion_beat':
+        break;
       case 'damage_pop': {
         const target =
           cmd.target === this.stage.defender.name
