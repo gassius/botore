@@ -1833,6 +1833,7 @@ begin
   select count(*)::int into v_count
     from jsonb_array_elements(v_res->'opponents') o;
   perform tests.assert(v_count = 3, format('expected 3 opponents, got %s', v_count));
+  -- Names/Botore exact; W–L floor ≥ seed (F3 suites may add battles first).
   perform tests.assert(
     exists (
       select 1
@@ -1840,10 +1841,18 @@ begin
        where o->>'characterId' = 'opp-sir-bot'
          and o->>'displayName' = 'Slab Mick'
          and o->>'botoreName' = 'Tito Rivet'
-         and (o->>'wins')::integer = 13
-         and (o->>'losses')::integer = 6
     ),
-    'opp-sir-bot A5 roster + botore + W-L'
+    'opp-sir-bot A5 name + Botore via opponent_lanistas'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'opponents') o
+       where o->>'characterId' = 'opp-sir-bot'
+         and (o->>'wins')::integer >= 13
+         and (o->>'losses')::integer >= 6
+    ),
+    'opp-sir-bot W-L at least seed floor'
   );
   perform tests.assert(
     exists (
@@ -1852,8 +1861,8 @@ begin
        where o->>'characterId' = 'opp-dex-bot'
          and o->>'displayName' = 'Can Hook'
          and o->>'botoreName' = 'Magistra Volta'
-         and (o->>'wins')::integer = 19
-         and (o->>'losses')::integer = 2
+         and (o->>'wins')::integer >= 19
+         and (o->>'losses')::integer >= 2
     ),
     'opp-dex-bot A5 roster + botore + W-L'
   );
@@ -1864,8 +1873,8 @@ begin
        where o->>'characterId' = 'opp-hp-bot'
          and o->>'displayName' = 'Cobalt Brute'
          and o->>'botoreName' = 'Doctore Ferro'
-         and (o->>'wins')::integer = 15
-         and (o->>'losses')::integer = 5
+         and (o->>'wins')::integer >= 15
+         and (o->>'losses')::integer >= 5
     ),
     'opp-hp-bot A5 roster + botore + W-L'
   );
