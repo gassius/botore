@@ -1,10 +1,12 @@
 import type { FirstRunRoute } from '../first-run/routes';
 import { isFirstRunRoute } from '../first-run/routes';
 import {
+  type DesignCaptureCustomiseScenario,
   type DesignCaptureFightViewMode,
   type DesignCapturePoseCompare,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
+  parseDesignCaptureCustomiseScenario,
   parseDesignCaptureFightView,
   parseDesignCapturePoseCompare,
   parseDesignCaptureRankingScenario,
@@ -33,6 +35,8 @@ export type CaptureIntent = {
   sessionFailure: DesignCaptureSessionFailure | null;
   /** D1: force Fight View firstWatch / rewatch control set for capture stills. */
   fightViewMode: DesignCaptureFightViewMode | null;
+  /** D3: Customise paint-clean / paint-dirty / equipped / weapon-soon stills. */
+  customiseScenario: DesignCaptureCustomiseScenario | null;
 };
 
 const EMPTY: CaptureIntent = {
@@ -46,6 +50,7 @@ const EMPTY: CaptureIntent = {
   poseCompare: null,
   sessionFailure: null,
   fightViewMode: null,
+  customiseScenario: null,
 };
 
 let intent: CaptureIntent = { ...EMPTY };
@@ -68,6 +73,8 @@ export function mergeIntent(next: Partial<CaptureIntent>): void {
     // Omit (undefined) keeps the previous value for unrelated file merges.
     sessionFailure: next.sessionFailure === undefined ? intent.sessionFailure : next.sessionFailure,
     fightViewMode: next.fightViewMode === undefined ? intent.fightViewMode : next.fightViewMode,
+    customiseScenario:
+      next.customiseScenario === undefined ? intent.customiseScenario : next.customiseScenario,
   };
 }
 
@@ -85,6 +92,8 @@ export function mergeCaptureFileIntent(raw: {
   sessionFailure?: string | null;
   fightViewMode?: string | null;
   fightView?: string | null;
+  customiseScenario?: string | null;
+  customise?: string | null;
 }): void {
   const route = typeof raw.route === 'string' && isFirstRunRoute(raw.route) ? raw.route : null;
   mergeIntent({
@@ -106,6 +115,13 @@ export function mergeCaptureFileIntent(raw: {
       ? {
           fightViewMode: parseDesignCaptureFightView(
             raw.fightViewMode ?? raw.fightView ?? undefined,
+          ),
+        }
+      : {}),
+    ...(raw.customiseScenario !== undefined || raw.customise !== undefined
+      ? {
+          customiseScenario: parseDesignCaptureCustomiseScenario(
+            raw.customiseScenario ?? raw.customise ?? undefined,
           ),
         }
       : {}),

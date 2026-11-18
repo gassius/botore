@@ -38,6 +38,8 @@ function applyUrl(url: string | null): void {
     failClosed: parsed.failClosed,
     poseCompare: parsed.poseCompare,
     sessionFailure: parsed.sessionFailure,
+    fightViewMode: parsed.fightViewMode,
+    customiseScenario: parsed.customiseScenario,
   });
 }
 

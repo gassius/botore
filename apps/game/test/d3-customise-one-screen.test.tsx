@@ -82,6 +82,7 @@ vi.mock('../src/first-run/FirstRunContext', () => ({
     muted: false,
     musicEnabled: true,
     effectsEnabled: true,
+    customiseCaptureScenario: null,
   }),
 }));
 

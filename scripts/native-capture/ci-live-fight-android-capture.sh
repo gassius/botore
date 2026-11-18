@@ -234,6 +234,7 @@ capture_named() {
   local settle="${3:-4}"
   local ranking="${4:-}"
   local mute="${5:-}"
+  local customise="${6:-}"
   local args=(
     --out "${OUT_DIR}"
     --route "${route}"
@@ -244,6 +245,9 @@ capture_named() {
   fi
   if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then
     args+=(--mute)
+  fi
+  if [[ -n "${customise}" ]]; then
+    args+=(--customise "${customise}")
   fi
   CAPTURE_SETTLE_SEC="${settle}" \
     "${SCRIPT_DIR}/android-screencap.sh" \
@@ -290,6 +294,13 @@ wait_logcat_marker() {
 
 # 1) Garage (Stable equipped loadout)
 capture_named Stable garage 5
+
+# 1a) D3 Customise — Paint clean / dirty+dot / Equipped / Weapon Coming soon
+# Capture early so design evidence lands even if later fight frames fail.
+capture_named Customise customise-paint-clean 5 "" "" paint-clean
+capture_named Customise customise-paint-dirty 5 "" "" paint-dirty
+capture_named Customise customise-equipped 6 "" "" equipped
+capture_named Customise customise-weapon-soon 5 "" "" weapon-soon
 
 # 1b) C9 Settings — mute / Music / Effects / reduced motion
 capture_named Settings settings 4
@@ -551,6 +562,10 @@ write_manifest_line "${MANIFEST}" "c10_session_failure" "design-capture-sessionF
 missing="${missing:-0}"
 required_labels=(
   garage
+  customise-paint-clean
+  customise-paint-dirty
+  customise-equipped
+  customise-weapon-soon
   settings
   confirm
   arena-layers

@@ -33,10 +33,12 @@ import {
 import {
   PROOF_PAINTS,
   PROOF_WEAPONS,
+  paintCatalogueId,
   paintUiAlias,
   weaponUiAlias,
 } from '../loadout/proofCatalogue';
 import { useGarageSession } from '../LoadoutSessionContext';
+import { isDesignCaptureEnabled } from '../../design-capture';
 
 /** Customisation domain — mounts into shell Customise slot. */
 export function CustomiseScreen(props: {
@@ -53,12 +55,15 @@ export function CustomiseScreen(props: {
     retryHydration,
     signOut,
   } = useGarageSession();
-  const { muted, musicEnabled, effectsEnabled } = useFirstRun();
+  const { muted, musicEnabled, effectsEnabled, customiseCaptureScenario } = useFirstRun();
   const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const forced = useForcedSessionFailure();
   const [tab, setTab] = useState<CustomiseSlotId>('weapon');
   const [equipFlash, setEquipFlash] = useState(false);
   const equipFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastCaptureScenario = useRef<string | null>(null);
+  const captureEquipArmed = useRef(false);
+  const captureEquipHold = useRef(false);
   const preview = loadout.pendingLoadout;
   const editingLocked = loadout.saving || loadout.hydration !== 'ready';
   const previewWeapon = preview ? weaponUiAlias(preview.weapon) : 'sword';
@@ -70,6 +75,7 @@ export function CustomiseScreen(props: {
       clearTimeout(equipFlashTimer.current);
       equipFlashTimer.current = null;
     }
+    captureEquipHold.current = false;
     setEquipFlash(false);
   };
 
@@ -80,9 +86,93 @@ export function CustomiseScreen(props: {
   }, []);
 
   // End Equipped flash as soon as the player dirties again (show Oxide dot).
+  // Capture "equipped" hold skips this so the still stays Equipped.
   useEffect(() => {
-    if (loadout.dirty && equipFlash) clearEquipFlash();
+    if (loadout.dirty && equipFlash && !captureEquipHold.current) clearEquipFlash();
   }, [loadout.dirty, equipFlash]);
+
+  // D3 native design-capture: drive Paint clean / dirty / Equipped / Weapon soon.
+  // Equipped is two-phase: dirty first, then save on the next render (save() reads
+  // loadout from context — calling it in the same tick as selectPaint is a no-op).
+  useEffect(() => {
+    if (!isDesignCaptureEnabled() || !customiseCaptureScenario) return;
+    if (loadout.hydration !== 'ready' || !loadout.pendingLoadout || !loadout.confirmedLoadout) {
+      return;
+    }
+
+    const alternatePaint = (): string => {
+      const confirmed = paintUiAlias(loadout.confirmedLoadout!.paint);
+      const next = PROOF_PAINTS.find((p) => p.uiAlias !== confirmed) ?? PROOF_PAINTS[1];
+      return paintCatalogueId(next.uiAlias);
+    };
+
+    if (customiseCaptureScenario === 'equipped' && captureEquipArmed.current) {
+      if (lastCaptureScenario.current === 'equipped') return;
+      if (!loadout.dirty || loadout.saving) return;
+      lastCaptureScenario.current = 'equipped';
+      void (async () => {
+        const ok = await save();
+        if (!ok) {
+          // Allow a later dirty tick to retry.
+          lastCaptureScenario.current = null;
+          return;
+        }
+        if (equipFlashTimer.current) clearTimeout(equipFlashTimer.current);
+        equipFlashTimer.current = null;
+        captureEquipHold.current = true;
+        setEquipFlash(true);
+        console.log('BOTORE_CAPTURE_CUSTOMISE:equipped');
+      })();
+      return;
+    }
+
+    if (lastCaptureScenario.current === customiseCaptureScenario) return;
+    captureEquipHold.current = false;
+    captureEquipArmed.current = false;
+
+    if (customiseCaptureScenario === 'paint-clean') {
+      lastCaptureScenario.current = customiseCaptureScenario;
+      if (loadout.dirty) discard();
+      setTab('paint');
+      clearEquipFlash();
+      console.log('BOTORE_CAPTURE_CUSTOMISE:paint-clean');
+      return;
+    }
+    if (customiseCaptureScenario === 'paint-dirty') {
+      lastCaptureScenario.current = customiseCaptureScenario;
+      if (loadout.dirty) discard();
+      setTab('paint');
+      clearEquipFlash();
+      selectPaint(alternatePaint());
+      console.log('BOTORE_CAPTURE_CUSTOMISE:paint-dirty');
+      return;
+    }
+    if (customiseCaptureScenario === 'equipped') {
+      if (loadout.dirty) discard();
+      setTab('paint');
+      clearEquipFlash();
+      selectPaint(alternatePaint());
+      captureEquipArmed.current = true;
+      return;
+    }
+    if (customiseCaptureScenario === 'weapon-soon') {
+      lastCaptureScenario.current = customiseCaptureScenario;
+      if (loadout.dirty) discard();
+      clearEquipFlash();
+      setTab('weapon');
+      console.log('BOTORE_CAPTURE_CUSTOMISE:weapon-soon');
+    }
+  }, [
+    customiseCaptureScenario,
+    loadout.hydration,
+    loadout.pendingLoadout,
+    loadout.confirmedLoadout,
+    loadout.dirty,
+    loadout.saving,
+    discard,
+    selectPaint,
+    save,
+  ]);
 
   const errorKind = loadout.lastError
     ? classifySessionFailure({

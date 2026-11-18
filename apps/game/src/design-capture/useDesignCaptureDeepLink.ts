@@ -3,6 +3,7 @@ import { Linking } from 'react-native';
 import { useFirstRun } from '../first-run/FirstRunContext';
 import type { FirstRunRoute } from '../first-run/routes';
 import {
+  type DesignCaptureCustomiseScenario,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
   isDesignCaptureEnabled,
@@ -29,10 +30,14 @@ export function useDesignCaptureDeepLink(): void {
     setDemoWeaponId,
     setRankingCaptureScenario,
     setSessionFailureCapture,
+    setCustomiseCaptureScenario,
     setFightViewMode,
   } = useFirstRun();
   const lastAppliedRoute = useRef<FirstRunRoute | null>(null);
   const lastSessionFailure = useRef<DesignCaptureSessionFailure | null | undefined>(undefined);
+  const lastCustomiseScenario = useRef<DesignCaptureCustomiseScenario | null | undefined>(
+    undefined,
+  );
   const fileConsumed = useRef(false);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
@@ -49,12 +54,22 @@ export function useDesignCaptureDeepLink(): void {
       rankingScenario?: DesignCaptureRankingScenario | null;
       sessionFailure?: DesignCaptureSessionFailure | null;
       fightViewMode?: 'firstWatch' | 'rewatch' | null;
+      customiseScenario?: DesignCaptureCustomiseScenario | null;
     }) => {
       // Always replace live sessionFailure (including null clear) so sequential
       // stills never stick auth_expired into a later offline capture.
       if (parsed.sessionFailure !== lastSessionFailure.current) {
         lastSessionFailure.current = parsed.sessionFailure ?? null;
         setSessionFailureCapture(parsed.sessionFailure ?? null);
+      }
+      // Same-route Customise stills (paint-clean → dirty → equipped) refresh
+      // scenario even when applyRouteIfNew skips goTo.
+      if (parsed.customiseScenario !== lastCustomiseScenario.current) {
+        lastCustomiseScenario.current = parsed.customiseScenario ?? null;
+        setCustomiseCaptureScenario(parsed.customiseScenario ?? null);
+      } else if (parsed.route === 'Customise' && parsed.customiseScenario) {
+        // Re-assert when stills repeat the same scenario after another route.
+        setCustomiseCaptureScenario(parsed.customiseScenario);
       }
       // Ranking scenario before route so RankingSlot mounts the right port.
       // C10: sessionFailure offline/auth_expired also drives Ranking fixtures.
@@ -114,6 +129,7 @@ export function useDesignCaptureDeepLink(): void {
         poseCompare: parsed.poseCompare,
         sessionFailure: parsed.sessionFailure,
         fightViewMode: parsed.fightViewMode,
+        customiseScenario: parsed.customiseScenario,
       });
       applyRouteIfNew(parsed.route, false);
     };
@@ -151,6 +167,7 @@ export function useDesignCaptureDeepLink(): void {
     setDemoWeaponId,
     setRankingCaptureScenario,
     setSessionFailureCapture,
+    setCustomiseCaptureScenario,
     setMuted,
   ]);
 }

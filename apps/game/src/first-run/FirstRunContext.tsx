@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import {
+  type DesignCaptureCustomiseScenario,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
   readDesignCaptureConfig,
@@ -52,6 +53,12 @@ export type FirstRunContextValue = {
   sessionFailureCapture: DesignCaptureSessionFailure | null;
   setSessionFailureCapture: (failure: DesignCaptureSessionFailure | null) => void;
   /**
+   * D3 design-capture: Customise paint-clean / paint-dirty / equipped / weapon-soon.
+   * Replaced on every capture deep link — never sticky across stills.
+   */
+  customiseCaptureScenario: DesignCaptureCustomiseScenario | null;
+  setCustomiseCaptureScenario: (scenario: DesignCaptureCustomiseScenario | null) => void;
+  /**
    * D1 Fight View mode — firstWatch hides transport/back; rewatch shows back + Replay only.
    * Set by ConfirmFight (firstWatch) / Result Watch again (rewatch).
    */
@@ -91,6 +98,8 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
     useState<DesignCaptureSessionFailure | null>(
       () => pending.sessionFailure ?? readDesignCaptureSessionFailure(),
     );
+  const [customiseCaptureScenario, setCustomiseCaptureScenario] =
+    useState<DesignCaptureCustomiseScenario | null>(() => pending.customiseScenario ?? null);
   const [fightViewMode, setFightViewMode] = useState<FightViewMode>('firstWatch');
   const [showResultOverlay, setShowResultOverlay] = useState(false);
 
@@ -143,6 +152,8 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       setRankingCaptureScenario,
       sessionFailureCapture,
       setSessionFailureCapture,
+      customiseCaptureScenario,
+      setCustomiseCaptureScenario,
       fightViewMode,
       setFightViewMode,
       showResultOverlay,
@@ -169,6 +180,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       demoOpponentId,
       rankingCaptureScenario,
       sessionFailureCapture,
+      customiseCaptureScenario,
     ],
   );
 
