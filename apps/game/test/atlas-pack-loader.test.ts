@@ -279,7 +279,7 @@ describe('atlas pack loader (F6)', () => {
   });
 
   it('maps F7 paint/weapon aliases onto F5 catalogue ids and kit-v003 atlas paths', () => {
-    expect(WORKSHOP_FRAME_ATLAS_VERSION).toBe('v3');
+    expect(WORKSHOP_FRAME_ATLAS_VERSION).toBe('v1');
     expect(WORKSHOP_FRAME_KIT.kitVersion).toBe('v003');
     expect(WORKSHOP_FRAME_KIT.compatibleFamily).toBe('workshop-frame-v003');
     expect(resolvePaintToken('oxide')).toBe('oxide');

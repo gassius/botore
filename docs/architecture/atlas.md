@@ -31,35 +31,35 @@ Published packs are **immutable**: triggers reject insert/update/delete of manif
 
 ## Database
 
-| Relation / RPC                         | Purpose                                                                            |
-| -------------------------------------- | ---------------------------------------------------------------------------------- |
-| `atlas_versions`                       | Version registry + JSON manifest (`budgets_final` stays false until approved)      |
-| `atlas_manifest_entries`               | Part / base / arena / FX → file path map                                           |
-| `atlas_missing_storage_paths(version)` | Paths lacking Storage objects (publish gate / health)                              |
-| `atlas_lock_versions(text[])`          | Sorted per-version row locks for publish + mutations                               |
-| `get_atlas_manifest(version)`          | Published manifest + entry list for clients                                        |
-| `publish_atlas_version(version)`       | `service_role` draft → published after object check                                |
-| `battle_participants.atlas_version`    | Fight-time media version pin (from loadout)                                        |
-| `admin_atlas_overview`                 | Ops/readiness for a future B2 dashboard                                            |
-| `admin_dashboard_snapshot()`           | Bundles atlas versions with health / fights / cron for B2 (see admin-dashboard.md) |
+| Relation / RPC                               | Purpose                                                                                                 |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `atlas_versions`                             | Version registry + JSON manifest (`budgets_final` stays false until approved)                           |
+| `atlas_manifest_entries`                     | Part / base / arena / FX → file path map                                                                |
+| `atlas_missing_storage_paths(version)`       | Paths lacking Storage objects (publish gate / health)                                                   |
+| `atlas_lock_versions(text[])`                | Sorted per-version row locks for publish + mutations                                                    |
+| `get_atlas_manifest(version)`                | Published manifest + entry list for clients                                                             |
+| `publish_atlas_version(version)`             | `service_role` draft → published after object check                                                     |
+| `dev_reopen_atlas_version(v, confirm)`       | Dev-only published → draft; requires `app.environment=development` + confirm; fail closed on Production |
+| `register_atlas_v1_workshop_frame_entries()` | Idempotent kit-v003 manifest rows onto draft `v1`                                                       |
+| `battle_participants.atlas_version`          | Fight-time media version pin (from loadout)                                                             |
+| `admin_atlas_overview`                       | Ops/readiness for a future B2 dashboard                                                                 |
+| `admin_dashboard_snapshot()`                 | Bundles atlas versions with health / fights / cron for B2 (see admin-dashboard.md)                      |
 
-## Proof pack (v1 placeholders)
+## Single Development atlas (v1)
 
-Local/CI after bootstrap:
+Local/CI after bootstrap, `v1` holds:
 
-- 1 chassis, 2 paints, sword / axe / dagger
-- Quiet arena
-- Hit / dodge / defeat FX (image + base-pack AAC fallbacks)
+- Proof catalogue: 1 chassis, 2 paints, sword / axe / dagger
+- Quiet arena + hit / dodge / defeat FX (image + base-pack AAC fallbacks)
+- Workshop Frame **kit-v003(.3)** layers (hyphenated `parts/<partId>/…`, wraps)
 
-Bytes: `supabase/seed/atlas/v1/` (valid silent AAC `.m4a`, 1×1 PNG). No real art generation; Game Art / Audio directors own finals. Export/cache budgets remain provisional (`budgets_final = false`).
+Bytes: `supabase/seed/atlas/v1/` — committed proof placeholders plus packer
+overlays from `apps/game/assets/workshop-frame-kit-v003`. No real art
+generation; Game Art / Audio directors own finals. `budgets_final = false`.
 
-`backend_health_snapshot().checks.storage.proof_pack_ok` evaluates the seeded **`v1`** proof pack (`proof_version`), not chronological `latest_version`. Later publishes (race fixtures, ops drafts, **v2**) must not flip the gate.
-
-## Workshop Frame pack (v2)
-
-C13 publishes an immutable **`v2`** pack aligned to Workshop Frame **kit-v002**
-media keys (migration `0026` registers the draft; Storage upload then
-`publish_atlas_version('v2')`).
+`backend_health_snapshot().checks.storage.proof_pack_ok` evaluates **`v1`**
+(`proof_version`), not chronological `latest_version`. Race-fixture publishes
+must not flip the gate.
 
 | Kit-relative               | Atlas pack-relative                 |
 | -------------------------- | ----------------------------------- |
@@ -75,33 +75,26 @@ adapters map both. **Do not mix kit-v001.**
 Local/CI:
 
 ```bash
-# Historical kit-v002 fallback
-ATLAS_VERSION=v2 node scripts/pack-workshop-frame-atlas.mjs
-ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
-# Active kit-v003
-node scripts/pack-workshop-frame-atlas.mjs
-ATLAS_VERSION=v3 node scripts/seed-atlas-storage.mjs
+node scripts/pack-workshop-frame-atlas.mjs          # overlay kit-v003 onto v1
+ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs
 ```
 
-Hosted Botore Development publish needs Carlos’s project URL + service-role
-key (never commit). See `supabase/seed/atlas/v3/README.md`.
+Former **`v2` / `v3`** pack dirs are retired (migration `0031` drops draft
+registrations). Hosted Development leftovers that were already published stay
+as historical Storage prefixes; clients pin **`v1`** only.
 
-**Hosted order:** pack + `ATLAS_VERSION=v3 node scripts/seed-atlas-storage.mjs`
-(upload + `publish_atlas_version('v3')`) **before** seeding or pinning any
-hosted loadout to `v3`. Migration `0030` leaves `v3` as draft until that
-publish; pinning a _new_ unpublished pack makes authenticated `save_bot_loadout` fail
-with `unpublished_atlas_version`. Re-pinning the character's already-confirmed
-atlas (B5 starter / E1 Customise) is allowed while Storage publish is pending.
-`v2` (kit-v002) remains a separate fallback from `0026`.
+**Hosted Development** already-published old `v1` placeholders: use the
+Dev-only reopen path (`dev_reopen_atlas_version` +
+`register_atlas_v1_workshop_frame_entries` + Storage upload). Production
+immutability stays intact. Runbook: `docs/backend/verify.md` § Hosted
+Development atlas v1 reset.
 
-First-run loadouts pin **`v3`** (local/CI after publish). Fight still records
-`battle_participants.atlas_version` from the sealed loadout; offline
-same-version cache continues to work.
+First-run loadouts pin **`v1`**. Fight records
+`battle_participants.atlas_version` from the sealed loadout.
 
 Hosted Development does not auto-run `supabase/seed.sql` or
 `scripts/seed-atlas-storage.mjs` on `db push`. Run both after migrations or
-health stays not-ok / Edge `/health` **503**. Runbook:
-`docs/backend/verify.md` § Hosted Development bootstrap.
+health stays not-ok / Edge `/health` **503**.
 
 ## Client loader (F6)
 

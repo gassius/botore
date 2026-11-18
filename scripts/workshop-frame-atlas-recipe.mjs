@@ -1,5 +1,5 @@
 /**
- * Shared Workshop Frame kit → atlas/vN packing recipe (C13 / A1).
+ * Shared Workshop Frame kit → atlas/vN packing recipe (C13 / A1 / BT-171).
  *
  * Mirrors apps/game/src/atlas/workshop-frame-paths.ts:
  *   parts/{assetId}-{paint}.png   → parts/{partId}/{paint}.png
@@ -10,15 +10,16 @@
  * Kit filenames keep underscores (`weapon_sword`); atlas/catalogue partIds use
  * hyphens (`weapon-sword`). Do not mix kit-v001 paths.
  *
- * Default active pack: kit-v003 → atlas/v3. Pass ATLAS_VERSION=v2 to rebuild
- * the historical kit-v002 pack (separate fallback).
+ * Single Development atlas: kit-v003(.3) → atlas/v1 (overlay onto proof pack).
+ * Former v2/v3 pack targets are retired.
  */
 
-export const WORKSHOP_FRAME_ATLAS_VERSION = 'v3';
+export const WORKSHOP_FRAME_ATLAS_VERSION = 'v1';
 export const WORKSHOP_FRAME_KIT_VERSION = 'v003';
 
-/** Historical kit-v002 ↔ atlas/v2 (kept as separate fallback). */
+/** @deprecated Retired — Development uses v1 only. Kept for error messages. */
 export const WORKSHOP_FRAME_LEGACY_ATLAS_VERSION = 'v2';
+/** @deprecated Retired with atlas/v2. */
 export const WORKSHOP_FRAME_LEGACY_KIT_VERSION = 'v002';
 
 export const WORKSHOP_FRAME_BODY_ASSET_IDS = [
@@ -39,17 +40,16 @@ export const WORKSHOP_FRAME_BODY_ASSET_IDS = [
   'foot_r',
 ];
 
-/** v003 finger wraps — omitted when packing kit-v002. */
+/** v003 finger wraps. */
 export const WORKSHOP_FRAME_WRAP_ASSET_IDS = ['hand_l_wrap', 'hand_r_wrap'];
 
 export const WORKSHOP_FRAME_WEAPON_ASSET_IDS = ['weapon_sword', 'weapon_axe', 'weapon_dagger'];
 
 export const WORKSHOP_FRAME_PAINT_TOKENS = ['oxide', 'petrol'];
 
-/** Allowed packer targets: never wipe committed v1. */
+/** Allowed packer targets: kit-v003 overlays into atlas/v1 (no wipe of proof bytes). */
 export const WORKSHOP_FRAME_PACK_TARGETS = {
-  v3: { kitVersion: WORKSHOP_FRAME_KIT_VERSION, includeWraps: true },
-  v2: { kitVersion: WORKSHOP_FRAME_LEGACY_KIT_VERSION, includeWraps: false },
+  v1: { kitVersion: WORKSHOP_FRAME_KIT_VERSION, includeWraps: true, overlayProofPack: true },
 };
 
 /** Kit asset id (may use underscores) → hyphenated atlas partId. */

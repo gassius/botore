@@ -45,18 +45,114 @@ pnpm exec supabase db push --project-ref yrrytppmkykzhwelqmcs
 
 # 2) Parts catalogue + proof characters / loadouts + NPC ranking density
 #    (same SQL as local seed; NPC auth.users are password-less)
+# Prefer Supabase SQL connector / Dashboard SQL when the DB pooler is unavailable.
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/seed.sql
 
-# 3) Upload atlas/v1 placeholders + publish (Storage API)
+# 3) Pack kit-v003 onto v1 + upload + publish (Storage API)
 export SUPABASE_URL=https://yrrytppmkykzhwelqmcs.supabase.co
 # SUPABASE_SERVICE_ROLE_KEY from project settings
-node scripts/seed-atlas-storage.mjs
+node scripts/pack-workshop-frame-atlas.mjs
+ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs
 ```
 
 Health stays **503 / not ok** until steps 2–3 succeed (`parts_catalogue`
 proof counts + published atlas `v1`). Details:
 [`docs/architecture/atlas.md`](../architecture/atlas.md),
 [`supabase/seed/atlas/README.md`](../../supabase/seed/atlas/README.md).
+
+## Hosted Development atlas v1 reset (BT-171)
+
+Published atlas versions are **immutable** (trigger). Production must keep that
+guarantee. On **Development only** (`yrrytppmkykzhwelqmcs`), Infra may reopen
+`v1` to draft, expand the manifest, replace Storage objects via the Storage API,
+then re-publish. Never run this against Production.
+
+**Why:** Development should keep a single atlas version (`v1`) holding the
+latest Workshop Frame kit-v003.3 assets (former v3 contents). A prior Dev
+publish left `v1` with the old ~25 proof placeholders while `v3` held ~125
+objects.
+
+**Prereq:** migration `0031_atlas_v1_workshop_frame_consolidate.sql` applied
+(`dev_reopen_atlas_version`, `register_atlas_v1_workshop_frame_entries`).
+
+**One-time Dev DB marker** (Infra — never from a migration; never on Production):
+
+```sql
+-- Hosted Development project only (yrrytppmkykzhwelqmcs)
+alter database postgres set app.environment = 'development';
+-- New sessions pick this up; reconnect the SQL editor / scripts after setting.
+```
+
+**Connector SQL** (Supabase SQL editor / connector — no DB pooler required):
+
+```sql
+-- service_role JWT context (Dashboard SQL as postgres/service is fine)
+select set_config('request.jwt.claim.role', 'service_role', true);
+
+-- 1) Reopen published v1 → draft (requires app.environment=development;
+--    reopen GUC is set inside the RPC; confirm required)
+select public.dev_reopen_atlas_version('v1', 'DEVELOPMENT_ONLY_REOPEN');
+
+-- 2) Idempotent workshop-frame kit-v003 manifest entries on draft v1
+select public.register_atlas_v1_workshop_frame_entries();
+```
+
+**Storage API upload + publish** (from a machine with service-role key; never
+commit secrets):
+
+```bash
+export SUPABASE_URL=https://yrrytppmkykzhwelqmcs.supabase.co
+export SUPABASE_SERVICE_ROLE_KEY=…   # project settings
+export DATABASE_URL=…               # direct or connector-compatible URL for publish RPC
+
+# Overlay kit-v003(.3) PNGs onto supabase/seed/atlas/v1 (proof bytes stay)
+node scripts/pack-workshop-frame-atlas.mjs
+
+# Upload every atlas_manifest_entries.path under atlas/v1/ then publish
+ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs
+```
+
+**Re-pin hosted Dev loadouts to v1** (seed/`if not exists` leaves prior `v3`
+pins in place — append new confirmed versions via `save_bot_loadout`):
+
+```sql
+select set_config('request.jwt.claim.role', 'service_role', true);
+-- Repeat per character that should download the consolidated pack (at least
+-- the proof roster). Append-only: creates a new bot_loadout_versions row.
+select public.save_bot_loadout(
+  c.character_id,
+  cl.loadout,
+  'v1'
+)
+from public.current_bot_loadouts cl
+join public.characters c using (character_id)
+where cl.atlas_version is distinct from 'v1'
+  and c.character_id in (
+    'player-hero', 'opp-sir-bot', 'opp-dex-bot', 'opp-hp-bot'
+  );
+-- Optionally broaden to all player/NPC rows on Development after checking.
+```
+
+**Verify:**
+
+```sql
+select status,
+       (select count(*) from public.atlas_manifest_entries where version = 'v1') as entries,
+       coalesce(array_length(public.atlas_missing_storage_paths('v1'), 1), 0) as missing
+  from public.atlas_versions where version = 'v1';
+-- expect: status=published, entries>=100, missing=0
+
+select public.backend_health_snapshot()->'checks'->'storage';
+-- expect: proof_pack_ok=true, latest_version=v1 (or still ok if older published leftovers exist)
+
+select character_id, atlas_version from public.current_bot_loadouts
+ where character_id in ('player-hero','opp-sir-bot','opp-dex-bot','opp-hp-bot');
+-- expect: atlas_version = v1 for each
+```
+
+`seed-atlas-storage.mjs` upserts objects (`x-upsert: true`). Historical
+`atlas/v2` / `atlas/v3` Storage prefixes on Development (if any) remain until
+Carlos asks to delete them; after re-pin, clients request `v1` only.
 
 ## Edge Function deploy (multi-file)
 

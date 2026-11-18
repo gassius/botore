@@ -132,16 +132,16 @@ begin
   -- save_bot_loadout requires auth.role() = 'service_role' for system path.
   perform set_config('request.jwt.claim.role', 'service_role', true);
 
-  -- A1: first-run loadouts pin published workshop-frame pack `v3` (draft OK
+  -- BT-171: first-run loadouts pin single Development atlas `v1` (draft OK
   -- for service_role during seed; Storage bootstrap publishes after reset).
-  -- v2 remains kit-v002 history (0026); do not mix packs.
+  -- Former v2/v3 packs are retired.
   if not exists (
     select 1 from public.current_bot_loadouts where character_id = 'player-hero'
   ) then
     perform public.save_bot_loadout(
       'player-hero',
       '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword"}'::jsonb,
-      'v3'
+      'v1'
     );
   end if;
 
@@ -151,7 +151,7 @@ begin
     perform public.save_bot_loadout(
       'opp-sir-bot',
       '{"chassis":"chassis-basic","paint":"paint-cobalt","weapon":"weapon-sword"}'::jsonb,
-      'v3'
+      'v1'
     );
   end if;
 
@@ -161,7 +161,7 @@ begin
     perform public.save_bot_loadout(
       'opp-dex-bot',
       '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-dagger"}'::jsonb,
-      'v3'
+      'v1'
     );
   end if;
 
@@ -171,7 +171,7 @@ begin
     perform public.save_bot_loadout(
       'opp-hp-bot',
       '{"chassis":"chassis-basic","paint":"paint-cobalt","weapon":"weapon-axe"}'::jsonb,
-      'v3'
+      'v1'
     );
   end if;
 end $$;

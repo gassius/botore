@@ -353,7 +353,7 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
   const gripWorld = transformPoint(handM, gripLocal[0], gripLocal[1]);
 
   return {
-    atlasVersion: 'v3',
+    atlasVersion: 'v1',
     chassisId: input.loadout.chassis || 'chassis-basic',
     paintId: paintVisual.cataloguePaintId,
     paintVisual: paintVisual.visual,

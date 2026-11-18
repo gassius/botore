@@ -20,7 +20,7 @@ web preview only starts audio after the first tap.
    - `src/audio/trialAudioMetroAssets.ts`: `require()` paths → `trial-audio-v002/clips/*`.
    - `test/f11-trial-audio.test.ts`: pack root/version → v002, `placeholder` → false, `paid_generation` → used / go given / credit cost recorded.
    Without step 2 the fight view keeps playing the silent v001 clips, because `TRIAL_AUDIO_METRO_SOURCES` points at v001.
-3. Regenerate the v2 seed if you use it: `scripts/pack-workshop-frame-atlas.mjs` carries v1 audio forward into `supabase/seed/atlas/v2`.
+3. Regenerate the Development atlas seed if needed: `scripts/pack-workshop-frame-atlas.mjs` overlays kit-v003 onto `supabase/seed/atlas/v1` (carries proof audio forward). Former v2/v3 pack dirs are retired.
 4. Upload the updated seed audio to Supabase Storage the same way the v1 proof pack was published.
 5. Run `apps/game` tests and build the APK.
 
