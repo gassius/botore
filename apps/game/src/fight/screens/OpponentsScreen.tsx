@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import {
   OPPONENTS_LIST,
@@ -12,6 +13,7 @@ import {
   garageTag,
 } from '../../garage-tag';
 import { a6OpponentPanelForCandidate } from '../../garage-tag/a6Tiles';
+import { useFirstRun } from '../../first-run/FirstRunContext';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
@@ -27,6 +29,8 @@ export function OpponentsScreen(props: {
   onContinue: () => void;
 }): React.ReactElement {
   const { canProgress, loadout, signOut } = useGarageSession();
+  const { muted, musicEnabled, effectsEnabled } = useFirstRun();
+  const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const forced = useForcedSessionFailure();
   const {
     list,
@@ -90,13 +94,18 @@ export function OpponentsScreen(props: {
           <PrimaryButton
             label={recoverable && noAllowance ? 'Recover fight' : 'Continue'}
             disabled={!canContinue || fightInFlight}
-            onPress={props.onContinue}
+            onPress={() => {
+              uiAudio.playCue('uiConfirm');
+              props.onContinue();
+            }}
+            onDisabledPress={() => uiAudio.playCue('uiError')}
             testID="opponents-continue"
           />
           {list.status === 'error' || failureKind ? (
             <PrimaryButton
               label={failureKind ? sessionFailureCopy(failureKind).actionLabel : 'Retry'}
               onPress={() => {
+                uiAudio.playUiTap();
                 if (failureKind === 'auth_expired') {
                   void signOut();
                   return;
@@ -110,7 +119,13 @@ export function OpponentsScreen(props: {
       }
     >
       <View style={styles.body}>
-        <ScreenHeader title="Opponents" onBack={props.onBack} />
+        <ScreenHeader
+          title="Opponents"
+          onBack={() => {
+            uiAudio.playCue('uiBack');
+            props.onBack();
+          }}
+        />
 
         {candidatesKind === 'unavailable' ? (
           <StatusErrorBanner
@@ -192,7 +207,10 @@ export function OpponentsScreen(props: {
               itemSize={OPPONENTS_LIST.cardHeight}
               gap={OPPONENTS_LIST.gap}
               designVisibleCount={OPPONENTS_LIST.visibleCount}
-              onSnapIndexChange={setSnapIndex}
+              onSnapIndexChange={(index) => {
+                if (index !== snapIndex) uiAudio.playCue('uiSnap');
+                setSnapIndex(index);
+              }}
               keyExtractor={(c: OpponentCandidate) => c.characterId}
               style={styles.list}
               testID="opponents-snap-list"
@@ -220,6 +238,7 @@ export function OpponentsScreen(props: {
                     accessibilityState={{ selected: isSelected }}
                     accessibilityLabel={`${name}${isSelected ? ', selected' : ''}`}
                     onPress={() => {
+                      uiAudio.playCue('uiConfirm');
                       selectOpponent(c);
                     }}
                     style={[styles.card, isSelected ? styles.cardSelected : null]}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Text, StyleSheet, View } from 'react-native';
+import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import {
   BrandWordmark,
@@ -12,6 +13,7 @@ import {
   WeaponGlyphSlot,
   garageTag,
 } from '../../garage-tag';
+import { useFirstRun } from '../../first-run/FirstRunContext';
 import { PrivacyPolicyScreen } from '../../legal/PrivacyPolicyScreen';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
@@ -31,6 +33,8 @@ export function StableScreen(props: {
   onSettings?: () => void;
 }): React.ReactElement {
   const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
+  const { muted, musicEnabled, effectsEnabled } = useFirstRun();
+  const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const forced = useForcedSessionFailure();
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -90,21 +94,37 @@ export function StableScreen(props: {
       {moreOpen ? (
         <>
           {props.onSettings ? (
-            <SecondaryButton label="Settings" onPress={props.onSettings} testID="stable-settings" />
+            <SecondaryButton
+              label="Settings"
+              onPress={() => {
+                uiAudio.playUiTap();
+                props.onSettings?.();
+              }}
+              testID="stable-settings"
+            />
           ) : null}
           <SecondaryButton
             label="Privacy policy"
-            onPress={() => setShowPrivacy(true)}
+            onPress={() => {
+              uiAudio.playUiTap();
+              setShowPrivacy(true);
+            }}
             testID="stable-privacy-policy"
           />
           <SecondaryButton
             label="Delete account"
-            onPress={() => setShowDeleteAccount(true)}
+            onPress={() => {
+              uiAudio.playUiTap();
+              setShowDeleteAccount(true);
+            }}
             testID="stable-delete-account"
           />
           <SecondaryButton
             label="Back"
-            onPress={() => setMoreOpen(false)}
+            onPress={() => {
+              uiAudio.playCue('uiBack');
+              setMoreOpen(false);
+            }}
             testID="stable-more-back"
           />
         </>
@@ -112,21 +132,37 @@ export function StableScreen(props: {
         <>
           <SecondaryButton
             label="Customise"
-            onPress={props.onCustomise}
+            onPress={() => {
+              uiAudio.playUiTap();
+              props.onCustomise();
+            }}
             disabled={!canProgress}
+            onDisabledPress={() => uiAudio.playCue('uiError')}
             testID="stable-customise"
           />
           <PrimaryButton
             label="Find opponent"
-            onPress={props.onFindOpponent ?? (() => undefined)}
+            onPress={() => {
+              uiAudio.playCue('uiConfirm');
+              props.onFindOpponent?.();
+            }}
             disabled={!canProgress || !props.onFindOpponent}
+            onDisabledPress={() => uiAudio.playCue('uiError')}
             testID="stable-find-opponent"
           />
           {retryFooter}
-          <SecondaryButton label="More" onPress={() => setMoreOpen(true)} testID="stable-more" />
+          <SecondaryButton
+            label="More"
+            onPress={() => {
+              uiAudio.playCue('uiTab');
+              setMoreOpen(true);
+            }}
+            testID="stable-more"
+          />
           <SecondaryButton
             label="Sign out"
             onPress={() => {
+              uiAudio.playUiTap();
               void signOut();
             }}
             testID="stable-sign-out"

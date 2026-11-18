@@ -328,7 +328,10 @@ export function ReplaySlot(): React.ReactElement {
         <View style={styles.band}>
           {showResultOverlay ? (
             <ResultOverlayBand
-              onBackToStable={() => goTo('Stable')}
+              onBackToStable={() => {
+                playerRef.current?.playCue('uiConfirm');
+                goTo('Stable');
+              }}
               onWatchAgain={() => {
                 setShowResultOverlay(false);
                 setFightViewMode('rewatch');
@@ -338,7 +341,10 @@ export function ReplaySlot(): React.ReactElement {
                 setHp({ near: 1, far: 1 });
                 attackCtxRef.current = { lastAttackerId: null, wasHeavy: false };
               }}
-              onRanking={() => goTo('Ranking')}
+              onRanking={() => {
+                playerRef.current?.playUiTap();
+                goTo('Ranking');
+              }}
               testID="result-overlay-band"
             />
           ) : (

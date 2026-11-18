@@ -92,6 +92,11 @@ vi.mock('../src/audio/useTrialUiAudio', () => ({
   useTrialUiAudio: () => ({
     playUiTap: () => undefined,
     playCue,
+    playSplashSting: () => undefined,
+    playFaceOffSting: () => undefined,
+    startMenuLoop: () => undefined,
+    crossfadeToFight: () => undefined,
+    crossfadeToMenu: () => undefined,
   }),
 }));
 

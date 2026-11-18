@@ -58,6 +58,7 @@ export {
   type ExpoAvBackendOptions,
   type ExpoAvModule,
 } from './expoAvBackend';
+/** Runtime-only (Metro m4a): TrialAudioProvider / GarageTrialAudioGate / useTrial* hooks — import from their modules, not this barrel. */
 export {
   XP_TICK_MIN_INTERVAL_MS,
   XP_TICK_RATE_MAX,

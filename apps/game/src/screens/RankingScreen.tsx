@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useTrialUiAudio } from '../audio/useTrialUiAudio';
 import type { DesignCaptureRankingScenario } from '../design-capture/captureEnv';
 import { playerFacingDisplayName } from '../identity/platformPlayerId';
 import { BotoreEmblem } from '../ranking/BotoreEmblem';
@@ -72,6 +73,7 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
   initialTab = 'bots',
 }) => {
   const forced = useForcedSessionFailure();
+  const uiAudio = useTrialUiAudio({ muted: false });
   const effectiveScenario =
     captureScenario ?? (forced === 'offline' || forced === 'auth_expired' ? forced : null);
   const port = useMemo(
@@ -117,6 +119,7 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
   const loadBusy = session.phase === 'loading' || session.phase === 'idle' || session.refreshing;
 
   const onSelectTab = (tab: RankingTab) => {
+    uiAudio.playCue('uiTab');
     setSession((prev) => selectRankingTab(prev, tab));
     const cached = tab === 'bots' ? session.botRows.length > 0 : session.botoreRows.length > 0;
     if (!cached) {
@@ -127,7 +130,10 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
   const refreshControl = (
     <RefreshControl
       refreshing={session.refreshing}
-      onRefresh={() => void controller.load(session.tab)}
+      onRefresh={() => {
+        uiAudio.playUiTap();
+        void controller.load(session.tab);
+      }}
       tintColor={garageTag.graphite}
       colors={[garageTag.mustard]}
       progressBackgroundColor={garageTag.cream}
@@ -140,7 +146,18 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
       scroll={RANKING_SCREEN_CHROME_SCROLL}
       refreshControl={refreshControl}
     >
-      <ScreenHeader title="Ranking" {...(onBack ? { onBack } : {})} testID="ranking-header" />
+      <ScreenHeader
+        title="Ranking"
+        {...(onBack
+          ? {
+              onBack: () => {
+                uiAudio.playCue('uiBack');
+                onBack();
+              },
+            }
+          : {})}
+        testID="ranking-header"
+      />
       <RankingTabStrip selected={session.tab} onSelect={onSelectTab} />
       <RankingBody
         session={session}

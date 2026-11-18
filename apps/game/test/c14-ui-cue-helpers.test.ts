@@ -34,6 +34,16 @@ const sources: TrialAudioSources = {
   xpTick: 10,
   equip: 11,
   select: 12,
+  menuLoop: 13,
+  splashSting: 14,
+  faceOffSting: 22,
+  uiConfirm: 15,
+  uiBack: 16,
+  uiTab: 17,
+  uiSnap: 18,
+  uiCreate: 19,
+  uiError: 20,
+  uiToggle: 21,
 };
 
 describe('C14 UI cue helpers for D2/D3', () => {
@@ -180,7 +190,7 @@ describe('C14 UI cue helpers for D2/D3', () => {
     session.setEffectsEnabled(true);
     for (const id of TRIAL_AUDIO_UI_CUE_IDS) session.playCue(id);
     await Promise.resolve();
-    expect(played).toEqual([9, 10, 11, 12]);
+    expect(played).toEqual([9, 10, 11, 12, 15, 16, 17, 18, 19, 20, 21]);
     session.dispose();
   });
 });

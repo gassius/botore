@@ -32,6 +32,16 @@ const sources = {
   xpTick: { uri: 'xp-tick' },
   equip: { uri: 'equip' },
   select: { uri: 'select' },
+  menuLoop: { uri: 'menu' },
+  splashSting: { uri: 'splash' },
+  faceOffSting: { uri: 'face-off' },
+  uiConfirm: { uri: 'ui-confirm' },
+  uiBack: { uri: 'ui-back' },
+  uiTab: { uri: 'ui-tab' },
+  uiSnap: { uri: 'ui-snap' },
+  uiCreate: { uri: 'ui-create' },
+  uiError: { uri: 'ui-error' },
+  uiToggle: { uri: 'ui-toggle' },
 } as unknown as TrialAudioSources;
 
 describe('C9 player settings prefs', () => {
