@@ -75,13 +75,22 @@ objects.
 **Prereq:** migration `0031_atlas_v1_workshop_frame_consolidate.sql` applied
 (`dev_reopen_atlas_version`, `register_atlas_v1_workshop_frame_entries`).
 
+**One-time Dev DB marker** (Infra — never from a migration; never on Production):
+
+```sql
+-- Hosted Development project only (yrrytppmkykzhwelqmcs)
+alter database postgres set app.environment = 'development';
+-- New sessions pick this up; reconnect the SQL editor / scripts after setting.
+```
+
 **Connector SQL** (Supabase SQL editor / connector — no DB pooler required):
 
 ```sql
 -- service_role JWT context (Dashboard SQL as postgres/service is fine)
 select set_config('request.jwt.claim.role', 'service_role', true);
 
--- 1) Reopen published v1 → draft (GUC set inside the RPC; confirm required)
+-- 1) Reopen published v1 → draft (requires app.environment=development;
+--    reopen GUC is set inside the RPC; confirm required)
 select public.dev_reopen_atlas_version('v1', 'DEVELOPMENT_ONLY_REOPEN');
 
 -- 2) Idempotent workshop-frame kit-v003 manifest entries on draft v1
@@ -103,6 +112,27 @@ node scripts/pack-workshop-frame-atlas.mjs
 ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs
 ```
 
+**Re-pin hosted Dev loadouts to v1** (seed/`if not exists` leaves prior `v3`
+pins in place — append new confirmed versions via `save_bot_loadout`):
+
+```sql
+select set_config('request.jwt.claim.role', 'service_role', true);
+-- Repeat per character that should download the consolidated pack (at least
+-- the proof roster). Append-only: creates a new bot_loadout_versions row.
+select public.save_bot_loadout(
+  c.character_id,
+  cl.loadout,
+  'v1'
+)
+from public.current_bot_loadouts cl
+join public.characters c using (character_id)
+where cl.atlas_version is distinct from 'v1'
+  and c.character_id in (
+    'player-hero', 'opp-sir-bot', 'opp-dex-bot', 'opp-hp-bot'
+  );
+-- Optionally broaden to all player/NPC rows on Development after checking.
+```
+
 **Verify:**
 
 ```sql
@@ -114,11 +144,15 @@ select status,
 
 select public.backend_health_snapshot()->'checks'->'storage';
 -- expect: proof_pack_ok=true, latest_version=v1 (or still ok if older published leftovers exist)
+
+select character_id, atlas_version from public.current_bot_loadouts
+ where character_id in ('player-hero','opp-sir-bot','opp-dex-bot','opp-hp-bot');
+-- expect: atlas_version = v1 for each
 ```
 
-`seed-atlas-storage.mjs` upserts objects (`x-upsert: true`). Extra historical
-`atlas/v2` / `atlas/v3` objects on Development (if any) are inert once clients
-pin `v1`; do not delete published leftovers unless Carlos asks.
+`seed-atlas-storage.mjs` upserts objects (`x-upsert: true`). Historical
+`atlas/v2` / `atlas/v3` Storage prefixes on Development (if any) remain until
+Carlos asks to delete them; after re-pin, clients request `v1` only.
 
 ## Edge Function deploy (multi-file)
 

@@ -1230,7 +1230,7 @@ begin
   );
   raise notice 'TEST-OK atlas v1 workshop-frame-v003 pack + wraps + hyphen weapon ids';
 
-  -- Dev-only reopen: confirm gate + published→draft on a throwaway version ----
+  -- Dev-only reopen: env marker + confirm gate + published→draft fixture ----
   perform set_config('request.jwt.claim.role', 'service_role', true);
   insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
   values ('v900010', 'draft', null, '{"version":"v900010"}'::jsonb, false, 'reopen fixture');
@@ -1240,6 +1240,25 @@ begin
   insert into storage.objects (bucket_id, name, metadata)
   values ('atlas', 'v900010/manifest.json', '{"fixture":true}'::jsonb);
   perform public.publish_atlas_version('v900010');
+
+  -- Fail closed without Dev env marker (Production never sets it).
+  begin
+    perform public.dev_reopen_atlas_version('v900010', 'DEVELOPMENT_ONLY_REOPEN');
+    raise exception 'REOPEN FAIL: env marker missing should reject';
+  exception
+    when others then
+      if sqlstate = '42501' and sqlerrm like '%app.environment=development%' then null;
+      else raise;
+      end if;
+  end;
+  perform tests.assert(
+    (select status from public.atlas_versions where version = 'v900010') = 'published',
+    'v900010 still published when env marker unset'
+  );
+
+  -- Marker is transaction-local only (never alter database from migrations/tests).
+  perform set_config('app.environment', 'development', true);
+
   begin
     perform public.dev_reopen_atlas_version('v900010', 'wrong');
     raise exception 'REOPEN FAIL: confirm gate missing';

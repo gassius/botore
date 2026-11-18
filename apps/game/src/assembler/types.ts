@@ -177,7 +177,7 @@ export interface AssembledLayer {
 }
 
 export interface AssembledBot {
-  /** Fight/stable media pin (`v3` for workshop-frame-v003; `v2` history; `v1` proof-pack). */
+  /** Fight/stable media pin (`v1` = proof + workshop-frame-v003; former v2/v3 retired). */
   readonly atlasVersion: string;
   readonly chassisId: string;
   readonly paintId: string;

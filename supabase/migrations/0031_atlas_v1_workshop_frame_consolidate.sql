@@ -5,7 +5,9 @@
 --   • Development keeps ONE atlas version: v1, holding proof pack + Workshop
 --     Frame kit-v003 media keys (wraps included). Former v2/v3 pack dirs retire.
 --   • Published packs stay immutable in Production. Development-only reopen is
---     gated by transaction GUC app.atlas_dev_reopen=on + confirm string.
+--     fail-closed: requires app.environment=development (Infra sets on Dev DB
+--     only — never from a migration) AND transaction GUC app.atlas_dev_reopen=on
+--     AND confirm string. Production never has the environment marker.
 --   • Migrations do NOT fabricate storage.objects. After this migration on a
 --     fresh local reset, v1 remains draft until pack + seed-atlas-storage.
 --   • Hosted Development (already published old v1): Infra runs the reopen
@@ -14,7 +16,7 @@
 -- Does not edit applied migrations 0017 / 0026 / 0030.
 
 -- ---------------------------------------------------------------------------
--- Immutability: allow published → draft ONLY when app.atlas_dev_reopen=on
+-- Immutability: published → draft ONLY when Dev env marker + reopen GUC
 -- ---------------------------------------------------------------------------
 create or replace function public.atlas_versions_immutability()
 returns trigger
@@ -32,9 +34,11 @@ begin
 
     if old.status = 'published' then
         -- Development-only reopen: published → draft with cleared published_at.
+        -- Fail closed unless BOTH the Dev DB marker and the reopen GUC are set.
         if tg_op = 'UPDATE'
            and new.status = 'draft'
            and new.published_at is null
+           and coalesce(current_setting('app.environment', true), '') = 'development'
            and coalesce(current_setting('app.atlas_dev_reopen', true), '') = 'on'
         then
             if new.version is distinct from old.version then
@@ -65,7 +69,7 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
--- Dev-only reopen (service_role). Production must never set the GUC / confirm.
+-- Dev-only reopen (service_role). Fail closed without app.environment=development.
 -- ---------------------------------------------------------------------------
 create or replace function public.dev_reopen_atlas_version(
     p_version text,
@@ -79,9 +83,16 @@ as $$
 declare
     v_jwt_role text := coalesce(auth.role(), '');
     v_status text;
+    v_env text := coalesce(current_setting('app.environment', true), '');
 begin
     if v_jwt_role is distinct from 'service_role' then
         raise exception 'forbidden: dev_reopen_atlas_version requires service_role'
+            using errcode = '42501';
+    end if;
+
+    -- Fail closed: Production never has this marker (Infra sets it on Dev only).
+    if v_env is distinct from 'development' then
+        raise exception 'forbidden: atlas reopen requires app.environment=development'
             using errcode = '42501';
     end if;
 
@@ -147,7 +158,7 @@ revoke all on function public.dev_reopen_atlas_version(text, text) from authenti
 grant execute on function public.dev_reopen_atlas_version(text, text) to service_role;
 
 comment on function public.dev_reopen_atlas_version(text, text) is
-  'Development-only: reopen a published atlas version to draft so Storage API can replace payloads. Requires service_role + confirm DEVELOPMENT_ONLY_REOPEN. Never call on Production.';
+  'Development-only: reopen a published atlas version to draft. Requires app.environment=development (Infra sets on Dev DB only; never from migrations) + service_role + confirm DEVELOPMENT_ONLY_REOPEN. Fail closed on Production.';
 
 -- ---------------------------------------------------------------------------
 -- Register kit-v003 workshop-frame entries onto v1 (draft only)

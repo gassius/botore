@@ -4,7 +4,7 @@
  * Run: node --test scripts/pack-workshop-frame-atlas.test.mjs
  */
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -98,6 +98,7 @@ test('pack script overlays kit-v003 into committed v1 without wiping proof bytes
   assert.ok(existsSync(v1Manifest), 'committed v1 manifest present');
   assert.ok(existsSync(v1Tap), 'committed v1 payload present');
   assert.ok(existsSync(v1Chassis), 'committed proof chassis present');
+  const beforeManifest = readFileSync(v1Manifest);
   const beforeTap = readFileSync(v1Tap);
   const beforeChassis = readFileSync(v1Chassis);
   const kitDir = join(ROOT, 'apps/game/assets/workshop-frame-kit-v003');
@@ -110,20 +111,27 @@ test('pack script overlays kit-v003 into committed v1 without wiping proof bytes
     },
     encoding: 'utf8',
   });
-  assert.equal(r.status, 0, r.stderr || r.stdout);
-  assert.match(r.stdout, /ATLAS-PACK-OK v1.*mode=overlay/);
-  assert.ok(existsSync(v1Tap), 'v1 audio must survive overlay');
-  assert.ok(existsSync(v1Chassis), 'v1 chassis must survive overlay');
-  assert.deepEqual(readFileSync(v1Tap), beforeTap);
-  assert.deepEqual(readFileSync(v1Chassis), beforeChassis);
-  assert.ok(existsSync(join(ROOT, 'supabase/seed/atlas/v1/parts/torso/oxide.png')));
-  assert.ok(existsSync(join(ROOT, 'supabase/seed/atlas/v1/parts/hand-r-wrap/oxide.png')));
-  assert.ok(existsSync(join(ROOT, 'supabase/seed/atlas/v1/parts/weapon-sword/oxide.png')));
-  const manifest = JSON.parse(readFileSync(v1Manifest, 'utf8'));
-  assert.equal(manifest.version, 'v1');
-  assert.ok(manifest.parts.torso);
-  assert.ok(manifest.parts['hand-r-wrap']);
-  assert.ok(manifest.parts['chassis-basic']);
+  try {
+    assert.equal(r.status, 0, r.stderr || r.stdout);
+    assert.match(r.stdout, /ATLAS-PACK-OK v1.*mode=overlay/);
+    assert.ok(existsSync(v1Tap), 'v1 audio must survive overlay');
+    assert.ok(existsSync(v1Chassis), 'v1 chassis must survive overlay');
+    assert.deepEqual(readFileSync(v1Tap), beforeTap);
+    assert.deepEqual(readFileSync(v1Chassis), beforeChassis);
+    assert.ok(existsSync(join(ROOT, 'supabase/seed/atlas/v1/parts/torso/oxide.png')));
+    assert.ok(existsSync(join(ROOT, 'supabase/seed/atlas/v1/parts/hand-r-wrap/oxide.png')));
+    assert.ok(existsSync(join(ROOT, 'supabase/seed/atlas/v1/parts/weapon-sword/oxide.png')));
+    const manifest = JSON.parse(readFileSync(v1Manifest, 'utf8'));
+    assert.equal(manifest.version, 'v1');
+    assert.ok(manifest.parts.torso);
+    assert.ok(manifest.parts['hand-r-wrap']);
+    assert.ok(manifest.parts['chassis-basic']);
+    // Prettier-normalized packer output must match the committed manifest bytes.
+    assert.deepEqual(readFileSync(v1Manifest), beforeManifest);
+  } finally {
+    // Never leave the tracked tree dirty if assertions fail mid-run.
+    writeFileSync(v1Manifest, beforeManifest);
+  }
 });
 
 test('pack script materializes hyphenated atlas tree into alternate seed dir', () => {

@@ -18,6 +18,7 @@
  *     # then reopen draft (see docs/backend/verify.md) + seed-atlas-storage
  *     ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs
  */
+import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -231,7 +232,16 @@ function main() {
   }
 
   const manifest = buildManifestJson(pairs, kitVersion, VERSION);
-  writeFileSync(join(OUT_DIR, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  const manifestPath = join(OUT_DIR, 'manifest.json');
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  // Keep committed v1/manifest.json byte-stable with repo Prettier (compact arrays).
+  const prettier = spawnSync('pnpm', ['exec', 'prettier', '--write', manifestPath], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  if (prettier.status !== 0) {
+    fail(`prettier --write ${manifestPath} failed: ${prettier.stderr || prettier.stdout}`);
+  }
 
   const swordOxide = join(OUT_DIR, 'parts/weapon-sword/oxide.png');
   if (!existsSync(swordOxide)) fail(`expected packed ${swordOxide}`);
