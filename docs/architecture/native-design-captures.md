@@ -90,14 +90,14 @@ Artifacts land in `artifacts/native-captures/` (gitignored) with a
 
 Deep links used by the scripts:
 
-| URL                              | Effect                |
-| -------------------------------- | --------------------- |
-| `botore://capture/Stable`        | Jump to Stable        |
-| `botore://capture/Settings`      | Jump to Settings (C9) |
-| `botore://capture/Replay?mute=1` | Jump to Replay muted  |
-| `botore://capture/Customise?customise=paint-clean` | D3 Paint clean |
-| `botore://capture/Customise?customise=paint-dirty` | D3 dirty + Oxide dot |
-| `botore://capture/Customise?customise=equipped` | D3 Equipped flash |
+| URL                                                | Effect                |
+| -------------------------------------------------- | --------------------- |
+| `botore://capture/Stable`                          | Jump to Stable        |
+| `botore://capture/Settings`                        | Jump to Settings (C9) |
+| `botore://capture/Replay?mute=1`                   | Jump to Replay muted  |
+| `botore://capture/Customise?customise=paint-clean` | D3 Paint clean        |
+| `botore://capture/Customise?customise=paint-dirty` | D3 dirty + Oxide dot  |
+| `botore://capture/Customise?customise=equipped`    | D3 Equipped flash     |
 | `botore://capture/Customise?customise=weapon-soon` | D3 Weapon Coming soon |
 
 Live-fight CI also captures **Settings** and a **muted Replay** still

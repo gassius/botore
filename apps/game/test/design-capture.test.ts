@@ -200,9 +200,9 @@ describe('C7 design-capture helpers', () => {
     expect(parseDesignCaptureUrl('botore://capture/Customise?customise=weapon-soon')).toEqual(
       expect.objectContaining({ route: 'Customise', customiseScenario: 'weapon-soon' }),
     );
-    expect(
-      buildDesignCaptureUrl('Customise', { customiseScenario: 'paint-dirty' }),
-    ).toBe(`${DESIGN_CAPTURE_SCHEME}://capture/Customise?customise=paint-dirty`);
+    expect(buildDesignCaptureUrl('Customise', { customiseScenario: 'paint-dirty' })).toBe(
+      `${DESIGN_CAPTURE_SCHEME}://capture/Customise?customise=paint-dirty`,
+    );
   });
 
   it('lists the same first-run routes the shell owns', () => {

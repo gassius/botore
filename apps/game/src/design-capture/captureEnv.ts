@@ -35,10 +35,7 @@ export type DesignCaptureSessionFailure = 'offline' | 'auth_expired';
  * - weapon-soon: Weapon tab with a locked Coming soon card visible
  */
 export type DesignCaptureCustomiseScenario =
-  | 'paint-clean'
-  | 'paint-dirty'
-  | 'equipped'
-  | 'weapon-soon';
+  'paint-clean' | 'paint-dirty' | 'equipped' | 'weapon-soon';
 
 /** C11: dual-fighter quick vs heavy pose stills under design-capture only. */
 export type DesignCapturePoseCompare = 'quick-vs-heavy';
