@@ -21,11 +21,19 @@
 --      for existing characters on hydrate.
 --   3) save_bot_loadout (authenticated owner path) calls ensure before
 --      ownership asserts so Equip self-heals without requiring a remount.
---   4) current_bot_loadouts ties on created_at break by loadout_version_id
---      (same-tx now() collisions no longer hide the newest Equip).
---   5) Idempotent A6 inventory backfill (safe re-run; ledger SUM subquery).
+--   4) bot_loadout_versions.created_at default → clock_timestamp() so same-tx
+--      Equips get distinct timestamps (tx-stable now() was hiding newest row
+--      in current_bot_loadouts; UUID tie-break is not insertion-ordered).
+--   5) current_bot_loadouts still tie-breaks by loadout_version_id desc.
+--   6) Idempotent A6 inventory backfill (safe re-run; ledger SUM subquery).
 --
 -- Prefix: E4 owns 0037; this PR owns 0038. Fight-end / name-input: 0039+.
+
+-- ---------------------------------------------------------------------------
+-- created_at: clock_timestamp so same-transaction Equips order correctly
+-- ---------------------------------------------------------------------------
+alter table public.bot_loadout_versions
+  alter column created_at set default clock_timestamp();
 
 -- ---------------------------------------------------------------------------
 -- ensure_player_character: quantity-based A6 grants (mirrors 0035 + 0038 fix)
@@ -247,9 +255,9 @@ begin
             || jsonb_build_object('drone', 'null'::jsonb);
 
         insert into public.bot_loadout_versions (
-            character_id, loadout, atlas_version
+            character_id, loadout, atlas_version, created_at
         ) values (
-            v_character_id, v_normalized, 'v1'
+            v_character_id, v_normalized, 'v1', clock_timestamp()
         )
         returning loadout_version_id into v_loadout_version_id;
 
@@ -563,11 +571,13 @@ begin
     insert into public.bot_loadout_versions (
         character_id,
         loadout,
-        atlas_version
+        atlas_version,
+        created_at
     ) values (
         p_character_id,
         v_normalized,
-        p_atlas_version
+        p_atlas_version,
+        clock_timestamp()
     )
     returning loadout_version_id into v_version_id;
 
@@ -583,7 +593,8 @@ comment on function public.save_bot_loadout(text, jsonb, text) is
   'Validates ownership + slot compatibility; authenticated re-pins current draft atlas (E1) and ensures A6 inventory grants before asserts (0038); appends immutable loadout version.';
 
 -- ---------------------------------------------------------------------------
--- current_bot_loadouts: tie-break same created_at (tx-stable now()) by version id
+-- current_bot_loadouts: newest by created_at (clock_timestamp default); UUID
+-- tie-break is secondary only (random UUIDs are not insertion-ordered).
 -- ---------------------------------------------------------------------------
 create or replace view public.current_bot_loadouts
 with (security_invoker = true) as
@@ -599,7 +610,7 @@ order by character_id, created_at desc, loadout_version_id desc;
 grant select on public.current_bot_loadouts to authenticated, anon;
 
 comment on view public.current_bot_loadouts is
-  'Latest confirmed loadout per character. Ties on created_at break by loadout_version_id desc (0038).';
+  'Latest confirmed loadout per character (created_at clock_timestamp; 0038).';
 
 -- ---------------------------------------------------------------------------
 -- Idempotent A6 inventory backfill (safe if 0035 already applied)
