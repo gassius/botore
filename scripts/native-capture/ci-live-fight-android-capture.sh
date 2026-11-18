@@ -342,6 +342,8 @@ if [[ ! -e "${replay_start_matches[0]:-}" ]]; then
   exit 1
 fi
 write_manifest_line "${MANIFEST}" "still.android.replay-start" "${replay_start_matches[0]}"
+# E2 / D10 — quiet call-out band (empty dashed plate + in-arena ARENA · REPAIR YARD).
+write_manifest_line "${MANIFEST}" "still.android.fight-view-callout-quiet" "${replay_start_matches[0]}"
 echo "ok: ${replay_start_matches[0]}" >&2
 
 FIGHT_LINE=""
@@ -532,6 +534,8 @@ if cmp -s "${axe_attack}" "${axe_ko}"; then
   exit 1
 fi
 write_manifest_line "${MANIFEST}" "still.android.FightView-axe-attack" "${axe_attack}"
+# E2 / D10 — mid-fight call-out plate evidence (queued dwell ≥ 1.2 s).
+write_manifest_line "${MANIFEST}" "still.android.fight-view-callout-mid" "${axe_attack}"
 write_manifest_line "${MANIFEST}" "still.android.FightView-axe-knockout" "${axe_ko}"
 write_manifest_line "${MANIFEST}" "still.android.ConfirmFight-axe-attack" "${alias_attack}"
 write_manifest_line "${MANIFEST}" "still.android.ConfirmFight-axe-knockout" "${alias_ko}"

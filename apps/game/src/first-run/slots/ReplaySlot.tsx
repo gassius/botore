@@ -13,13 +13,20 @@ import {
 import { useFightSession } from '../../fight';
 import type { ArenaFxFamily } from '../../arena/environmentPin';
 import {
+  advanceCalloutQueue,
+  arenaLocationTagLeft,
+  ArenaLocationTag,
   calloutFromCommand,
   createOnceHandoff,
+  enqueueCallout,
   FightViewBottomBand,
   FightViewHud,
   FightViewMuteControl,
   FIGHT_VIEW_HUD_BELOW_INSET,
   FIGHT_VIEW_KO_HOLD_MS,
+  initialCalloutQueueState,
+  msUntilCalloutAdvance,
+  resetCalloutQueue,
   shouldScheduleKoHandoff,
   updateCalloutAttackContext,
   type FightViewCallout,
@@ -83,11 +90,16 @@ export function ReplaySlot(): React.ReactElement {
   const fxHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idlePlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const koHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const calloutDwellTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const calloutQueueRef = useRef(initialCalloutQueueState());
   const attackCtxRef = useRef<{ lastAttackerId: string | null; wasHeavy: boolean }>({
     lastAttackerId: null,
     wasHeavy: false,
   });
   const [callout, setCallout] = useState<FightViewCallout | null>(null);
+  const [calloutCount, setCalloutCount] = useState(1);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [dwellKey, setDwellKey] = useState<number | null>(null);
   const [hp, setHp] = useState({ near: 1, far: 1 });
   const handOffOnceRef = useRef(
     createOnceHandoff(() => {
@@ -97,6 +109,40 @@ export function ReplaySlot(): React.ReactElement {
   const liveCapture = isLiveFightCaptureEnabled();
   const isRewatch = fightViewMode === 'rewatch';
   const topInset = insets.top;
+
+  const publishCalloutQueue = useCallback(() => {
+    const q = calloutQueueRef.current;
+    setCallout(q.current?.callout ?? null);
+    setCalloutCount(q.current?.count ?? 1);
+    setPendingCount(q.pending.length);
+    setDwellKey(q.shownAtMs);
+  }, []);
+
+  const clearCalloutDwellTimer = useCallback(() => {
+    if (calloutDwellTimerRef.current) {
+      clearTimeout(calloutDwellTimerRef.current);
+      calloutDwellTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleCalloutAdvance = useCallback(() => {
+    clearCalloutDwellTimer();
+    const delay = msUntilCalloutAdvance(calloutQueueRef.current, Date.now());
+    if (delay === null) return;
+    calloutDwellTimerRef.current = setTimeout(() => {
+      calloutDwellTimerRef.current = null;
+      const next = advanceCalloutQueue(calloutQueueRef.current, Date.now());
+      calloutQueueRef.current = next;
+      publishCalloutQueue();
+      scheduleCalloutAdvance();
+    }, delay);
+  }, [clearCalloutDwellTimer, publishCalloutQueue]);
+
+  const resetVisibleCallout = useCallback(() => {
+    clearCalloutDwellTimer();
+    calloutQueueRef.current = resetCalloutQueue();
+    publishCalloutQueue();
+  }, [clearCalloutDwellTimer, publishCalloutQueue]);
 
   // Refresh the once-handoff when overlay setter identity changes.
   useEffect(() => {
@@ -114,6 +160,7 @@ export function ReplaySlot(): React.ReactElement {
       if (fxHoldTimerRef.current) clearTimeout(fxHoldTimerRef.current);
       if (idlePlayTimerRef.current) clearTimeout(idlePlayTimerRef.current);
       if (koHoldTimerRef.current) clearTimeout(koHoldTimerRef.current);
+      if (calloutDwellTimerRef.current) clearTimeout(calloutDwellTimerRef.current);
     };
   }, []);
 
@@ -176,20 +223,25 @@ export function ReplaySlot(): React.ReactElement {
   const onCommandApplied = useCallback(
     (cmd: AnimationCommand, presentation: ReplayPresentationState) => {
       attackCtxRef.current = updateCalloutAttackContext(cmd, attackCtxRef.current);
-      const fighters =
-        resolution.status === 'confirmed' ? resolution.confirmed.replay.fighters : [];
-      // Keep the KO plate through victory_screen (null) until the Result overlay.
-      if (cmd.kind !== 'victory_screen') {
-        setCallout(
-          calloutFromCommand(cmd, fighters, {
-            lastAttackerId: attackCtxRef.current.lastAttackerId,
-            wasHeavy: attackCtxRef.current.wasHeavy,
-          }),
-        );
+      // Rewatch band discards callouts — skip enqueue / dwell timers / re-renders.
+      if (!isRewatch) {
+        const fighters =
+          resolution.status === 'confirmed' ? resolution.confirmed.replay.fighters : [];
+        // Queue non-null plates with min dwell; KO preempts; null keeps the plate.
+        const mapped = calloutFromCommand(cmd, fighters, {
+          lastAttackerId: attackCtxRef.current.lastAttackerId,
+          wasHeavy: attackCtxRef.current.wasHeavy,
+        });
+        if (mapped) {
+          const next = enqueueCallout(calloutQueueRef.current, mapped, Date.now());
+          calloutQueueRef.current = next;
+          publishCalloutQueue();
+          scheduleCalloutAdvance();
+        }
       }
       setHp({ near: presentation.hp.near, far: presentation.hp.far });
     },
-    [resolution],
+    [isRewatch, resolution, publishCalloutQueue, scheduleCalloutAdvance],
   );
 
   // E2: when the Result overlay opens, refresh W–L from list_bot_ranking (no invent).
@@ -289,6 +341,12 @@ export function ReplaySlot(): React.ReactElement {
           testID="fight-view-mute"
         />
       ) : null}
+      {!showResultOverlay ? (
+        <ArenaLocationTag
+          top={topInset + FIGHT_VIEW_HUD_BELOW_INSET + 6}
+          left={arenaLocationTagLeft(isRewatch)}
+        />
+      ) : null}
       {showResultOverlay ? (
         <ResultOverlay
           confirmed={confirmed}
@@ -334,7 +392,7 @@ export function ReplaySlot(): React.ReactElement {
                 setFightViewMode('rewatch');
                 playerRef.current?.playUiTap();
                 playerRef.current?.replay();
-                setCallout(null);
+                resetVisibleCallout();
                 setHp({ near: 1, far: 1 });
                 attackCtxRef.current = { lastAttackerId: null, wasHeavy: false };
               }}
@@ -345,10 +403,14 @@ export function ReplaySlot(): React.ReactElement {
             <FightViewBottomBand
               mode={fightViewMode}
               callout={isRewatch ? null : callout}
+              calloutCount={isRewatch ? 1 : calloutCount}
+              pendingCount={isRewatch ? 0 : pendingCount}
+              dwellKey={isRewatch ? null : dwellKey}
+              reducedMotion={reducedMotion}
               onReplay={() => {
                 playerRef.current?.playUiTap();
                 playerRef.current?.replay();
-                setCallout(null);
+                resetVisibleCallout();
                 setHp({ near: 1, far: 1 });
                 attackCtxRef.current = { lastAttackerId: null, wasHeavy: false };
               }}
@@ -371,13 +433,14 @@ const styles = StyleSheet.create({
     backgroundColor: garageTag.cream,
   },
   arena: {
-    // Takes every pixel above the content-sized call-out band (~75%+ on 390×844).
+    // Takes every pixel above the fixed call-out band (~75%+ on 390×844).
     flex: 1,
     minHeight: 0,
     backgroundColor: garageTag.graphite,
   },
   band: {
-    // Hug bottom — no flexGrow cream gap under the call-out / REPLAY button.
+    // FightViewBottomBand locks height to FIGHT_VIEW_BAND_CONTENT_HEIGHT;
+    // ResultOverlayBand sizes to its actions (E1). No flexGrow cream gap.
     flexGrow: 0,
     flexShrink: 0,
   },

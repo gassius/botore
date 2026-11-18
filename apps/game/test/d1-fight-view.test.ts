@@ -46,7 +46,7 @@ describe('D1 Fight View rename + layout constants', () => {
     expect(FIGHT_VIEW_HUD_BELOW_INSET).toBeGreaterThan(80);
   });
 
-  it('390×844 shell: arena ≥75% with content-sized band hugging bottom', () => {
+  it('390×844 shell: arena ≥75% with fixed band hugging bottom', () => {
     const shell = fightViewShellHeights(844, FIGHT_VIEW_BAND_CONTENT_HEIGHT);
     expect(shell.arenaRatio).toBeGreaterThanOrEqual(0.75);
     expect(shell.arenaHeight + shell.bandHeight).toBe(844);
@@ -87,14 +87,16 @@ describe('D1 first-watch vs rewatch control sets', () => {
     expect(slot).toContain('FIGHT_VIEW_HUD_BELOW_INSET');
   });
 
-  it('arena flex:1 + band content-sized (no flexGrow cream gap)', () => {
+  it('arena flex:1 + fixed band height (no flexGrow cream gap)', () => {
     expect(slot).toMatch(/arena:\s*\{[^}]*flex:\s*1/s);
     expect(slot).toMatch(/band:\s*\{[^}]*flexGrow:\s*0/s);
+    expect(slot).toContain('FIGHT_VIEW_BAND_CONTENT_HEIGHT');
     expect(slot).not.toContain('minHeight: 120');
   });
 
-  it('keeps KO plate through victory_screen until Result handoff', () => {
-    expect(slot).toContain("cmd.kind !== 'victory_screen'");
+  it('keeps KO plate through quiet / victory_screen until Result handoff', () => {
+    expect(slot).toContain('enqueueCallout');
+    expect(slot).toContain('if (mapped)');
   });
 
   it('player uses arenaFirst cover so stage fills width', () => {
