@@ -20,7 +20,7 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 
 ### E3 fight quota (`get_fight_allowance_summary`)
 
-Migration `0031_fight_quota_config.sql`. Config singleton
+Migration `0032_fight_quota_config.sql`. Config singleton
 `fight_quota_config` (no `SELECT` for `authenticated`) drives:
 
 | Field             | Now                                   | Later                                         |

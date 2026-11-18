@@ -3368,7 +3368,7 @@ begin
 end $$;
 
 -- =========================================================================
--- E3: server-driven fight quota (0031_fight_quota_config)
+-- E3: server-driven fight quota (0032_fight_quota_config)
 -- =========================================================================
 do $$
 declare

@@ -1,4 +1,5 @@
--- 0031: E3 server-driven fight quota (ClickUp 1amjtrezeba)
+-- 0032: E3 server-driven fight quota (ClickUp 1amjtrezeba)
+-- (0031 reserved by atlas v1 consolidation on #81)
 --
 -- Extends get_fight_allowance_summary() with a config-backed player-facing
 -- contract: fightsRemaining, limit, scope, refillPolicy, nextRefillAt.
