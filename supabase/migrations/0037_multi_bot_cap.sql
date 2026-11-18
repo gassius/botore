@@ -671,10 +671,10 @@ begin
      where part_id = 'chassis-basic' and is_active
   ) or not exists (
     select 1 from public.parts_catalogue
-     where part_id = v_paint and slot = 'paint' and is_active
+     where part_id = v_paint and slot_kind = 'paint' and is_active
   ) or not exists (
     select 1 from public.parts_catalogue
-     where part_id = v_weapon and slot = 'weapon' and is_active
+     where part_id = v_weapon and slot_kind = 'weapon' and is_active
   ) then
     return jsonb_build_object(
       'ok', false,
@@ -732,15 +732,19 @@ begin
 
   insert into public.character_build_versions (
     character_id, hp, strength, agility, speed, weapon_kind, weapon_power
-  ) values (
-    v_character_id, 30, 5, 5, 6,
-    case
-      when v_weapon like '%axe%' then 'axe'
-      when v_weapon like '%dagger%' then 'dagger'
-      else 'sword'
-    end,
-    3
-  );
+  )
+  select
+    v_character_id,
+    30,
+    5,
+    5,
+    6,
+    coalesce(pc.weapon_kind, 'sword'),
+    coalesce(pc.weapon_power, 3)
+  from public.parts_catalogue pc
+  where pc.part_id = v_weapon
+    and pc.slot_kind = 'weapon'
+    and pc.is_active;
 
   select coalesce(jsonb_agg(tag order by tag), '[]'::jsonb)
     into v_sound_tags
