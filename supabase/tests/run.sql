@@ -1271,6 +1271,13 @@ begin
       else raise;
       end if;
   end;
+  -- Drop back to draft: same-transaction now() ties break on version desc, so a
+  -- leftover published v900010 would beat later fixture v900001 for latest_version.
+  perform public.dev_reopen_atlas_version('v900010', 'DEVELOPMENT_ONLY_REOPEN');
+  perform tests.assert(
+    (select status from public.atlas_versions where version = 'v900010') = 'draft',
+    'v900010 left draft after reopen coverage'
+  );
   raise notice 'TEST-OK atlas dev_reopen_atlas_version gated reopen';
 
   -- Publish rejects missing Storage objects --------------------------------
