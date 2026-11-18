@@ -4,6 +4,7 @@ import { UnavailableContractRankingReadAdapter } from '../src/ranking/adapters/U
 import {
   DEV_EMPTY_RANKING_ROWS,
   DEV_OVERFLOW_RANKING_ROWS,
+  DEV_POPULATED_BOTORE_ROWS,
   DEV_POPULATED_RANKING_ROWS,
   DEV_PRESERVE_ORDER_ROWS,
   DEV_RANKING_FIXTURE_LABEL,
@@ -274,5 +275,43 @@ describe('ranking load controller generations', () => {
     resolveLate(DEV_POPULATED_RANKING_ROWS);
     await Promise.resolve();
     expect(session.botRows).toHaveLength(0);
+  });
+
+  it('resolves botores tab outside setState (deferred React 18 updater)', async () => {
+    let listCalls = 0;
+    let botoreCalls = 0;
+    const port: RankingReadPort = {
+      list: async () => {
+        listCalls += 1;
+        return DEV_POPULATED_RANKING_ROWS;
+      },
+      listBotores: async () => {
+        botoreCalls += 1;
+        return DEV_POPULATED_BOTORE_ROWS;
+      },
+    };
+
+    let session: RankingSessionState = createInitialRankingSession('bots');
+    const queued: Array<(prev: RankingSessionState) => RankingSessionState> = [];
+    const controller = createRankingLoadController(
+      port,
+      (updater) => {
+        // Defer apply — mimics React 18 not running the updater synchronously.
+        queued.push(updater);
+      },
+      'bots',
+    );
+
+    const pending = controller.load('botores');
+    await pending;
+    expect(botoreCalls).toBe(1);
+    expect(listCalls).toBe(0);
+
+    while (queued.length > 0) {
+      const next = queued.shift();
+      if (next) session = next(session);
+    }
+    expect(session.tab).toBe('botores');
+    expect(session.botoreRows).toHaveLength(DEV_POPULATED_BOTORE_ROWS.length);
   });
 });

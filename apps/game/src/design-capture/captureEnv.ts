@@ -21,8 +21,21 @@ export const DESIGN_CAPTURE_DEV_PASSWORD = 'design-capture';
 export const LIVE_FIGHT_CAPTURE_EMAIL = 'dev-player@example.com';
 export const LIVE_FIGHT_CAPTURE_PASSWORD = 'local-only-password';
 
-/** Ranking capture override for empty/error/offline/auth-expired stills (C5/C10). */
-export type DesignCaptureRankingScenario = 'live' | 'empty' | 'error' | 'offline' | 'auth_expired';
+/**
+ * Ranking capture override (C5/C10/D4).
+ * - live: prefer E2 RPCs when authed
+ * - bots / botores: DEV fixtures with portraits/emblems + W–L on that tab
+ * - empty / loading / error / offline / auth_expired: forced UI states
+ */
+export type DesignCaptureRankingScenario =
+  | 'live'
+  | 'bots'
+  | 'botores'
+  | 'empty'
+  | 'loading'
+  | 'error'
+  | 'offline'
+  | 'auth_expired';
 
 /** C10: force shared offline / auth-expired banners under design-capture. */
 export type DesignCaptureSessionFailure = 'offline' | 'auth_expired';
@@ -75,10 +88,37 @@ export function parseDesignCaptureRankingScenario(
   raw: string | null | undefined,
 ): DesignCaptureRankingScenario | null {
   const v = trimPublic(raw ?? undefined)?.toLowerCase();
-  if (v === 'live' || v === 'empty' || v === 'error' || v === 'offline' || v === 'auth_expired') {
-    return v;
-  }
+  if (v === 'live') return 'live';
+  if (v === 'bots' || v === 'bot') return 'bots';
+  if (v === 'botores' || v === 'botore') return 'botores';
+  if (v === 'empty') return 'empty';
+  if (v === 'loading' || v === 'load') return 'loading';
+  if (v === 'error') return 'error';
+  if (v === 'offline') return 'offline';
+  if (v === 'auth_expired') return 'auth_expired';
   return null;
+}
+
+/** Initial Ranking tab for a design-capture scenario (default bots). */
+export function rankingTabForCaptureScenario(
+  scenario: DesignCaptureRankingScenario | null | undefined,
+): 'bots' | 'botores' {
+  return scenario === 'botores' ? 'botores' : 'bots';
+}
+
+/** True when capture must force DEV ranking fixtures (not live RPCs). */
+export function isFixtureRankingCaptureScenario(
+  scenario: DesignCaptureRankingScenario | null | undefined,
+): boolean {
+  return (
+    scenario === 'bots' ||
+    scenario === 'botores' ||
+    scenario === 'empty' ||
+    scenario === 'loading' ||
+    scenario === 'error' ||
+    scenario === 'offline' ||
+    scenario === 'auth_expired'
+  );
 }
 
 export function parseDesignCaptureSessionFailure(

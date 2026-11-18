@@ -38,6 +38,7 @@ export function useDesignCaptureDeepLink(): void {
   const lastCustomiseScenario = useRef<DesignCaptureCustomiseScenario | null | undefined>(
     undefined,
   );
+  const lastRankingScenario = useRef<DesignCaptureRankingScenario | null | undefined>(undefined);
   const fileConsumed = useRef(false);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
@@ -72,12 +73,20 @@ export function useDesignCaptureDeepLink(): void {
         setCustomiseCaptureScenario(parsed.customiseScenario);
       }
       // Ranking scenario before route so RankingSlot mounts the right port.
-      // C10: sessionFailure offline/auth_expired also drives Ranking fixtures.
-      if (parsed.rankingScenario) {
-        setRankingCaptureScenario(parsed.rankingScenario);
+      // Same-route stills (bots → botores → empty → loading) refresh even when
+      // applyRouteIfNew skips goTo. C10 sessionFailure also drives fixtures.
+      if (parsed.rankingScenario !== undefined && parsed.rankingScenario !== null) {
+        if (parsed.rankingScenario !== lastRankingScenario.current) {
+          lastRankingScenario.current = parsed.rankingScenario;
+          setRankingCaptureScenario(parsed.rankingScenario);
+        } else if (parsed.route === 'Ranking') {
+          setRankingCaptureScenario(parsed.rankingScenario);
+        }
       } else if (parsed.sessionFailure === 'offline' || parsed.sessionFailure === 'auth_expired') {
+        lastRankingScenario.current = parsed.sessionFailure;
         setRankingCaptureScenario(parsed.sessionFailure);
       } else if (parsed.route === 'Ranking') {
+        lastRankingScenario.current = 'live';
         setRankingCaptureScenario('live');
       }
       if (parsed.paintId) setDemoPaintId(parsed.paintId);

@@ -205,6 +205,24 @@ describe('C7 design-capture helpers', () => {
     );
   });
 
+  it('parses D4 Ranking bots/botores/empty/loading capture scenarios', () => {
+    expect(parseDesignCaptureUrl('botore://capture/Ranking?ranking=bots')).toEqual(
+      expect.objectContaining({ route: 'Ranking', rankingScenario: 'bots' }),
+    );
+    expect(parseDesignCaptureUrl('botore://capture/Ranking?ranking=botores')).toEqual(
+      expect.objectContaining({ route: 'Ranking', rankingScenario: 'botores' }),
+    );
+    expect(parseDesignCaptureUrl('botore://capture/Ranking?ranking=loading')).toEqual(
+      expect.objectContaining({ route: 'Ranking', rankingScenario: 'loading' }),
+    );
+    expect(buildDesignCaptureUrl('Ranking', { rankingScenario: 'bots' })).toBe(
+      `${DESIGN_CAPTURE_SCHEME}://capture/Ranking?ranking=bots`,
+    );
+    expect(buildDesignCaptureUrl('Ranking', { rankingScenario: 'botores' })).toBe(
+      `${DESIGN_CAPTURE_SCHEME}://capture/Ranking?ranking=botores`,
+    );
+  });
+
   it('lists the same first-run routes the shell owns', () => {
     expect([...listCaptureRoutes()]).toEqual([...FIRST_RUN_ROUTES]);
   });

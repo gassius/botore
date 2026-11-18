@@ -21,6 +21,11 @@ import {
   RANKING_ROW_MIN_HEIGHT,
   RANKING_SCREEN_CHROME_SCROLL,
 } from '../src/ranking/rankingScrollContract';
+import {
+  rankingTabForCaptureScenario,
+  parseDesignCaptureRankingScenario,
+} from '../src/design-capture/captureEnv';
+import { createRankingReadClient } from '../src/ranking/createRankingReadClient';
 import { measureScreenChromeLayout } from '../src/garage-tag/screenChromeLayout';
 
 function readSource(relative: string): string {
@@ -112,5 +117,23 @@ describe('D4 Ranking UI contracts', () => {
     expect(portrait).toContain('parts/head-petrol.png');
     expect(portrait).not.toContain('portraits/oxide-');
     expect(portrait).not.toContain('PLACEHOLDER');
+  });
+
+  it('design-capture ranking scenarios pick tab + fixture ports', async () => {
+    expect(parseDesignCaptureRankingScenario('bots')).toBe('bots');
+    expect(parseDesignCaptureRankingScenario('botores')).toBe('botores');
+    expect(parseDesignCaptureRankingScenario('loading')).toBe('loading');
+    expect(rankingTabForCaptureScenario('bots')).toBe('bots');
+    expect(rankingTabForCaptureScenario('botores')).toBe('botores');
+    expect(rankingTabForCaptureScenario('loading')).toBe('bots');
+
+    const slot = readSource('src/first-run/slots/RankingSlot.tsx');
+    expect(slot).toContain('rankingTabForCaptureScenario');
+    expect(slot).toContain('initialTab');
+
+    const botsPort = createRankingReadClient({ captureScenario: 'bots' });
+    expect((await botsPort.list()).length).toBeGreaterThan(0);
+    const botorePort = createRankingReadClient({ captureScenario: 'botores' });
+    expect((await botorePort.listBotores()).length).toBeGreaterThan(0);
   });
 });

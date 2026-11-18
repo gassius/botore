@@ -14,6 +14,14 @@ Tickets: [E2 Ranking backend](https://app.clickup.com/t/1amjtrezaj2) · [D4 Rank
 - `SECURITY DEFINER`, `EXECUTE` to **`authenticated` only**
 - No account UUIDs in player-facing fields
 
+## Merge order
+
+**#71 (0029) must merge before #80.** D4 only calls the E2 RPC names; it does not
+carry the migration. Until 0029 is applied, live authed clients get transport
+errors and the factory falls back to capture/DEV fixtures when scaffolds allow
+(or fail closed on playable builds). Do **not** restack #71 onto stack 70 —
+merge #71 independently first.
+
 ## Legacy
 
 `list_ranking()` (C5 / `0022_list_ranking.sql`) remains for older adapters. D4 uses the E2 tab RPCs.
@@ -24,3 +32,4 @@ Tickets: [E2 Ranking backend](https://app.clickup.com/t/1amjtrezaj2) · [D4 Rank
 - UI preserves adapter order; fixtures stay labelled DEV only in data provenance (`source`), never as on-screen “LIVE / DEV” chrome.
 - Factory: `createRankingReadClient({ accessToken, captureScenario })`.
 - Mini head paints on the botore tab join from the bot board when paints are not on the botore payload.
+- Load controller resolves tab **outside** the React `setState` updater and refresh/retry always pass `session.tab`.

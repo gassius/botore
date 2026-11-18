@@ -302,6 +302,13 @@ capture_named Customise customise-paint-dirty 5 "" "" paint-dirty
 capture_named Customise customise-equipped 6 "" "" equipped
 capture_named Customise customise-weapon-soon 5 "" "" weapon-soon
 
+# 1a′) D4 Ranking — Bots / Botores (fixture portraits + W–L), empty, loading
+# Early so design review frames land even if later fight frames fail.
+capture_named Ranking ranking-bots 5 bots
+capture_named Ranking ranking-botores 5 botores
+capture_named Ranking ranking-empty 4 empty
+capture_named Ranking ranking-loading 3 loading
+
 # 1b) C9 Settings — mute / Music / Effects / reduced motion
 capture_named Settings settings 4
 
@@ -499,9 +506,9 @@ fi
 # 4b) C9 muted replay still (same sealed fight; mute=1 deep link)
 capture_named Replay replay-muted 3 "" 1
 
-# 5) C5 Ranking — live board (list_ranking + seed peers + fight XP), empty, error
+# 5) C5 Ranking — live board (list_bot_ranking + seed peers + fight XP) + error
+# (bots/botores/empty/loading already captured early for D4 design review)
 capture_named Ranking ranking-live 6 live
-capture_named Ranking ranking-empty 4 empty
 capture_named Ranking ranking-error 4 error
 
 # 6) C8 fail-closed blocked UI evidence (design-capture failClosed deep link).
@@ -566,6 +573,10 @@ required_labels=(
   customise-paint-dirty
   customise-equipped
   customise-weapon-soon
+  ranking-bots
+  ranking-botores
+  ranking-empty
+  ranking-loading
   settings
   confirm
   arena-layers
@@ -574,7 +585,6 @@ required_labels=(
   result
   replay-muted
   ranking-live
-  ranking-empty
   ranking-error
   playable-misconfigured
   session-offline-opponents

@@ -194,11 +194,22 @@ describe('ticket B client-read RPC adapters', () => {
     expect(fetches.some((u) => u.includes('/rest/v1/progression_ledger'))).toBe(false);
   });
 
-  it('createRankingReadClient forces empty/error capture fixtures', async () => {
+  it('createRankingReadClient forces empty/error/bots/botores capture fixtures', async () => {
     const empty = createRankingReadClient({ captureScenario: 'empty' });
     await expect(empty.list()).resolves.toEqual([]);
 
     const errored = createRankingReadClient({ captureScenario: 'error' });
     await expect(errored.list()).rejects.toThrow(/Could not load ranking/);
+
+    const bots = createRankingReadClient({ captureScenario: 'bots' });
+    const botRows = await bots.list();
+    expect(botRows.length).toBeGreaterThan(0);
+    expect(botRows[0]?.portrait?.paint).toBeTruthy();
+    expect(botRows[0]?.wins).toBeGreaterThanOrEqual(0);
+
+    const botores = createRankingReadClient({ captureScenario: 'botores' });
+    const botoreRows = await botores.listBotores();
+    expect(botoreRows.length).toBeGreaterThan(0);
+    expect(botoreRows[0]?.wins).toBeGreaterThanOrEqual(0);
   });
 });

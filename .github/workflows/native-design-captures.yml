@@ -385,15 +385,18 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Assert Customise frames in iOS artifact dir
+      - name: Assert Customise + Ranking frames in iOS artifact dir
         if: always()
         run: |
           set -euo pipefail
           missing=0
-          for label in customise-paint-clean customise-paint-dirty customise-equipped customise-weapon-soon; do
+          for label in \
+            customise-paint-clean customise-paint-dirty customise-equipped customise-weapon-soon \
+            ranking-bots ranking-botores ranking-empty ranking-loading
+          do
             matches=( artifacts/native-captures/ios-*-"${label}".png )
             if [[ ! -e "${matches[0]:-}" ]]; then
-              echo "error: missing iOS Customise frame ${label}" >&2
+              echo "error: missing iOS design frame ${label}" >&2
               missing=1
             else
               echo "ok: ${matches[0]}"

@@ -9,10 +9,15 @@ export type RankingSessionSetter = (
 /**
  * Serialises ranking loads by generation so a slow earlier response cannot
  * overwrite a newer success/error. Loads the active tab (bots or botores).
+ *
+ * Tab is resolved *before* `setSession` — never assigned inside a React
+ * updater (React 18 may defer applying it, which would leave Botores loading
+ * bots via `list()` instead of `listBotores()`).
  */
 export function createRankingLoadController(
   port: RankingReadPort,
   setSession: RankingSessionSetter,
+  initialTab: RankingTab = 'bots',
 ): {
   load: (tab?: RankingTab) => Promise<void>;
   /** Invalidate in-flight loads so a superseded port/controller cannot write. */
@@ -22,6 +27,8 @@ export function createRankingLoadController(
 } {
   let generation = 0;
   let disposed = false;
+  /** Mirrored tab for refresh/retry when caller omits `tab`. */
+  let currentTab: RankingTab = initialTab;
 
   return {
     getGeneration: () => generation,
@@ -34,11 +41,9 @@ export function createRankingLoadController(
         return;
       }
       const requestId = ++generation;
-      let activeTab: RankingTab = 'bots';
-      setSession((prev) => {
-        activeTab = tab ?? prev.tab;
-        return beginRankingLoad({ ...prev, tab: activeTab });
-      });
+      const activeTab: RankingTab = tab ?? currentTab;
+      currentTab = activeTab;
+      setSession((prev) => beginRankingLoad({ ...prev, tab: activeTab }));
       const result = await loadRankingFromPort(port, activeTab);
       if (disposed || requestId !== generation) {
         return;

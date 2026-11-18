@@ -93,7 +93,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
   );
   const [demoOpponentId, setDemoOpponentId] = useState<string | null>(null);
   const [rankingCaptureScenario, setRankingCaptureScenario] =
-    useState<DesignCaptureRankingScenario | null>(null);
+    useState<DesignCaptureRankingScenario | null>(() => pending.rankingScenario ?? null);
   const [sessionFailureCapture, setSessionFailureCapture] =
     useState<DesignCaptureSessionFailure | null>(
       () => pending.sessionFailure ?? readDesignCaptureSessionFailure(),

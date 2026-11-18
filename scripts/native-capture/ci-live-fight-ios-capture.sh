@@ -381,6 +381,7 @@ capture_named() {
   local battle_id="${4:-}"
   local mute="${5:-}"
   local customise="${6:-}"
+  local ranking="${7:-}"
   local screencap_args=(
     --out "${OUT_DIR}"
     --udid "${UDID}"
@@ -395,6 +396,9 @@ capture_named() {
   fi
   if [[ -n "${customise}" ]]; then
     screencap_args+=(--customise "${customise}")
+  fi
+  if [[ -n "${ranking}" ]]; then
+    screencap_args+=(--ranking "${ranking}")
   fi
   CAPTURE_SETTLE_SEC="${settle}" \
     CAPTURE_IOS_COLD_SEC="${CAPTURE_IOS_COLD_SEC:-16}" \
@@ -414,6 +418,11 @@ capture_named Customise customise-paint-clean 6 "" "" paint-clean
 capture_named Customise customise-paint-dirty 6 "" "" paint-dirty
 capture_named Customise customise-equipped 8 "" "" equipped
 capture_named Customise customise-weapon-soon 6 "" "" weapon-soon
+# D4 Ranking — early design frames (fixture portraits + W–L / empty / loading).
+capture_named Ranking ranking-bots 6 "" "" "" bots
+capture_named Ranking ranking-botores 6 "" "" "" botores
+capture_named Ranking ranking-empty 5 "" "" "" empty
+capture_named Ranking ranking-loading 4 "" "" "" loading
 # C9 Settings — mute / Music / Effects / reduced motion
 capture_named Settings settings 5
 capture_named ConfirmFight confirm 8
@@ -479,6 +488,10 @@ for label in \
   customise-paint-dirty \
   customise-equipped \
   customise-weapon-soon \
+  ranking-bots \
+  ranking-botores \
+  ranking-empty \
+  ranking-loading \
   settings \
   confirm \
   replay-impact \

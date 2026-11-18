@@ -91,10 +91,14 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
 
   const controller = useMemo(
     () =>
-      createRankingLoadController(port, (updater) => {
-        setSessionRef.current(updater);
-      }),
-    [port],
+      createRankingLoadController(
+        port,
+        (updater) => {
+          setSessionRef.current(updater);
+        },
+        initialTab,
+      ),
+    [port, initialTab],
   );
 
   useEffect(() => {
@@ -123,7 +127,7 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
   const refreshControl = (
     <RefreshControl
       refreshing={session.refreshing}
-      onRefresh={() => void controller.load()}
+      onRefresh={() => void controller.load(session.tab)}
       tintColor={garageTag.graphite}
       colors={[garageTag.mustard]}
       progressBackgroundColor={garageTag.cream}
@@ -140,7 +144,7 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
       <RankingTabStrip selected={session.tab} onSelect={onSelectTab} />
       <RankingBody
         session={session}
-        onRetry={() => void controller.load()}
+        onRetry={() => void controller.load(session.tab)}
         onSignInAgain={() => {
           onSignInAgain?.();
         }}
@@ -169,6 +173,7 @@ function RankingTabStrip({
             accessibilityState={{ selected: on }}
             accessibilityLabel={`${tab.label}${on ? ', selected' : ''}`}
             onPress={() => onSelect(tab.id)}
+            hitSlop={{ top: 2, bottom: 2, left: 0, right: 0 }}
             style={[
               styles.tab,
               on ? styles.tabOn : styles.tabOff,
@@ -495,7 +500,7 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     marginHorizontal: 2,
-    height: 44,
+    minHeight: garageTag.touchMin,
     borderWidth: 3,
     borderColor: garageTag.graphite,
     borderRadius: 9,
@@ -503,6 +508,7 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
+    minHeight: garageTag.touchMin - 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

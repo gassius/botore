@@ -25,7 +25,7 @@ export type CaptureIntent = {
   mute: boolean | null;
   /** Live-fight battle id for FightResult restore after iOS process relaunch. */
   battleId: string | null;
-  /** C5 ranking capture scenario (live / empty / error / offline / auth_expired). */
+  /** C5/D4 ranking capture scenario (live / bots / botores / empty / loading / …). */
   rankingScenario: DesignCaptureRankingScenario | null;
   /** C8: force PlayableMisconfiguredScreen for blocked-UI evidence. */
   failClosed: boolean | null;
