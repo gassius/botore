@@ -323,6 +323,138 @@ describe('E1 Customise Save Loadout (390×844)', () => {
     expect(source).not.toContain('confirmedVersionId');
   });
 
+  it('equips A6 weapon-mace and paint-hazard (390×844 Equip path)', async () => {
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const loadouts = new DevLoadoutSaveAdapter();
+    const apiRef: { current: SessionProbe | null } = { current: null };
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <GarageProbe apiRef={apiRef} />
+            <CustomiseScreen onBack={() => undefined} />
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    const api = () => {
+      if (!apiRef.current) throw new Error('probe missing');
+      return apiRef.current;
+    };
+
+    for (let i = 0; i < 40 && (api().booting() || !api().canProgress()); i += 1) {
+      await flush();
+    }
+    expect(api().canProgress()).toBe(true);
+
+    await act(async () => {
+      api().selectWeapon('weapon-mace');
+    });
+    await flush();
+    expect(api().dirty()).toBe(true);
+
+    let saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+    expect(api().confirmedWeapon()).toBe('weapon-mace');
+    expect(api().dirty()).toBe(false);
+    expect(api().lastError()).toBeNull();
+
+    await act(async () => {
+      api().selectPaint('paint-hazard');
+    });
+    await flush();
+    saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+    expect(api().confirmedPaint()).toBe('paint-hazard');
+    expect(api().confirmedWeapon()).toBe('weapon-mace');
+    expect(api().lastError()).toBeNull();
+  });
+
+  it('equips paint+weapon after nameplate rename in one Equip press', async () => {
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const loadouts = new DevLoadoutSaveAdapter();
+    const apiRef: { current: SessionProbe | null } = { current: null };
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <GarageProbe apiRef={apiRef} />
+            <CustomiseScreen onBack={() => undefined} />
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    const api = () => {
+      if (!apiRef.current) throw new Error('probe missing');
+      return apiRef.current;
+    };
+
+    for (let i = 0; i < 40 && (api().booting() || !api().canProgress()); i += 1) {
+      await flush();
+    }
+    expect(api().canProgress()).toBe(true);
+
+    const editBtn = root.root.findByProps({ testID: 'customise-nameplate-edit' });
+    await act(async () => {
+      editBtn.props.onPress();
+    });
+    await flush();
+    const input = root.root.findByProps({ testID: 'customise-nameplate-input' });
+    await act(async () => {
+      input.props.onChangeText('Rivet');
+    });
+    await flush();
+
+    await act(async () => {
+      api().selectPaint('paint-navy');
+      api().selectWeapon('weapon-spear');
+    });
+    await flush();
+    expect(api().dirty()).toBe(true);
+
+    const saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+
+    expect(api().displayName()).toBe('Rivet');
+    expect(api().confirmedPaint()).toBe('paint-navy');
+    expect(api().confirmedWeapon()).toBe('weapon-spear');
+    expect(api().dirty()).toBe(false);
+    expect(api().lastError()).toBeNull();
+  });
+
   it('persists nameplate rename across remount via rename RPC', async () => {
     const auth = new DevAuthAdapter();
     const signed = await auth.signInWithPassword({

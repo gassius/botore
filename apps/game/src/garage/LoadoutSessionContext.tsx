@@ -116,6 +116,10 @@ export function GarageSessionProvider(props: {
   const [botCap, setBotCap] = useState(DEFAULT_PLAYER_BOT_CAP);
   /** Latest-wins token for in-place Ludus select (D5 carousel snaps). */
   const selectEpochRef = useRef(0);
+  // Equip may await rename then save in one press; read latest snapshot so
+  // save/rename guards are not stuck on a stale useMemo closure.
+  const loadoutRef = useRef(loadout);
+  loadoutRef.current = loadout;
 
   const refreshOwnedBots = useCallback(async () => {
     const current = await auth.getSession();
@@ -477,17 +481,18 @@ export function GarageSessionProvider(props: {
           );
           return false;
         }
-        if (loadout.saving) {
+        const snap = loadoutRef.current;
+        if (snap.saving) {
           return false;
         }
         if (
-          loadout.hydration !== 'ready' ||
-          !loadout.characterId ||
-          !loadout.pendingLoadout ||
-          !loadout.dirty
+          snap.hydration !== 'ready' ||
+          !snap.characterId ||
+          !snap.pendingLoadout ||
+          !snap.dirty
         ) {
           // Never silent when the player asked to save but state is blocked.
-          if (loadout.dirty) {
+          if (snap.dirty) {
             setLoadout((s) =>
               failSave(
                 s,
@@ -501,9 +506,9 @@ export function GarageSessionProvider(props: {
           }
           return false;
         }
-        const pending = loadout.pendingLoadout;
-        const characterId = loadout.characterId;
-        const atlasVersion = loadout.atlasVersion;
+        const pending = snap.pendingLoadout;
+        const characterId = snap.characterId;
+        const atlasVersion = snap.atlasVersion;
         setLoadout((s) => beginSave(s));
         const result = await loadouts.save({
           characterId,
@@ -541,7 +546,8 @@ export function GarageSessionProvider(props: {
           );
           return false;
         }
-        if (loadout.hydration !== 'ready' || !loadout.characterId) {
+        const snap = loadoutRef.current;
+        if (snap.hydration !== 'ready' || !snap.characterId) {
           setLoadout((s) =>
             failSave(
               s,
