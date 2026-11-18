@@ -2,14 +2,7 @@
  * App-wide trial audio session — one stack for menu music, UI SFX, and fight.
  * Mount near GarageRoot so splash can sting before FirstRunShell exists.
  */
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { createExpoAvBackend } from './expoAvBackend';
 import {
   createTrialAudioSession,
