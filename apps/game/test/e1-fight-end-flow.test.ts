@@ -83,8 +83,19 @@ describe('E1 Result overlay copy (D10 SoT)', () => {
     expect(band).toContain('BACK_TO_LUDUS_LABEL');
     expect(band).toContain('WATCH_AGAIN_LABEL');
     expect(band).toContain('RANKING_LABEL');
+    expect(band).toContain("textTransform: 'uppercase'");
     expect(band).not.toContain('Back to Stable');
     expect(band).not.toMatch(/['"]Continue['"]/);
+  });
+
+  it('Result card sub-line is Fights remaining (d10-fight-end-result mockup)', () => {
+    const model = readSource('src/result-overlay/resultCardModel.ts');
+    expect(model).toContain('formatFightsRemainingLine');
+    expect(model).toContain('Fights remaining:');
+    expect(model).toContain('confirmed.allowancesRemaining');
+    const overlay = readSource('src/result-overlay/ResultOverlay.tsx');
+    expect(overlay).toContain('vsBot');
+    expect(overlay).toContain('opponentBotName');
   });
 });
 
@@ -194,9 +205,8 @@ describe('E1 reconcile with #78 / #80 — no parallel result route', () => {
 
 describe('E1 design-capture victory/defeat fixtures', () => {
   it('forces player-POV victory and defeat for FightResult stills', async () => {
-    const { confirmedResultForResultCapture } = await import(
-      '../src/result-overlay/designCaptureRecords'
-    );
+    const { confirmedResultForResultCapture } =
+      await import('../src/result-overlay/designCaptureRecords');
     const { resolveOutcomeKind } = await import('../src/result-overlay/resultCardModel');
     const victory = confirmedResultForResultCapture('victory');
     const defeat = confirmedResultForResultCapture('defeat');

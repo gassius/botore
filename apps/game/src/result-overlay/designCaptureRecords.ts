@@ -40,7 +40,8 @@ export function confirmedResultForResultCapture(
     source: 'server',
     serverConfirmed: true,
     xpAwarded: isDefeat ? 8 : 24,
-    allowancesRemaining: 2,
+    // D10 Result mockup: "Fights remaining: 1"
+    allowancesRemaining: 1,
     utcDay: '2026-11-18',
     persistence: 'persisted',
     newRecord: scenario === 'victory-new-record' ? true : null,
@@ -49,7 +50,7 @@ export function confirmedResultForResultCapture(
   };
 }
 
-/** Fixture snapshots matching apk-2026-11-17 mockup numbers (names are mock data). */
+/** Fixture snapshots matching apk-2026-11-18 D10 Result mockup numbers. */
 export function resultCaptureRecord(scenario: ResultCaptureScenario): BotFightRecordSnapshot {
   if (scenario === 'defeat') {
     return {
@@ -58,25 +59,23 @@ export function resultCaptureRecord(scenario: ResultCaptureScenario): BotFightRe
       level: 4,
       xpBarOldRatio: 0.56,
       xpBarNewRatio: 0.64,
-      streakEndedAt: 3,
     };
   }
   if (scenario === 'victory-new-record') {
     return {
-      wins: 12,
+      wins: 13,
       losses: 6,
       level: 4,
       xpBarOldRatio: 0.56,
       xpBarNewRatio: 0.78,
-      bestWinStreak: 4,
     };
   }
+  // d10-fight-end-result.png — Record 13W – 6L
   return {
-    wins: 12,
+    wins: 13,
     losses: 6,
     level: 4,
     xpBarOldRatio: 0.56,
     xpBarNewRatio: 0.78,
-    bestWinStreak: 3,
   };
 }

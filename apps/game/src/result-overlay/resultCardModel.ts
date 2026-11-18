@@ -22,6 +22,20 @@ export function formatRecordLine(wins: number, losses: number): string {
   return `Record  ${wins}W – ${losses}L`;
 }
 
+/**
+ * D10 SoT Result card sub-line — fights left today from the confirmed fight.
+ * Never invent allowances; omit when the server/fixture leaves them null.
+ */
+export function formatFightsRemainingLine(
+  allowancesRemaining: number | null | undefined,
+): string | null {
+  if (typeof allowancesRemaining !== 'number' || !Number.isFinite(allowancesRemaining)) {
+    return null;
+  }
+  return `Fights remaining: ${Math.max(0, Math.floor(allowancesRemaining))}`;
+}
+
+/** Optional streak sub-line when a server/fixture provides streak fields (not D10 SoT). */
 export function formatResultContextLine(
   outcomeKind: ResultOverlayOutcomeKind,
   record: BotFightRecordSnapshot | null | undefined,
@@ -83,7 +97,8 @@ export function buildResultCardModel(
     xpBarNewRatio: Math.max(oldRatio, newRatio),
     wins: typeof record?.wins === 'number' ? record.wins : null,
     losses: typeof record?.losses === 'number' ? record.losses : null,
-    contextLine: formatResultContextLine(outcomeKind, record),
+    // D10 Result mockup: Record + "Fights remaining: N" (not streak copy).
+    contextLine: formatFightsRemainingLine(confirmed.allowancesRemaining),
     showNewRecord: shouldShowNewRecordStamp({ serverNewRecord: confirmed.newRecord }),
     opponentBotName,
     opponentBotoreName,

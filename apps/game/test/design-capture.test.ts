@@ -287,5 +287,4 @@ describe('C7 design-capture helpers', () => {
       `${DESIGN_CAPTURE_SCHEME}://capture/FightResult?result=victory`,
     );
   });
-
 });

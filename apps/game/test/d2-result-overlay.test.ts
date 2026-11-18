@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildResultCardModel,
   botFightRecordFromRankingRow,
+  formatFightsRemainingLine,
   formatRecordLine,
   formatResultContextLine,
   formatVsLine,
@@ -199,38 +200,41 @@ describe('D2 result card model (player POV)', () => {
     const confirmed = confirmedStub({
       outcome: { reason: 'defeat', winner: 'player-hero', loser: 'opp-1' },
       newRecord: true,
+      allowancesRemaining: 1,
     });
     expect(resolveOutcomeKind(confirmed)).toBe('victory');
     const card = buildResultCardModel(confirmed, {
       record: resultCaptureRecord('victory-new-record'),
-      opponentBotoreName: 'Magistra Volta',
+      opponentBotoreName: 'Tito Rivet',
     });
     expect(card.outcomeKind).toBe('victory');
     expect(card.showNewRecord).toBe(true);
     expect(card.xpAwarded).toBe(24);
     expect(card.levelLabel).toBe('Level 4');
-    expect(card.wins).toBe(12);
+    expect(card.wins).toBe(13);
     expect(card.losses).toBe(6);
-    expect(card.contextLine).toBe('Best win streak: 4');
-    expect(card.vsLine).toBe('vs Sir Bot · Magistra Volta');
+    expect(card.contextLine).toBe('Fights remaining: 1');
+    expect(card.vsLine).toBe('vs Sir Bot · Tito Rivet');
     expect(card.vsLine).not.toMatch(/player-hero|opp-1|battle|checksum/i);
   });
 
-  it('maps attacker loss to defeat with streak-ended context', () => {
+  it('maps attacker loss to defeat with Fights remaining (D10 SoT)', () => {
     const confirmed = confirmedStub({
       outcome: { reason: 'defeat', winner: 'opp-1', loser: 'player-hero' },
       xpAwarded: 8,
       newRecord: false,
+      allowancesRemaining: 1,
     });
     expect(resolveOutcomeKind(confirmed)).toBe('defeat');
     const card = buildResultCardModel(confirmed, {
       record: resultCaptureRecord('defeat'),
-      opponentBotoreName: 'Magistra Volta',
+      opponentBotoreName: 'Tito Rivet',
     });
     expect(card.outcomeKind).toBe('defeat');
     expect(card.showNewRecord).toBe(false);
     expect(card.xpAwarded).toBe(8);
-    expect(card.contextLine).toBe('Streak ended at 3');
+    expect(card.contextLine).toBe('Fights remaining: 1');
+    expect(formatFightsRemainingLine(1)).toBe('Fights remaining: 1');
     expect(formatRecordLine(11, 7)).toBe('Record  11W – 7L');
   });
 
@@ -254,9 +258,10 @@ describe('D2 result card model (player POV)', () => {
     expect(overlay).toContain('isDraw');
   });
 
-  it('omits W–L / level / streak when E2 record is absent (no invent)', () => {
+  it('omits W–L / level when E2 record is absent; fights remaining from confirmed only', () => {
     const confirmed = confirmedStub({
       outcome: { reason: 'defeat', winner: 'player-hero', loser: 'opp-1' },
+      allowancesRemaining: null,
     });
     const card = buildResultCardModel(confirmed);
     expect(card.wins).toBeNull();
@@ -264,6 +269,14 @@ describe('D2 result card model (player POV)', () => {
     expect(card.levelLabel).toBeNull();
     expect(card.contextLine).toBeNull();
     expect(formatVsLine('Sir Bot', null)).toBe('vs Sir Bot');
+    expect(
+      buildResultCardModel(
+        confirmedStub({
+          outcome: { reason: 'defeat', winner: 'player-hero', loser: 'opp-1' },
+          allowancesRemaining: 2,
+        }),
+      ).contextLine,
+    ).toBe('Fights remaining: 2');
   });
 
   it('maps E2 ranking row into a fight-record snapshot', () => {
@@ -289,7 +302,10 @@ describe('D2 result card model (player POV)', () => {
     expect(called).toBe(false);
   });
 
-  it('formats context lines from optional streak fields only', () => {
+  it('formats D10 Fights remaining and optional streak helpers', () => {
+    expect(formatFightsRemainingLine(1)).toBe('Fights remaining: 1');
+    expect(formatFightsRemainingLine(0)).toBe('Fights remaining: 0');
+    expect(formatFightsRemainingLine(null)).toBeNull();
     expect(formatResultContextLine('victory', { wins: 1, losses: 0, bestWinStreak: 4 })).toBe(
       'Best win streak: 4',
     );

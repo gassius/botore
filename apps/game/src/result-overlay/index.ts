@@ -6,6 +6,7 @@ export { BACK_TO_LUDUS_LABEL, RANKING_LABEL, WATCH_AGAIN_LABEL } from './copy';
 export {
   buildResultCardModel,
   botFightRecordFromRankingRow,
+  formatFightsRemainingLine,
   formatRecordLine,
   formatResultContextLine,
   formatVsLine,

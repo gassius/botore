@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 16,
     letterSpacing: 0.6,
+    textTransform: 'uppercase',
     color: garageTag.graphite,
   },
   row: {
@@ -136,10 +137,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 15,
     letterSpacing: 0.4,
+    textTransform: 'uppercase',
     color: garageTag.graphite,
   },
   glyph: {
-    width: 18,
-    height: 18,
+    width: 22,
+    height: 22,
   },
 });

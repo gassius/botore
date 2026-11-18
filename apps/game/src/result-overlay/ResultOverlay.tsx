@@ -289,7 +289,8 @@ export function ResultOverlay({
         </View>
 
         <Text style={styles.vsLine} allowFontScaling testID={`${testID}-vs`}>
-          {card.vsLine}
+          vs <Text style={styles.vsBot}>{card.opponentBotName}</Text>
+          {card.opponentBotoreName ? ` · ${card.opponentBotoreName}` : ''}
         </Text>
       </View>
     </View>
@@ -429,5 +430,9 @@ const styles = StyleSheet.create({
     color: '#e8dac0',
     fontSize: 13,
     fontWeight: '500',
+  },
+  vsBot: {
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
 });

@@ -92,7 +92,7 @@ export function FightResultSlot(): React.ReactElement {
     <ResultOverlay
       confirmed={confirmed}
       record={captureRecord}
-      opponentBotoreName="Magistra Volta"
+      opponentBotoreName="Tito Rivet"
       muted={muted}
       musicEnabled={musicEnabled}
       effectsEnabled={effectsEnabled}
