@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import {
   type DesignCaptureCustomiseScenario,
+  type DesignCaptureHomeScenario,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
   readDesignCaptureConfig,
@@ -66,6 +67,12 @@ export type FirstRunContextValue = {
   resultCaptureScenario: ResultCaptureScenario | null;
   setResultCaptureScenario: (scenario: ResultCaptureScenario | null) => void;
   /**
+   * E5/D5 design-capture: Ludus home More sheet open (`home=more`).
+   * Replaced on every capture deep link — never sticky across stills.
+   */
+  homeCaptureScenario: DesignCaptureHomeScenario | null;
+  setHomeCaptureScenario: (scenario: DesignCaptureHomeScenario | null) => void;
+  /**
    * D1 Fight View mode — firstWatch hides transport/back; rewatch shows back + Replay only.
    * Set by ConfirmFight (firstWatch) / Result Watch again (rewatch).
    */
@@ -109,6 +116,9 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
     useState<DesignCaptureCustomiseScenario | null>(() => pending.customiseScenario ?? null);
   const [resultCaptureScenario, setResultCaptureScenario] = useState<ResultCaptureScenario | null>(
     () => pending.resultScenario ?? null,
+  );
+  const [homeCaptureScenario, setHomeCaptureScenario] = useState<DesignCaptureHomeScenario | null>(
+    () => pending.homeScenario ?? null,
   );
   const [fightViewMode, setFightViewMode] = useState<FightViewMode>('firstWatch');
   const [showResultOverlay, setShowResultOverlay] = useState(false);
@@ -166,6 +176,8 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       setCustomiseCaptureScenario,
       resultCaptureScenario,
       setResultCaptureScenario,
+      homeCaptureScenario,
+      setHomeCaptureScenario,
       fightViewMode,
       setFightViewMode,
       showResultOverlay,
@@ -194,6 +206,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       sessionFailureCapture,
       customiseCaptureScenario,
       resultCaptureScenario,
+      homeCaptureScenario,
     ],
   );
 

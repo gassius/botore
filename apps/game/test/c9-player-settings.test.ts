@@ -108,6 +108,7 @@ describe('C9 Settings route', () => {
       fightViewMode: null,
       customiseScenario: null,
       resultScenario: null,
+      homeScenario: null,
     });
   });
 });

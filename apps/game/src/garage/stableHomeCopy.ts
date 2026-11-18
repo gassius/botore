@@ -5,3 +5,6 @@
 export const STABLE_HOME_TITLE = 'Ludus';
 
 export const BACK_TO_STABLE_LABEL = `Back to ${STABLE_HOME_TITLE}`;
+
+/** In-app path to account deletion (More sheet) — use in privacy / public delete copy. */
+export const LUDUS_DELETE_ACCOUNT_PATH = `${STABLE_HOME_TITLE} → More → Delete account`;

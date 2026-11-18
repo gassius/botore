@@ -6,6 +6,7 @@
  * Deletion claims assume this branch is stacked on R5 (#55).
  */
 
+import { LUDUS_DELETE_ACCOUNT_PATH } from '../garage/stableHomeCopy';
 import { DOCUMENTED_ACCOUNT_DELETE_PATH, PUBLIC_PRIVACY_PATH } from './privacyPaths';
 
 export type PrivacyPolicySection = {
@@ -62,7 +63,7 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     id: 'deletion',
     title: 'Account deletion',
     paragraphs: [
-      `You can request deletion in the app (Stable → Delete account until Settings ships) or on the public web path ${DOCUMENTED_ACCOUNT_DELETE_PATH} using a one-time deletion code minted in-app.`,
+      `You can request deletion in the app (${LUDUS_DELETE_ACCOUNT_PATH}) or on the public web path ${DOCUMENTED_ACCOUNT_DELETE_PATH} using a one-time deletion code minted in-app.`,
       'Deletion soft-deletes the account, anonymizes display names, unlinks platform identities / devices / consents, and rewrites the Auth user so the same Game Center or Play Games id can mint a fresh account later. Your account can no longer be accessed as a playable account.',
       'Hard-delete of every historical row is not possible. Anonymized records retained for integrity include: character rows, builds, loadouts, inventory and progression ledgers, battles and battle_commands, the banned auth.users row, and Auth audit logs.',
     ],

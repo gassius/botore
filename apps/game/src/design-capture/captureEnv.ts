@@ -47,6 +47,9 @@ export type DesignCaptureSessionFailure = 'offline' | 'auth_expired';
 export type DesignCaptureCustomiseScenario =
   'paint-clean' | 'paint-dirty' | 'equipped' | 'weapon-soon';
 
+/** E5/D5: Ludus home capture stills (More sheet open). */
+export type DesignCaptureHomeScenario = 'more';
+
 /**
  * Design-capture pose stills:
  * - `quick-vs-heavy` — dual-fighter quick vs heavy (C11)
@@ -140,6 +143,14 @@ export function parseDesignCaptureCustomiseScenario(
   if (v === 'paint-dirty' || v === 'paint_dirty' || v === 'dirty') return 'paint-dirty';
   if (v === 'equipped' || v === 'equip') return 'equipped';
   if (v === 'weapon-soon' || v === 'weapon_soon' || v === 'weapon') return 'weapon-soon';
+  return null;
+}
+
+export function parseDesignCaptureHomeScenario(
+  raw: string | null | undefined,
+): DesignCaptureHomeScenario | null {
+  const v = trimPublic(raw ?? undefined)?.toLowerCase();
+  if (v === 'more') return 'more';
   return null;
 }
 
@@ -268,6 +279,7 @@ const EMPTY_CAPTURE_URL = {
   fightViewMode: null,
   customiseScenario: null,
   resultScenario: null,
+  homeScenario: null,
 } as const;
 
 export function parseDesignCaptureUrl(url: string): {
@@ -282,6 +294,7 @@ export function parseDesignCaptureUrl(url: string): {
   fightViewMode: DesignCaptureFightViewMode | null;
   customiseScenario: DesignCaptureCustomiseScenario | null;
   resultScenario: ResultCaptureScenario | null;
+  homeScenario: DesignCaptureHomeScenario | null;
 } {
   const trimmed = url.trim();
   if (!trimmed.toLowerCase().startsWith(`${DESIGN_CAPTURE_SCHEME}:`)) {
@@ -343,6 +356,9 @@ export function parseDesignCaptureUrl(url: string): {
   const resultScenario = parseResultCaptureScenario(
     params.get('result') ?? params.get('resultScenario') ?? params.get('result_scenario'),
   );
+  const homeScenario = parseDesignCaptureHomeScenario(
+    params.get('home') ?? params.get('homeScenario') ?? params.get('home_scenario'),
+  );
 
   return {
     route,
@@ -356,6 +372,7 @@ export function parseDesignCaptureUrl(url: string): {
     fightViewMode,
     customiseScenario,
     resultScenario,
+    homeScenario,
   };
 }
 
@@ -372,6 +389,7 @@ export function buildDesignCaptureUrl(
     fightViewMode?: DesignCaptureFightViewMode;
     customiseScenario?: DesignCaptureCustomiseScenario;
     resultScenario?: ResultCaptureScenario;
+    homeScenario?: DesignCaptureHomeScenario;
   },
 ): string {
   const query: string[] = [];
@@ -394,6 +412,9 @@ export function buildDesignCaptureUrl(
   }
   if (opts?.resultScenario) {
     query.push(`result=${encodeURIComponent(opts.resultScenario)}`);
+  }
+  if (opts?.homeScenario) {
+    query.push(`home=${encodeURIComponent(opts.homeScenario)}`);
   }
   const q = query.length > 0 ? `?${query.join('&')}` : '';
   return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${q}`;

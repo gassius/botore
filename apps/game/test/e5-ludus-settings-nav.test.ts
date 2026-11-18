@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BACK_TO_STABLE_LABEL, STABLE_HOME_TITLE } from '../src/garage/stableHomeCopy';
+import {
+  BACK_TO_STABLE_LABEL,
+  LUDUS_DELETE_ACCOUNT_PATH,
+  STABLE_HOME_TITLE,
+} from '../src/garage/stableHomeCopy';
 
 const ROOT = process.cwd();
 
@@ -23,7 +27,8 @@ describe('E5 Ludus home nav + Sign out under More (D5 mockup IA)', () => {
     expect(stable).not.toMatch(/title=["']Stable["']/);
 
     const band = readSource('src/result-overlay/ResultOverlayBand.tsx');
-    expect(band).toContain('BACK_TO_STABLE_LABEL');
+    // E1/D10 SoT: result-overlay/copy.ts owns Back to Ludus; E5 keeps STABLE_HOME_TITLE for Ludus chrome.
+    expect(band).toContain('BACK_TO_LUDUS_LABEL');
     expect(band).not.toContain('"Back to Stable"');
     expect(band).not.toContain("'Back to Stable'");
 
@@ -80,5 +85,21 @@ describe('E5 Ludus home nav + Sign out under More (D5 mockup IA)', () => {
     const slot = readSource('src/first-run/slots/StableSlot.tsx');
     expect(slot).toContain('onRanking');
     expect(slot).toContain("goTo('Ranking')");
+  });
+
+  it('player-facing delete path uses Ludus → More → Delete account', () => {
+    expect(LUDUS_DELETE_ACCOUNT_PATH).toBe('Ludus → More → Delete account');
+    const privacy = readSource('src/legal/privacyPolicyContent.ts');
+    expect(privacy).toContain('LUDUS_DELETE_ACCOUNT_PATH');
+    expect(privacy).not.toMatch(/Stable → Delete account/);
+    const publicDelete = readSource('src/garage/screens/PublicAccountDeleteScreen.tsx');
+    expect(publicDelete).toContain('LUDUS_DELETE_ACCOUNT_PATH');
+    expect(publicDelete).not.toMatch(/Stable → Delete account/);
+  });
+
+  it('More sheet pads bottom with safe-area inset', () => {
+    const stable = readSource('src/garage/screens/StableScreen.tsx');
+    expect(stable).toContain('useSafeAreaInsets');
+    expect(stable).toContain('paddingBottom: 20 + insets.bottom');
   });
 });

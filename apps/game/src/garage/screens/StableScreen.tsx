@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
+import { useFirstRun } from '../../first-run/FirstRunContext';
 import {
   BrandWordmark,
   Nameplate,
@@ -39,12 +41,20 @@ export function StableScreen(props: {
   onRanking?: () => void;
 }): React.ReactElement {
   const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
+  const { homeCaptureScenario } = useFirstRun();
+  const insets = useSafeAreaInsets();
   const forced = useForcedSessionFailure();
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(() => homeCaptureScenario === 'more');
   const confirmed = loadout.confirmedLoadout;
   const displayName = playerFacingDisplayName(loadout.displayName);
+
+  useEffect(() => {
+    if (homeCaptureScenario === 'more') {
+      setMoreOpen(true);
+    }
+  }, [homeCaptureScenario]);
 
   const hydrationKind =
     loadout.hydration === 'unavailable'
@@ -193,7 +203,7 @@ export function StableScreen(props: {
             accessibilityLabel="Dismiss More"
             testID="stable-more-dismiss"
           />
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: 20 + insets.bottom }]}>
             <View style={styles.grab} />
             <Text style={styles.sheetTitle} allowFontScaling>
               More
@@ -327,7 +337,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 20,
   },
   grab: {
     alignSelf: 'center',

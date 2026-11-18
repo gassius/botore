@@ -40,6 +40,8 @@ function applyUrl(url: string | null): void {
     sessionFailure: parsed.sessionFailure,
     fightViewMode: parsed.fightViewMode,
     customiseScenario: parsed.customiseScenario,
+    resultScenario: parsed.resultScenario,
+    homeScenario: parsed.homeScenario,
   });
 }
 
