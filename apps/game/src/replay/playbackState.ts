@@ -4,13 +4,18 @@
  */
 import type { AnimationCommand } from '../replay-playback';
 import { motionPoseFromSealedAttack } from '../assembler/motionPoseMapping';
-import { motionPoseFromKitKey } from '../fight/a2FightTimeline';
+import { motionPoseFromKitKey, type FightTimelineSmear } from '../fight/a2FightTimeline';
 import type { MotionPose } from '../assembler/types';
+import type { KitPoseEntry } from '../assembler/workshopFrameTypes';
 import type { FxFamily } from '../arena';
 
 export interface FighterPresentation {
   readonly characterId: string;
   readonly motionPose: MotionPose;
+  /** Baked clip pose for the current tick (kit-v003.3). */
+  readonly poseOverride?: KitPoseEntry;
+  /** Attack smear overlay for the current tick. */
+  readonly smearOverlay?: FightTimelineSmear;
 }
 
 export interface ReplayPresentationState {
@@ -49,12 +54,30 @@ function withPose(
   state: ReplayPresentationState,
   characterId: string,
   pose: MotionPose,
+  extras: {
+    /** Baked pose for this tick; `null` clears a prior override. */
+    readonly poseOverride?: KitPoseEntry | null;
+    /** Smear for this tick; `null` clears. */
+    readonly smearOverlay?: FightTimelineSmear | null;
+  } = {},
 ): ReplayPresentationState {
+  const patch = (fighter: FighterPresentation): FighterPresentation => {
+    const poseOverride =
+      extras.poseOverride === null ? undefined : (extras.poseOverride ?? fighter.poseOverride);
+    const smearOverlay =
+      extras.smearOverlay === null ? undefined : (extras.smearOverlay ?? fighter.smearOverlay);
+    return {
+      characterId: fighter.characterId,
+      motionPose: pose,
+      ...(poseOverride ? { poseOverride } : {}),
+      ...(smearOverlay ? { smearOverlay } : {}),
+    };
+  };
   if (state.near.characterId === characterId) {
-    return { ...state, near: { ...state.near, motionPose: pose } };
+    return { ...state, near: patch(state.near) };
   }
   if (state.far.characterId === characterId) {
-    return { ...state, far: { ...state.far, motionPose: pose } };
+    return { ...state, far: patch(state.far) };
   }
   return state;
 }
@@ -113,9 +136,15 @@ export function applyAnimationCommand(
     }
     case 'motion_beat': {
       const pose = motionPoseFromKitKey(cmd.poseKey);
-      let next = withPose(state, cmd.actor, pose);
+      let next = withPose(state, cmd.actor, pose, {
+        poseOverride: cmd.pose ?? null,
+        smearOverlay: cmd.smear ?? null,
+      });
       if (cmd.victimId && cmd.victimPoseKey) {
-        next = withPose(next, cmd.victimId, motionPoseFromKitKey(cmd.victimPoseKey));
+        next = withPose(next, cmd.victimId, motionPoseFromKitKey(cmd.victimPoseKey), {
+          poseOverride: null,
+          smearOverlay: null,
+        });
       }
       if (cmd.fxFamily === 'hit' || cmd.fxFamily === 'dodge' || cmd.fxFamily === 'defeat') {
         const slot =

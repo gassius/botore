@@ -107,6 +107,17 @@ export interface BotAssemblerProps {
   readonly weaponId?: string;
   /** Default `idle`. Motion is RN Animated; Skia only if measured limits fail. */
   readonly motionPose?: MotionPose;
+  /**
+   * Optional baked clip pose (kit-v003.3 `animation/clips.json` frame).
+   * When set, assembler skips the named pose table for geometry.
+   */
+  readonly poseOverride?: import('./workshopFrameTypes').KitPoseEntry;
+  /** Optional attack smear overlay for the current clip frame. */
+  readonly smearOverlay?: {
+    readonly png: string;
+    readonly offsetRigPx: readonly [number, number];
+    readonly z: number;
+  };
   /** When true, skip non-essential motion (pose snaps / reduced amplitude). */
   readonly reducedMotion?: boolean;
   /**

@@ -1,5 +1,5 @@
 /** Auto-mapped Workshop Frame kit-v003 media for Metro require().
- * ACTIVE pin: v003 only. Do not mix with v002/v001 coordinates/assets.
+ * ACTIVE pin: v003.3. Do not mix with v002/v001 coordinates/assets.
  *
  * Includes precomposited parts/ (fallback/reference) plus materials/ + masks/
  * for under → mask-tint → over paint compositing. hand_*_wrap required.

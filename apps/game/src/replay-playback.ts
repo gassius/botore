@@ -8,18 +8,19 @@
  * The renderer NEVER decides gameplay: it only visualizes the canonical
  * event stream from @botore/replay.
  *
- * A2: attack / dodge / knockout / walk-in expand from kit-v003.1
- * `manifest.timing` (30 fps). Audio markers ride on those frames — not
- * hard-coded ms — so in-betweens stay in sync when the next kit pass lands.
+ * A2b: attack / dodge / knockout / walk-in expand from kit-v003.3
+ * `animation/clips.json` (30 fps baked frames). Audio markers ride on those
+ * frames — not hard-coded ms — so in-betweens/smears stay in sync.
  */
 import { type BattleEvent, type BattleReplay, validateReplay } from '@botore/replay';
-import type { KitWeaponKind } from './assembler/workshopFrameTypes';
+import type { KitPoseEntry, KitWeaponKind } from './assembler/workshopFrameTypes';
 import {
   A2_FPS,
   expandWeaponSequence,
   framesToMs,
   type FightAudioMarker,
   type FightTimelineBeat,
+  type FightTimelineSmear,
 } from './fight/a2FightTimeline';
 
 export type AnimationCommand =
@@ -52,6 +53,10 @@ export type AnimationCommand =
       readonly frames: number;
       readonly markers: readonly FightAudioMarker[];
       readonly hitStop?: boolean;
+      /** Baked clip pose for this tick (kit-v003.3). */
+      readonly pose?: KitPoseEntry;
+      /** Attack smear for this tick when authored. */
+      readonly smear?: FightTimelineSmear;
       /** During hit-stop, freeze the victim on this pose (usually hit_react). */
       readonly victimId?: string;
       readonly victimPoseKey?: string;
@@ -140,6 +145,8 @@ function pushMotionBeat(
     frames: beat.frames,
     markers: beat.markers,
     ...(beat.hitStop ? { hitStop: true } : {}),
+    ...(beat.pose ? { pose: beat.pose } : {}),
+    ...(beat.smear ? { smear: beat.smear } : {}),
     ...(victimId ? { victimId } : {}),
     ...(victimPoseKey ? { victimPoseKey } : {}),
     ...(extras.fxFamily ? { fxFamily: extras.fxFamily } : {}),

@@ -67,11 +67,11 @@ describe('BotAssembler PLACEHOLDER path', () => {
   });
 });
 
-describe('Workshop Frame kit-v003.1 adapter (ACTIVE pin)', () => {
-  it('pins coherent v003.1 manifest + family; never claims v002 geometry as active', () => {
-    expect(ACTIVE_WORKSHOP_FRAME_ASSET_VERSION).toBe('v003.1');
-    expect(WORKSHOP_FRAME_MANIFEST.version).toBe('v003.1');
-    expect(WORKSHOP_FRAME_KIT_ID).toBe('workshop-frame-v003.1');
+describe('Workshop Frame kit-v003.3 adapter (ACTIVE pin)', () => {
+  it('pins coherent v003.3 manifest + family; never claims v002 geometry as active', () => {
+    expect(ACTIVE_WORKSHOP_FRAME_ASSET_VERSION).toBe('v003.3');
+    expect(WORKSHOP_FRAME_MANIFEST.version).toBe('v003.3');
+    expect(WORKSHOP_FRAME_KIT_ID).toBe('workshop-frame-v003.3');
     expect(ACTIVE_WORKSHOP_FRAME_FAMILY).toBe('workshop-frame-v003');
     expect(WORKSHOP_FRAME_MANIFEST.family).toBe('workshop-frame-v003');
     expect(WORKSHOP_FRAME_MANIFEST.stage?.size).toEqual([800, 800]);
@@ -106,9 +106,9 @@ describe('Workshop Frame kit-v003.1 adapter (ACTIVE pin)', () => {
     expect(integrationDelta.to.family).toBe('workshop-frame-v003');
     expect(V002_TORSO_FROM_HISTORY.compatible_family).toBe('workshop-frame-v002');
     const bot = assembleWorkshopFrame({ loadout: baseLoadout, facing: 'right' });
-    expect(bot.kitId).toBe('workshop-frame-v003.1');
+    expect(bot.kitId).toBe('workshop-frame-v003.3');
     expect(bot.atlasVersion).toBe('v3');
-    expect(bot.layers.every((l) => l.label?.startsWith('workshop-frame-v003.1:'))).toBe(true);
+    expect(bot.layers.every((l) => l.label?.startsWith('workshop-frame-v003.3:'))).toBe(true);
     expect(bot.canvas.width).toBe(640);
   });
 

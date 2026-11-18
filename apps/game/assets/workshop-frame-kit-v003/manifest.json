@@ -1,11 +1,11 @@
 {
   "schema": "botore.workshop-frame.provisional.v2",
   "kit_id": "workshop-frame",
-  "version": "v003.1",
+  "version": "v003.3",
   "family": "workshop-frame-v003",
   "immutable": true,
   "status": "integration-prototype-not-accepted",
-  "supersedes": "v003 (same parts, sockets, pivots, root and idle numbers; poses/portrait/stage changed - see INTEGRATION-DELTA-v003-to-v003.1.md). v002 coordinates remain NOT interchangeable.",
+  "supersedes": "v003.2 (same parts, sockets, pivots, root, stage, plates, portraits; pose numbers identical except poses.knockout and poses.follow_through.axe; A2 clips re-baked \u2014 see INTEGRATION-DELTA-v003.2-to-v003.3.md). v003.2 superseded v003.1; v002 coordinates remain NOT interchangeable.",
   "stage": {
     "size": [
       800,
@@ -22,7 +22,8 @@
       "strike",
       "follow_through",
       "walk_in",
-      "knockout"
+      "knockout",
+      "clips (attack, dodge, knockout, walk)"
     ]
   },
   "canvas": [
@@ -213,7 +214,7 @@
       "z": 50,
       "motion_bounds": [
         -75,
-        35
+        40
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -249,8 +250,8 @@
       "angle": 0,
       "z": 60,
       "motion_bounds": [
-        -35,
-        35
+        -50,
+        40
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -295,7 +296,7 @@
       "angle": 0,
       "z": 40,
       "motion_bounds": [
-        -30,
+        -40,
         20
       ],
       "role": "body",
@@ -380,7 +381,7 @@
       "z": 20,
       "motion_bounds": [
         -370,
-        20
+        105
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -422,7 +423,7 @@
       "z": 30,
       "motion_bounds": [
         -65,
-        65
+        120
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -463,8 +464,8 @@
       "angle": -13,
       "z": 35,
       "motion_bounds": [
-        -65,
-        100
+        -110,
+        110
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -500,7 +501,7 @@
       "angle": -11,
       "z": 36,
       "motion_bounds": [
-        -95,
+        -105,
         30
       ],
       "role": "body",
@@ -543,7 +544,7 @@
       "z": 70,
       "motion_bounds": [
         -155,
-        220
+        315
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -668,7 +669,7 @@
       "angle": 15,
       "z": 56,
       "motion_bounds": [
-        -65,
+        -250,
         125
       ],
       "role": "body",
@@ -706,7 +707,7 @@
       "z": 57,
       "motion_bounds": [
         -30,
-        40
+        380
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -752,7 +753,7 @@
       "z": 65,
       "motion_bounds": [
         -150,
-        180
+        520
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -835,8 +836,8 @@
       "angle": 0,
       "z": 80,
       "motion_bounds": [
-        -145,
-        290
+        -150,
+        680
       ],
       "role": "body",
       "compatible_family": "workshop-frame-v003",
@@ -2045,19 +2046,19 @@
             "rot": 9.18
           },
           "forearm_l": {
-            "rot": 26.57
+            "rot": -20.41
           },
           "forearm_r": {
-            "rot": -38.84
+            "rot": -39.62
           },
           "hand_l": {
-            "rot": 171.17
+            "rot": 179.74
           },
           "hand_r": {
-            "rot": 281.88
+            "rot": 287.82
           },
           "head": {
-            "rot": -2
+            "rot": -2.45
           },
           "pelvis": {
             "rot": -8
@@ -2078,10 +2079,10 @@
             "rot": 26
           },
           "upper_arm_l": {
-            "rot": -136.74
+            "rot": -110.61
           },
           "upper_arm_r": {
-            "rot": -73.04
+            "rot": -90.49
           }
         }
       },
@@ -2625,160 +2626,160 @@
     "knockout": {
       "sword": {
         "root": {
-          "x": -64,
-          "y": 52
+          "x": -36.0,
+          "y": 22.0
         },
         "parts": {
           "foot_l": {
-            "rot": -76.39
+            "rot": -48.85
           },
           "foot_r": {
-            "rot": 4.37
+            "rot": 14.77
           },
           "forearm_l": {
-            "rot": -69.88
+            "rot": -142.96
           },
           "forearm_r": {
-            "rot": 112.0
+            "rot": 67.57
           },
           "hand_l": {
-            "rot": -104.85
+            "rot": 10.63
           },
           "hand_r": {
-            "rot": 178.93
+            "rot": 158.39
           },
           "head": {
-            "rot": -30
+            "rot": -42.5
           },
           "pelvis": {
-            "rot": 12
+            "rot": 10.0
           },
           "shin_l": {
-            "rot": 97.52
+            "rot": 53.33
           },
           "shin_r": {
-            "rot": 19.17
+            "rot": -29.23
           },
           "thigh_l": {
-            "rot": 2.88
+            "rot": 17.52
           },
           "thigh_r": {
-            "rot": -33.54
+            "rot": 26.46
           },
           "torso": {
-            "rot": -36
+            "rot": -32.0
           },
           "upper_arm_l": {
-            "rot": 87.73
+            "rot": 31.24
           },
           "upper_arm_r": {
-            "rot": -49.06
+            "rot": 11.68
           }
         }
       },
       "axe": {
         "root": {
-          "x": -64,
-          "y": 52
+          "x": -36.0,
+          "y": 22.0
         },
         "parts": {
           "foot_l": {
-            "rot": -76.39
+            "rot": -12.14
           },
           "foot_r": {
-            "rot": 4.37
+            "rot": 14.6
           },
           "forearm_l": {
-            "rot": 41.09
+            "rot": -29.87
           },
           "forearm_r": {
-            "rot": 4.91
+            "rot": 15.79
           },
           "hand_l": {
-            "rot": 116.46
+            "rot": 101.28
           },
           "hand_r": {
-            "rot": 103.17
+            "rot": 44.53
           },
           "head": {
-            "rot": -30
+            "rot": -30.0
           },
           "pelvis": {
-            "rot": 12
+            "rot": 10.0
           },
           "shin_l": {
-            "rot": 97.52
+            "rot": -27.34
           },
           "shin_r": {
-            "rot": 19.17
+            "rot": -28.86
           },
           "thigh_l": {
-            "rot": 2.88
+            "rot": 61.49
           },
           "thigh_r": {
-            "rot": -33.54
+            "rot": 26.26
           },
           "torso": {
-            "rot": -36
+            "rot": -32.0
           },
           "upper_arm_l": {
-            "rot": -94.54
+            "rot": -28.15
           },
           "upper_arm_r": {
-            "rot": 63.93
+            "rot": 91.93
           }
         }
       },
       "dagger": {
         "root": {
-          "x": -64,
-          "y": 52
+          "x": -36.0,
+          "y": 22.0
         },
         "parts": {
           "foot_l": {
-            "rot": -76.39
+            "rot": -48.85
           },
           "foot_r": {
-            "rot": 4.37
+            "rot": 14.77
           },
           "forearm_l": {
-            "rot": -69.88
+            "rot": -142.96
           },
           "forearm_r": {
-            "rot": -6.37
+            "rot": 15.31
           },
           "hand_l": {
-            "rot": -104.85
+            "rot": 10.63
           },
           "hand_r": {
-            "rot": 105.62
+            "rot": 2.74
           },
           "head": {
-            "rot": -30
+            "rot": -30.0
           },
           "pelvis": {
-            "rot": 12
+            "rot": 10.0
           },
           "shin_l": {
-            "rot": 97.52
+            "rot": 53.33
           },
           "shin_r": {
-            "rot": 19.17
+            "rot": -29.23
           },
           "thigh_l": {
-            "rot": 2.88
+            "rot": 17.52
           },
           "thigh_r": {
-            "rot": -33.54
+            "rot": 26.46
           },
           "torso": {
-            "rot": -36
+            "rot": -32.0
           },
           "upper_arm_l": {
-            "rot": 87.73
+            "rot": 31.24
           },
           "upper_arm_r": {
-            "rot": 2.75
+            "rot": 74.93
           }
         }
       }
@@ -3529,7 +3530,7 @@
     },
     "walk_in": {
       "kind": "fight-A2",
-      "use": "passing pose of the entrance walk (alternate with idle while translating)",
+      "use": "v003.1 passing pose, kept for compatibility. v003.2: play clips[w].walk (8-key loop) instead of alternating walk_in/idle",
       "per_weapon": true,
       "timing": "see timing[weaponId]"
     },
@@ -3571,7 +3572,7 @@
     },
     "knockout": {
       "kind": "fight-A2",
-      "use": "KO launch: thrown back, front leg kicked up; blend into defeat",
+      "use": "v003.2: KO STAGGER key (thrown back, head snapped back, arms trailing, rear foot stepping back; weapon hand low - never extended forward). Play clips[w].knockout for the full fall into defeat.",
       "per_weapon": true,
       "timing": "see timing[weaponId]"
     },
@@ -3606,7 +3607,7 @@
     "root": "x/y px added to root.position",
     "rot": "degrees ADDED to the part's default `angle`, rotating around its own pivot. Missing part = 0. torso.rot is the root rotation.",
     "weapon": "never posed directly; it follows hand_r via grips.main.attach_angle",
-    "blend": "linear interpolation of root.x/y and each rot is valid between any two entries of the same weapon (rots are stored nearest the weapon's idle value, so no joint spins). Two-handed axe: the off hand is exact at each key, and can drift a few px mid-blend.",
+    "blend": "linear interpolation of root.x/y and each rot is valid between any two entries of the same weapon (rots are stored nearest the weapon's idle value, so no joint spins). For A2 playback use clips (every frame baked, off hand exact on every frame); key-to-key blending is only a fallback.",
     "aliases": "pose_aliases maps v002/F7 motionPose names to A2 names; the alias entries are also present in poses with identical numbers."
   },
   "pose_aliases": {
@@ -3624,11 +3625,12 @@
         192,
         142
       ],
-      "use": "QA only: visor+brow area in head-tile px. No weapon pixel may enter it in windup; checked by validate_kit_v0031.py."
+      "use": "QA only: visor+brow area in head-tile px. v003.2: no weapon pixel and no smear pixel may enter it on ANY clip frame (and in windup); checked by validate_kit_v0032.py."
     }
   },
   "timing": {
     "fps": 30,
+    "superseded_by": "clips (v003.2) for playback; this key-to-key table is kept for v003.1 adapters",
     "per_weapon": {
       "sword": {
         "hit_stop_frames": 3,
@@ -3983,6 +3985,220 @@
     },
     "how_to_play": "A sequence is a list of segments. Segment k blends from the previous pose to \"to\" over \"frames\" frames using \"ease\" (linear | ease-in | ease-out | ease-in-out; \"hold\" and \"hit-stop\" keep the pose frozen). Hit-stop freezes BOTH bots for hit_stop_frames on contact; skip the hit-stop segment on a miss. reducedMotion: skip walk_in bob, snap between keys, keep hit-stop at 0 frames, still show result plates."
   },
+  "clips": {
+    "file": "animation/clips.json",
+    "fps": 30,
+    "timing_table": "animation/TIMING-v003.3.md",
+    "clips": {
+      "sword": {
+        "walk": {
+          "frames": 24,
+          "duration_ms": 800,
+          "loop": true,
+          "events": null,
+          "smear_frames": [],
+          "desc": "in-place loop, 8 keys (contact/down/passing/up x 2). Last frame flows into frame 0. Move the bot by speed_px_per_frame (toward the opponent) while it plays so the planted foot does not skate.",
+          "speed_px_per_frame": 4.3333
+        },
+        "attack": {
+          "frames": 41,
+          "duration_ms": 1367,
+          "loop": false,
+          "events": {
+            "contact_frame": 18,
+            "hit_stop_frames": [
+              19,
+              20,
+              21
+            ]
+          },
+          "smear_frames": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "desc": "idle -> anticipation -> windup -> strike (contact + hit-stop) -> follow-through -> overshoot -> settle -> idle. Starts and ends on the exact idle pose."
+        },
+        "dodge": {
+          "frames": 17,
+          "duration_ms": 567,
+          "loop": false,
+          "events": null,
+          "smear_frames": [],
+          "desc": "idle -> dip -> dodge -> hold -> rise -> idle. Starts and ends on the exact idle pose."
+        },
+        "hit_react": {
+          "frames": 21,
+          "duration_ms": 700,
+          "loop": false,
+          "events": null,
+          "smear_frames": [],
+          "desc": "idle -> hit_react (contact) -> hold -> recover -> idle. Starts and ends on the exact idle pose."
+        },
+        "knockout": {
+          "frames": 46,
+          "duration_ms": 1533,
+          "loop": false,
+          "events": {
+            "contact_frame": 5,
+            "hit_stop_frames": [
+              6,
+              7,
+              8,
+              9,
+              10,
+              11
+            ]
+          },
+          "smear_frames": [],
+          "desc": "idle -> impact (contact + hit-stop) -> stagger back -> reel -> knees buckle -> hit the floor -> small bounce -> settle. LAST FRAME == poses.defeat exactly.",
+          "ends_on_pose": "defeat"
+        }
+      },
+      "axe": {
+        "walk": {
+          "frames": 32,
+          "duration_ms": 1067,
+          "loop": true,
+          "events": null,
+          "smear_frames": [],
+          "desc": "in-place loop, 8 keys (contact/down/passing/up x 2). Last frame flows into frame 0. Move the bot by speed_px_per_frame (toward the opponent) while it plays so the planted foot does not skate.",
+          "speed_px_per_frame": 2.75
+        },
+        "attack": {
+          "frames": 56,
+          "duration_ms": 1867,
+          "loop": false,
+          "events": {
+            "contact_frame": 28,
+            "hit_stop_frames": [
+              29,
+              30,
+              31,
+              32,
+              33
+            ]
+          },
+          "smear_frames": [
+            18,
+            19,
+            26,
+            27,
+            28
+          ],
+          "desc": "idle -> anticipation -> windup -> strike (contact + hit-stop) -> follow-through -> overshoot -> settle -> idle. Starts and ends on the exact idle pose."
+        },
+        "dodge": {
+          "frames": 23,
+          "duration_ms": 767,
+          "loop": false,
+          "events": null,
+          "smear_frames": [],
+          "desc": "idle -> dip -> dodge -> hold -> rise -> idle. Starts and ends on the exact idle pose."
+        },
+        "hit_react": {
+          "frames": 19,
+          "duration_ms": 633,
+          "loop": false,
+          "events": null,
+          "smear_frames": [],
+          "desc": "idle -> hit_react (contact) -> hold -> recover -> idle. Starts and ends on the exact idle pose."
+        },
+        "knockout": {
+          "frames": 49,
+          "duration_ms": 1633,
+          "loop": false,
+          "events": {
+            "contact_frame": 4,
+            "hit_stop_frames": [
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ]
+          },
+          "smear_frames": [],
+          "desc": "idle -> impact (contact + hit-stop) -> stagger back -> reel -> knees buckle -> hit the floor -> small bounce -> settle. LAST FRAME == poses.defeat exactly.",
+          "ends_on_pose": "defeat"
+        }
+      },
+      "dagger": {
+        "walk": {
+          "frames": 16,
+          "duration_ms": 533,
+          "loop": true,
+          "events": null,
+          "smear_frames": [],
+          "desc": "in-place loop, 8 keys (contact/down/passing/up x 2). Last frame flows into frame 0. Move the bot by speed_px_per_frame (toward the opponent) while it plays so the planted foot does not skate.",
+          "speed_px_per_frame": 6.5
+        },
+        "attack": {
+          "frames": 33,
+          "duration_ms": 1100,
+          "loop": false,
+          "events": {
+            "contact_frame": 15,
+            "hit_stop_frames": [
+              16,
+              17
+            ]
+          },
+          "smear_frames": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "desc": "idle -> anticipation -> windup -> strike (contact + hit-stop) -> follow-through -> overshoot -> settle -> idle. Starts and ends on the exact idle pose."
+        },
+        "dodge": {
+          "frames": 15,
+          "duration_ms": 500,
+          "loop": false,
+          "events": null,
+          "smear_frames": [],
+          "desc": "idle -> dip -> dodge -> hold -> rise -> idle. Starts and ends on the exact idle pose."
+        },
+        "hit_react": {
+          "frames": 19,
+          "duration_ms": 633,
+          "loop": false,
+          "events": null,
+          "smear_frames": [],
+          "desc": "idle -> hit_react (contact) -> hold -> recover -> idle. Starts and ends on the exact idle pose."
+        },
+        "knockout": {
+          "frames": 44,
+          "duration_ms": 1467,
+          "loop": false,
+          "events": {
+            "contact_frame": 4,
+            "hit_stop_frames": [
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          },
+          "smear_frames": [],
+          "desc": "idle -> impact (contact + hit-stop) -> stagger back -> reel -> knees buckle -> hit the floor -> small bounce -> settle. LAST FRAME == poses.defeat exactly.",
+          "ends_on_pose": "defeat"
+        }
+      }
+    },
+    "note": "v003.2 playback source of truth for A2. poses.windup/strike/... stay the v003.1 numbers; clip key frames hit the same grip/foot targets but are re-solved (less wrist twist) so their joint numbers can differ."
+  },
   "fx": {
     "defeat_sparks": {
       "frames": [
@@ -4157,7 +4373,7 @@
   },
   "validation_summary": {
     "passed": true,
-    "checks": 3776,
+    "checks": 14081,
     "failures": [],
     "weapon_px_on_face": {
       "idle.sword": 0,
@@ -4179,7 +4395,7 @@
       "strike.axe": 0,
       "strike.dagger": 0,
       "follow_through.sword": 0,
-      "follow_through.axe": 29,
+      "follow_through.axe": 0,
       "follow_through.dagger": 0,
       "recovery.sword": 0,
       "recovery.axe": 0,
@@ -4211,45 +4427,644 @@
     "max_offhand_error_px": 0.019,
     "max_offhand_angle_err_deg": 0.01,
     "min_finger_cover_of_handle": 1.0,
-    "meaning": "Geometry/file/raster proof from manifest + PNGs. Not art acceptance, native performance, animation timing or full collision clearance.",
+    "clips": {
+      "sword.walk": {
+        "frames": 24,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 18.7,
+        "at_frame": 2,
+        "max_tip_speed_px_per_frame": 5.5,
+        "tip_speed_top3": [
+          [
+            5.5,
+            2
+          ],
+          [
+            4.3,
+            3
+          ],
+          [
+            3.8,
+            23
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 89.9,
+        "planted_foot_dx_mean": -4.07,
+        "speed_px_per_frame": 4.3333
+      },
+      "sword.attack": {
+        "frames": 41,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 75.5,
+        "at_frame": 18,
+        "max_tip_speed_px_per_frame": 348.2,
+        "tip_speed_top3": [
+          [
+            348.2,
+            18
+          ],
+          [
+            283.1,
+            17
+          ],
+          [
+            132.7,
+            15
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 179.5
+      },
+      "sword.dodge": {
+        "frames": 17,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 35.5,
+        "at_frame": 3,
+        "max_tip_speed_px_per_frame": 100.9,
+        "tip_speed_top3": [
+          [
+            100.9,
+            4
+          ],
+          [
+            82.7,
+            3
+          ],
+          [
+            52.8,
+            10
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 107.6
+      },
+      "sword.hit_react": {
+        "frames": 21,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 24.3,
+        "at_frame": 5,
+        "max_tip_speed_px_per_frame": 59.4,
+        "tip_speed_top3": [
+          [
+            59.4,
+            2
+          ],
+          [
+            58.6,
+            1
+          ],
+          [
+            57.9,
+            3
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 122.4
+      },
+      "sword.knockout": {
+        "frames": 46,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 43.0,
+        "at_frame": 5,
+        "max_tip_speed_px_per_frame": 87.3,
+        "tip_speed_top3": [
+          [
+            87.3,
+            5
+          ],
+          [
+            68.7,
+            1
+          ],
+          [
+            65.0,
+            2
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 159.0,
+        "root_dx_range": [
+          -36.2,
+          0
+        ],
+        "weapon_hand_dx_max": 4.8
+      },
+      "axe.walk": {
+        "frames": 32,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 10.4,
+        "at_frame": 2,
+        "max_tip_speed_px_per_frame": 4.9,
+        "tip_speed_top3": [
+          [
+            4.9,
+            3
+          ],
+          [
+            4.9,
+            2
+          ],
+          [
+            3.6,
+            4
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 109.0,
+        "off_hand_max_err_px": 0.003,
+        "off_hand_max_ang_err_deg": 0.003,
+        "planted_foot_dx_mean": -2.65,
+        "speed_px_per_frame": 2.75
+      },
+      "axe.attack": {
+        "frames": 56,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 171.9,
+        "at_frame": 26,
+        "max_tip_speed_px_per_frame": 576.0,
+        "tip_speed_top3": [
+          [
+            576.0,
+            26
+          ],
+          [
+            256.9,
+            54
+          ],
+          [
+            248.3,
+            18
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 178.1,
+        "off_hand_max_err_px": 0.0216,
+        "off_hand_max_ang_err_deg": 0.354
+      },
+      "axe.dodge": {
+        "frames": 23,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 48.9,
+        "at_frame": 21,
+        "max_tip_speed_px_per_frame": 63.5,
+        "tip_speed_top3": [
+          [
+            63.5,
+            6
+          ],
+          [
+            48.1,
+            5
+          ],
+          [
+            39.0,
+            15
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 102.2,
+        "off_hand_max_err_px": 0.0186,
+        "off_hand_max_ang_err_deg": 0.147
+      },
+      "axe.hit_react": {
+        "frames": 19,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 57.1,
+        "at_frame": 1,
+        "max_tip_speed_px_per_frame": 170.7,
+        "tip_speed_top3": [
+          [
+            170.7,
+            1
+          ],
+          [
+            115.7,
+            2
+          ],
+          [
+            65.5,
+            9
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 102.2,
+        "off_hand_max_err_px": 0.0186,
+        "off_hand_max_ang_err_deg": 0.093
+      },
+      "axe.knockout": {
+        "frames": 49,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 40.8,
+        "at_frame": 1,
+        "max_tip_speed_px_per_frame": 103.7,
+        "tip_speed_top3": [
+          [
+            103.7,
+            1
+          ],
+          [
+            90.3,
+            2
+          ],
+          [
+            84.7,
+            3
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 178.6,
+        "off_hand_max_err_px": 0.0186,
+        "off_hand_max_ang_err_deg": 0.194,
+        "root_dx_range": [
+          -34.2,
+          0
+        ],
+        "weapon_hand_dx_max": 10.9
+      },
+      "dagger.walk": {
+        "frames": 16,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 16.4,
+        "at_frame": 1,
+        "max_tip_speed_px_per_frame": 4.8,
+        "tip_speed_top3": [
+          [
+            4.8,
+            2
+          ],
+          [
+            3.7,
+            13
+          ],
+          [
+            3.3,
+            12
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 33.1,
+        "planted_foot_dx_mean": -6.15,
+        "speed_px_per_frame": 6.5
+      },
+      "dagger.attack": {
+        "frames": 33,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 52.6,
+        "at_frame": 10,
+        "max_tip_speed_px_per_frame": 72.5,
+        "tip_speed_top3": [
+          [
+            72.5,
+            18
+          ],
+          [
+            52.8,
+            6
+          ],
+          [
+            49.1,
+            19
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 172.4
+      },
+      "dagger.dodge": {
+        "frames": 15,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 30.5,
+        "at_frame": 13,
+        "max_tip_speed_px_per_frame": 47.9,
+        "tip_speed_top3": [
+          [
+            47.9,
+            4
+          ],
+          [
+            41.3,
+            9
+          ],
+          [
+            38.9,
+            5
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 56.7
+      },
+      "dagger.hit_react": {
+        "frames": 19,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 26.2,
+        "at_frame": 5,
+        "max_tip_speed_px_per_frame": 39.3,
+        "tip_speed_top3": [
+          [
+            39.3,
+            4
+          ],
+          [
+            37.6,
+            2
+          ],
+          [
+            37.1,
+            3
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 122.4
+      },
+      "dagger.knockout": {
+        "frames": 44,
+        "weapon_px_on_face_max": 0,
+        "smear_px_on_face_max": 0,
+        "max_world_angle_step_deg": 42.9,
+        "at_frame": 12,
+        "max_tip_speed_px_per_frame": 64.4,
+        "tip_speed_top3": [
+          [
+            64.4,
+            2
+          ],
+          [
+            54.4,
+            1
+          ],
+          [
+            37.5,
+            20
+          ]
+        ],
+        "max_abs_wrist_rot_deg": 94.9,
+        "root_dx_range": [
+          -40.2,
+          0
+        ],
+        "weapon_hand_dx_max": 8.0
+      }
+    },
+    "av_exceptions": {
+      "rule": "Per-part angular velocity must be <= 45 deg/frame (angle-unwrapped, short way) on every adjacent clip pair, including the walk loop seam, except (1) the named frames below and (2) any frame whose smear raster overlaps an arm part. Off-hand must stay on the haft within 1 px / 2 deg except after the knockout floor release, and except the named off_hand frames below.",
+      "named": [
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 12,
+          "label": "inbetween",
+          "from_label": "breakdown:pendulum",
+          "part": "hand_r",
+          "step_deg": 176.82,
+          "checks": [
+            "av"
+          ],
+          "reason": "pendulum\u2192low arm-basin flip. Joint-space in-betweens sweep the visor; a visor-clear path needs more frames than the 56-frame attack cap."
+        },
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 18,
+          "label": "inbetween",
+          "from_label": "breakdown:back",
+          "part": "forearm_l",
+          "step_deg": 68.09,
+          "off_err_px": 5.475,
+          "checks": [
+            "av",
+            "off_hand"
+          ],
+          "reason": "back\u2192rise. A joint-lerp mid puts 35 px of the haft on the visor; in-place off-hand relock jumps the next frame by ~80\u00b0. Hidden under the backswing smear when one is generated."
+        },
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 26,
+          "label": "breakdown:whip",
+          "from_label": "breakdown:coil",
+          "part": "upper_arm_r",
+          "step_deg": 162.67,
+          "checks": [
+            "av"
+          ],
+          "reason": "coil\u2192whip basin flip, hidden under the whip strike smear (one-frame flip / smear trick)."
+        },
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 54,
+          "label": "inbetween",
+          "from_label": "inbetween",
+          "part": "upper_arm_r",
+          "step_deg": 146.25,
+          "checks": [
+            "av"
+          ],
+          "reason": "overshoot\u2192idle basin return. The visor-clear repair added far more than 6 frames; dropped to keep v003.2 recovery timing."
+        },
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 55,
+          "label": "key:idle",
+          "from_label": "inbetween",
+          "part": "forearm_l",
+          "step_deg": 111.04,
+          "checks": [
+            "av"
+          ],
+          "reason": "second frame of the same overshoot\u2192idle basin return (see frame 54)."
+        },
+        {
+          "weapon": "axe",
+          "clip": "hit_react",
+          "frame": 1,
+          "label": "inbetween",
+          "from_label": "key:idle",
+          "part": "forearm_r",
+          "step_deg": 83.28,
+          "off_err_px": 13.66,
+          "checks": [
+            "av",
+            "off_hand"
+          ],
+          "reason": "idle\u2192hit_react forearm snap (the v003.2 f13 spike, now at the start of the clip). A clean path needs 5 in-betweens; this clip may only grow by 2 frames."
+        },
+        {
+          "weapon": "axe",
+          "clip": "hit_react",
+          "frame": 2,
+          "label": "inbetween",
+          "from_label": "inbetween",
+          "part": "forearm_r",
+          "step_deg": 49.97,
+          "off_err_px": 4.76,
+          "checks": [
+            "av",
+            "off_hand"
+          ],
+          "reason": "same idle\u2192hit_react snap, second frame."
+        }
+      ],
+      "used": [
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 12,
+          "label": "inbetween",
+          "step_deg": 176.82,
+          "reason": "pendulum\u2192low arm-basin flip. Joint-space in-betweens sweep the visor; a visor-clear path needs more frames than the 56-frame attack cap.",
+          "via": "named"
+        },
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 18,
+          "label": "inbetween",
+          "off_err_px": 5.475,
+          "reason": "back\u2192rise. A joint-lerp mid puts 35 px of the haft on the visor; in-place off-hand relock jumps the next frame by ~80\u00b0. Hidden under the backswing smear when one is generated.",
+          "via": "named-off_hand"
+        },
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 18,
+          "label": "inbetween",
+          "step_deg": 68.09,
+          "reason": "back\u2192rise. A joint-lerp mid puts 35 px of the haft on the visor; in-place off-hand relock jumps the next frame by ~80\u00b0. Hidden under the backswing smear when one is generated.",
+          "via": "named"
+        },
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 26,
+          "label": "breakdown:whip",
+          "step_deg": 162.67,
+          "reason": "coil\u2192whip basin flip, hidden under the whip strike smear (one-frame flip / smear trick).",
+          "via": "named"
+        },
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 54,
+          "label": "inbetween",
+          "step_deg": 146.25,
+          "reason": "overshoot\u2192idle basin return. The visor-clear repair added far more than 6 frames; dropped to keep v003.2 recovery timing.",
+          "via": "named"
+        },
+        {
+          "weapon": "axe",
+          "clip": "attack",
+          "frame": 55,
+          "label": "key:idle",
+          "step_deg": 111.04,
+          "reason": "second frame of the same overshoot\u2192idle basin return (see frame 54).",
+          "via": "named"
+        },
+        {
+          "weapon": "axe",
+          "clip": "hit_react",
+          "frame": 1,
+          "label": "inbetween",
+          "off_err_px": 13.66,
+          "reason": "idle\u2192hit_react forearm snap (the v003.2 f13 spike, now at the start of the clip). A clean path needs 5 in-betweens; this clip may only grow by 2 frames.",
+          "via": "named-off_hand"
+        },
+        {
+          "weapon": "axe",
+          "clip": "hit_react",
+          "frame": 1,
+          "label": "inbetween",
+          "step_deg": 83.28,
+          "reason": "idle\u2192hit_react forearm snap (the v003.2 f13 spike, now at the start of the clip). A clean path needs 5 in-betweens; this clip may only grow by 2 frames.",
+          "via": "named"
+        },
+        {
+          "weapon": "axe",
+          "clip": "hit_react",
+          "frame": 2,
+          "label": "inbetween",
+          "off_err_px": 4.76,
+          "reason": "same idle\u2192hit_react snap, second frame.",
+          "via": "named-off_hand"
+        },
+        {
+          "weapon": "axe",
+          "clip": "hit_react",
+          "frame": 2,
+          "label": "inbetween",
+          "step_deg": 49.97,
+          "reason": "same idle\u2192hit_react snap, second frame.",
+          "via": "named"
+        }
+      ]
+    },
+    "meaning": "Geometry/file/raster proof from manifest + clips.json + PNGs (every clip frame). Not art acceptance, native performance, animation timing or full collision clearance.",
     "negative_tests": [
       {
-        "mutation": "windup weapon across the face",
+        "mutation": "sword in-between frame: weapon across the face",
         "caught": true
       },
       {
-        "mutation": "victory reverted to v003 (weapon low)",
+        "mutation": "axe in-between frame: off hand off the haft",
         "caught": true
       },
       {
-        "mutation": "defeat reverted to v003 (floating knee)",
+        "mutation": "knockout does not end on poses.defeat",
         "caught": true
       },
       {
-        "mutation": "axe off hand off the haft in strike",
+        "mutation": "dagger knockout lunges forward",
         "caught": true
       },
       {
-        "mutation": "portrait copied from a sample instead of own loadout",
+        "mutation": "walk loop seam pop",
+        "caught": true
+      },
+      {
+        "mutation": "strike smear over the visor",
+        "caught": true
+      },
+      {
+        "mutation": "windup pose weapon across the face",
+        "caught": true
+      },
+      {
+        "mutation": "part angular velocity exceeds 45 deg/frame",
         "caught": true
       }
     ]
   },
   "file_inventory": [
     {
-      "path": "INTEGRATION-DELTA-v003-to-v003.1.md",
-      "bytes": 2415,
-      "sha256": "d34ac0a5c0063f0e85e35a3eda203592efa5bfc89616791db739d9a40670b011"
+      "path": "INTEGRATION-DELTA-v003.2-to-v003.3.json",
+      "bytes": 3165,
+      "sha256": "0db847917f137f95b2d3b2d762d02e53fc1c55bce0683bd19e196fa621b9c630"
+    },
+    {
+      "path": "INTEGRATION-DELTA-v003.2-to-v003.3.md",
+      "bytes": 1937,
+      "sha256": "3a4df304a170706b2729a3de9b978d8149292eabfdc8e15d4588ce6a6846b164"
     },
     {
       "path": "PROVENANCE.md",
-      "bytes": 758,
-      "sha256": "1f4afe4ccc2443eea490c715900cd7650ce36ce905433cc15de3beb25a4354df"
+      "bytes": 2002,
+      "sha256": "87243fb76c9dd6477de869bd0428e4da479ac880f0217ac0c5b2a9eae70cf6b9"
     },
     {
       "path": "README.md",
-      "bytes": 5288,
-      "sha256": "0b620dff6026809ce67a557dcbfb98ec46cf45afed758a01996c35cea473c0d2"
+      "bytes": 3834,
+      "sha256": "039399a3d7f9da8ffedbe0184b81fef39135f608764ce53b318587cc23f80930"
+    },
+    {
+      "path": "animation/TIMING-v003.3.md",
+      "bytes": 26681,
+      "sha256": "5629369077d96e4b81426717d99542ac7c7d2cd09ea8715d864d1e014a05866c"
+    },
+    {
+      "path": "animation/clips.json",
+      "bytes": 269265,
+      "sha256": "cdc956bdcd7ab953abb3ce99ba6936de673fa846a2df08100deebd05283fba4d"
     },
     {
       "path": "fx/defeat-sparks-00.png",
@@ -4273,6 +5088,142 @@
       "sha256": "667cc741f0edabccbcae495467287369340479d78eb1964480fb8ac46187bc81",
       "width": 184,
       "height": 132,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-axe-attack-18.png",
+      "bytes": 4780,
+      "sha256": "a772af7b434ccd1bdf6026b3203ec2cbb45faa38c6e5d60ea22726db16ecfc49",
+      "width": 201,
+      "height": 301,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-axe-attack-19.png",
+      "bytes": 4749,
+      "sha256": "15937a9ad18de8974bf6f06f2e451d52cfa3d670d05e181c2bce918500da8c96",
+      "width": 234,
+      "height": 289,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-axe-attack-26.png",
+      "bytes": 9050,
+      "sha256": "c58a24f247db2df66cb64a31239f3634b3c7e0d2fd98654247e0c0d15aa210f4",
+      "width": 581,
+      "height": 276,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-axe-attack-27.png",
+      "bytes": 3869,
+      "sha256": "f0f54c1b999c5b0c25339e614b983a9c3e15c8b84157c3eb82fac4cb02e9b446",
+      "width": 147,
+      "height": 231,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-axe-attack-28.png",
+      "bytes": 3753,
+      "sha256": "7ea20cab2b5c0d7483f26dd9e900db4f55f358cf0bf8817892380ce5adc64118",
+      "width": 160,
+      "height": 233,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-dagger-attack-08.png",
+      "bytes": 1390,
+      "sha256": "f57e6f0aed337a4d5076f085e0a12580a4cec3d498379f2856614e51bddbfada",
+      "width": 141,
+      "height": 67,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-dagger-attack-09.png",
+      "bytes": 1499,
+      "sha256": "8a79d0cccc1fa06f6c2d1fba63534eb27caa8c30dd6162500a48c3cce9ea1a7c",
+      "width": 167,
+      "height": 67,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-dagger-attack-10.png",
+      "bytes": 1882,
+      "sha256": "1a9f87488b2b9d88f7185b44f1d7e0ee20ee46f4056c5cc529af54cd61f4677a",
+      "width": 211,
+      "height": 71,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-dagger-attack-11.png",
+      "bytes": 2007,
+      "sha256": "668dc6a308a7c52346d8e8bbcedd192bed6c099abd82b1bb7786ea2dda29f1bd",
+      "width": 251,
+      "height": 67,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-dagger-attack-12.png",
+      "bytes": 2454,
+      "sha256": "8ef4045ffa8c7e80dcb740cbf5b65089ef946e94425ee0c552e6509952e99d05",
+      "width": 281,
+      "height": 76,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-dagger-attack-13.png",
+      "bytes": 2613,
+      "sha256": "3a0ca7289c9dcad6546490966f555d22583c99560499135263cc66b315a06a70",
+      "width": 308,
+      "height": 78,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-dagger-attack-14.png",
+      "bytes": 2819,
+      "sha256": "96589429b46ce3eb8ae9eaf109e79940d3bb103efc7101d61436b6133ee5a221",
+      "width": 331,
+      "height": 76,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-dagger-attack-15.png",
+      "bytes": 2809,
+      "sha256": "3356e116284fa13f5d608dc0296e6f34f992ba326a87d1ac25fe0a206955cd01",
+      "width": 348,
+      "height": 69,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-sword-attack-15.png",
+      "bytes": 3944,
+      "sha256": "9d382baea40adfcf284a09de4c3c89315f7eea049ead88cd48ecb9eabdd51d2f",
+      "width": 224,
+      "height": 180,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-sword-attack-16.png",
+      "bytes": 3554,
+      "sha256": "e58a2374c8b7ce4170e790ce747106928e831be481cbcf9f362724953de6a232",
+      "width": 190,
+      "height": 178,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-sword-attack-17.png",
+      "bytes": 5759,
+      "sha256": "86821e37cd6535a0192eed6b2726049c4e0f18e43d1b3d0ed6746ebd9384653c",
+      "width": 251,
+      "height": 278,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx/smears/smear-sword-attack-18.png",
+      "bytes": 6145,
+      "sha256": "9c255e82a3d4bab4f53d7b52af3c7d7b4749e2fb5a4a408652d3645505b631ff",
+      "width": 211,
+      "height": 345,
       "mode": "RGBA"
     },
     {
@@ -4300,9 +5251,140 @@
       "mode": "RGBA"
     },
     {
-      "path": "integration-delta-v003-to-v003.1.json",
-      "bytes": 5783,
-      "sha256": "f4a1e7b3139d84d85fc7578d0511e283e42ec01ec19e2cf6f2412cfa724137f0"
+      "path": "fx@2x/smears/smear-axe-attack-18.png",
+      "bytes": 11649,
+      "sha256": "5e68506272b10354c457c9d70fe032d5c203c05a14c79c4576ef1115d77b8820",
+      "width": 404,
+      "height": 604,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-axe-attack-19.png",
+      "bytes": 11243,
+      "sha256": "10e8d2e28d8a00f9bc5ce63bb920408fd03ab69adb0ec7d3c4af6114df293553",
+      "width": 468,
+      "height": 580,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-axe-attack-26.png",
+      "bytes": 23041,
+      "sha256": "e0f5752547b6436b0b5587fb8b9bf3e2c798339aefafe2e13fd176acbb6c13fb",
+      "width": 1164,
+      "height": 552,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-axe-attack-27.png",
+      "bytes": 8893,
+      "sha256": "b008a3c3eec2fd0411f3518d92bd423b5c1e7d4e02f5aa582270913f4fc2667a",
+      "width": 296,
+      "height": 462,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-axe-attack-28.png",
+      "bytes": 7992,
+      "sha256": "7c9408302398dbcae00d880ef1a35ef1d82f614c1fc26996022da3ed3433fd96",
+      "width": 320,
+      "height": 468,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-dagger-attack-08.png",
+      "bytes": 2988,
+      "sha256": "9e295117ec71ef00f438b5e0aafeb8242c140326f2dfd8abd664a4f7097bc81e",
+      "width": 284,
+      "height": 136,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-dagger-attack-09.png",
+      "bytes": 3142,
+      "sha256": "1ed86a8eb8c90de0149500a312298fd162d78b21888f844a159b7bfe4764a5b3",
+      "width": 336,
+      "height": 136,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-dagger-attack-10.png",
+      "bytes": 4250,
+      "sha256": "fb9bacdfc963784ae39e204a22404255626599c8e51343946e702f1a4923e900",
+      "width": 424,
+      "height": 142,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-dagger-attack-11.png",
+      "bytes": 4655,
+      "sha256": "ceec9903b9bf91f325c0fdb0f172779fd2e25210d5aca0d722fc90705a401077",
+      "width": 504,
+      "height": 134,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-dagger-attack-12.png",
+      "bytes": 5919,
+      "sha256": "c188fb62ba69ede1809f301c608109befda708c54435fdca07eea7f7da8b2c73",
+      "width": 564,
+      "height": 152,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-dagger-attack-13.png",
+      "bytes": 6233,
+      "sha256": "8ba85df1c1e362979501e6346675d988714d852af152b30de7d709d7f9ea3c49",
+      "width": 618,
+      "height": 158,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-dagger-attack-14.png",
+      "bytes": 6528,
+      "sha256": "84237a5041716f3f0db6c77e02ee43ee70c42aa284a9c3e694d0bca864b76ce5",
+      "width": 664,
+      "height": 152,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-dagger-attack-15.png",
+      "bytes": 6549,
+      "sha256": "ef27ca0db9892e4223a4e5ef4d88f0780a49ee062c732c9a47756b2b6b7312bb",
+      "width": 698,
+      "height": 138,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-sword-attack-15.png",
+      "bytes": 9138,
+      "sha256": "1c99b1029ccdbcfc8f6c3f76eb96071e607ee39a540be58004bd6fa335a37034",
+      "width": 450,
+      "height": 360,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-sword-attack-16.png",
+      "bytes": 8483,
+      "sha256": "7903748a20f00089dc873b8655c28fc21852bdde96bc5ad5a20d4f4158ead962",
+      "width": 380,
+      "height": 358,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-sword-attack-17.png",
+      "bytes": 14097,
+      "sha256": "fb19de65350f911316eb2ebacb9f3cf4babd06bad94fb7ece3c1afd624033af0",
+      "width": 502,
+      "height": 556,
+      "mode": "RGBA"
+    },
+    {
+      "path": "fx@2x/smears/smear-sword-attack-18.png",
+      "bytes": 15785,
+      "sha256": "b7bf9e63ac1402db828303a616aeef937af3655c356eebc2c46fa4d3e4cf9bef",
+      "width": 422,
+      "height": 690,
+      "mode": "RGBA"
     },
     {
       "path": "masks/foot_l-paint.png",
@@ -6064,7 +7146,379 @@
       "mode": "RGBA"
     },
     {
-      "path": "previews/contact-sheet-390x844.png",
+      "path": "previews/fight/a2-axe-closeup-2x.gif",
+      "bytes": 12164186,
+      "sha256": "4814cc254a2380ab3b0104606def270dbe06a704544ee48acae2b68e133cb971"
+    },
+    {
+      "path": "previews/fight/a2-axe-closeup-2x@2x.mp4",
+      "bytes": 2076506,
+      "sha256": "6f7c052d1c7e06d0f612862390bf13eda9714926f1acaddd64ea13466c73dced"
+    },
+    {
+      "path": "previews/fight/a2-axe-phone-390x844.gif",
+      "bytes": 13324969,
+      "sha256": "f701b787b73b0bd6808c02e0537ca5cb58ee170573db61cd8a76ee2c8cd4d7ab"
+    },
+    {
+      "path": "previews/fight/a2-axe-phone-390x844@2x.mp4",
+      "bytes": 1913896,
+      "sha256": "83e47f92a7596c67879e518480a477ba593f2df8f26844d75d8a508b294946bc"
+    },
+    {
+      "path": "previews/fight/a2-dagger-closeup-2x.gif",
+      "bytes": 8468947,
+      "sha256": "73bd73b1180b9bd2832b43f6e6e69a7b00a6dc37e58bebe94e58fbe8cd082876"
+    },
+    {
+      "path": "previews/fight/a2-dagger-closeup-2x@2x.mp4",
+      "bytes": 1754907,
+      "sha256": "c484168e8c8f438cc56aafa351a920359fcdd53f833eefe3cb7d1d0aa357cf53"
+    },
+    {
+      "path": "previews/fight/a2-dagger-phone-390x844.gif",
+      "bytes": 9793680,
+      "sha256": "a57c42d6395079591c5ddba942c8946ae6d5609f1cd68803e69f9b77e1f3ca46"
+    },
+    {
+      "path": "previews/fight/a2-dagger-phone-390x844@2x.mp4",
+      "bytes": 1418998,
+      "sha256": "614c037d394f90cdbf5d21803f76a011d3e110ca6e5d47b4188b8c55a2f94828"
+    },
+    {
+      "path": "previews/fight/a2-sword-closeup-2x.gif",
+      "bytes": 10494661,
+      "sha256": "91cdc359c446d7ae7bddcad80adab60c896a92e6d8383c982e9b33357eb8d309"
+    },
+    {
+      "path": "previews/fight/a2-sword-closeup-2x@2x.mp4",
+      "bytes": 2068843,
+      "sha256": "0aa36258089ebf8a92335e65281404d159241bad43b5cddafc3547809cc7ef12"
+    },
+    {
+      "path": "previews/fight/a2-sword-phone-390x844.gif",
+      "bytes": 11376759,
+      "sha256": "30f9b3e241611b285219959939d37796bbd7378868ea393ecf5994adb62c26f9"
+    },
+    {
+      "path": "previews/fight/a2-sword-phone-390x844@2x.mp4",
+      "bytes": 1685026,
+      "sha256": "d13e84dab59467c2cb95a99d9ae4960d516cce68d1b5635af6818b65c06131a6"
+    },
+    {
+      "path": "previews/fight-sheet-axe-attack-390x844.png",
+      "bytes": 276220,
+      "sha256": "53fc1ed45f936adfe007fa717247566198d576ac13ccff7bd2e3fa7c09059c6a",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-axe-attack-390x844@3x.png",
+      "bytes": 937299,
+      "sha256": "0e5727debc786d55fac5fd8657aed9ddf2f2d991992a2931f112416a3caf4898",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-axe-knockout-390x844.png",
+      "bytes": 123167,
+      "sha256": "b1f2a26e33aa8affb7b0fa5c88fd2ff17bc19809594a8ad44cbb1e0e4387007d",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-axe-knockout-390x844@3x.png",
+      "bytes": 395400,
+      "sha256": "6e80605628d9f28975b062546c9202dd4a91acb9b0e38714f123b556eb3ed972",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-axe-walk-dodge-hit-390x844.png",
+      "bytes": 218839,
+      "sha256": "94abe7ad4ac1c702620dcf157f685dd105c6d58b9fa640c42f917ac9c09be13c",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-axe-walk-dodge-hit-390x844@3x.png",
+      "bytes": 741938,
+      "sha256": "2abee140efe138b2749199b94d1427d7fdded5c83226283b1aac9d1ea65c5c85",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-dagger-attack-390x844.png",
+      "bytes": 256270,
+      "sha256": "a6ce2adcf47bf1023943700932330ea88377f58fb750a9e98ea935ab97a1c15e",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-dagger-attack-390x844@3x.png",
+      "bytes": 858052,
+      "sha256": "3c71eae060f6beb9a1a5e58c005085327662ecb1b57cf58f6aa93f937fc6b3ef",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-dagger-knockout-390x844.png",
+      "bytes": 120793,
+      "sha256": "598fcafa2c5448c929d262b6defd15f8b88a8b812275ed0f471393d318ad7023",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-dagger-knockout-390x844@3x.png",
+      "bytes": 399130,
+      "sha256": "950094700316a2afb942c81e825503ca249cda1600e2bca9fb066a20cc323260",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-dagger-walk-dodge-hit-390x844.png",
+      "bytes": 213450,
+      "sha256": "6a8d3305604088b69de78940bdaa73aec01a88b5de0b2dfabb5370086a26fff8",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-dagger-walk-dodge-hit-390x844@3x.png",
+      "bytes": 738461,
+      "sha256": "b891c537e8793064b28b98a8768730b96ae1af8970f7e9ffebc4c2f8cbbb88e2",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-sword-attack-390x844.png",
+      "bytes": 226494,
+      "sha256": "20692996b4a0f1b9abaa2569313c66f5b16b45fa4a7a976a3b3f6cdca993bc2c",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-sword-attack-390x844@3x.png",
+      "bytes": 766904,
+      "sha256": "67a428981b5ac056323d2aa47fca63496f77efeeff0e1df6f3b68eb53994748d",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-sword-knockout-390x844.png",
+      "bytes": 127640,
+      "sha256": "326f12830b0fd4217a4c20ef4aa9206dea333f9c5c4e4a250222b37f3be8a1ff",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-sword-knockout-390x844@3x.png",
+      "bytes": 425353,
+      "sha256": "8e11cb77779989f55164746610cd1f15bfdd89beeec777c481e786c432d801d1",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-sword-walk-dodge-hit-390x844.png",
+      "bytes": 223651,
+      "sha256": "e4bc31d0a3d27d3722f10b4eebb42686908ef18671da5fce895b7f812a6682db",
+      "width": 390,
+      "height": 844,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/fight-sheet-sword-walk-dodge-hit-390x844@3x.png",
+      "bytes": 770311,
+      "sha256": "9ebeb5a7a904dd6e8c06a9fe82eb71e1ff49f7d50d65ff7015f18e3bdbfa2361",
+      "width": 1170,
+      "height": 2532,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/arc-axe-attack.png",
+      "bytes": 331770,
+      "sha256": "bccc9278c12029c0d4fdf45f08f07f28423513f67df69609eaaf21782a943241",
+      "width": 800,
+      "height": 800,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/arc-dagger-attack.png",
+      "bytes": 166146,
+      "sha256": "691c065c1fd43fe7498f6c3d96379ae811404eb289eea697aad27a9632af5076",
+      "width": 800,
+      "height": 800,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/arc-sword-attack.png",
+      "bytes": 271431,
+      "sha256": "5f35a9954358c665a84385e198b018bccc9517e9020d0e65d5c3e4aef22b8451",
+      "width": 800,
+      "height": 800,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-axe-attack.png",
+      "bytes": 1029383,
+      "sha256": "dd0b43b5c2a3bc2fb55fff2ef1c5ad9d2cc66c479e4286283df8d7aafc63fbc5",
+      "width": 1600,
+      "height": 1650,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-axe-dodge.png",
+      "bytes": 452838,
+      "sha256": "0ea8bf4e7bb8c0cfce6137f25527f6bcdfd15b05b37968cf35e0b1d064b0bb65",
+      "width": 1600,
+      "height": 730,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-axe-hit_react.png",
+      "bytes": 383522,
+      "sha256": "af3248aedee3bc66c88848f9e58c1441b1ef02ef5ddf09254307bcee7688c465",
+      "width": 1600,
+      "height": 730,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-axe-knockout.png",
+      "bytes": 757915,
+      "sha256": "5b6f3d4c4dc4aebacabfa0f526bb02a7e2a8ba3e34f2725fa5506a641f8f9edf",
+      "width": 1600,
+      "height": 1650,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-axe-walk.png",
+      "bytes": 653635,
+      "sha256": "6a6cc883eda0028fd27d4e0da1038f7865197fbeeb22364fd8b41c3c3c803a13",
+      "width": 1600,
+      "height": 960,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-dagger-attack.png",
+      "bytes": 659995,
+      "sha256": "112e32713a1955f2d214c2215f1ceb4dd0881973ce79ff583273dd70a2690600",
+      "width": 1600,
+      "height": 1190,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-dagger-dodge.png",
+      "bytes": 298197,
+      "sha256": "46b20e03316b74fb886d0f35495c3df70c16fc7e31019b0f82a3de0ee993d728",
+      "width": 1600,
+      "height": 500,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-dagger-hit_react.png",
+      "bytes": 391423,
+      "sha256": "161dca6ac05ee678b2f33928288244725dfd32ccba0f73425fb809d33b128945",
+      "width": 1600,
+      "height": 730,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-dagger-knockout.png",
+      "bytes": 721032,
+      "sha256": "c31a5371ba6ae86a7eebb34aac00e88487662d73a1f3a90aacbbc41d969cc2b6",
+      "width": 1600,
+      "height": 1420,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-dagger-walk.png",
+      "bytes": 335191,
+      "sha256": "c21896e31c1546a8e16ca88f9b5bef6a278a42af843ee1031c5eea0172877e21",
+      "width": 1600,
+      "height": 500,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-sword-attack.png",
+      "bytes": 826197,
+      "sha256": "1832f801c4595711f470e2e806b128cc228c3721c945266274cf5ea5f8e4d00e",
+      "width": 1600,
+      "height": 1420,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-sword-dodge.png",
+      "bytes": 353112,
+      "sha256": "746ed27d52b34278305c006007d3df5276cec85edfe7e13ca74b8a26c3ee2725",
+      "width": 1600,
+      "height": 730,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-sword-hit_react.png",
+      "bytes": 448328,
+      "sha256": "7714a8c54b46422cd19701a3c3946389ec18a9b1f35c1a0fc9007a118a9cbf84",
+      "width": 1600,
+      "height": 730,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-sword-knockout.png",
+      "bytes": 789078,
+      "sha256": "d565691bf458ea319b86bde604d134a7208b793d5439ee46c91e8090fba3902a",
+      "width": 1600,
+      "height": 1420,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/frames-sword-walk.png",
+      "bytes": 518422,
+      "sha256": "2e9e251cc97a4f8d3600beff51d740d8186ad791c69667d5e211eeff5a0697d1",
+      "width": 1600,
+      "height": 730,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/knockout-strip-axe.png",
+      "bytes": 518147,
+      "sha256": "4888e1ea6e6e3f6d1a92569eb7f33a4bd85f6890abcdf45b6344001ee4520b7c",
+      "width": 2400,
+      "height": 876,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/knockout-strip-dagger.png",
+      "bytes": 494152,
+      "sha256": "d473a8cc133fa394b5b54ae88e19a4081ad266f782556651cb164b2cec50a912",
+      "width": 2400,
+      "height": 666,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/frames/knockout-strip-sword.png",
+      "bytes": 539146,
+      "sha256": "179882053fd5bb59f0783fc9d3eba0027028bd4fa0c4bf8dca2227afde9543aa",
+      "width": 2400,
+      "height": 666,
+      "mode": "RGB"
+    },
+    {
+      "path": "previews/v003.1-stills/contact-sheet-390x844.png",
       "bytes": 180112,
       "sha256": "f2cc518b09ddaae05696882f0751b38987c10cb99fa489d119609d278b15c785",
       "width": 390,
@@ -6072,7 +7526,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/contact-sheet-390x844@3x.png",
+      "path": "previews/v003.1-stills/contact-sheet-390x844@3x.png",
       "bytes": 601367,
       "sha256": "91ebed59dd988997b096d687984ffdab80ca2fd34ccf3ca2657a26fe7e3338b7",
       "width": 1170,
@@ -6080,7 +7534,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/defeat-v003-vs-v003.1.png",
+      "path": "previews/v003.1-stills/defeat-v003-vs-v003.1.png",
       "bytes": 152174,
       "sha256": "eba4bbc7036800b116f133518085322c07d4a46fb905d546f623dc5990cc11d0",
       "width": 2400,
@@ -6088,85 +7542,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/fight/a2-axe-strip.gif",
-      "bytes": 2415447,
-      "sha256": "55b828373743277919ce30da6b981fae630acf59efbabeb192be2497212a66c6"
-    },
-    {
-      "path": "previews/fight/a2-axe-strip@2x.mp4",
-      "bytes": 693672,
-      "sha256": "db322b8a68b42fe901c96611013aef5c3539bb936170ad7ba7924cfe74d392cb"
-    },
-    {
-      "path": "previews/fight/a2-dagger-strip.gif",
-      "bytes": 2152866,
-      "sha256": "ecb71bbfe9792c0b1c1f9f037d8401ab182078e4ff5be27245e9f47ba1789d13"
-    },
-    {
-      "path": "previews/fight/a2-dagger-strip@2x.mp4",
-      "bytes": 527137,
-      "sha256": "4438196a68778475a4d701dcc9cfb07a9b2c4c6c5e66dd4a5c8819b181f9ffed"
-    },
-    {
-      "path": "previews/fight/a2-sword-strip.gif",
-      "bytes": 1996740,
-      "sha256": "07fd449c6599659565be32f35c575a4005b362e0fb93cfc908d1ac30938a3af1"
-    },
-    {
-      "path": "previews/fight/a2-sword-strip@2x.mp4",
-      "bytes": 633837,
-      "sha256": "64668e6242a092f0cec849132742c5d5fc2721e2689aa32924f45a5a14a5417d"
-    },
-    {
-      "path": "previews/fight-sheet-axe-390x844.png",
-      "bytes": 188809,
-      "sha256": "a288382b9e49efd0cc7ce4bfbc7209a5dda573bc056eff24867b6ff214ed0dff",
-      "width": 390,
-      "height": 844,
-      "mode": "RGB"
-    },
-    {
-      "path": "previews/fight-sheet-axe-390x844@3x.png",
-      "bytes": 664734,
-      "sha256": "fd43586c27e2aa8b724fd50b3a68e99e20278b1b8ce04290919cb802a7d2d8ba",
-      "width": 1170,
-      "height": 2532,
-      "mode": "RGB"
-    },
-    {
-      "path": "previews/fight-sheet-dagger-390x844.png",
-      "bytes": 192243,
-      "sha256": "947cf4c9c368521887201d821d6c05631062ca092fd47614ff321e05907bc4b2",
-      "width": 390,
-      "height": 844,
-      "mode": "RGB"
-    },
-    {
-      "path": "previews/fight-sheet-dagger-390x844@3x.png",
-      "bytes": 684953,
-      "sha256": "321386614d51ed3bb8cb1348df198e5d8162e714bdc1591226a52f09550a2636",
-      "width": 1170,
-      "height": 2532,
-      "mode": "RGB"
-    },
-    {
-      "path": "previews/fight-sheet-sword-390x844.png",
-      "bytes": 202051,
-      "sha256": "aaccd6ebca16ab3edba76b25ced9731b73c00c2f7a91692da93bbeda1c7822ab",
-      "width": 390,
-      "height": 844,
-      "mode": "RGB"
-    },
-    {
-      "path": "previews/fight-sheet-sword-390x844@3x.png",
-      "bytes": 717660,
-      "sha256": "f2fd196afed93ebb43ebb2cd2f0364f7c60249c67dba9d625f5ebe6322a4b7f1",
-      "width": 1170,
-      "height": 2532,
-      "mode": "RGB"
-    },
-    {
-      "path": "previews/phone/defeat-axe-oxide.png",
+      "path": "previews/v003.1-stills/phone/defeat-axe-oxide.png",
       "bytes": 225174,
       "sha256": "7c24c7ba7a142e8425243e00da8fe2b8bff061547ce97f5a0adc0e181b08f63a",
       "width": 780,
@@ -6174,7 +7550,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/defeat-axe-petrol.png",
+      "path": "previews/v003.1-stills/phone/defeat-axe-petrol.png",
       "bytes": 224584,
       "sha256": "e5f49e7f950d0659cb742a64875251d7617700d32bf22941dca13c58d672015a",
       "width": 780,
@@ -6182,7 +7558,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/defeat-dagger-oxide.png",
+      "path": "previews/v003.1-stills/phone/defeat-dagger-oxide.png",
       "bytes": 221704,
       "sha256": "a9d6c5afb089d763906b2159665d5b0139c6d6783b375a8c363bc820692b9a49",
       "width": 780,
@@ -6190,7 +7566,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/defeat-dagger-petrol.png",
+      "path": "previews/v003.1-stills/phone/defeat-dagger-petrol.png",
       "bytes": 219172,
       "sha256": "24ef820f4551c74b2a5bafff9bdf7b6bae9e1343b12cb3466bffec05c8815d58",
       "width": 780,
@@ -6198,7 +7574,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/defeat-sword-oxide.png",
+      "path": "previews/v003.1-stills/phone/defeat-sword-oxide.png",
       "bytes": 228346,
       "sha256": "118e2ead92c6821e696effb53cccf44dd7e1b7d7ad1a69728a23fb0c95f11c48",
       "width": 780,
@@ -6206,7 +7582,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/defeat-sword-petrol.png",
+      "path": "previews/v003.1-stills/phone/defeat-sword-petrol.png",
       "bytes": 226288,
       "sha256": "01a83b01696e3a08146c360187e3fd8c83f291f7bfa4a1e16f04bae08bce957a",
       "width": 780,
@@ -6214,7 +7590,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/idle-axe-oxide.png",
+      "path": "previews/v003.1-stills/phone/idle-axe-oxide.png",
       "bytes": 208800,
       "sha256": "65a71d85c5cc0db1c58a3c3506170f96d74d418222546ae0955f27497d7c3bbc",
       "width": 780,
@@ -6222,7 +7598,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/idle-axe-petrol.png",
+      "path": "previews/v003.1-stills/phone/idle-axe-petrol.png",
       "bytes": 206499,
       "sha256": "c0affdec49345155c1e0032460e11e403ab553e6ff0693de901be6c0f9d4847e",
       "width": 780,
@@ -6230,7 +7606,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/idle-dagger-oxide.png",
+      "path": "previews/v003.1-stills/phone/idle-dagger-oxide.png",
       "bytes": 214265,
       "sha256": "e44443b23b3c64b95ebc6d2a8406d691b1ea039eae6bebe4d437ec9a686b0d2a",
       "width": 780,
@@ -6238,7 +7614,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/idle-dagger-petrol.png",
+      "path": "previews/v003.1-stills/phone/idle-dagger-petrol.png",
       "bytes": 211115,
       "sha256": "03949cb6b92eac3b5cb433855d605ac60698864334da264afaff52363b08e33f",
       "width": 780,
@@ -6246,7 +7622,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/idle-sword-oxide.png",
+      "path": "previews/v003.1-stills/phone/idle-sword-oxide.png",
       "bytes": 222382,
       "sha256": "8c99067a10d4d5d03736423a7fd8d65019a1e182f3cf83084cf0dfcc441664b2",
       "width": 780,
@@ -6254,7 +7630,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/idle-sword-petrol.png",
+      "path": "previews/v003.1-stills/phone/idle-sword-petrol.png",
       "bytes": 219030,
       "sha256": "a3286176ed73bd2d8a565a729ed2367b43bb53e6fe9b8c11426c840c72203543",
       "width": 780,
@@ -6262,7 +7638,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/victory-axe-oxide.png",
+      "path": "previews/v003.1-stills/phone/victory-axe-oxide.png",
       "bytes": 272818,
       "sha256": "0ec123695ebd9a2a1eb426919d25603363008ce8cffc2694c22b93b1c372b0bb",
       "width": 780,
@@ -6270,7 +7646,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/victory-axe-petrol.png",
+      "path": "previews/v003.1-stills/phone/victory-axe-petrol.png",
       "bytes": 269521,
       "sha256": "8d0d8d632f4756480cc5c164f8d7e7a62a1aa727e4e80ab02c6dcaa88cc79af5",
       "width": 780,
@@ -6278,7 +7654,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/victory-dagger-oxide.png",
+      "path": "previews/v003.1-stills/phone/victory-dagger-oxide.png",
       "bytes": 258433,
       "sha256": "fee2033ce331183ade8771480fe60f5ee5fff2851b74b0bcae497e23ff033412",
       "width": 780,
@@ -6286,7 +7662,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/victory-dagger-petrol.png",
+      "path": "previews/v003.1-stills/phone/victory-dagger-petrol.png",
       "bytes": 255327,
       "sha256": "d24a1df8120e0a83594412aa5b3a3cb63cad3179ddedafe99dc57f5e11ab69d0",
       "width": 780,
@@ -6294,7 +7670,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/victory-sword-oxide.png",
+      "path": "previews/v003.1-stills/phone/victory-sword-oxide.png",
       "bytes": 263801,
       "sha256": "6f4ee41666ba26b5c598e9647f538b2e09e89658ae795a0d9bd784e516830fce",
       "width": 780,
@@ -6302,7 +7678,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/phone/victory-sword-petrol.png",
+      "path": "previews/v003.1-stills/phone/victory-sword-petrol.png",
       "bytes": 260848,
       "sha256": "0c708e7ad537ccf1d8cea5a02a101e482239503b83edcfc724a36f50a7586208",
       "width": 780,
@@ -6310,7 +7686,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/plates-preview.png",
+      "path": "previews/v003.1-stills/plates-preview.png",
       "bytes": 60439,
       "sha256": "f88f7ba0e365d31102a52486d56c33a8bebb5cb95758f5f4efc8854c016a690e",
       "width": 1300,
@@ -6318,7 +7694,7 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/ranking-portraits.png",
+      "path": "previews/v003.1-stills/ranking-portraits.png",
       "bytes": 124600,
       "sha256": "4725c6ce42f242ec3c6b3617a806393d5154dccab18274be96798de15a88d47f",
       "width": 780,
@@ -6326,12 +7702,17 @@
       "mode": "RGB"
     },
     {
-      "path": "previews/victory-v003-vs-v003.1.png",
+      "path": "previews/v003.1-stills/victory-v003-vs-v003.1.png",
       "bytes": 179936,
       "sha256": "44058231a306dbabebf3e2ef368c2583469e9fc1aaf999526089b4666a927fde",
       "width": 2400,
       "height": 560,
       "mode": "RGB"
+    },
+    {
+      "path": "source/analyze_v0032.py",
+      "bytes": 1450,
+      "sha256": "677c411a2d6dbfb2e7e48a88be8f5ea33b36dfc06cef4a090aeeca0745075112"
     },
     {
       "path": "source/art_v003.py",
@@ -6349,14 +7730,44 @@
       "sha256": "fef059b229ce41836512543a954db2e9744586c42094ed044203479d84884c8c"
     },
     {
-      "path": "source/build_kit_v0031.py",
-      "bytes": 21099,
-      "sha256": "6f736e243c686d164896ffa7a5078647544183f1ea412dcb03bd408d7217fd27"
+      "path": "source/av-exceptions.json",
+      "bytes": 3175,
+      "sha256": "e1e7b28cf67ba3ef3a5513d08a2483ab023a0b4db844759384e09b57fd2520fe"
     },
     {
-      "path": "source/delta_v0031.py",
-      "bytes": 3670,
-      "sha256": "f9ae9b7149144b6b3721ed12cb0666e43bfb04960ca47bd1a3dca9f652862084"
+      "path": "source/axe_planner.py",
+      "bytes": 3743,
+      "sha256": "2b2fcd8807735158e2a1828467d44f97d8a0c502a3fd7ec408145982a590fa79"
+    },
+    {
+      "path": "source/build_kit_v0032.py",
+      "bytes": 32510,
+      "sha256": "a04e22cedf514dca9a208d9fcf7b8723ddc6f067320cb59f98c9b11b37561432"
+    },
+    {
+      "path": "source/clipcore.py",
+      "bytes": 16100,
+      "sha256": "600c3fd5dedc56083a82983c691e8d5de7f30e324b94f654cfc0f2310aa7fe44"
+    },
+    {
+      "path": "source/clips_authored.json",
+      "bytes": 392729,
+      "sha256": "929bad42370c116786aabbdd745eb6f01d4c9c6a69f8192f11a673a45af6dac8"
+    },
+    {
+      "path": "source/clips_v0032.py",
+      "bytes": 32231,
+      "sha256": "bbee198a275c845a79007c638068aa8c3c4d1a749296c037b0140b330ba2c16f"
+    },
+    {
+      "path": "source/delta_v0032.py",
+      "bytes": 4153,
+      "sha256": "15288cdce459497ef8f8d8aba7821b48e8bcee981099e9dc9ce70776465bd541"
+    },
+    {
+      "path": "source/docs_v0032.py",
+      "bytes": 6481,
+      "sha256": "933ae8796f6cd4deb803fc8274c9bd5354c1b85f8a3751430a054d9db1c91356"
     },
     {
       "path": "source/faceck.py",
@@ -6439,14 +7850,19 @@
       "sha256": "78ee655327a009845d7e48ec7d5405432089d9f90a7d0bbe5e85df6bbcbdcbb8"
     },
     {
-      "path": "source/mfasm.py",
-      "bytes": 4851,
-      "sha256": "414cbcce0d2b128b64fbe4ce1063d7ce8ec9651ce86de83ee4c5f8cb5294aa91"
+      "path": "source/look_clip.py",
+      "bytes": 1592,
+      "sha256": "1db0e9aa8e0ab0c6cc6bc677b26f6d081d3306aa3b6619747bcf939a1b5e969e"
     },
     {
-      "path": "source/negative_test_v0031.py",
-      "bytes": 2416,
-      "sha256": "5f5383b2695e05e99300a1854087268e48e8669908436bb532a916977eb337d7"
+      "path": "source/mfasm.py",
+      "bytes": 5381,
+      "sha256": "5100ccf7b2c8809560b463424cfeeb61d2005bbcfc97fc6e8f8c4c9ff34cbfc2"
+    },
+    {
+      "path": "source/negative_test_v0032.py",
+      "bytes": 3426,
+      "sha256": "1c559a3e4fea0100b521e09d1baeb505f96ee70ebacec684e5015ca785f38c52"
     },
     {
       "path": "source/pelvis.svg",
@@ -6460,18 +7876,18 @@
     },
     {
       "path": "source/poses.json",
-      "bytes": 32624,
-      "sha256": "a1025c19518fc9602748ab26ee7a989b9664768c6dcb135524506f2fd2e27b29"
+      "bytes": 32661,
+      "sha256": "1c77e4529fe0f3c17916b19797cb44c70f705d5fb583cda6fce76cdc7be7ee83"
     },
     {
       "path": "source/poses_authored.json",
-      "bytes": 34752,
-      "sha256": "b02f05cb9ad829dba662898e15e06116528f1f2ac17b68b028abac42cc26270b"
+      "bytes": 34757,
+      "sha256": "d66cf0a796fc91b92201fb74139fc8c432df79b889c02f2cebb869ab4b89d61c"
     },
     {
-      "path": "source/previews_v0031.py",
-      "bytes": 13284,
-      "sha256": "e9fa000911ea8cf35e9ca74e2224f22b8c2a50b5c8a4e88e806dd9b98ce583be"
+      "path": "source/previews_v0032.py",
+      "bytes": 18362,
+      "sha256": "cf2c6981ee3450e9fadbc981b6909c4c921b640c89b763f7f3b5fff9aa8d7af2"
     },
     {
       "path": "source/render.py",
@@ -6479,14 +7895,19 @@
       "sha256": "7c250deb6ebf7a0080348a344ac79c8fa480839bd6dd9560ae0604694771175a"
     },
     {
+      "path": "source/repair_v0033.py",
+      "bytes": 26391,
+      "sha256": "6b061bc11a470a90eab22dce8ffb9068c060f4b93e90dbd76b284dbeadd82927"
+    },
+    {
       "path": "source/rig.py",
       "bytes": 5205,
       "sha256": "150894837bc288c5eb8c44e24d1f5aefa536885e41a30c2a1048c52e0f7c7ce9"
     },
     {
-      "path": "source/seal_kit_v0031.py",
-      "bytes": 2394,
-      "sha256": "fe0bac0b33e15b3aed7f938cff4701babad0d25442331446131d27b5f188b565"
+      "path": "source/seal_kit_v0032.py",
+      "bytes": 2522,
+      "sha256": "bd492c47a8fb8c9feb49889abfccba634acc7795ca14a1808f6f81f575cb255f"
     },
     {
       "path": "source/shin_l.svg",
@@ -6497,6 +7918,16 @@
       "path": "source/shin_r.svg",
       "bytes": 2847,
       "sha256": "2aef3293f1c4a2c278cae7f58b757dd1fe991adcfae4be80f15fffed6887e8f8"
+    },
+    {
+      "path": "source/ship_v0033.py",
+      "bytes": 17801,
+      "sha256": "d9bddf1f249e05d47d021a6409d321c7004477b46605dda5a320cd81282f3a2b"
+    },
+    {
+      "path": "source/smear_v0032.py",
+      "bytes": 5281,
+      "sha256": "35f7218f66651ceec2cc33b04687bfd2f69a7688a88db289be9dee7cdffbb947"
     },
     {
       "path": "source/thigh_l.svg",
@@ -6524,9 +7955,9 @@
       "sha256": "914c5140f9037ebfdf50b9bd827fd54d4e3f3e87bc353e97cd6d2bf11c3b15ba"
     },
     {
-      "path": "source/validate_kit_v0031.py",
-      "bytes": 17297,
-      "sha256": "303090687f34a6e27dde61ace22dd831b2b8ccaea14564b183d2cded9b8e0a21"
+      "path": "source/validate_kit_v0032.py",
+      "bytes": 30121,
+      "sha256": "b3f82207032d4eb08782b20286f891cbcf36f2fe14660ae55c4d947191782a36"
     },
     {
       "path": "source/weapon_axe.svg",
@@ -6544,9 +7975,19 @@
       "sha256": "c2790057adee6fd6b80d70d33ab35bf3878bfbe4c1122db1e36cdd0a064d278c"
     },
     {
+      "path": "validation/av-exceptions.json",
+      "bytes": 3175,
+      "sha256": "e1e7b28cf67ba3ef3a5513d08a2483ab023a0b4db844759384e09b57fd2520fe"
+    },
+    {
+      "path": "validation/clip-solve-log.json",
+      "bytes": 68877,
+      "sha256": "bf8f3f347c43374531a41c6f3a9f1c8399e59f69cb844a7b05a46bc598856a68"
+    },
+    {
       "path": "validation/negative-tests.json",
-      "bytes": 1112,
-      "sha256": "9fbe80de8061c990235a1a1a9d0701e44b3e33760f5624412637bb3f824422d1"
+      "bytes": 1605,
+      "sha256": "2d74062143d80b5ea10fe8052f4abb413d0351910017990ffaffda20f5fc6d28"
     },
     {
       "path": "validation/pose-solve-log.json",
@@ -6555,13 +7996,13 @@
     },
     {
       "path": "validation/report.json",
-      "bytes": 411459,
-      "sha256": "1b4ea2d45f6897b24efdfd834f5133e587b9d0dc7fc57f8f84627095b29c4c15"
+      "bytes": 1755636,
+      "sha256": "83e09f80f8fc5923c21d7c9f32862196da0e36192c9d8caf4c050427e4f19665"
     },
     {
-      "path": "validation/visual-review.md",
-      "bytes": 3368,
-      "sha256": "6820e5fddb3335db87e7850b8757448874754396f1a6a9afd802a7f3505ac4f3"
+      "path": "validation/smear-report.json",
+      "bytes": 3470,
+      "sha256": "9edf221eb4377f63c00222bfd2a5f1da175ce904f6b616bd8be7bada86612e81"
     }
   ]
 }

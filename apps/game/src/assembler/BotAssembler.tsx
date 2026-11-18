@@ -15,6 +15,7 @@ import { assembleBot, provisionalMotionOffset } from './assemble';
 import { kitLayerAnchorLeft } from './kitMath';
 import type { AssembledLayer, BotAssemblerProps } from './types';
 import { workshopFramePartSource } from './workshopFrameAssets';
+import { workshopFrameSmearSource } from './workshopFrameSmearAssets';
 
 const DEFAULT_SIZE = 280; // PROVISIONAL display width — not an export budget.
 
@@ -164,6 +165,8 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
   paintId,
   weaponId,
   motionPose = 'idle',
+  poseOverride,
+  smearOverlay,
   reducedMotion = false,
   placeholder = false,
   size = DEFAULT_SIZE,
@@ -178,9 +181,11 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
         placeholder,
         ...(paintId !== undefined ? { paintId } : {}),
         ...(weaponId !== undefined ? { weaponId } : {}),
+        ...(poseOverride !== undefined ? { poseOverride } : {}),
       }),
-    [loadout, facing, paintId, weaponId, motionPose, placeholder],
+    [loadout, facing, paintId, weaponId, motionPose, poseOverride, placeholder],
   );
+  const smearSource = smearOverlay ? workshopFrameSmearSource(smearOverlay.png) : undefined;
 
   const scale = size / assembled.canvas.width;
   const height = assembled.canvas.height * scale;
@@ -262,12 +267,33 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
             />
           ),
         )}
+        {!assembled.placeholder && smearOverlay && smearSource ? (
+          <View
+            pointerEvents="none"
+            testID={`${testID}-smear`}
+            style={{
+              position: 'absolute',
+              left: kitLayerAnchorLeft(
+                smearOverlay.offsetRigPx[0],
+                scale,
+                size,
+                assembled.mirrored,
+              ),
+              top: smearOverlay.offsetRigPx[1] * scale,
+              zIndex: smearOverlay.z,
+              // Mirror with the bot; smear art is authored for facing-right.
+              transform: assembled.mirrored ? [{ scaleX: -1 }] : [],
+            }}
+          >
+            <Image source={smearSource} />
+          </View>
+        ) : null}
       </Animated.View>
       {__DEV__ ? (
         <Text style={styles.badge} testID={`${testID}-badge`}>
           {assembled.placeholder
             ? `PLACEHOLDER · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()}`
-            : `kit-v003 local · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()} · NOT FINAL`}
+            : `kit-v003.3 local · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()} · NOT FINAL`}
         </Text>
       ) : null}
     </View>

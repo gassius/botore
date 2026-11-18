@@ -1,7 +1,7 @@
 /**
  * Adapter: Workshop Frame kit media schema → existing BotAssembler props/model.
  *
- * ACTIVE PIN: kit-v003.1 (family workshop-frame-v003). Atomic swap —
+ * ACTIVE PIN: kit-v003.3 (family workshop-frame-v003). Atomic swap —
  * NEVER mix v002/v001 tiles or pose numbers with v003.x assets.
  *
  * Does NOT invent a parallel public component API. Maps kit paint/weapon/pose
@@ -67,7 +67,7 @@ export const MOTION_POSE_TO_KIT: Readonly<Record<MotionPose, string>> = {
   // A5: kit `portrait` (paint+weapon). A3: approved overhead `victory`.
   portrait: 'portrait',
   victory: 'victory',
-  // A2 first-pass fight keys (kit-v003.1 timing).
+  // A2 / A2b fight keys (kit-v003.3 clips + named pose fallbacks).
   walk_in: 'walk_in',
   windup: 'windup',
   strike: 'strike',
@@ -162,6 +162,7 @@ export function buildWorkshopFrameWorldMatrices(
   paintId: string,
   weaponId: string,
   motionPose: MotionPose,
+  poseOverride?: KitPoseEntry,
 ): {
   paint: KitPaintId;
   weaponKind: KitWeaponKind;
@@ -177,7 +178,7 @@ export function buildWorkshopFrameWorldMatrices(
   const weaponKind = resolveKitWeaponKind(weaponId);
   const weaponAssetId = resolveKitWeaponAssetId(weaponId);
   const kitPoseKey = resolveKitPoseKey(motionPose, manifest);
-  const pose = resolveWorkshopFramePose(kitPoseKey, weaponKind);
+  const pose = poseOverride ?? resolveWorkshopFramePose(kitPoseKey, weaponKind);
   const weaponDef = manifest.weapons[weaponKind];
 
   const matrices = new Map<string, Mat3>();
@@ -300,6 +301,8 @@ export interface AssembleWorkshopFrameInput {
   readonly paintId?: string;
   readonly weaponId?: string;
   readonly motionPose?: MotionPose;
+  /** Baked clip pose (v003.3+); when set, skips named pose table lookup. */
+  readonly poseOverride?: KitPoseEntry;
 }
 
 /**
@@ -316,7 +319,7 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
   const weapon = resolveWeaponKit(weaponId);
 
   const { paint, weaponKind, weaponAssetId, kitPoseKey, matrices, anglesCw } =
-    buildWorkshopFrameWorldMatrices(paintId, weaponId, motionPose);
+    buildWorkshopFrameWorldMatrices(paintId, weaponId, motionPose, input.poseOverride);
 
   const assets = assetMap(WORKSHOP_FRAME_MANIFEST);
   const zOverrides = WORKSHOP_FRAME_MANIFEST.weapons[weaponKind]?.z_overrides ?? {};
@@ -375,17 +378,17 @@ export function workshopFramePaintToken(paintId: string): string {
 
 export function listWorkshopFrameGaps(): readonly string[] {
   return [
-    'ACTIVE pin is v003.1 (family workshop-frame-v003); kit-v002 kept as history — must_not_mix_versions.',
+    'ACTIVE pin is v003.3 (family workshop-frame-v003); kit-v002 kept as history — must_not_mix_versions.',
     'Pose format is nested {weapon|"*": {root, parts.rot}}; do not port v002 flat pose numbers.',
-    'v003.1 stage is 800×800 with rig_origin [80,160] for overflow margin; assembler keeps 640 canvas + rig coords (Replay overflow:visible). Mirror about rig x=320.',
+    'v003.3 stage is 800×800 with rig_origin [80,160] for overflow margin; assembler keeps 640 canvas + rig coords (Replay overflow:visible). Mirror about rig x=320.',
     'weapon_grip_rotation_degrees removed — weapons are normal children of hand_r.grip with per-weapon attach_angle.',
     'Always draw hand_l_wrap / hand_r_wrap; apply weapons[w].z_overrides (axe lifts hand_l_wrap to 91).',
     'Paint path: under→mask-tint(color)→over via kit materials/masks. Precomposited parts/{id}-{paint}.png are fallback only.',
-    'A2 first-pass wires kit timing.per_weapon (30 fps) into Fight View; in-betweens / KO fall frames drop in via timing+poses with no code change.',
+    'A2b Fight View plays animation/clips.json at 30 fps (baked in-betweens + smears); timing.per_weapon kept for legacy adapters.',
     'Shield/drone/decal are reserved only; assembler ignores loadout.shield/drone/decals.',
     'Atlas pack v3 publishes kit media at parts/<hyphenatedPartId>/…; Metro kit remains render fallback until Storage cold-fetch is proven.',
-    'MotionPose heavy_* is mapped (C11); heavy_windup / heavy_attack use nested per-weapon pose entries (aliases → windup/strike on v003.1).',
-    'A5 MotionPose `portrait` + A3 MotionPose `victory`/`defeat` are approved on kit-v003.1.',
+    'MotionPose heavy_* is mapped (C11); heavy_windup / heavy_attack use nested per-weapon pose entries (aliases → windup/strike).',
+    'A5 MotionPose `portrait` + A3 MotionPose `victory`/`defeat` remain approved (unchanged vs v003.1).',
     'Weapon media ids use underscores (weapon_sword); catalogue/F5 atlas partIds use hyphens (weapon-sword) — adapter maps both.',
   ];
 }

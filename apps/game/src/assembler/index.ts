@@ -39,6 +39,12 @@ export {
 } from './workshopFrameAdapter';
 export { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from './workshopFramePin';
 export {
+  WORKSHOP_FRAME_CLIPS,
+  WORKSHOP_FRAME_CLIPS_VERSION,
+  hasWorkshopFrameClips,
+  workshopFrameClip,
+} from './workshopFrameClips';
+export {
   MOTION_POSES,
   isHeavyMotionPose,
   isMotionPose,

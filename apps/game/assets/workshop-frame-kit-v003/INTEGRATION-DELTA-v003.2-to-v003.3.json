@@ -1,0 +1,96 @@
+{
+  "from": {
+    "version": "v003.2"
+  },
+  "to": {
+    "version": "v003.3"
+  },
+  "rule": "Point release on v003.2. Part art is byte-identical. pose numbers are identical EXCEPT poses.knockout (stagger key of the new fall) and poses.follow_through.axe (visor-clear). Clips are re-baked.",
+  "unchanged": {
+    "part_geometry_pivots_sockets_z_files": true,
+    "part_pngs_byte_identical": true,
+    "root": true,
+    "ground_y": true,
+    "stage.size/rig_origin": true,
+    "weapons.grips": true,
+    "plates": true,
+    "portrait": true,
+    "idle(A1)": true,
+    "victory+defeat(A3 approved)": true
+  },
+  "poses": {
+    "defeat": "unchanged",
+    "dodge": "unchanged",
+    "follow_through": "changed",
+    "heavy_attack": "unchanged",
+    "heavy_windup": "unchanged",
+    "hit": "unchanged",
+    "hit_react": "unchanged",
+    "idle": "unchanged",
+    "knockout": "changed",
+    "portrait": "unchanged",
+    "quick_attack": "unchanged",
+    "recovery": "unchanged",
+    "strike": "unchanged",
+    "victory": "unchanged",
+    "walk_in": "unchanged",
+    "windup": "unchanged"
+  },
+  "poses_changed_why": {
+    "knockout": "Still the stagger key of the knockout clip; the clip itself now holds the floor squash 3\u20134 frames and eases 8\u201310 frames into the v003.1 defeat kneel.",
+    "follow_through.axe": "Static leftover key: weapon pixels on the visor in v003.2 (35 px). Arms re-solved; body and legs unchanged; 0 weapon px on the face, off-hand still on the haft."
+  },
+  "clip_changes": "Knockout settle (floor hold + ease into defeat). Dagger attack gained a coil\u2192extend in-between and a smear that covers coil-to-extension. Axe recovery and hit_react no longer flip upper_arm_r >45\u00b0/frame. Every clip frame is angle-unwrapped with per-part velocity \u2264 45\u00b0/frame.",
+  "frame_counts_from": {
+    "sword": {
+      "walk": 24,
+      "attack": 38,
+      "dodge": 17,
+      "hit_react": 14,
+      "knockout": 32
+    },
+    "axe": {
+      "walk": 32,
+      "attack": 51,
+      "dodge": 21,
+      "hit_react": 17,
+      "knockout": 40
+    },
+    "dagger": {
+      "walk": 16,
+      "attack": 22,
+      "dodge": 14,
+      "hit_react": 12,
+      "knockout": 31
+    }
+  },
+  "frame_counts": {
+    "sword": {
+      "walk": 24,
+      "attack": 41,
+      "dodge": 17,
+      "hit_react": 21,
+      "knockout": 46
+    },
+    "axe": {
+      "walk": 32,
+      "attack": 56,
+      "dodge": 23,
+      "hit_react": 19,
+      "knockout": 49
+    },
+    "dagger": {
+      "walk": 16,
+      "attack": 33,
+      "dodge": 15,
+      "hit_react": 19,
+      "knockout": 44
+    }
+  },
+  "renderer_changes_required": [
+    "Same playback contract as v003.2 (baked frames at 30 fps, no runtime IK). Use the new clips.json; frame counts and some contact indices may have shifted.",
+    "Knockout: the floor squash is held, then eases into poses.defeat (last frame is matrix-identical to the approved v003.1 defeat pose). No bounce key.",
+    "Dagger smears on the thrust are authored from the coil pose so the trail covers the full travel; still z 84, still visor-cleared.",
+    "Engines that clamp joints must take any widened motion_bounds in this manifest."
+  ]
+}

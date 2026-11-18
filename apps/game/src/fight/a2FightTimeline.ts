@@ -1,14 +1,17 @@
 /**
- * A2 first-pass fight timeline — kit-v003.1 `manifest.timing` → frame beats.
+ * A2b fight timeline — kit-v003.3 `animation/clips.json` → frame beats.
  *
- * Data-driven: new in-between pose keys (or knockout fall frames) drop in via
- * kit timing segments + poses table with no code changes. Audio markers attach
- * to pose/frame events (not hard-coded ms) so SFX stay sync when frames land.
- *
- * Design sign-off waits for the next kit pass — not final art.
+ * Prefers baked 30 fps clips (one pose per tick, in-betweens + smears). Falls
+ * back to `manifest.timing` segments only when clips are absent. Audio markers
+ * attach to pose/frame events (not hard-coded ms).
  */
 import { WORKSHOP_FRAME_MANIFEST } from '../assembler/workshopFrameAdapter';
-import type { KitWeaponKind } from '../assembler/workshopFrameTypes';
+import {
+  hasWorkshopFrameClips,
+  workshopFrameClip,
+  type WorkshopFrameClipName,
+} from '../assembler/workshopFrameClips';
+import type { KitPoseEntry, KitWeaponKind } from '../assembler/workshopFrameTypes';
 import type { MotionPose } from '../assembler/types';
 import { isMotionPose } from '../assembler/motionPoseMapping';
 
@@ -26,13 +29,23 @@ export type FightTimingSegment = {
   readonly note?: string;
 };
 
+export type FightTimelineSmear = {
+  readonly png: string;
+  readonly offsetRigPx: readonly [number, number];
+  readonly z: number;
+};
+
 export type FightTimelineBeat = {
-  /** Kit pose key (`timing.to`). Future in-betweens / fall keys pass through. */
+  /** Kit pose key (`timing.to` or clip meta label). */
   readonly poseKey: string;
   readonly frames: number;
   readonly ease: string;
   readonly hitStop: boolean;
   readonly markers: readonly FightAudioMarker[];
+  /** Baked clip pose for this tick (v003.3+). */
+  readonly pose?: KitPoseEntry;
+  /** Attack smear tile for this tick when present. */
+  readonly smear?: FightTimelineSmear;
 };
 
 export type ExpandTimingOptions = {
@@ -56,6 +69,14 @@ type WeaponTimingTable = {
   readonly dodge?: readonly FightTimingSegment[];
   readonly hit_react?: readonly FightTimingSegment[];
   readonly knockout?: readonly FightTimingSegment[];
+};
+
+const SEQUENCE_TO_CLIP: Readonly<Record<FightTimingSequenceName, WorkshopFrameClipName>> = {
+  walk_in: 'walk',
+  attack: 'attack',
+  dodge: 'dodge',
+  hit_react: 'hit_react',
+  knockout: 'knockout',
 };
 
 function timingRoot(): {
@@ -95,10 +116,15 @@ export function motionPoseFromKitKey(poseKey: string): MotionPose {
   return 'idle';
 }
 
-/** True when a knockout-sequence pose is a fall-to-floor in-between (future kits). */
+/** True when a knockout-sequence pose is a fall-to-floor in-between. */
 export function isKnockoutFallPoseKey(poseKey: string): boolean {
   const key = canonicalKitPoseKey(poseKey).toLowerCase();
-  return key.includes('fall') || key.startsWith('knockout_fall');
+  return (
+    key.includes('fall') ||
+    key.includes('floor') ||
+    key.startsWith('knockout_fall') ||
+    key === 'buckle'
+  );
 }
 
 export function framesToMs(frames: number, fps: number = A2_FPS): number {
@@ -114,6 +140,23 @@ export function weaponTiming(
   const table = root.per_weapon[weapon];
   if (!table) return null;
   return { ...table, fps: root.fps };
+}
+
+function poseKeyFromClipLabel(label: string, lastKey: string): string {
+  if (label.startsWith('key:')) return label.slice(4);
+  if (label.startsWith('breakdown:')) {
+    const name = label.slice('breakdown:'.length);
+    if (name.includes('fall') || name === 'floor') return `knockout_fall_${name}`;
+    return name;
+  }
+  if (label === 'hit_stop' || label === 'inbetween' || label === 'hold') {
+    return lastKey || 'idle';
+  }
+  return lastKey || 'idle';
+}
+
+function isKeyLabel(label: string): boolean {
+  return label.startsWith('key:');
 }
 
 /**
@@ -210,19 +253,164 @@ export function expandTimingSegments(
   return beats;
 }
 
+function expandFromClips(
+  weapon: KitWeaponKind,
+  sequence: FightTimingSequenceName,
+  opts: Omit<ExpandTimingOptions, 'sequence'>,
+): FightTimelineBeat[] | null {
+  if (!hasWorkshopFrameClips()) return null;
+  const clip = workshopFrameClip(weapon, SEQUENCE_TO_CLIP[sequence]);
+  if (!clip?.frames?.length) return null;
+
+  const reduced = Boolean(opts.reducedMotion);
+  const hitConnects = opts.hitConnects !== false;
+  const quickAttack = sequence === 'attack' && opts.attack === 'basic';
+  const contactFrame =
+    typeof clip.events?.contact_frame === 'number' ? clip.events.contact_frame : -1;
+  const hitStopSet = new Set(clip.events?.hit_stop_frames ?? []);
+  const fxByFrame = new Map((clip.fx ?? []).map((f) => [f.frame, f] as const));
+
+  const knockoutHasFall = clip.meta.some((m) => {
+    const label = m.label.toLowerCase();
+    return label.includes('fall') || label.includes('floor');
+  });
+  let defeatFrameIndex = -1;
+  if (sequence === 'knockout') {
+    if (knockoutHasFall) {
+      defeatFrameIndex = clip.meta.findIndex((m) => {
+        const label = m.label.toLowerCase();
+        return label.includes('fall') || label.includes('floor');
+      });
+    } else {
+      defeatFrameIndex = clip.meta.findIndex(
+        (m) => m.label === 'key:knockout' || m.label === 'key:impact' || m.label === 'key:stagger',
+      );
+    }
+  }
+
+  let firstStrikeIndex = -1;
+  for (let i = 0; i < clip.meta.length; i += 1) {
+    if (clip.meta[i]!.label === 'key:strike' || i === contactFrame) {
+      firstStrikeIndex = i;
+      break;
+    }
+  }
+
+  const beats: FightTimelineBeat[] = [];
+  let lastKey = 'idle';
+  let sawSwing = false;
+  let sawHit = false;
+  let sawDodge = false;
+  let sawDefeat = false;
+
+  for (let i = 0; i < clip.frames.length; i += 1) {
+    const meta = clip.meta[i] ?? { label: 'inbetween' };
+    const label = meta.label;
+    const isHitStop = Boolean(meta.hit_stop) || hitStopSet.has(i) || label === 'hit_stop';
+
+    if (isKeyLabel(label)) {
+      lastKey = label.slice(4);
+    }
+
+    if (sequence === 'attack' && isHitStop && !hitConnects) {
+      continue;
+    }
+    if (quickAttack && firstStrikeIndex >= 0 && i < firstStrikeIndex) {
+      continue;
+    }
+    if (reduced && isHitStop) {
+      continue;
+    }
+    // reducedMotion: snap to authored keys (+ contact frame so swing survives).
+    if (reduced && !isKeyLabel(label) && i !== contactFrame) {
+      continue;
+    }
+
+    const poseKey = poseKeyFromClipLabel(label, lastKey);
+    const markers: FightAudioMarker[] = [];
+
+    // Swing on contact_frame (preferred) or first non-hit-stop strike key.
+    const isSwingFrame =
+      sequence === 'attack' &&
+      !sawSwing &&
+      !isHitStop &&
+      (i === contactFrame || (contactFrame < 0 && poseKey === 'strike'));
+    if (isSwingFrame) {
+      markers.push('swing');
+      sawSwing = true;
+      if (reduced && hitConnects && !sawHit) {
+        markers.push('hit');
+        sawHit = true;
+      }
+    }
+    if (sequence === 'attack' && isHitStop && !sawHit && hitConnects) {
+      markers.push('hit');
+      sawHit = true;
+    }
+    if (sequence === 'dodge' && !sawDodge) {
+      markers.push('dodge');
+      sawDodge = true;
+    }
+    if (sequence === 'knockout' && !sawDefeat && defeatFrameIndex >= 0) {
+      if (i === defeatFrameIndex || (reduced && i >= defeatFrameIndex)) {
+        markers.push('defeat');
+        sawDefeat = true;
+      }
+    }
+
+    const fx = fxByFrame.get(i);
+    const smear: FightTimelineSmear | undefined = fx
+      ? {
+          png: fx.png,
+          offsetRigPx: fx.offset_rig_px,
+          z: fx.z ?? 84,
+        }
+      : undefined;
+
+    const pose = clip.frames[i];
+    beats.push({
+      poseKey,
+      frames: 1,
+      ease: isHitStop ? 'hit-stop' : (meta.ease_in ?? 'linear'),
+      hitStop: isHitStop,
+      markers,
+      ...(pose ? { pose } : {}),
+      ...(smear ? { smear } : {}),
+    });
+  }
+
+  // reducedMotion knockout with no fall frame kept: still emit defeat once.
+  if (sequence === 'knockout' && !sawDefeat && beats.length > 0) {
+    const last = beats[beats.length - 1]!;
+    beats[beats.length - 1] = {
+      ...last,
+      markers: [...last.markers, 'defeat'],
+    };
+  }
+
+  return beats;
+}
+
 export function expandWeaponSequence(
   weapon: KitWeaponKind,
   sequence: FightTimingSequenceName,
   opts: Omit<ExpandTimingOptions, 'sequence'> = {},
 ): FightTimelineBeat[] {
+  const fromClips = expandFromClips(weapon, sequence, opts);
+  if (fromClips) return fromClips;
+
   const table = weaponTiming(weapon);
   if (!table) return [];
   const segments = table[sequence] ?? [];
   return expandTimingSegments(segments, { ...opts, sequence });
 }
 
-/** Attack totals from kit (includes hit-stop). */
+/** Attack totals from kit clips (includes hit-stop) or timing table. */
 export function attackTotalFrames(weapon: KitWeaponKind): number {
+  if (hasWorkshopFrameClips()) {
+    const clip = workshopFrameClip(weapon, 'attack');
+    if (clip?.frames?.length) return clip.frames.length;
+  }
   const table = weaponTiming(weapon);
   if (!table) return 0;
   if (typeof table.attack_total_frames === 'number') return table.attack_total_frames;
@@ -233,6 +421,11 @@ export function attackTotalFrames(weapon: KitWeaponKind): number {
 }
 
 export function hitStopFrames(weapon: KitWeaponKind): number {
+  if (hasWorkshopFrameClips()) {
+    const clip = workshopFrameClip(weapon, 'attack');
+    const listed = clip?.events?.hit_stop_frames;
+    if (listed?.length) return listed.length;
+  }
   const table = weaponTiming(weapon);
   if (!table) return 0;
   if (typeof table.hit_stop_frames === 'number') return table.hit_stop_frames;

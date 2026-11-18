@@ -21,6 +21,7 @@ import type {
   BotFacing,
   MotionPose,
 } from './types';
+import type { KitPoseEntry } from './workshopFrameTypes';
 import { assembleWorkshopFrame } from './workshopFrameAdapter';
 
 export interface AssembleBotInput {
@@ -29,6 +30,8 @@ export interface AssembleBotInput {
   readonly paintId?: string;
   readonly weaponId?: string;
   readonly motionPose?: MotionPose;
+  /** Baked clip pose override (A2b / kit-v003.3). */
+  readonly poseOverride?: KitPoseEntry;
   /**
    * true → geometric PLACEHOLDER; false/undefined → kit-v003 when available.
    * Setting false is local integration only — not likeness/native acceptance.
@@ -308,6 +311,7 @@ export function assembleBot(input: AssembleBotInput): AssembledBot {
     ...(input.paintId !== undefined ? { paintId: input.paintId } : {}),
     ...(input.weaponId !== undefined ? { weaponId: input.weaponId } : {}),
     ...(input.motionPose !== undefined ? { motionPose: input.motionPose } : {}),
+    ...(input.poseOverride !== undefined ? { poseOverride: input.poseOverride } : {}),
   });
 }
 

@@ -574,6 +574,12 @@ export const CanonicalReplayPlayer = forwardRef<
                   facing={placement.far.facing}
                   size={placement.far.size}
                   motionPose={presentation.far.motionPose}
+                  {...(presentation.far.poseOverride
+                    ? { poseOverride: presentation.far.poseOverride }
+                    : {})}
+                  {...(presentation.far.smearOverlay
+                    ? { smearOverlay: presentation.far.smearOverlay }
+                    : {})}
                   reducedMotion={reducedMotion}
                   placeholder={false}
                   testID={`${testID}-far`}
@@ -596,6 +602,12 @@ export const CanonicalReplayPlayer = forwardRef<
                   facing={placement.near.facing}
                   size={placement.near.size}
                   motionPose={presentation.near.motionPose}
+                  {...(presentation.near.poseOverride
+                    ? { poseOverride: presentation.near.poseOverride }
+                    : {})}
+                  {...(presentation.near.smearOverlay
+                    ? { smearOverlay: presentation.near.smearOverlay }
+                    : {})}
                   reducedMotion={reducedMotion}
                   placeholder={false}
                   testID={`${testID}-near`}
