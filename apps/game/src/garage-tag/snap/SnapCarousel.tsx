@@ -223,9 +223,7 @@ function SnapCarouselInner(
       renderItem={wrappedRenderItem}
       style={[
         styles.list,
-        clipped
-          ? { width: clipWidth, overflow: 'hidden', alignSelf: 'center' }
-          : null,
+        clipped ? { width: clipWidth, overflow: 'hidden', alignSelf: 'center' } : null,
         style,
       ]}
       contentContainerStyle={[

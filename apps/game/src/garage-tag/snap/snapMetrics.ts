@@ -155,7 +155,6 @@ export function viewportFitsWholeItems(
   sidePadding: number,
   visibleCount: number,
 ): boolean {
-  const expected =
-    sidePadding * 2 + visibleCount * itemSize + Math.max(0, visibleCount - 1) * gap;
+  const expected = sidePadding * 2 + visibleCount * itemSize + Math.max(0, visibleCount - 1) * gap;
   return Math.abs(viewport - expected) < 0.5;
 }

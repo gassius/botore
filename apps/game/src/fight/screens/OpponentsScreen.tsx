@@ -1,12 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import {
   OPPONENTS_LIST,
@@ -198,6 +191,8 @@ export function OpponentsScreen(props: {
               data={candidates}
               itemSize={OPPONENTS_LIST.cardHeight}
               gap={OPPONENTS_LIST.gap}
+              clipHeight={OPPONENTS_LIST.trackHeight}
+              sidePadding={0}
               designVisibleCount={OPPONENTS_LIST.visibleCount}
               onSnapIndexChange={setSnapIndex}
               keyExtractor={(c: OpponentCandidate) => c.characterId}

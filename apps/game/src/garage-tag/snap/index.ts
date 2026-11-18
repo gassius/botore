@@ -15,11 +15,7 @@ export {
   type SnapAxisMetrics,
 } from './snapMetrics';
 
-export {
-  SnapCarousel,
-  type SnapCarouselHandle,
-  type SnapCarouselProps,
-} from './SnapCarousel';
+export { SnapCarousel, type SnapCarouselHandle, type SnapCarouselProps } from './SnapCarousel';
 
 export {
   SnapVerticalList,

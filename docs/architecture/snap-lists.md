@@ -17,14 +17,14 @@ snaps to a whole item; programmatic flings skip animation decoration.
 Export: `CUSTOMISE_CAROUSEL` / `customiseCarouselSnapInterval()` from
 garage-tag (`apps/game/src/garage-tag/snap/snapMetrics.ts`).
 
-| Metric | Value (pt) | Notes |
-| --- | ---: | --- |
+| Metric                     |    Value (pt) | Notes                                          |
+| -------------------------- | ------------: | ---------------------------------------------- |
 | `tileWidth` × `tileHeight` | **105 × 128** | Author A6 `tile-paint` / `tile-weapon` to this |
-| `gap` | **11** | Space between tiles |
-| **snap interval** | **116** | `tileWidth + gap` |
-| `viewportClip` | **337** | `3×105 + 2×11` — clipped, `overflow: hidden` |
-| content padding | **0** | No pad inside the clip (avoids 4th-tile peek) |
-| `visibleCount` | **3** | Whole tiles at every rest stop |
+| `gap`                      |        **11** | Space between tiles                            |
+| **snap interval**          |       **116** | `tileWidth + gap`                              |
+| `viewportClip`             |       **337** | `3×105 + 2×11` — clipped, `overflow: hidden`   |
+| content padding            |         **0** | No pad inside the clip (avoids 4th-tile peek)  |
+| `visibleCount`             |         **3** | Whole tiles at every rest stop                 |
 
 Paints (10): content `10×105 + 9×11 = 1149`; max offset `812 = 7×116` → last stop shows tiles 8–10.
 Weapons (7): content `7×105 + 6×11 = 801`; max offset `464 = 4×116` → last stop shows tiles 5–7.
@@ -34,25 +34,25 @@ Map: `apps/game/src/garage-tag/a6Tiles.ts`. Catalogue unlock of all 10+7 is **E7
 
 ## Ludus bot carousel (D5)
 
-| Metric | Value (pt) |
-| --- | ---: |
-| `cardWidth` | **358** |
-| `cardHeight` | **462** |
-| `gap` | **0** |
-| **snap interval** | **358** |
-| `visibleCount` | **1** |
+| Metric            | Value (pt) |
+| ----------------- | ---------: |
+| `cardWidth`       |    **358** |
+| `cardHeight`      |    **462** |
+| `gap`             |      **0** |
+| **snap interval** |    **358** |
+| `visibleCount`    |      **1** |
 
 ## Opponents vertical list (D8 / A6 SCREENS-SPEC)
 
-| Metric | Value (pt) |
-| --- | ---: |
-| `cardHeight` | **175** |
-| `gap` | **10** |
-| **snap interval** | **185** |
-| `trackHeight` | **545** (`3×175 + 2×10`) |
-| `visibleCount` | **3** |
-| art panel | **170 × 169** |
-| robot body | **150** |
+| Metric            |               Value (pt) |
+| ----------------- | -----------------------: |
+| `cardHeight`      |                  **175** |
+| `gap`             |                   **10** |
+| **snap interval** |                  **185** |
+| `trackHeight`     | **545** (`3×175 + 2×10`) |
+| `visibleCount`    |                    **3** |
+| art panel         |            **170 × 169** |
+| robot body        |                  **150** |
 
 Panel art: `apps/game/assets/a6-patterns-tott-v1/opponents/` (12 NPCs).
 

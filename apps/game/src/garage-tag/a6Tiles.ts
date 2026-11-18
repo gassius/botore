@@ -2,6 +2,7 @@
  * A6 carousel tile + opponent panel asset map (Botore-A6-patterns-tott-v1).
  * Metro needs static require() paths — keep this file as the single import surface.
  */
+/* eslint-disable @typescript-eslint/no-require-imports */
 import type { ImageSourcePropType } from 'react-native';
 
 export type A6PaintTileId =
@@ -16,14 +17,7 @@ export type A6PaintTileId =
   | 'hazard'
   | 'racing';
 
-export type A6WeaponTileId =
-  | 'sword'
-  | 'axe'
-  | 'dagger'
-  | 'mace'
-  | 'hammer'
-  | 'spear'
-  | 'shield';
+export type A6WeaponTileId = 'sword' | 'axe' | 'dagger' | 'mace' | 'hammer' | 'spear' | 'shield';
 
 export type A6TileState = 'default' | 'selected' | 'locked';
 
@@ -185,18 +179,12 @@ const opponentPanels: Record<A6OpponentNpcId, ImageSourcePropType> = {
   'weld-tess': require('../../assets/a6-patterns-tott-v1/opponents/weld-tess.png'),
 };
 
-export function a6PaintTileSource(
-  id: string,
-  state: A6TileState,
-): ImageSourcePropType | null {
+export function a6PaintTileSource(id: string, state: A6TileState): ImageSourcePropType | null {
   const key = id as A6PaintTileId;
   return paintTiles[key]?.[state] ?? null;
 }
 
-export function a6WeaponTileSource(
-  id: string,
-  state: A6TileState,
-): ImageSourcePropType | null {
+export function a6WeaponTileSource(id: string, state: A6TileState): ImageSourcePropType | null {
   const key = id as A6WeaponTileId;
   return weaponTiles[key]?.[state] ?? null;
 }

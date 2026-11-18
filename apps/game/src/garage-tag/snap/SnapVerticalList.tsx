@@ -32,6 +32,11 @@ export type SnapVerticalListProps<T> = {
   readonly gap?: number;
   /** Fixed leading/trailing inset along the scroll axis. */
   readonly sidePadding?: number;
+  /**
+   * Clipped viewport height (pt). D8/A6 = 545 (`3×175 + 2×10`) so exactly 3
+   * cards show; overflow hidden; no inner content padding (avoids half-card peek).
+   */
+  readonly clipHeight?: number;
   readonly designVisibleCount?: number;
   readonly keyExtractor: (item: T, index: number) => string;
   readonly renderItem: (info: ListRenderItemInfo<T>) => React.ReactElement | null;
@@ -62,6 +67,7 @@ function SnapVerticalListInner(
     itemSize,
     gap = 0,
     sidePadding: sidePaddingProp,
+    clipHeight,
     designVisibleCount = 1,
     keyExtractor,
     renderItem,
@@ -73,18 +79,21 @@ function SnapVerticalListInner(
   } = props;
 
   const listRef = useRef<FlatList<unknown>>(null);
-  const [viewport, setViewport] = useState(0);
+  const [viewport, setViewport] = useState(clipHeight ?? 0);
   const [reduceMotion, setReduceMotion] = useState(false);
   const snapIndexRef = useRef(0);
   const interval = snapInterval(itemSize, gap);
 
-  const visibleCount =
-    viewport > 0
+  const clipped = clipHeight !== undefined && clipHeight > 0;
+  const visibleCount = clipped
+    ? Math.max(1, designVisibleCount)
+    : viewport > 0
       ? visibleWholeCount(viewport, itemSize, gap, sidePaddingProp ?? 0)
       : Math.max(1, designVisibleCount);
 
-  const sidePadding =
-    sidePaddingProp !== undefined
+  const sidePadding = clipped
+    ? (sidePaddingProp ?? 0)
+    : sidePaddingProp !== undefined
       ? sidePaddingProp
       : viewport > 0
         ? sidePaddingForExactFit(viewport, itemSize, gap, visibleCount)
@@ -198,7 +207,19 @@ function SnapVerticalListInner(
       data={listData}
       keyExtractor={keyExtractor as (item: unknown, index: number) => string}
       renderItem={wrappedRenderItem}
-      style={[styles.list, style]}
+      style={[
+        styles.list,
+        clipped
+          ? {
+              height: clipHeight,
+              maxHeight: clipHeight,
+              flexGrow: 0,
+              flexShrink: 0,
+              overflow: 'hidden',
+            }
+          : null,
+        style,
+      ]}
       contentContainerStyle={[
         {
           paddingVertical: sidePadding,
@@ -213,6 +234,7 @@ function SnapVerticalListInner(
       bounces
       overScrollMode="never"
       onLayout={(e) => {
+        if (clipped) return;
         const h = e.nativeEvent.layout.height;
         if (h > 0 && Math.abs(h - viewport) > 0.5) setViewport(h);
       }}
