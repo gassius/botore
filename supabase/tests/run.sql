@@ -151,7 +151,16 @@ begin
   perform tests.assert(v_count = 3, 'expected 3 active weapons (sword/axe/dagger)');
 
   select count(*) into v_count from public.current_bot_loadouts;
-  perform tests.assert(v_count = 4, 'expected 4 seeded current loadouts');
+  -- E2 NPC seed (seed.sql) adds more confirmed loadouts; still require the four
+  -- original seed.sql bots (hero + 3 opponents).
+  perform tests.assert(v_count >= 4, format('expected >=4 current loadouts, got %s', v_count));
+  perform tests.assert(
+    (
+      select count(*)::int from public.current_bot_loadouts
+       where character_id in ('player-hero', 'opp-sir-bot', 'opp-dex-bot', 'opp-hp-bot')
+    ) = 4,
+    'hero + 3 opponent loadouts present'
+  );
 
   select count(*) into v_count from public.inventory_balances
    where account_id = v_account;
@@ -2568,6 +2577,7 @@ declare
   v_res jsonb;
   v_res2 jsonb;
   v_character_id text;
+  v_botore_id text;
   v_loadout_id uuid;
   v_count integer;
   v_loadout_ok boolean;
@@ -2605,6 +2615,25 @@ begin
   perform tests.assert((v_res2->>'ok')::boolean, 'ensure idempotent ok');
   perform tests.assert((v_res2->>'created')::boolean = false, 'created=false on retry');
   perform tests.assert(v_res2->>'characterId' = v_character_id, 'same character id');
+
+  -- E2 Minor: player-facing botoreId / botId must not be bare UUID or 32-hex.
+  select p.botore_id into v_botore_id
+    from public.profiles p
+   where p.account_id = v_account;
+  perform tests.assert(
+    v_botore_id ~ '^garage-[0-9a-f]{12}$',
+    'ensure botoreId uses garage-<12 hex>'
+  );
+  perform tests.assert(
+    v_botore_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    and v_botore_id !~* '^[0-9a-f]{32}$',
+    'ensure botoreId rejects UUID / 32-hex shapes'
+  );
+  perform tests.assert(
+    v_character_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    and v_character_id !~* '^[0-9a-f]{32}$',
+    'ensure botId rejects bare UUID / 32-hex shapes'
+  );
 
   select count(*)::int into v_count
     from public.character_build_versions where character_id = v_character_id;
@@ -2883,4 +2912,380 @@ begin
   );
 
   raise notice 'TEST-OK E1 save_bot_loadout draft current-atlas re-pin';
+end $$;
+
+-- =========================================================================
+-- 0029 / seed.sql E2: bot + botore ranking (W-L, NPC seed, tie-breaks, empty)
+-- =========================================================================
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_res jsonb;
+  v_count int;
+  v_arc_rank int;
+  v_patina_rank int;
+  v_arc_xp int;
+  v_patina_xp int;
+  v_row jsonb;
+  v_deleted_restore int;
+  v_npc_pw_usable int;
+begin
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.list_bot_ranking()', 'EXECUTE'),
+    'authenticated EXECUTE list_bot_ranking'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.list_bot_ranking()', 'EXECUTE'),
+    'anon must not EXECUTE list_bot_ranking'
+  );
+  perform tests.assert(
+    not has_function_privilege('service_role', 'public.list_bot_ranking()', 'EXECUTE'),
+    'service_role must not EXECUTE list_bot_ranking'
+  );
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.list_botore_ranking()', 'EXECUTE'),
+    'authenticated EXECUTE list_botore_ranking'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.list_botore_ranking()', 'EXECUTE'),
+    'anon must not EXECUTE list_botore_ranking'
+  );
+  perform tests.assert(
+    not has_function_privilege('service_role', 'public.list_botore_ranking()', 'EXECUTE'),
+    'service_role must not EXECUTE list_botore_ranking'
+  );
+
+  -- NPC seed density (from supabase/seed.sql — not a 1xxx migration)
+  reset role;
+  select count(*)::int into v_npc_pw_usable
+    from auth.users u
+    join public.accounts a on a.id = u.id
+   where a.is_npc
+     and coalesce(nullif(u.encrypted_password, ''), '') <> '';
+  perform tests.assert(
+    v_npc_pw_usable = 0,
+    'NPC auth.users have empty encrypted_password (no password login)'
+  );
+  perform tests.assert(
+    (select count(*)::int from public.accounts where is_npc) >= 12,
+    'at least 12 NPC botores seeded'
+  );
+  perform tests.assert(
+    (
+      select count(*)::int
+        from public.characters
+       where owner_is_npc
+         and is_opponent = false
+         and character_id like 'npc-bot-%'
+    ) >= 20,
+    'NPC bots seeded (1–3 per botore aggregate)'
+  );
+  perform tests.assert(
+    (
+      select bool_and(bot_count between 1 and 3)
+        from (
+          select c.account_id, count(*)::int as bot_count
+            from public.characters c
+            join public.accounts a on a.id = c.account_id
+           where a.is_npc and c.is_opponent = false
+           group by c.account_id
+        ) s
+    ),
+    'each NPC botore owns 1–3 bots'
+  );
+  perform tests.assert(
+    exists (
+      select 1 from public.bot_fight_records
+       where character_id = 'npc-bot-rivet' and wins >= 5
+    ),
+    'rivet has derived wins from confirmed fights'
+  );
+
+  -- Early suite truncates progression_ledger (append-only cleanup). Restore the
+  -- seed.sql NPC fight XP pack + Arc's extra rows so equal-wins tie-breaks by XP.
+  if not exists (
+    select 1 from public.progression_ledger where character_id = 'npc-bot-rivet'
+  ) then
+    insert into public.progression_ledger (
+      account_id, character_id, battle_id, delta_xp, reason
+    )
+    select
+        c.account_id,
+        bp.character_id,
+        bp.battle_id,
+        case when b.winner_id = bp.character_id then 2 else 1 end,
+        'battle'
+      from public.battle_participants bp
+      join public.battles b on b.battle_id = bp.battle_id
+      join public.characters c on c.character_id = bp.character_id
+     where b.battle_id >= 'a0000000-0000-4000-8000-000000000001'
+       and b.battle_id <= 'a0000000-0000-4000-8000-000000000014'
+       and b.winner_id is not null
+       and c.account_id is not null
+       and c.owner_is_npc;
+  end if;
+  if not exists (
+    select 1
+      from public.progression_ledger
+     where character_id = 'npc-bot-arc'
+       and battle_id is null
+       and delta_xp = 2
+  ) then
+    insert into public.progression_ledger (
+      account_id, character_id, battle_id, delta_xp, reason
+    ) values
+      ('00000000-0000-4000-8000-000000001104', 'npc-bot-arc', null, 2, 'battle'),
+      ('00000000-0000-4000-8000-000000001104', 'npc-bot-arc', null, 2, 'battle');
+  end if;
+  perform tests.assert(
+    (
+      select coalesce(sum(delta_xp), 0)
+        from public.progression_ledger
+       where character_id = 'npc-bot-arc'
+    ) >
+    (
+      select coalesce(sum(delta_xp), 0)
+        from public.progression_ledger
+       where character_id = 'npc-bot-patina'
+    ),
+    'restored arc XP above patina for tie-break'
+  );
+
+  -- Admin views are service_role only
+  perform tests.assert(
+    has_table_privilege('service_role', 'public.admin_bot_ranking', 'SELECT'),
+    'service_role SELECT admin_bot_ranking'
+  );
+  perform tests.assert(
+    not has_table_privilege('authenticated', 'public.admin_bot_ranking', 'SELECT'),
+    'authenticated no SELECT admin_bot_ranking'
+  );
+  perform tests.assert(
+    has_table_privilege('service_role', 'public.admin_botore_ranking', 'SELECT'),
+    'service_role SELECT admin_botore_ranking'
+  );
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  v_res := public.list_bot_ranking();
+  perform tests.assert((v_res->>'ok')::boolean, 'list_bot_ranking ok');
+  perform tests.assert(v_res->>'tab' = 'bots', 'list_bot_ranking tab=bots');
+  perform tests.assert(jsonb_typeof(v_res->'rows') = 'array', 'list_bot_ranking rows array');
+  select count(*)::int into v_count from jsonb_array_elements(v_res->'rows');
+  perform tests.assert(v_count >= 12, format('expected dense bot board, got %s', v_count));
+  perform tests.assert(
+    (v_res->'rows'->0->>'rank')::integer = 1,
+    'bot ranking first row rank 1'
+  );
+
+  -- No account UUIDs in player-facing payload
+  perform tests.assert(
+    v_res::text !~ '00000000-0000-4000-8000',
+    'list_bot_ranking payload has no account UUID strings'
+  );
+  perform tests.assert(
+    not exists (
+      select 1
+        from jsonb_array_elements(v_res->'rows') r
+       where r ? 'accountId' or r ? 'characterId'
+    ),
+    'bot rows use botId/botoreId (no accountId/characterId keys)'
+  );
+
+  -- Required bot fields + portrait for an NPC with loadout
+  select r into v_row
+    from jsonb_array_elements(v_res->'rows') r
+   where r->>'botId' = 'npc-bot-rivet'
+   limit 1;
+  perform tests.assert(v_row is not null, 'rivet present on bot board');
+  perform tests.assert(v_row->>'botName' = 'Rivet', 'rivet botName');
+  perform tests.assert(v_row->>'botoreName' = 'Steel Yard', 'rivet botoreName');
+  perform tests.assert(v_row->>'botoreId' = 'npc-steel-yard', 'rivet botoreId');
+  perform tests.assert((v_row->>'wins')::int >= 5, 'rivet wins from fights');
+  perform tests.assert(v_row->'portrait'->>'chassis' = 'chassis-basic', 'rivet portrait chassis');
+  perform tests.assert(v_row->'portrait'->>'paint' is not null, 'rivet portrait paint');
+  perform tests.assert(v_row->'portrait'->>'weapon' is not null, 'rivet portrait weapon');
+  perform tests.assert((v_row->>'isNpc')::boolean = true, 'rivet isNpc');
+
+  -- Caller current bot flag (hero when present)
+  perform tests.assert(
+    (
+      select count(*)::int
+        from jsonb_array_elements(v_res->'rows') r
+       where (r->>'isCurrentBot')::boolean
+    ) <= 1,
+    'at most one isCurrentBot'
+  );
+
+  -- Tie-break: same wins, higher XP ranks first (Arc vs Patina both 2 wins)
+  select (r->>'rank')::int, (r->>'totalXp')::int
+    into v_arc_rank, v_arc_xp
+    from jsonb_array_elements(v_res->'rows') r
+   where r->>'botId' = 'npc-bot-arc';
+  select (r->>'rank')::int, (r->>'totalXp')::int
+    into v_patina_rank, v_patina_xp
+    from jsonb_array_elements(v_res->'rows') r
+   where r->>'botId' = 'npc-bot-patina';
+  perform tests.assert(v_arc_rank is not null and v_patina_rank is not null, 'arc+patina on board');
+  perform tests.assert(
+    (select (r->>'wins')::int from jsonb_array_elements(v_res->'rows') r where r->>'botId' = 'npc-bot-arc')
+    =
+    (select (r->>'wins')::int from jsonb_array_elements(v_res->'rows') r where r->>'botId' = 'npc-bot-patina'),
+    'arc and patina share wins for XP tie-break'
+  );
+  perform tests.assert(v_arc_xp > v_patina_xp, 'arc has more XP than patina');
+  perform tests.assert(v_arc_rank < v_patina_rank, 'higher XP sorts before on equal wins');
+
+  -- Adjacent rows obey bot ordering contract
+  perform tests.assert(
+    coalesce(
+      (
+        select bool_and(
+          (a.elem->>'wins')::int > (b.elem->>'wins')::int
+          or (
+            (a.elem->>'wins')::int = (b.elem->>'wins')::int
+            and (a.elem->>'totalXp')::int > (b.elem->>'totalXp')::int
+          )
+          or (
+            (a.elem->>'wins')::int = (b.elem->>'wins')::int
+            and (a.elem->>'totalXp')::int = (b.elem->>'totalXp')::int
+            and (a.elem->>'losses')::int < (b.elem->>'losses')::int
+          )
+          or (
+            (a.elem->>'wins')::int = (b.elem->>'wins')::int
+            and (a.elem->>'totalXp')::int = (b.elem->>'totalXp')::int
+            and (a.elem->>'losses')::int = (b.elem->>'losses')::int
+            and (a.elem->>'botId') <= (b.elem->>'botId')
+          )
+        )
+        from jsonb_array_elements(v_res->'rows') with ordinality as a(elem, idx)
+        join jsonb_array_elements(v_res->'rows') with ordinality as b(elem, idx)
+          on b.idx = a.idx + 1
+      ),
+      false
+    ),
+    'list_bot_ranking preserves wins/xp/losses/botId order'
+  );
+
+  v_res := public.list_botore_ranking();
+  perform tests.assert((v_res->>'ok')::boolean, 'list_botore_ranking ok');
+  perform tests.assert(v_res->>'tab' = 'botores', 'list_botore_ranking tab');
+  select count(*)::int into v_count from jsonb_array_elements(v_res->'rows');
+  perform tests.assert(v_count >= 12, format('expected >=12 botores, got %s', v_count));
+  perform tests.assert(
+    v_res::text !~ '00000000-0000-4000-8000',
+    'list_botore_ranking payload has no account UUID strings'
+  );
+  perform tests.assert(
+    exists (
+      select 1 from jsonb_array_elements(v_res->'rows') r
+       where r->>'botoreId' = 'npc-steel-yard'
+         and r->>'name' = 'Steel Yard'
+         and r->>'emblemId' = 'emblem-cog'
+         and (r->>'botsOwned')::int = 3
+         and (r->>'isNpc')::boolean
+    ),
+    'steel yard botore row shape'
+  );
+  perform tests.assert(
+    exists (
+      select 1 from jsonb_array_elements(v_res->'rows') r
+       where (r->>'isCurrentBotore')::boolean
+         and (
+           r->>'botoreId' = 'botore-dev-player'
+           or r->>'name' = 'Dev Player'
+         )
+    ),
+    'caller botore marked isCurrentBotore'
+  );
+
+  -- Botore adjacent order
+  perform tests.assert(
+    coalesce(
+      (
+        select bool_and(
+          (a.elem->>'wins')::int > (b.elem->>'wins')::int
+          or (
+            (a.elem->>'wins')::int = (b.elem->>'wins')::int
+            and (a.elem->>'losses')::int < (b.elem->>'losses')::int
+          )
+          or (
+            (a.elem->>'wins')::int = (b.elem->>'wins')::int
+            and (a.elem->>'losses')::int = (b.elem->>'losses')::int
+            and (a.elem->>'botsOwned')::int > (b.elem->>'botsOwned')::int
+          )
+          or (
+            (a.elem->>'wins')::int = (b.elem->>'wins')::int
+            and (a.elem->>'losses')::int = (b.elem->>'losses')::int
+            and (a.elem->>'botsOwned')::int = (b.elem->>'botsOwned')::int
+            and (a.elem->>'botoreId') <= (b.elem->>'botoreId')
+          )
+        )
+        from jsonb_array_elements(v_res->'rows') with ordinality as a(elem, idx)
+        join jsonb_array_elements(v_res->'rows') with ordinality as b(elem, idx)
+          on b.idx = a.idx + 1
+      ),
+      false
+    ),
+    'list_botore_ranking preserves wins/losses/botsOwned/botoreId order'
+  );
+  reset role;
+
+  -- Empty state: soft-delete currently-active accounts → empty boards, then restore
+  -- only those ids (do not revive accounts soft-deleted by earlier R5 tests).
+  reset role;
+  create temporary table e2_ranking_active_accounts on commit drop as
+    select id from public.accounts where deleted_at is null;
+  select count(*)::int into v_deleted_restore from e2_ranking_active_accounts;
+  update public.accounts a
+     set deleted_at = now()
+    from e2_ranking_active_accounts t
+   where a.id = t.id;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.list_bot_ranking();
+  perform tests.assert((v_res->>'ok')::boolean, 'empty bot board still ok');
+  perform tests.assert(
+    jsonb_array_length(v_res->'rows') = 0,
+    'empty bot board rows=[]'
+  );
+  v_res := public.list_botore_ranking();
+  perform tests.assert((v_res->>'ok')::boolean, 'empty botore board still ok');
+  perform tests.assert(
+    jsonb_array_length(v_res->'rows') = 0,
+    'empty botore board rows=[]'
+  );
+  reset role;
+
+  update public.accounts a
+     set deleted_at = null
+    from e2_ranking_active_accounts t
+   where a.id = t.id;
+  perform tests.assert(v_deleted_restore > 0, 'restored soft-deleted accounts after empty-state test');
+
+  -- Anon denied
+  set local role anon;
+  begin
+    perform public.list_bot_ranking();
+    raise exception 'ANON FAIL: list_bot_ranking allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.list_botore_ranking();
+    raise exception 'ANON FAIL: list_botore_ranking allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+
+  raise notice 'TEST-OK E2 ranking bot+botore';
 end $$;

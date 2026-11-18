@@ -25,7 +25,8 @@ Bots-as-data tables (F1): `parts_catalogue`, `inventory_ledger`,
 checks. Sanctioned authenticated client reads (no table GRANTs on
 `characters` / `fight_allowances`): `get_owned_character()`,
 `list_opponent_roster()`, `get_fight_allowance_summary()` —
-see `docs/backend/client-read-rpcs.md`. Admin read APIs (`admin_*` views,
+see `docs/backend/client-read-rpcs.md`. Ranking boards (E2 bot / botore W-L):
+`docs/backend/ranking.md`. Admin read APIs (`admin_*` views,
 `admin_dashboard_snapshot()`, `backend_health_snapshot()`, and Edge
 `/functions/v1/health`) power `apps/dashboard` (B3) — see
 `docs/backend/admin-dashboard.md`. The dashboard uses

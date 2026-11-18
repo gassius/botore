@@ -15,6 +15,8 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 | `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName }] }`                         |
 | `get_fight_allowance_summary()` | none (`auth.uid()`) | `{ ok: true, utcDay, allowancesRemaining }`                                       |
 | `list_ranking()`                | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }` |
+| `list_bot_ranking()`            | none (`auth.uid()`) | `{ ok: true, tab: "bots", rows: [...] }` — see `docs/backend/ranking.md` (E2)     |
+| `list_botore_ranking()`         | none (`auth.uid()`) | `{ ok: true, tab: "botores", rows: [...] }` — see `docs/backend/ranking.md` (E2)  |
 
 Failures: `{ ok: false, code?, message? }` or PostgREST HTTP error (`42501`).
 After R5 soft-delete, `get_owned_character()` returns
@@ -29,6 +31,10 @@ is **not** required for that starter row.
 `list_ranking` is migration `0022_list_ranking.sql` (C5). Ordering is
 server-owned: player characters by `sum(progression_ledger.delta_xp)` desc,
 then `character_id` asc; client must not re-sort.
+
+E2 tab boards (`list_bot_ranking` / `list_botore_ranking`) are migration
+`0029_ranking_win_loss.sql` (+ NPC seed in `supabase/seed.sql`). Full
+field contracts and tie-breaks: `docs/backend/ranking.md`.
 
 All are `SECURITY DEFINER` with `set search_path = public, extensions`.
 `EXECUTE` is granted to **`authenticated` only** (revoked from `public`,
