@@ -19,6 +19,7 @@
 create or replace function public.atlas_versions_immutability()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
     if tg_op = 'DELETE' then
