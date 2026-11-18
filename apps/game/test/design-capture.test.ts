@@ -320,9 +320,22 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: 'more',
+      fightQuotaScenario: null,
     });
     expect(buildDesignCaptureUrl('Stable', { homeScenario: 'more' })).toBe(
       `${DESIGN_CAPTURE_SCHEME}://capture/Stable?home=more`,
+    );
+  });
+
+  it('parses E3 fightQuota remaining/exhausted capture scenarios', () => {
+    expect(parseDesignCaptureUrl('botore://capture/Opponents?fightQuota=remaining')).toEqual(
+      expect.objectContaining({ route: 'Opponents', fightQuotaScenario: 'remaining' }),
+    );
+    expect(parseDesignCaptureUrl('botore://capture/ConfirmFight?fightQuota=exhausted')).toEqual(
+      expect.objectContaining({ route: 'ConfirmFight', fightQuotaScenario: 'exhausted' }),
+    );
+    expect(buildDesignCaptureUrl('Opponents', { fightQuotaScenario: 'exhausted' })).toBe(
+      `${DESIGN_CAPTURE_SCHEME}://capture/Opponents?fightQuota=exhausted`,
     );
   });
 });
