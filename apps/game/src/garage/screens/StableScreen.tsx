@@ -9,7 +9,6 @@ import {
   ScreenChrome,
   ScreenHeader,
   StatusErrorBanner,
-  WeaponGlyphSlot,
   garageTag,
 } from '../../garage-tag';
 import { PrivacyPolicyScreen } from '../../legal/PrivacyPolicyScreen';
@@ -17,18 +16,25 @@ import { classifySessionFailure, sessionFailureCopy } from '../../session-failur
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import { playerFacingDisplayName } from '../../identity/platformPlayerId';
-import { paintUiAlias, weaponUiAlias } from '../loadout/proofCatalogue';
 import { useGarageSession } from '../LoadoutSessionContext';
+import { STABLE_HOME_TITLE } from '../stableHomeCopy';
 import { DeleteAccountScreen } from './DeleteAccountScreen';
 
-/** Compact Stable hero — full kit visible on iPhone 16 (390×844) without scrolling. */
+/** Compact Ludus hero — full kit visible on iPhone 16 (390×844) without scrolling. */
 const STABLE_BOT_SIZE = 200;
 
-/** Stable domain — mounts into shell Stable slot; does not own routes. */
+/**
+ * Ludus home (route id remains Stable). Main footer order (closed More):
+ * Customise → Find opponent → [E4 Create Bot slot] → Settings → More (last).
+ * Sign out lives only under More with Privacy + Delete account.
+ * Full carousel / counter / side-by-side Settings+More layout is D5.
+ */
 export function StableScreen(props: {
   onCustomise: () => void;
   onFindOpponent?: () => void;
   onSettings?: () => void;
+  /** E4 wires Create Bot here — reserved above Settings so IA stays stable. */
+  onCreateBot?: () => void;
 }): React.ReactElement {
   const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
   const forced = useForcedSessionFailure();
@@ -36,7 +42,6 @@ export function StableScreen(props: {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const confirmed = loadout.confirmedLoadout;
-  const weapon = confirmed ? weaponUiAlias(confirmed.weapon) : 'sword';
   const displayName = playerFacingDisplayName(loadout.displayName);
 
   const hydrationKind =
@@ -50,7 +55,6 @@ export function StableScreen(props: {
     forced ??
     (hydrationKind === 'offline' || hydrationKind === 'auth_expired' ? hydrationKind : null);
 
-  // Temporary R5/R6 entries until C9 Settings merges — then move under Settings.
   if (showDeleteAccount) {
     return (
       <DeleteAccountScreen
@@ -84,14 +88,17 @@ export function StableScreen(props: {
       />
     ) : null;
 
-  // Primary stack stays short on iPhone: Settings / Privacy / Delete live under More.
   const footer = (
     <View style={styles.footerCompact}>
       {moreOpen ? (
         <>
-          {props.onSettings ? (
-            <SecondaryButton label="Settings" onPress={props.onSettings} testID="stable-settings" />
-          ) : null}
+          <SecondaryButton
+            label="Sign out"
+            onPress={() => {
+              void signOut();
+            }}
+            testID="stable-sign-out"
+          />
           <SecondaryButton
             label="Privacy policy"
             onPress={() => setShowPrivacy(true)}
@@ -123,14 +130,18 @@ export function StableScreen(props: {
             testID="stable-find-opponent"
           />
           {retryFooter}
+          {/* E4 Create Bot — reserved slot above Settings; omit until E4 wires onCreateBot. */}
+          {props.onCreateBot ? (
+            <SecondaryButton
+              label="Create Bot"
+              onPress={props.onCreateBot}
+              testID="stable-create-bot"
+            />
+          ) : null}
+          {props.onSettings ? (
+            <SecondaryButton label="Settings" onPress={props.onSettings} testID="stable-settings" />
+          ) : null}
           <SecondaryButton label="More" onPress={() => setMoreOpen(true)} testID="stable-more" />
-          <SecondaryButton
-            label="Sign out"
-            onPress={() => {
-              void signOut();
-            }}
-            testID="stable-sign-out"
-          />
         </>
       )}
     </View>
@@ -140,7 +151,7 @@ export function StableScreen(props: {
     <ScreenChrome testID="slot-stable" scroll={false} footer={footer}>
       <View style={styles.bodyCompact}>
         <BrandWordmark width={140} />
-        <ScreenHeader title="Stable" />
+        <ScreenHeader title={STABLE_HOME_TITLE} />
         <Nameplate name={displayName} badge="You" testID="stable-nameplate" />
 
         {failureKind ? (
@@ -165,39 +176,22 @@ export function StableScreen(props: {
         )}
 
         {confirmed ? (
-          <>
-            {/* Single assembler mount: BotAssemblerSlot → F7 apps/game/src/assembler (kit v002). */}
-            <View style={styles.hero}>
-              <BotAssemblerSlot
-                loadout={{
-                  chassisId: confirmed.chassis,
-                  paintId: confirmed.paint,
-                  weaponId: confirmed.weapon,
-                }}
-                facing="right"
-                paintId={confirmed.paint}
-                weaponId={confirmed.weapon}
-                motionPose="idle"
-                size={STABLE_BOT_SIZE}
-                label="Equipped bot"
-                testID="stable-bot"
-              />
-            </View>
-            <View style={styles.row}>
-              <WeaponGlyphSlot
-                id={weapon}
-                label={weapon}
-                selected
-                onPress={() => undefined}
-                testID="stable-weapon"
-              />
-              <View style={styles.paintChip}>
-                <Text style={styles.paintLabel} allowFontScaling>
-                  Paint: {paintUiAlias(confirmed.paint)}
-                </Text>
-              </View>
-            </View>
-          </>
+          <View style={styles.hero}>
+            <BotAssemblerSlot
+              loadout={{
+                chassisId: confirmed.chassis,
+                paintId: confirmed.paint,
+                weaponId: confirmed.weapon,
+              }}
+              facing="right"
+              paintId={confirmed.paint}
+              weaponId={confirmed.weapon}
+              motionPose="idle"
+              size={STABLE_BOT_SIZE}
+              label="Equipped bot"
+              testID="stable-bot"
+            />
+          </View>
         ) : (
           <Text style={styles.note} allowFontScaling testID="stable-no-confirmed">
             No confirmed equipment is shown until hydration succeeds.
@@ -231,28 +225,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: garageTag.mustard,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'stretch',
-  },
-  paintChip: {
-    flex: 1,
-    minHeight: garageTag.touchFloor,
-    borderWidth: garageTag.outline,
-    borderColor: garageTag.graphite,
-    borderRadius: garageTag.cutCorner,
-    backgroundColor: garageTag.cream,
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    gap: 2,
-  },
-  paintLabel: {
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    color: garageTag.graphite,
-    fontSize: 12,
   },
   note: {
     marginTop: 4,
