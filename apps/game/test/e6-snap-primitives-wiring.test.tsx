@@ -37,7 +37,7 @@ describe('E6 shared snap primitive wiring', () => {
     expect(snapSrc).toContain('listClipped');
     expect(snapSrc).toMatch(/flexBasis:\s*['\"]auto['\"]/);
     expect(src).not.toMatch(/resolveOpponentNpcId|sir-bot.*slab-mick/);
-    expect(src).toContain('a6OpponentPanelForCandidate');
+    expect(src).toContain('resolveA6OpponentPanel');
     expect(src).not.toMatch(/— W – — L/);
     expect(src).not.toMatch(/<ScrollView/);
   });

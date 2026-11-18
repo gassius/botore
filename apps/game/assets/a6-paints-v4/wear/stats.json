@@ -1,0 +1,153 @@
+{
+  "seed": 10755586,
+  "grime_max": 0.22,
+  "grime_color": "#302A24",
+  "chip_metal": "#9A9488",
+  "chip_shadow": "#3E3A32",
+  "parts": {
+    "torso@1x": {
+      "mask_px": 9310,
+      "chip_px": 79,
+      "chip_frac": 0.0085,
+      "grime_mean": 0.0506
+    },
+    "torso@2x": {
+      "mask_px": 36810,
+      "chip_px": 323,
+      "chip_frac": 0.0088,
+      "grime_mean": 0.0511
+    },
+    "head@1x": {
+      "mask_px": 11910,
+      "chip_px": 76,
+      "chip_frac": 0.0064,
+      "grime_mean": 0.0513
+    },
+    "head@2x": {
+      "mask_px": 47083,
+      "chip_px": 408,
+      "chip_frac": 0.0087,
+      "grime_mean": 0.0519
+    },
+    "upper_arm_l@1x": {
+      "mask_px": 3482,
+      "chip_px": 51,
+      "chip_frac": 0.0146,
+      "grime_mean": 0.0451
+    },
+    "upper_arm_l@2x": {
+      "mask_px": 13668,
+      "chip_px": 357,
+      "chip_frac": 0.0261,
+      "grime_mean": 0.0461
+    },
+    "forearm_l@1x": {
+      "mask_px": 3932,
+      "chip_px": 65,
+      "chip_frac": 0.0165,
+      "grime_mean": 0.0551
+    },
+    "forearm_l@2x": {
+      "mask_px": 15442,
+      "chip_px": 325,
+      "chip_frac": 0.021,
+      "grime_mean": 0.0558
+    },
+    "thigh_l@1x": {
+      "mask_px": 1978,
+      "chip_px": 43,
+      "chip_frac": 0.0217,
+      "grime_mean": 0.0737
+    },
+    "thigh_l@2x": {
+      "mask_px": 7726,
+      "chip_px": 264,
+      "chip_frac": 0.0342,
+      "grime_mean": 0.0753
+    },
+    "shin_l@1x": {
+      "mask_px": 1713,
+      "chip_px": 49,
+      "chip_frac": 0.0286,
+      "grime_mean": 0.0634
+    },
+    "shin_l@2x": {
+      "mask_px": 6678,
+      "chip_px": 228,
+      "chip_frac": 0.0341,
+      "grime_mean": 0.0651
+    },
+    "foot_l@1x": {
+      "mask_px": 4144,
+      "chip_px": 43,
+      "chip_frac": 0.0104,
+      "grime_mean": 0.0452
+    },
+    "foot_l@2x": {
+      "mask_px": 16306,
+      "chip_px": 406,
+      "chip_frac": 0.0249,
+      "grime_mean": 0.0461
+    },
+    "upper_arm_r@1x": {
+      "mask_px": 3482,
+      "chip_px": 67,
+      "chip_frac": 0.0192,
+      "grime_mean": 0.045
+    },
+    "upper_arm_r@2x": {
+      "mask_px": 13668,
+      "chip_px": 299,
+      "chip_frac": 0.0219,
+      "grime_mean": 0.046
+    },
+    "forearm_r@1x": {
+      "mask_px": 3932,
+      "chip_px": 43,
+      "chip_frac": 0.0109,
+      "grime_mean": 0.0477
+    },
+    "forearm_r@2x": {
+      "mask_px": 15442,
+      "chip_px": 270,
+      "chip_frac": 0.0175,
+      "grime_mean": 0.0485
+    },
+    "thigh_r@1x": {
+      "mask_px": 1978,
+      "chip_px": 89,
+      "chip_frac": 0.045,
+      "grime_mean": 0.0598
+    },
+    "thigh_r@2x": {
+      "mask_px": 7726,
+      "chip_px": 203,
+      "chip_frac": 0.0263,
+      "grime_mean": 0.061
+    },
+    "shin_r@1x": {
+      "mask_px": 1713,
+      "chip_px": 32,
+      "chip_frac": 0.0187,
+      "grime_mean": 0.0666
+    },
+    "shin_r@2x": {
+      "mask_px": 6678,
+      "chip_px": 193,
+      "chip_frac": 0.0289,
+      "grime_mean": 0.0683
+    },
+    "foot_r@1x": {
+      "mask_px": 4144,
+      "chip_px": 92,
+      "chip_frac": 0.0222,
+      "grime_mean": 0.0525
+    },
+    "foot_r@2x": {
+      "mask_px": 16306,
+      "chip_px": 273,
+      "chip_frac": 0.0167,
+      "grime_mean": 0.0536
+    }
+  }
+}

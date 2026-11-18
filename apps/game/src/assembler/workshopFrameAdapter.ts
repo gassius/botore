@@ -5,8 +5,9 @@
  * NEVER mix v002/v001 tiles or pose numbers with v003.x assets.
  *
  * Does NOT invent a parallel public component API. Maps kit paint/weapon/pose
- * ids onto F7 `assembleBot` / `BotAssemblerProps`. Catalogue ids stay
- * paint-crimson / paint-cobalt / weapon-* (no catalogue expansion).
+ * ids onto F7 `assembleBot` / `BotAssemblerProps`. Catalogue aliases keep
+ * paint-crimson→oxide / paint-cobalt→petrol; A6 v4 adds paint-primer…racing
+ * and weapon-mace/hammer/spear/shield.
  */
 
 import kitManifestJson from '../../assets/workshop-frame-kit-v003/manifest.json';
@@ -21,7 +22,7 @@ import {
   translate,
   type Mat3,
 } from './kitMath';
-import { resolvePaintVisual } from './paints';
+import { channelColorForPart, patternFillRelPath, resolvePaintVisual } from './paints';
 import { resolveWeaponKit } from './kit';
 import type {
   AssembledBot,
@@ -265,7 +266,14 @@ function layerFromAsset(
   const topLeft = transformPoint(matrix, 0, 0);
   const pivotWorld = transformPoint(matrix, asset.pivot[0], asset.pivot[1]);
   const decomp = decomposeTranslateRotate(matrix);
-  const paintToken = WORKSHOP_FRAME_MANIFEST.paint_tokens[paint];
+  // Per-part channel colour (main/trim/accent) — never a whole-sprite tint.
+  const paintToken =
+    channelColorForPart(paint, asset.id) ??
+    WORKSHOP_FRAME_MANIFEST.paint_tokens[paint] ??
+    WORKSHOP_FRAME_MANIFEST.paint_tokens['oxide'] ??
+    '#E8771C';
+  const patternPath = patternFillRelPath(paint, asset.id);
+  const usePattern = Boolean(patternPath && asset.has_paint);
   return {
     id: asset.id,
     role: layerRole(asset),
@@ -275,15 +283,16 @@ function layerFromAsset(
     y: topLeft.y,
     width: asset.width,
     height: asset.height,
-    // Paint token used only to tint the mask layer — never a whole-sprite tint.
     color: paintToken,
     isPaintMask: asset.has_paint,
     label: `${WORKSHOP_FRAME_KIT_ID}:${asset.id}`,
-    // Precomposite kept as reference/fallback; live path is under→mask→over.
-    imagePath: asset.files[paint],
+    // Precomposite kept as reference/fallback; live path is under→mask/pattern→over.
+    imagePath:
+      asset.files[paint] ?? asset.files.oxide ?? asset.files.petrol ?? asset.material_under,
     materialUnderPath: asset.material_under,
     materialOverPath: asset.material_over,
-    ...(asset.has_paint ? { paintMaskPath: asset.paint_mask } : {}),
+    ...(asset.has_paint && !usePattern ? { paintMaskPath: asset.paint_mask } : {}),
+    ...(usePattern && patternPath ? { patternFillPath: patternPath } : {}),
     paintComposite: true,
     pivotX: asset.pivot[0],
     pivotY: asset.pivot[1],
@@ -373,7 +382,12 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
 
 /** Feedback helpers for Game Art / tests. */
 export function workshopFramePaintToken(paintId: string): string {
-  return WORKSHOP_FRAME_MANIFEST.paint_tokens[resolveKitPaint(paintId)];
+  const paint = resolveKitPaint(paintId);
+  return (
+    WORKSHOP_FRAME_MANIFEST.paint_tokens[paint] ??
+    resolvePaintVisual(paintId).armourColor ??
+    WORKSHOP_FRAME_MANIFEST.paint_tokens.oxide
+  );
 }
 
 export function listWorkshopFrameGaps(): readonly string[] {

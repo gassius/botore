@@ -76,6 +76,8 @@ export type GarageSessionContextValue = {
   selectWeapon: (weaponId: string) => void;
   discard: () => void;
   save: () => Promise<boolean>;
+  /** D7 nameplate — persist via rename_owned_character; survives remount. */
+  renameDisplayName: (displayName: string) => Promise<boolean>;
 };
 
 const GarageSessionContext = createContext<GarageSessionContextValue | null>(null);
@@ -465,6 +467,52 @@ export function GarageSessionProvider(props: {
             atlasVersion: result.atlasVersion,
           }),
         );
+        return true;
+      },
+      renameDisplayName: async (displayName) => {
+        const current = await auth.getSession();
+        if (!current) {
+          setSession(null);
+          setLoadout((s) =>
+            failSave(
+              s,
+              loadoutSavePlayerMessage({
+                code: 'unauthenticated',
+                message: 'Session expired. Sign in again to save.',
+              }),
+              'unauthenticated',
+            ),
+          );
+          return false;
+        }
+        if (loadout.hydration !== 'ready' || !loadout.characterId) {
+          setLoadout((s) =>
+            failSave(
+              s,
+              loadoutSavePlayerMessage({
+                code: 'save_blocked',
+                message: 'Could not rename. Server-confirmed loadout is unavailable.',
+              }),
+              'save_blocked',
+            ),
+          );
+          return false;
+        }
+        const result = await loadouts.renameCharacter({
+          displayName,
+          accessToken: current.accessToken,
+        });
+        if (!result.ok) {
+          setLoadout((s) => failSave(s, result.message, result.code));
+          return false;
+        }
+        const next = playerFacingDisplayName(result.displayName);
+        setLoadout((s) => ({
+          ...s,
+          displayName: next,
+          lastError: null,
+          lastErrorCode: null,
+        }));
         return true;
       },
     }),

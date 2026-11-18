@@ -429,17 +429,18 @@ const paints = Number(
 const weapons = Number(
   psql(`select count(*) from parts_catalogue where slot_kind='weapon' and is_active`),
 );
-if (chassis !== 1 || paints !== 2 || weapons !== 3) {
+// A6/E7: 10 paints (8 solids + hazard/racing + legacy crimson/cobalt), 7 weapons
+if (chassis !== 1 || paints !== 10 || weapons !== 7) {
   fail(`catalogue shape chassis=${chassis} paints=${paints} weapons=${weapons}`);
 }
-console.log('SMOKE-OK catalogue proof shape (1/2/3)');
+console.log('SMOKE-OK catalogue shape (1/10/7)');
 
 const owned = Number(
   psql(
     `select count(*) from inventory_balances where account_id='00000000-0000-4000-8000-000000000001'`,
   ),
 );
-if (owned < 6) fail(`expected player to own >= 6 parts, got ${owned}`);
+if (owned < 18) fail(`expected player to own >= 18 parts, got ${owned}`);
 console.log('SMOKE-OK inventory balances');
 
 const adminRows = Number(psql('select count(*) from admin_loadout_overview'));

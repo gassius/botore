@@ -135,7 +135,9 @@ describe('F8 auth / ownership seams', () => {
   it('maps Oxide/Petrol UI aliases to F1 catalogue ids without expansion', () => {
     expect(paintCatalogueId('oxide')).toBe('paint-crimson');
     expect(paintCatalogueId('petrol')).toBe('paint-cobalt');
+    expect(paintCatalogueId('cobalt')).toBe('paint-navy');
     expect(paintUiAlias('paint-crimson')).toBe('oxide');
+    expect(paintUiAlias('paint-navy')).toBe('cobalt');
     expect(weaponCatalogueId('axe')).toBe('weapon-axe');
     expect(weaponUiAlias('weapon-dagger')).toBe('dagger');
   });

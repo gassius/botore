@@ -12,7 +12,8 @@ import {
   StatusErrorBanner,
   garageTag,
 } from '../../garage-tag';
-import { a6OpponentPanelForCandidate } from '../../garage-tag/a6Tiles';
+import { resolveOpponentPresentation } from '../../garage-tag/a6OpponentPresentation';
+import { resolveA6OpponentPanel } from '../opponents/a6OpponentPanelAssets';
 import { useFirstRun } from '../../first-run/FirstRunContext';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import { playerFacingDisplayName } from '../../identity/platformPlayerId';
@@ -24,7 +25,7 @@ import { useFightSession } from '../FightSessionContext';
 import type { OpponentCandidate } from '../candidates/types';
 import { FightsRemainingPanel } from '../quota/FightsRemainingPanel';
 
-/** Opponents domain — E6 SnapVerticalList + E3 Fights Remaining + E8 UI cues. */
+/** Opponents domain — E6 SnapVerticalList + E3 Fights Remaining + E7 shared presentation + E8 UI cues. */
 export function OpponentsScreen(props: {
   onBack: () => void;
   onContinue: () => void;
@@ -231,12 +232,6 @@ export function OpponentsScreen(props: {
                 renderItem={({ item: c }) => {
                   const isSelected = selected?.characterId === c.characterId;
                   const name = playerFacingDisplayName(c.displayName);
-                  const panel = a6OpponentPanelForCandidate({
-                    characterId: c.characterId,
-                    displayName: c.displayName,
-                    paint: c.loadout.paint,
-                    weapon: c.loadout.weapon,
-                  });
                   const botoreName =
                     typeof c.botoreName === 'string' && c.botoreName.trim().length > 0
                       ? playerFacingDisplayName(c.botoreName)
@@ -246,6 +241,18 @@ export function OpponentsScreen(props: {
                     Number.isFinite(c.wins) &&
                     typeof c.losses === 'number' &&
                     Number.isFinite(c.losses);
+                  const presentation = resolveOpponentPresentation({
+                    characterId: c.characterId,
+                    displayName: c.displayName,
+                    paintId: c.loadout.paint,
+                    weaponId: c.loadout.weapon,
+                  });
+                  const panelArt = resolveA6OpponentPanel({
+                    characterId: c.characterId,
+                    displayName: c.displayName,
+                    paintId: presentation.paintId,
+                    weaponId: presentation.weaponId,
+                  });
                   return (
                     <Pressable
                       accessibilityRole="button"
@@ -263,24 +270,24 @@ export function OpponentsScreen(props: {
                         style={styles.preview}
                         testID={`opponent-preview-wrap-${c.characterId}`}
                       >
-                        {panel ? (
+                        {panelArt ? (
                           <Image
-                            source={panel}
+                            source={panelArt}
                             style={styles.panelArt}
                             resizeMode="contain"
                             accessibilityIgnoresInvertColors
-                            testID={`opponent-preview-panel-${c.characterId}`}
+                            testID={`opponent-a6-panel-${c.characterId}`}
                           />
                         ) : (
                           <BotAssemblerSlot
                             loadout={{
                               chassisId: c.loadout.chassis,
-                              paintId: c.loadout.paint,
-                              weaponId: c.loadout.weapon,
+                              paintId: presentation.paintId,
+                              weaponId: presentation.weaponId,
                             }}
                             facing="left"
-                            paintId={c.loadout.paint}
-                            weaponId={c.loadout.weapon}
+                            paintId={presentation.paintId}
+                            weaponId={presentation.weaponId}
                             size={OPPONENTS_LIST.robotBodyHeight}
                             reducedMotion
                             motionPose="idle"

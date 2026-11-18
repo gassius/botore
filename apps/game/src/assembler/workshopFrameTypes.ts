@@ -1,7 +1,18 @@
-/** Subset of kit-v003.1 manifest used by the F7 adapter (not a competing public API). */
+/** Subset of kit-v003.3 manifest used by the F7 adapter (not a competing public API). */
 
-export type KitPaintId = 'oxide' | 'petrol';
-export type KitWeaponKind = 'sword' | 'axe' | 'dagger';
+export type KitPaintId =
+  | 'oxide'
+  | 'petrol'
+  | 'primer'
+  | 'ink'
+  | 'drab'
+  | 'cobalt'
+  | 'frost'
+  | 'cinder'
+  | 'hazard'
+  | 'racing';
+
+export type KitWeaponKind = 'sword' | 'axe' | 'dagger' | 'mace' | 'hammer' | 'spear' | 'shield';
 
 /** v003.1 drawing surface (rig stays 640; stage grows for victory / A2). */
 export interface KitStage {
@@ -24,8 +35,8 @@ export interface KitAsset {
   readonly motion_bounds: readonly [number, number];
   readonly compatible_family: string;
   readonly role?: string;
-  /** Precomposited Oxide/Petrol fallback renders (reference / offline). */
-  readonly files: Readonly<Record<KitPaintId, string>>;
+  /** Precomposited paint renders (reference / offline). Keys are paint ids. */
+  readonly files: Readonly<Record<string, string>>;
   /** Steel/frame under layer — paint composite step 1. */
   readonly material_under: string;
   /** Outlines / cel shading / metal details — paint composite step 3. */
@@ -75,7 +86,7 @@ export interface WorkshopFrameManifest {
   readonly stage?: KitStage;
   readonly ground_y?: number;
   readonly root: { readonly asset: string; readonly position: readonly [number, number] };
-  readonly paint_tokens: Readonly<Record<KitPaintId, string>>;
+  readonly paint_tokens: Readonly<Record<string, string>>;
   readonly paint_ids?: readonly string[];
   /** Per-weapon mount + z overrides (replaces v002 weapon_grip_rotation_degrees). */
   readonly weapons: Readonly<Record<KitWeaponKind, KitWeaponDef>>;

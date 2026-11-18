@@ -85,8 +85,11 @@ function KitLayer({
   const under = layer.materialUnderPath
     ? workshopFramePartSource(layer.materialUnderPath)
     : undefined;
+  const patternFill = layer.patternFillPath
+    ? workshopFramePartSource(layer.patternFillPath)
+    : undefined;
   const mask =
-    layer.paintMaskPath && layer.isPaintMask
+    !patternFill && layer.paintMaskPath && layer.isPaintMask
       ? workshopFramePartSource(layer.paintMaskPath)
       : undefined;
   const over = layer.materialOverPath ? workshopFramePartSource(layer.materialOverPath) : undefined;
@@ -136,11 +139,18 @@ function KitLayer({
         {useComposite ? (
           <>
             <Image source={under!} style={imgStyle} testID={`assembler-layer-${layer.id}-under`} />
-            {mask ? (
+            {patternFill ? (
+              <Image
+                source={patternFill}
+                style={imgStyle}
+                // Baked A6 pattern fill — no tintColor (colors are in the PNG).
+                testID={`assembler-layer-${layer.id}-pattern-fill`}
+              />
+            ) : mask ? (
               <Image
                 source={mask}
                 style={imgStyle}
-                // Colourise mask alpha to the selected paint token only — never tint under/over.
+                // Colourise mask alpha to the selected paint channel only — never tint under/over.
                 tintColor={layer.color}
                 testID={`assembler-layer-${layer.id}-paint-mask`}
               />

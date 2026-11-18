@@ -117,8 +117,10 @@ type SessionProbe = {
   selectPaint: (id: string) => void;
   selectWeapon: (id: string) => void;
   save: () => Promise<boolean>;
+  renameDisplayName: (name: string) => Promise<boolean>;
   confirmedPaint: () => string | null;
   confirmedWeapon: () => string | null;
+  displayName: () => string | null;
   lastError: () => string | null;
   dirty: () => boolean;
   booting: () => boolean;
@@ -132,8 +134,10 @@ function GarageProbe(props: { apiRef: { current: SessionProbe | null } }): null 
     selectPaint: (id) => garage.selectPaint(id),
     selectWeapon: (id) => garage.selectWeapon(id),
     save: () => garage.save(),
+    renameDisplayName: (name) => garage.renameDisplayName(name),
     confirmedPaint: () => garage.loadout.confirmedLoadout?.paint ?? null,
     confirmedWeapon: () => garage.loadout.confirmedLoadout?.weapon ?? null,
+    displayName: () => garage.loadout.displayName,
     lastError: () => garage.loadout.lastError,
     dirty: () => garage.loadout.dirty,
     booting: () => garage.booting,
@@ -302,6 +306,87 @@ describe('E1 Customise Save Loadout (390×844)', () => {
     expect(source).toContain('Equip');
     expect(source).not.toMatch(/Save loadout/i);
     expect(source).not.toContain('confirmedVersionId');
+  });
+
+  it('persists nameplate rename across remount via rename RPC', async () => {
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const loadouts = new DevLoadoutSaveAdapter();
+    const apiRef: { current: SessionProbe | null } = { current: null };
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <GarageProbe apiRef={apiRef} />
+            <CustomiseScreen onBack={() => undefined} />
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    const api = () => {
+      if (!apiRef.current) throw new Error('probe missing');
+      return apiRef.current;
+    };
+
+    for (let i = 0; i < 40 && (api().booting() || !api().canProgress()); i += 1) {
+      await flush();
+    }
+    expect(api().canProgress()).toBe(true);
+    expect(api().displayName()).toBe('Hero');
+
+    const editBtn = root.root.findByProps({ testID: 'customise-nameplate-edit' });
+    await act(async () => {
+      editBtn.props.onPress();
+    });
+    await flush();
+    const input = root.root.findByProps({ testID: 'customise-nameplate-input' });
+    await act(async () => {
+      input.props.onChangeText('Rivet');
+    });
+    await flush();
+
+    const saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+    expect(api().displayName()).toBe('Rivet');
+    expect(collectText(root.root).join(' ')).toMatch(/Equipped|Rivet/);
+
+    // Remount: new provider must hydrate the renamed name from the adapter store.
+    await act(async () => {
+      root.update(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <GarageProbe apiRef={apiRef} />
+            <CustomiseScreen onBack={() => undefined} />
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+    for (let i = 0; i < 40 && (api().booting() || !api().remountHydrateReady()); i += 1) {
+      await flush();
+    }
+    expect(api().displayName()).toBe('Rivet');
+    expect(collectText(root.root).join(' ')).toMatch(/Rivet/);
+    expect(collectText(root.root).join(' ')).not.toMatch(/\bHero\b/);
+
+    const source = readFileSync(
+      join(__dirname, '../src/garage/screens/CustomiseScreen.tsx'),
+      'utf8',
+    );
+    expect(source).toContain('renameDisplayName');
+    expect(source).not.toMatch(/no rename RPC yet/i);
   });
 
   it('Supabase adapter maps unpublished_atlas to plain words', async () => {

@@ -11,10 +11,14 @@ import { loadoutSavePlayerMessage } from './loadoutSaveErrors';
 import type {
   FetchCurrentLoadoutResult,
   OwnedCharacterResult,
+  RenameCharacterInput,
+  RenameCharacterResult,
   SaveLoadoutInput,
   SaveLoadoutResult,
 } from './loadoutTypes';
 import { normalizeGarageLoadout } from './normalizeLoadout';
+
+export const RENAME_OWNED_CHARACTER_RPC = 'rename_owned_character' as const;
 
 type RpcErrorBody = {
   message?: string;
@@ -24,9 +28,10 @@ type RpcErrorBody = {
 };
 
 /**
- * Calls public.save_bot_loadout + B client-read RPCs via PostgREST with the user JWT.
- * No service-role key; RLS + SECURITY DEFINER authz remain authoritative.
- * Does not SELECT characters / fight_allowances / profiles tables.
+ * Calls public.save_bot_loadout / rename_owned_character + B client-read RPCs
+ * via PostgREST with the user JWT. No service-role key; RLS + SECURITY DEFINER
+ * authz remain authoritative. Does not SELECT characters / fight_allowances /
+ * profiles tables.
  */
 export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
   readonly kind = 'supabase' as const;
@@ -200,6 +205,73 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
         loadoutVersionId: versionId,
         atlasVersion: input.atlasVersion,
         loadout: input.loadout,
+      };
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      return {
+        ok: false,
+        code: 'network_error',
+        message: loadoutSavePlayerMessage({ code: 'network_error', message: raw }),
+      };
+    }
+  }
+
+  async renameCharacter(input: RenameCharacterInput): Promise<RenameCharacterResult> {
+    try {
+      const res = await fetch(`${this.config.url}/rest/v1/rpc/${RENAME_OWNED_CHARACTER_RPC}`, {
+        method: 'POST',
+        headers: {
+          ...this.headers(input.accessToken),
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({ p_display_name: input.displayName }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
+        const code = resolveTransportFailureCode({
+          code: err.code ?? `http_${res.status}`,
+          message: err.message ?? err.details,
+          httpStatus: res.status,
+        });
+        return {
+          ok: false,
+          code,
+          message: loadoutSavePlayerMessage({
+            code,
+            message: err.message ?? err.details,
+          }),
+        };
+      }
+      const body = (await res.json()) as {
+        ok?: boolean;
+        characterId?: string;
+        displayName?: string;
+        code?: string;
+        message?: string;
+      } | null;
+      if (!body || typeof body !== 'object' || body.ok !== true) {
+        return {
+          ok: false,
+          code: body?.code ?? 'invalid_response',
+          message:
+            typeof body?.message === 'string' && body.message.trim().length > 0
+              ? body.message
+              : 'Could not rename. Your bot name is unchanged.',
+        };
+      }
+      const characterId = typeof body.characterId === 'string' ? body.characterId.trim() : '';
+      const rawName = typeof body.displayName === 'string' ? body.displayName.trim() : '';
+      if (!characterId || !rawName) {
+        return {
+          ok: false,
+          code: 'invalid_response',
+          message: 'Could not rename. Your bot name is unchanged.',
+        };
+      }
+      return {
+        ok: true,
+        characterId,
+        displayName: playerFacingDisplayName(rawName),
       };
     } catch (err) {
       const raw = err instanceof Error ? err.message : String(err);

@@ -307,6 +307,24 @@ capture_named Customise customise-paint-clean 5 "" "" paint-clean
 capture_named Customise customise-paint-dirty 5 "" "" paint-dirty
 capture_named Customise customise-equipped 6 "" "" equipped
 capture_named Customise customise-weapon-soon 5 "" "" weapon-soon
+capture_named Customise customise-paint-hazard 5 "" "" paint-hazard
+capture_named Customise customise-weapon-unlocked 5 "" "" weapon-unlocked
+
+# 1a″) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
+# Need ≥3 whole 175pt cards (185 snap, 150pt robots). Seed has Sir/Dex/Tank.
+# Capture before C10 offline/auth stills so the pack has a real snapped list.
+CAPTURE_SETTLE_SEC=6 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Opponents \
+  --name opponents-snap-rest >/dev/null
+opponents_rest_matches=( "${OUT_DIR}"/android-*-opponents-snap-rest.png )
+if [[ ! -e "${opponents_rest_matches[0]:-}" ]]; then
+  echo "error: missing PNG for opponents-snap-rest" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "still.android.opponents-snap-rest" "${opponents_rest_matches[0]}"
+echo "ok: ${opponents_rest_matches[0]}" >&2
 
 # 1a′) D4 Ranking — Bots / Botores (fixture portraits + W–L), empty, loading
 # Early so design review frames land even if later fight frames fail.
@@ -687,13 +705,14 @@ required_labels=(
   customise-paint-dirty
   customise-equipped
   customise-weapon-soon
+  customise-paint-hazard
+  customise-weapon-unlocked
+  opponents-snap-rest
   ranking-bots
   ranking-botores
   ranking-empty
   ranking-loading
   settings
-  opponents-roster
-  opponents-snap-rest
   confirm
   arena-layers
   replay-fx-hit

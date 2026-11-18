@@ -6,7 +6,13 @@ import {
   withWeapon,
   provisionalMotionOffset,
 } from '../src/assembler/assemble';
-import { OXIDE_PAINT, PETROL_PAINT, resolvePaintVisual } from '../src/assembler/paints';
+import {
+  channelColorForPart,
+  OXIDE_PAINT,
+  patternFillRelPath,
+  PETROL_PAINT,
+  resolvePaintVisual,
+} from '../src/assembler/paints';
 import { PLACEHOLDER_GRIP, resolveWeaponKit } from '../src/assembler/kit';
 import {
   ACTIVE_WORKSHOP_FRAME_FAMILY,
@@ -112,17 +118,44 @@ describe('Workshop Frame kit-v003.3 adapter (ACTIVE pin)', () => {
     expect(bot.canvas.width).toBe(640);
   });
 
-  it('maps catalogue / alias paints onto Oxide and Petrol without catalogue expansion', () => {
+  it('maps catalogue / alias paints onto A6 v4 visuals (legacy crimson/cobalt kept)', () => {
     expect(resolvePaintVisual('oxide').cataloguePaintId).toBe('paint-crimson');
     expect(resolvePaintVisual('petrol').cataloguePaintId).toBe('paint-cobalt');
+    expect(resolvePaintVisual('cobalt').cataloguePaintId).toBe('paint-navy');
+    expect(resolvePaintVisual('paint-navy').visual).toBe('cobalt');
+    expect(resolvePaintVisual('hazard').kind).toBe('pattern');
+    expect(resolvePaintVisual('racing').kind).toBe('pattern');
     expect(OXIDE_PAINT.armourColor.toLowerCase()).toBe(
-      WORKSHOP_FRAME_MANIFEST.paint_tokens.oxide.toLowerCase(),
+      String(WORKSHOP_FRAME_MANIFEST.paint_tokens['oxide']).toLowerCase(),
     );
     expect(OXIDE_PAINT.armourColor.toLowerCase()).toBe('#e8771c');
     expect(PETROL_PAINT.armourColor.toLowerCase()).toBe(
-      WORKSHOP_FRAME_MANIFEST.paint_tokens.petrol.toLowerCase(),
+      String(WORKSHOP_FRAME_MANIFEST.paint_tokens['petrol']).toLowerCase(),
     );
     expect(OXIDE_PAINT.armourColor.toLowerCase()).not.toBe(PETROL_PAINT.armourColor.toLowerCase());
+    expect(channelColorForPart('oxide', 'torso').toLowerCase()).toBe('#e8771c');
+    expect(channelColorForPart('oxide', 'upper_arm_l').toLowerCase()).toBe('#e4d8b8');
+    expect(patternFillRelPath('hazard', 'torso')).toBe(
+      'a6-paints-v4/pattern-fills/hazard/torso.png',
+    );
+    expect(patternFillRelPath('hazard', 'upper_arm_l')).toBeNull();
+    expect(patternFillRelPath('oxide', 'torso')).toBeNull();
+    expect(resolveWeaponKit('weapon-mace').kind).toBe('mace');
+    expect(resolveWeaponKit('hammer').catalogueId).toBe('weapon-hammer');
+  });
+
+  it('assembles pattern paints with patternFillPath on main parts', () => {
+    const bot = assembleWorkshopFrame({
+      loadout: { ...baseLoadout, paint: 'paint-hazard' },
+      facing: 'right',
+    });
+    expect(bot.paintVisual).toBe('hazard');
+    const torso = bot.layers.find((l) => l.id === 'torso')!;
+    expect(torso.patternFillPath).toBe('a6-paints-v4/pattern-fills/hazard/torso.png');
+    expect(torso.paintMaskPath).toBeUndefined();
+    const arm = bot.layers.find((l) => l.id === 'upper_arm_l')!;
+    expect(arm.patternFillPath).toBeUndefined();
+    expect(arm.paintMaskPath).toBe('masks/upper_arm_l-paint.png');
   });
 
   it('assembles body + wraps + weapon; grip world ≡ weapon pivot; no 180° special case', () => {

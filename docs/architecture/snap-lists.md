@@ -68,8 +68,7 @@ match that NPC's bake; otherwise `BotAssemblerSlot` with the server loadout.
 
 Android design evidence: live-fight still `opponents-snap-rest` (seeded online
 roster, not C10 `sessionFailure`). Seed ships three system opponents so the
-first rest stop shows three whole cards. E3 `FightsRemainingPanel` sits above
-the snapped list (quota from the server; no hard-coded “today” copy).
+first rest stop shows three whole cards.
 
 ## Primitives
 

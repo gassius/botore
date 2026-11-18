@@ -117,9 +117,9 @@ import {
   CUSTOMISE_BOT_SIZE,
   CUSTOMISE_STAGE_HEIGHT,
   CUSTOMISE_STAGE_MIN_HEIGHT,
-  COMING_SOON_WEAPONS,
   buildWeaponPickerCards,
 } from '../src/garage/customise/customiseSlots';
+import { PROOF_WEAPONS } from '../src/garage/loadout/proofCatalogue';
 import { DevAuthAdapter } from '../src/garage/auth/DevAuthAdapter';
 import { GarageSessionProvider, useGarageSession } from '../src/garage/LoadoutSessionContext';
 import { DevLoadoutSaveAdapter } from '../src/garage/loadout/DevLoadoutSaveAdapter';
@@ -306,14 +306,15 @@ describe('D3 Customise one screen (390×844)', () => {
     expect(root.root.findByProps({ testID: 'customise-picker-card-weapon-sword' })).toBeTruthy();
     expect(root.root.findByProps({ testID: 'customise-picker-card-weapon-axe' })).toBeTruthy();
     expect(root.root.findByProps({ testID: 'customise-picker-card-weapon-dagger' })).toBeTruthy();
-    for (const soon of COMING_SOON_WEAPONS) {
-      expect(root.root.findByProps({ testID: `customise-picker-card-${soon.id}` })).toBeTruthy();
-      expect(root.root.findByProps({ testID: `part-card-soon-${soon.id}` })).toBeTruthy();
-    }
+    expect(root.root.findByProps({ testID: 'customise-picker-card-weapon-mace' })).toBeTruthy();
+    expect(root.root.findByProps({ testID: 'customise-picker-card-weapon-hammer' })).toBeTruthy();
+    expect(root.root.findByProps({ testID: 'customise-picker-card-weapon-spear' })).toBeTruthy();
+    expect(root.root.findByProps({ testID: 'customise-picker-card-weapon-shield' })).toBeTruthy();
 
     const cards = buildWeaponPickerCards('sword');
-    expect(cards.filter((c) => !c.locked)).toHaveLength(3);
-    expect(cards.some((c) => c.locked)).toBe(true);
+    expect(cards.filter((c) => !c.locked)).toHaveLength(PROOF_WEAPONS.length);
+    expect(cards.some((c) => c.locked)).toBe(false);
+    expect(cards).toHaveLength(7);
 
     const treeText = collectText(root.root).join(' ');
     expect(treeText).not.toMatch(/Confirmed:/i);
@@ -322,7 +323,7 @@ describe('D3 Customise one screen (390×844)', () => {
     expect(treeText).not.toMatch(/paint-crimson|weapon-sword|loadout_version/i);
     expect(buttonLabel(root.root, 'customise-save')).toBe('Equip');
     expect(buttonLabel(root.root, 'customise-discard')).toBe('Discard');
-    expect(treeText).toMatch(/Coming soon/i);
+    expect(treeText).not.toMatch(/Coming soon/i);
 
     expect(api().dirty()).toBe(false);
     expect(() => root.root.findByProps({ testID: 'customise-save-unsaved-dot' })).toThrow();
@@ -441,12 +442,12 @@ describe('D3 Customise one screen (390×844)', () => {
     expect(playCue).toHaveBeenCalledWith('equip');
   });
 
-  it('does not select locked Coming soon cards; StatusErrorBanner on save fail', async () => {
+  it('unlocks all seven weapons; StatusErrorBanner on save fail', async () => {
     const { root } = await mountCustomise();
-    const locked = root.root.findByProps({
-      testID: `customise-picker-card-${COMING_SOON_WEAPONS[0]!.id}`,
+    const mace = root.root.findByProps({
+      testID: 'customise-picker-card-weapon-mace',
     });
-    expect(locked.props.accessibilityState.disabled).toBe(true);
+    expect(mace.props.accessibilityState.disabled).toBe(false);
 
     const auth = new DevAuthAdapter();
     await auth.signInWithPassword({ email: 'dev@botore.local', password: 'x' });

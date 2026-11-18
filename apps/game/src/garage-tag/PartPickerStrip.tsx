@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { garageTag } from './tokens';
-import { weaponGlyphSource, type WeaponGlyphId } from './assets';
+import { paintSwatchSource, weaponGlyphSource, type WeaponGlyphId } from './assets';
 import { SelectionCheck } from './SelectionCheck';
 import { SnapCarousel } from './snap/SnapCarousel';
 import { CUSTOMISE_CAROUSEL } from './snap/snapMetrics';
@@ -21,6 +21,10 @@ export type PartPickerCard = {
   readonly locked?: boolean;
   readonly paintColor?: string;
   readonly weaponGlyph?: WeaponGlyphId;
+  /** Show PATTERN tag on hazard/racing cards. */
+  readonly patternTag?: boolean;
+  /** Paint visual alias for A6 tile / swatch lookup (oxide, hazard, …). */
+  readonly paintAlias?: string;
 };
 
 export type PartPickerStripProps = {
@@ -66,6 +70,8 @@ export function PartPickerStrip({
       renderItem={({ item: card }) => {
         const locked = card.locked === true;
         const selected = card.selected && !locked;
+        const paintAlias = card.paintAlias;
+        const paintTile = paintAlias && !card.weaponGlyph ? paintSwatchSource(paintAlias) : null;
         return (
           <Pressable
             accessibilityRole="button"
@@ -74,6 +80,7 @@ export function PartPickerStrip({
               card.label,
               selected ? 'selected' : null,
               locked ? 'coming soon' : null,
+              card.patternTag ? 'pattern' : null,
             ]
               .filter(Boolean)
               .join(', ')}
@@ -95,6 +102,13 @@ export function PartPickerStrip({
                 </Text>
               </View>
             ) : null}
+            {card.patternTag && !locked ? (
+              <View style={styles.patternBadge} testID={`part-card-pattern-${card.id}`}>
+                <Text style={styles.patternText} allowFontScaling>
+                  Pattern
+                </Text>
+              </View>
+            ) : null}
             <View style={styles.art}>
               {locked ? (
                 <View style={styles.ghost}>
@@ -106,6 +120,13 @@ export function PartPickerStrip({
                 <Image
                   source={weaponGlyphSource(card.weaponGlyph)}
                   style={styles.glyph}
+                  resizeMode="contain"
+                  accessibilityIgnoresInvertColors
+                />
+              ) : paintTile ? (
+                <Image
+                  source={paintTile}
+                  style={styles.swatchImage}
                   resizeMode="contain"
                   accessibilityIgnoresInvertColors
                 />
@@ -181,6 +202,10 @@ const styles = StyleSheet.create({
     height: 72,
     transform: [{ rotate: '35deg' }],
   },
+  swatchImage: {
+    width: 72,
+    height: 72,
+  },
   paintChip: {
     width: 56,
     height: 56,
@@ -228,6 +253,23 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   soonText: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: garageTag.cream,
+  },
+  patternBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 6,
+    zIndex: 1,
+    backgroundColor: garageTag.graphite,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  patternText: {
     fontSize: 8.5,
     fontWeight: '800',
     letterSpacing: 0.8,

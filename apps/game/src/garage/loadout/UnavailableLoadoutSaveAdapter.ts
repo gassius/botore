@@ -6,6 +6,8 @@ import type { LoadoutSavePort } from './LoadoutSavePort';
 import type {
   FetchCurrentLoadoutResult,
   OwnedCharacterResult,
+  RenameCharacterInput,
+  RenameCharacterResult,
   SaveLoadoutInput,
   SaveLoadoutResult,
 } from './loadoutTypes';
@@ -34,6 +36,14 @@ export class UnavailableLoadoutSaveAdapter implements LoadoutSavePort {
   }
 
   async save(_input: SaveLoadoutInput): Promise<SaveLoadoutResult> {
+    return {
+      ok: false,
+      code: PLAYABLE_MISCONFIGURED_CODE,
+      message: PLAYABLE_MISCONFIGURED_DETAIL,
+    };
+  }
+
+  async renameCharacter(_input: RenameCharacterInput): Promise<RenameCharacterResult> {
     return {
       ok: false,
       code: PLAYABLE_MISCONFIGURED_CODE,

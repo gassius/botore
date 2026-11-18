@@ -85,8 +85,9 @@ insert into public.character_build_versions (character_id, hp, strength, agility
 select c.character_id, v.hp, v.strength, v.agility, v.speed, v.weapon_kind, v.weapon_power
 from (values
   ('player-hero', 30, 5, 5, 6, 'sword', 3),
-  ('opp-sir-bot', 34, 6, 4, 5, 'sword', 3),
-  ('opp-dex-bot', 26, 4, 7, 8, 'dagger', 2),
+  -- combat-v1 weapon_kind check: sword|axe|dagger only (A6 mace/spear use proxies)
+  ('opp-sir-bot', 34, 6, 4, 5, 'axe', 5),
+  ('opp-dex-bot', 26, 4, 7, 8, 'sword', 3),
   ('opp-hp-bot',  44, 8, 2, 3, 'axe', 5)
 ) as v(character_id, hp, strength, agility, speed, weapon_kind, weapon_power)
 join public.characters c on c.character_id = v.character_id;
@@ -104,7 +105,9 @@ cross join (values (1),(2),(3)) as s(slot_index)
 on conflict do nothing;
 
 -- 1001: bots-as-data seed — proof catalogue + inventory + confirmed loadouts.
--- Idempotent. Minimal proof: 1 chassis, 2 paints, sword/axe/dagger.
+-- Idempotent. E7: 1 chassis, 10 paints, 7 weapons.
+-- A5 roster rename (opp-sir-bot → Rivet Nan / Cobalt Brute etc.) is follow-up;
+-- client ships apps/game/assets/a5fix/npcs.json for NPC metadata.
 
 insert into public.parts_catalogue (
     part_id, slot_kind, display_name, weapon_kind, weapon_power,
@@ -126,6 +129,46 @@ insert into public.parts_catalogue (
     'parts/paint-cobalt', true
   ),
   (
+    'paint-primer', 'paint', 'Primer', null, null,
+    '[]'::jsonb, '{}'::jsonb,
+    'parts/paint-primer', true
+  ),
+  (
+    'paint-ink', 'paint', 'Ink', null, null,
+    '[]'::jsonb, '{}'::jsonb,
+    'parts/paint-ink', true
+  ),
+  (
+    'paint-drab', 'paint', 'Drab', null, null,
+    '[]'::jsonb, '{}'::jsonb,
+    'parts/paint-drab', true
+  ),
+  (
+    'paint-navy', 'paint', 'Cobalt', null, null,
+    '[]'::jsonb, '{}'::jsonb,
+    'parts/paint-navy', true
+  ),
+  (
+    'paint-frost', 'paint', 'Frost', null, null,
+    '[]'::jsonb, '{}'::jsonb,
+    'parts/paint-frost', true
+  ),
+  (
+    'paint-cinder', 'paint', 'Cinder', null, null,
+    '[]'::jsonb, '{}'::jsonb,
+    'parts/paint-cinder', true
+  ),
+  (
+    'paint-hazard', 'paint', 'Hazard', null, null,
+    '[]'::jsonb, '{}'::jsonb,
+    'parts/paint-hazard', true
+  ),
+  (
+    'paint-racing', 'paint', 'Racing', null, null,
+    '[]'::jsonb, '{}'::jsonb,
+    'parts/paint-racing', true
+  ),
+  (
     'weapon-sword', 'weapon', 'Sword', 'sword', 3,
     '["weapon.sword"]'::jsonb, '{"grip":"standard"}'::jsonb,
     'parts/weapon-sword', true
@@ -139,6 +182,26 @@ insert into public.parts_catalogue (
     'weapon-dagger', 'weapon', 'Dagger', 'dagger', 2,
     '["weapon.dagger"]'::jsonb, '{"grip":"standard"}'::jsonb,
     'parts/weapon-dagger', true
+  ),
+  (
+    'weapon-mace', 'weapon', 'Mace', 'axe', 5,
+    '["weapon.mace"]'::jsonb, '{"grip":"standard"}'::jsonb,
+    'parts/weapon-mace', true
+  ),
+  (
+    'weapon-hammer', 'weapon', 'Hammer', 'axe', 5,
+    '["weapon.hammer"]'::jsonb, '{"grip":"standard"}'::jsonb,
+    'parts/weapon-hammer', true
+  ),
+  (
+    'weapon-spear', 'weapon', 'Spear', 'sword', 3,
+    '["weapon.spear"]'::jsonb, '{"grip":"standard"}'::jsonb,
+    'parts/weapon-spear', true
+  ),
+  (
+    'weapon-shield', 'weapon', 'Shield', 'dagger', 2,
+    '["weapon.shield"]'::jsonb, '{"grip":"standard"}'::jsonb,
+    'parts/weapon-shield', true
   )
 on conflict (part_id) do nothing;
 
@@ -151,9 +214,21 @@ cross join (
     ('chassis-basic'),
     ('paint-crimson'),
     ('paint-cobalt'),
+    ('paint-primer'),
+    ('paint-ink'),
+    ('paint-drab'),
+    ('paint-navy'),
+    ('paint-frost'),
+    ('paint-cinder'),
+    ('paint-hazard'),
+    ('paint-racing'),
     ('weapon-sword'),
     ('weapon-axe'),
-    ('weapon-dagger')
+    ('weapon-dagger'),
+    ('weapon-mace'),
+    ('weapon-hammer'),
+    ('weapon-spear'),
+    ('weapon-shield')
 ) as p(part_id)
 where not exists (
   select 1 from public.inventory_ledger il
@@ -193,7 +268,7 @@ begin
   ) then
     perform public.save_bot_loadout(
       'opp-sir-bot',
-      '{"chassis":"chassis-basic","paint":"paint-cobalt","weapon":"weapon-sword"}'::jsonb,
+      '{"chassis":"chassis-basic","paint":"paint-cinder","weapon":"weapon-mace"}'::jsonb,
       'v1'
     );
   end if;
@@ -203,7 +278,7 @@ begin
   ) then
     perform public.save_bot_loadout(
       'opp-dex-bot',
-      '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-dagger"}'::jsonb,
+      '{"chassis":"chassis-basic","paint":"paint-primer","weapon":"weapon-spear"}'::jsonb,
       'v1'
     );
   end if;
@@ -213,7 +288,7 @@ begin
   ) then
     perform public.save_bot_loadout(
       'opp-hp-bot',
-      '{"chassis":"chassis-basic","paint":"paint-cobalt","weapon":"weapon-axe"}'::jsonb,
+      '{"chassis":"chassis-basic","paint":"paint-navy","weapon":"weapon-mace"}'::jsonb,
       'v1'
     );
   end if;

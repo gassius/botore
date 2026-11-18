@@ -1,0 +1,264 @@
+{
+  "schema": "botore.workshop-frame.paint-tokens.v3",
+  "pass": "v4",
+  "supersedes": "v3",
+  "base_kit": {
+    "family": "workshop-frame",
+    "version": "v003.3",
+    "path": "/workspace/botore-art/2026-11-17-kit-v003/v003.3/kit-v003.3"
+  },
+  "paint_composite_order": [
+    "material_under",
+    "paint_mask alpha tinted to the part's channel colour (main, trim or accent)",
+    "shared wear (grime + edge chips) inside the mask only, visor hubs excluded",
+    "material_over"
+  ],
+  "note": "A6 paints v4. The 8 A4 v3 solids are byte-for-byte the same values. Adds 2 pattern liveries (hazard, racing). A pattern only replaces the flat tint of the MAIN channel (head, torso, thighs, and the shield face) with a 2-colour pattern drawn in part-local space, clipped to the same v003.3 paint mask. Trim and accent stay solid. Shared wear is applied after the pattern, as for solids.",
+  "unchanged_materials": {
+    "hub_yellow": "#FFE65C",
+    "frame_charcoal": [
+      "#282925",
+      "#4D4C43",
+      "#3A4037",
+      "#605E51",
+      "#20271F"
+    ],
+    "steel": [
+      "#BCB6A5",
+      "#B6AD95",
+      "#817D70",
+      "#938B79"
+    ]
+  },
+  "wear": {
+    "dir": "wear/",
+    "grime_color": "#302A24",
+    "chip_metal": "#9A9488",
+    "chip_shadow": "#3E3A32",
+    "grime_max": 0.22,
+    "seed": "0xA41E02",
+    "rule": "Inside the paint mask only. Not applied on visor-hub pixels of material_over. Outlines in material_over are composited after wear."
+  },
+  "channels": {
+    "main": {
+      "parts": [
+        "head",
+        "torso",
+        "thigh_l",
+        "thigh_r"
+      ],
+      "note": "Core armour. Carries identity in 96 px portraits and at fight height."
+    },
+    "trim": {
+      "parts": [
+        "upper_arm_l",
+        "upper_arm_r",
+        "forearm_l",
+        "forearm_r"
+      ],
+      "note": "Contrasting livery on the arms. Shoulder trim is visible in the portrait crop."
+    },
+    "accent": {
+      "parts": [
+        "shin_l",
+        "shin_r",
+        "foot_l",
+        "foot_r"
+      ],
+      "note": "Greaves and boots. A third colour that should read at fight height."
+    }
+  },
+  "paint_ids": [
+    "oxide",
+    "petrol",
+    "primer",
+    "ink",
+    "drab",
+    "cobalt",
+    "frost",
+    "cinder",
+    "hazard",
+    "racing"
+  ],
+  "paint_tokens": {
+    "oxide": "#E8771C",
+    "petrol": "#27877B",
+    "primer": "#F4EFE0",
+    "ink": "#C8A4B0",
+    "drab": "#5A6438",
+    "cobalt": "#305070",
+    "frost": "#5C96C8",
+    "cinder": "#4A1C10",
+    "hazard": "#D89418",
+    "racing": "#F4EFE0"
+  },
+  "paints": [
+    {
+      "id": "oxide",
+      "name": "Oxide",
+      "main": "#E8771C",
+      "trim": "#E4D8B8",
+      "accent": "#3A2E28",
+      "kind": "solid"
+    },
+    {
+      "id": "petrol",
+      "name": "Petrol",
+      "main": "#27877B",
+      "trim": "#E4D8B8",
+      "accent": "#7A6238",
+      "kind": "solid"
+    },
+    {
+      "id": "primer",
+      "name": "Primer",
+      "main": "#F4EFE0",
+      "trim": "#5C6268",
+      "accent": "#8B4E28",
+      "kind": "solid"
+    },
+    {
+      "id": "ink",
+      "name": "Ink",
+      "main": "#C8A4B0",
+      "trim": "#D2D6D0",
+      "accent": "#E4D8B8",
+      "kind": "solid"
+    },
+    {
+      "id": "drab",
+      "name": "Drab",
+      "main": "#5A6438",
+      "trim": "#C9B57A",
+      "accent": "#3A2A18",
+      "kind": "solid"
+    },
+    {
+      "id": "cobalt",
+      "name": "Cobalt",
+      "main": "#305070",
+      "trim": "#D2D6D0",
+      "accent": "#8B4E28",
+      "kind": "solid"
+    },
+    {
+      "id": "frost",
+      "name": "Frost",
+      "main": "#5C96C8",
+      "trim": "#8B5A30",
+      "accent": "#4A5858",
+      "kind": "solid"
+    },
+    {
+      "id": "cinder",
+      "name": "Cinder",
+      "main": "#4A1C10",
+      "trim": "#E4D8B8",
+      "accent": "#8B5A30",
+      "kind": "solid"
+    },
+    {
+      "id": "hazard",
+      "name": "Hazard",
+      "kind": "pattern",
+      "main": "#D89418",
+      "trim": "#5C6268",
+      "accent": "#2E2620",
+      "pattern": {
+        "type": "diagonal_stripes",
+        "base": "#D89418",
+        "stripe": "#2E2620",
+        "angle_deg": 45,
+        "period_rig_px": 44,
+        "stripe_frac": 0.42,
+        "space": "part-local (rig px of the part canvas; phase anchored to the mask bbox top-left)",
+        "parts": [
+          "head",
+          "torso",
+          "thigh_l",
+          "thigh_r",
+          "weapon_shield"
+        ]
+      },
+      "swatch_note": "Ochre-amber with soot stripes at 45 deg. Battleship arms, soot boots."
+    },
+    {
+      "id": "racing",
+      "name": "Racing",
+      "kind": "pattern",
+      "main": "#F4EFE0",
+      "trim": "#245A9C",
+      "accent": "#2E2620",
+      "pattern": {
+        "type": "horizontal_band",
+        "base": "#F4EFE0",
+        "stripe": "#245A9C",
+        "pin": "#E8771C",
+        "bands_frac_of_mask_bbox": {
+          "torso": [
+            0.22,
+            0.5
+          ],
+          "torso-boiler": [
+            0.5,
+            0.7
+          ],
+          "torso-slab": [
+            0.3,
+            0.5
+          ],
+          "thigh_l": [
+            0.22,
+            0.66
+          ],
+          "thigh_r": [
+            0.22,
+            0.66
+          ],
+          "head": [
+            0.04,
+            0.2
+          ],
+          "head-welder": [
+            0.08,
+            0.22
+          ],
+          "head-can": [
+            0.06,
+            0.2
+          ],
+          "weapon_shield": [
+            0.36,
+            0.64
+          ]
+        },
+        "band_key": "variant folder name when a shape variant is active (torso-boiler, head-can...), else the kit part id",
+        "pin_px_rig": 5,
+        "space": "part-local (fractions of each part mask bbox height), so the band moves with the part",
+        "parts": [
+          "head",
+          "torso",
+          "thigh_l",
+          "thigh_r",
+          "weapon_shield"
+        ]
+      },
+      "swatch_note": "Primer cream body, cobalt band across chest and thighs (thin helmet band) with Oxide pinstripes; cobalt arms, soot boots."
+    }
+  ],
+  "solid_ids": [
+    "oxide",
+    "petrol",
+    "primer",
+    "ink",
+    "drab",
+    "cobalt",
+    "frost",
+    "cinder"
+  ],
+  "pattern_ids": [
+    "hazard",
+    "racing"
+  ],
+  "pattern_rule": "Patterns live inside the existing main-zone paint masks. Composite: material_under + pattern tint (mask alpha) + shared wear + material_over. Stripes are in part-local space so they move and rotate with the part. paint_tokens gives the pattern base hex for single-colour fallbacks (lists, chips)."
+}

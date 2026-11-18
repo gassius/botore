@@ -140,7 +140,7 @@ import {
   PROOF_ATLAS_VERSION,
 } from '../src/garage/loadout/proofCatalogue';
 import { DevOpponentCandidatesAdapter } from '../src/fight/candidates/DevOpponentCandidatesAdapter';
-import type { OpponentCandidate } from '../src/fight/candidates/types';
+import type { ListCandidatesResult, OpponentCandidate } from '../src/fight/candidates/types';
 import { FightSessionProvider } from '../src/fight/FightSessionContext';
 import { OpponentsScreen } from '../src/fight/screens/OpponentsScreen';
 import { DevFightRequestAdapter } from '../src/fight/request/DevFightRequestAdapter';
@@ -214,10 +214,10 @@ describe('E6 A6 opponent panel matching (B1)', () => {
     };
 
     class SirOnlyCandidates extends DevOpponentCandidatesAdapter {
-      override async listCandidates() {
+      override async listCandidates(): Promise<ListCandidatesResult> {
         const quota = this.backend.quota();
         return {
-          ok: true as const,
+          ok: true,
           candidates: [sir],
           allowancesRemaining: quota.allowancesRemaining,
           utcDay: quota.utcDay,

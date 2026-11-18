@@ -1,6 +1,12 @@
 /** Reusable Garage Tag UI — ticket 1amjtrey0ew. Candidate kit v0.1.0. */
 export { garageTag, type GarageTagTokens } from './tokens';
-export { uiKitAssets, weaponGlyphSource, type WeaponGlyphId } from './assets';
+export {
+  paintSwatchSource,
+  uiKitAssets,
+  weaponGlyphSource,
+  type PaintSwatchId,
+  type WeaponGlyphId,
+} from './assets';
 export { GaragePanel, type GaragePanelProps } from './GaragePanel';
 export {
   measureScreenChromeLayout,

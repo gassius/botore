@@ -48,12 +48,21 @@ export type MotionPose =
   | 'knockout';
 
 /**
- * First-proof sample paints (Art Direction v0.3).
- * Catalogue ids remain `paint-crimson` / `paint-cobalt` until Game Art renames;
- * the assembler maps those ids onto Oxide / Petrol visuals without expanding
- * the server catalogue.
+ * A6 paints v4 visuals (8 solids + hazard/racing patterns).
+ * Legacy catalogue aliases: paint-crimson→oxide, paint-cobalt→petrol.
+ * Cobalt visual uses catalogue id `paint-navy` (avoids collision with petrol).
  */
-export type SamplePaintVisual = 'oxide' | 'petrol';
+export type SamplePaintVisual =
+  | 'oxide'
+  | 'petrol'
+  | 'primer'
+  | 'ink'
+  | 'drab'
+  | 'cobalt'
+  | 'frost'
+  | 'cinder'
+  | 'hazard'
+  | 'racing';
 
 /** Layer roles in draw order (back → front). */
 export type AssemblerLayerRole =
@@ -164,6 +173,11 @@ export interface AssembledLayer {
   /** Kit `materials/{id}-over.png` — outlines / shading over paint. */
   readonly materialOverPath?: string;
   /**
+   * Baked A6 pattern fill (hazard/racing) for main-channel parts.
+   * When set, renderer draws under → pattern image (no tint) → over.
+   */
+  readonly patternFillPath?: string;
+  /**
    * When true, renderer draws under → tinted mask → over (no full-sprite tint).
    * Empty / non-paintable parts omit `paintMaskPath` but still composite under/over.
    */
@@ -183,7 +197,7 @@ export interface AssembledBot {
   readonly paintId: string;
   readonly paintVisual: SamplePaintVisual;
   readonly weaponId: string;
-  readonly weaponKind: 'sword' | 'axe' | 'dagger';
+  readonly weaponKind: 'sword' | 'axe' | 'dagger' | 'mace' | 'hammer' | 'spear' | 'shield';
   readonly facing: BotFacing;
   readonly mirrored: boolean;
   readonly motionPose: MotionPose;

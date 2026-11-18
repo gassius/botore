@@ -6,7 +6,10 @@ import { DevFightBackendState, getSharedDevFightBackend } from '../dev/DevFightB
 import type { OpponentCandidatesPort } from './OpponentCandidatesPort';
 import type { ListCandidatesResult, OpponentCandidate, PrepareEligibilityResult } from './types';
 
-/** A5 roster names (a5fix/npcs.json) + A6 D8 lanista / record pairings. */
+/**
+ * A5 roster names + A6 D8 lanista / record pairings.
+ * Loadouts match A6_OPPONENT_BAKES so combat seed === Opponents/ToTT presentation.
+ */
 const DEV_OPPONENTS: readonly OpponentCandidate[] = [
   {
     characterId: 'opp-dex-bot',
@@ -16,9 +19,9 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
     losses: 2,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
-      paint: 'paint-crimson',
-      weapon: 'weapon-dagger',
-      soundTags: ['chassis.light', 'weapon.dagger'],
+      paint: 'paint-primer',
+      weapon: 'weapon-spear',
+      soundTags: ['chassis.light', 'weapon.spear'],
     },
     loadoutVersionId: 'dev-opp-dex',
     atlasVersion: PROOF_ATLAS_VERSION,
@@ -31,9 +34,9 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
     losses: 5,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
-      paint: 'paint-cobalt',
-      weapon: 'weapon-axe',
-      soundTags: ['chassis.light', 'weapon.axe'],
+      paint: 'paint-navy',
+      weapon: 'weapon-mace',
+      soundTags: ['chassis.light', 'weapon.mace'],
     },
     loadoutVersionId: 'dev-opp-hp',
     atlasVersion: PROOF_ATLAS_VERSION,
@@ -46,9 +49,9 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
     losses: 6,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
-      paint: 'paint-cobalt',
-      weapon: 'weapon-sword',
-      soundTags: ['chassis.light', 'weapon.sword'],
+      paint: 'paint-cinder',
+      weapon: 'weapon-mace',
+      soundTags: ['chassis.light', 'weapon.mace'],
     },
     loadoutVersionId: 'dev-opp-sir',
     atlasVersion: PROOF_ATLAS_VERSION,
