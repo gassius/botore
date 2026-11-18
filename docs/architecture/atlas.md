@@ -31,20 +31,20 @@ Published packs are **immutable**: triggers reject insert/update/delete of manif
 
 ## Database
 
-| Relation / RPC                               | Purpose                                                                                                 |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `atlas_versions`                             | Version registry + JSON manifest (`budgets_final` stays false until approved)                           |
-| `atlas_manifest_entries`                     | Part / base / arena / FX → file path map                                                                |
-| `atlas_missing_storage_paths(version)`       | Paths lacking Storage objects (publish gate / health)                                                   |
-| `atlas_lock_versions(text[])`                | Sorted per-version row locks for publish + mutations                                                    |
-| `get_atlas_manifest(version)`                | Published manifest + entry list for clients                                                             |
-| `publish_atlas_version(version)`             | `service_role` draft → published after object check                                                     |
+| Relation / RPC                               | Purpose                                                                                                                                                          |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `atlas_versions`                             | Version registry + JSON manifest (`budgets_final` stays false until approved)                                                                                    |
+| `atlas_manifest_entries`                     | Part / base / arena / FX → file path map                                                                                                                         |
+| `atlas_missing_storage_paths(version)`       | Paths lacking Storage objects (publish gate / health)                                                                                                            |
+| `atlas_lock_versions(text[])`                | Sorted per-version row locks for publish + mutations                                                                                                             |
+| `get_atlas_manifest(version)`                | Published manifest + entry list for clients                                                                                                                      |
+| `publish_atlas_version(version)`             | `service_role` draft → published after object check                                                                                                              |
 | `dev_reopen_atlas_version(v, confirm)`       | Dev-only published → draft; requires `private.environment.env=development` (via `private.app_environment()`) + confirm; fail closed when row absent / Production |
-| `private.environment`                        | Singleton env marker (`development` / `staging` / `production`); RLS on, no client grants; Infra INSERT on Dev only — never from migrations |
-| `register_atlas_v1_workshop_frame_entries()` | Idempotent kit-v003 manifest rows onto draft `v1`                                                       |
-| `battle_participants.atlas_version`          | Fight-time media version pin (from loadout)                                                             |
-| `admin_atlas_overview`                       | Ops/readiness for a future B2 dashboard                                                                 |
-| `admin_dashboard_snapshot()`                 | Bundles atlas versions with health / fights / cron for B2 (see admin-dashboard.md)                      |
+| `private.environment`                        | Singleton env marker (`development` / `staging` / `production`); RLS on, no client grants; Infra INSERT on Dev only — never from migrations                      |
+| `register_atlas_v1_workshop_frame_entries()` | Idempotent kit-v003 manifest rows onto draft `v1`                                                                                                                |
+| `battle_participants.atlas_version`          | Fight-time media version pin (from loadout)                                                                                                                      |
+| `admin_atlas_overview`                       | Ops/readiness for a future B2 dashboard                                                                                                                          |
+| `admin_dashboard_snapshot()`                 | Bundles atlas versions with health / fights / cron for B2 (see admin-dashboard.md)                                                                               |
 
 ## Single Development atlas (v1)
 
