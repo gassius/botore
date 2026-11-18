@@ -74,16 +74,21 @@ test('pack target guard allows v1 overlay and refuses retired v2/v3', () => {
     assertWorkshopFramePackTarget('v1', join(ROOT, 'supabase/seed/atlas/tmp-v1'), v1),
     { overlay: false },
   );
-  assert.throws(() => assertWorkshopFramePackTarget('v2', join(ROOT, 'supabase/seed/atlas/v2'), v1), {
-    message: /refusing ATLAS_VERSION=v2|retired/,
-  });
-  assert.throws(() => assertWorkshopFramePackTarget('v3', join(ROOT, 'supabase/seed/atlas/v3'), v1), {
-    message: /refusing ATLAS_VERSION=v3|retired/,
-  });
   assert.throws(
-    () => assertWorkshopFramePackTarget(WORKSHOP_FRAME_LEGACY_ATLAS_VERSION, v1, v1),
-    { message: /refusing|retired/ },
+    () => assertWorkshopFramePackTarget('v2', join(ROOT, 'supabase/seed/atlas/v2'), v1),
+    {
+      message: /refusing ATLAS_VERSION=v2|retired/,
+    },
   );
+  assert.throws(
+    () => assertWorkshopFramePackTarget('v3', join(ROOT, 'supabase/seed/atlas/v3'), v1),
+    {
+      message: /refusing ATLAS_VERSION=v3|retired/,
+    },
+  );
+  assert.throws(() => assertWorkshopFramePackTarget(WORKSHOP_FRAME_LEGACY_ATLAS_VERSION, v1, v1), {
+    message: /refusing|retired/,
+  });
 });
 
 test('pack script overlays kit-v003 into committed v1 without wiping proof bytes', () => {

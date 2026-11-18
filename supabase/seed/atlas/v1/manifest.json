@@ -30,28 +30,17 @@
   },
   "parts": {
     "chassis-basic": {
-      "images": [
-        "parts/chassis-basic/body.png",
-        "parts/chassis-basic/mask.png"
-      ],
-      "audio": [
-        "parts/chassis-basic/hit.m4a"
-      ],
-      "soundTags": [
-        "chassis.light"
-      ]
+      "images": ["parts/chassis-basic/body.png", "parts/chassis-basic/mask.png"],
+      "audio": ["parts/chassis-basic/hit.m4a"],
+      "soundTags": ["chassis.light"]
     },
     "paint-crimson": {
-      "images": [
-        "parts/paint-crimson/swatch.png"
-      ],
+      "images": ["parts/paint-crimson/swatch.png"],
       "audio": [],
       "soundTags": []
     },
     "paint-cobalt": {
-      "images": [
-        "parts/paint-cobalt/swatch.png"
-      ],
+      "images": ["parts/paint-cobalt/swatch.png"],
       "audio": [],
       "soundTags": []
     },
@@ -64,12 +53,8 @@
         "parts/weapon-sword/material-over.png",
         "parts/weapon-sword/mask.png"
       ],
-      "audio": [
-        "parts/weapon-sword/swing.m4a"
-      ],
-      "soundTags": [
-        "weapon.sword"
-      ]
+      "audio": ["parts/weapon-sword/swing.m4a"],
+      "soundTags": ["weapon.sword"]
     },
     "weapon-axe": {
       "images": [
@@ -80,12 +65,8 @@
         "parts/weapon-axe/material-over.png",
         "parts/weapon-axe/mask.png"
       ],
-      "audio": [
-        "parts/weapon-axe/swing.m4a"
-      ],
-      "soundTags": [
-        "weapon.axe"
-      ]
+      "audio": ["parts/weapon-axe/swing.m4a"],
+      "soundTags": ["weapon.axe"]
     },
     "weapon-dagger": {
       "images": [
@@ -96,12 +77,8 @@
         "parts/weapon-dagger/material-over.png",
         "parts/weapon-dagger/mask.png"
       ],
-      "audio": [
-        "parts/weapon-dagger/swing.m4a"
-      ],
-      "soundTags": [
-        "weapon.dagger"
-      ]
+      "audio": ["parts/weapon-dagger/swing.m4a"],
+      "soundTags": ["weapon.dagger"]
     },
     "torso": {
       "images": [

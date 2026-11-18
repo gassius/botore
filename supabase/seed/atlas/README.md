@@ -2,15 +2,15 @@
 
 Byte placeholders / packed kit media for Supabase Storage layout `atlas/vN/…`.
 
-| Path                 | Role                                                                         |
-| -------------------- | ---------------------------------------------------------------------------- |
-| `v1/manifest.json`   | Single Development atlas (proof + Workshop Frame kit-v003)                   |
-| `v1/base/audio/*`    | Small base-pack AAC fallbacks (UI, music, hit/dodge/defeat/…)                |
-| `v1/parts/<partId>/` | Proof catalogue + workshop-frame hyphenated parts (packed overlays)          |
-| `v1/arenas/quiet/`   | Quiet arena background + ambient                                             |
-| `v1/fx/`             | Hit / dodge / defeat FX placeholders                                         |
-| `v2/`                | **Retired** — README only (kit-v002 history; do not pack/publish)            |
-| `v3/`                | **Retired** — README only (former active pack; contents live on `v1` now)    |
+| Path                 | Role                                                                      |
+| -------------------- | ------------------------------------------------------------------------- |
+| `v1/manifest.json`   | Single Development atlas (proof + Workshop Frame kit-v003)                |
+| `v1/base/audio/*`    | Small base-pack AAC fallbacks (UI, music, hit/dodge/defeat/…)             |
+| `v1/parts/<partId>/` | Proof catalogue + workshop-frame hyphenated parts (packed overlays)       |
+| `v1/arenas/quiet/`   | Quiet arena background + ambient                                          |
+| `v1/fx/`             | Hit / dodge / defeat FX placeholders                                      |
+| `v2/`                | **Retired** — README only (kit-v002 history; do not pack/publish)         |
+| `v3/`                | **Retired** — README only (former active pack; contents live on `v1` now) |
 
 ## Bootstrap (required)
 
