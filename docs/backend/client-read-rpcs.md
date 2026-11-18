@@ -9,18 +9,18 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 
 ## Contract
 
-| RPC                             | Args                | Success body                                                                                                     |
-| ------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `get_owned_character()`         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }` — **active** bot (E4 `0037`; auto-provisions first)                     |
-| `list_owned_characters()`       | none (`auth.uid()`) | E4: `{ ok, bots:[{characterId,displayName,wins,losses,paint,weapon,atlasVersion,isActive}], cap, ownedCount, activeCharacterId }` |
-| `suggest_bot_name()`            | none (`auth.uid()`) | E4: `{ ok, displayName }` — random fitting name ≤12                                                              |
-| `create_owned_character(name, paint?, weapon?)` | auth.uid() | E4 write: `{ ok, characterId, displayName, … }` or `{ ok:false, code: bot_cap_reached\|name_taken\|… }` |
-| `select_active_character(id)`   | auth.uid()          | E4 write: `{ ok, characterId, displayName }`                                                                     |
-| `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName, botoreName, wins, losses }] }` (0033)                       |
-| `get_fight_allowance_summary()` | none (`auth.uid()`) | E3: `{ ok, fightsRemaining, limit, scope, refillPolicy, nextRefillAt, utcDay, allowancesRemaining }` — see below |
-| `list_ranking()`                | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }`                                |
-| `list_bot_ranking()`            | none (`auth.uid()`) | `{ ok: true, tab: "bots", rows: [...] }` — see `docs/backend/ranking.md` (E2)                                    |
-| `list_botore_ranking()`         | none (`auth.uid()`) | `{ ok: true, tab: "botores", rows: [...] }` — see `docs/backend/ranking.md` (E2)                                 |
+| RPC                                             | Args                | Success body                                                                                                                      |
+| ----------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `get_owned_character()`                         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }` — **active** bot (E4 `0037`; auto-provisions first)                                      |
+| `list_owned_characters()`                       | none (`auth.uid()`) | E4: `{ ok, bots:[{characterId,displayName,wins,losses,paint,weapon,atlasVersion,isActive}], cap, ownedCount, activeCharacterId }` |
+| `suggest_bot_name()`                            | none (`auth.uid()`) | E4: `{ ok, displayName }` — random fitting name ≤12                                                                               |
+| `create_owned_character(name, paint?, weapon?)` | auth.uid()          | E4 write: `{ ok, characterId, displayName, … }` or `{ ok:false, code: bot_cap_reached\|name_taken\|… }`                           |
+| `select_active_character(id)`                   | auth.uid()          | E4 write: `{ ok, characterId, displayName }`                                                                                      |
+| `list_opponent_roster()`                        | none                | `{ ok: true, opponents: [{ characterId, displayName, botoreName, wins, losses }] }` (0033)                                        |
+| `get_fight_allowance_summary()`                 | none (`auth.uid()`) | E3: `{ ok, fightsRemaining, limit, scope, refillPolicy, nextRefillAt, utcDay, allowancesRemaining }` — see below                  |
+| `list_ranking()`                                | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }`                                                 |
+| `list_bot_ranking()`                            | none (`auth.uid()`) | `{ ok: true, tab: "bots", rows: [...] }` — see `docs/backend/ranking.md` (E2)                                                     |
+| `list_botore_ranking()`                         | none (`auth.uid()`) | `{ ok: true, tab: "botores", rows: [...] }` — see `docs/backend/ranking.md` (E2)                                                  |
 
 ### E3 fight quota (`get_fight_allowance_summary`)
 

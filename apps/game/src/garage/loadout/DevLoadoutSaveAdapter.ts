@@ -209,11 +209,15 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
     for (let i = 0; i < 24; i += 1) {
       const left = DEV_NAME_LEFT[this.nameSuggestCursor % DEV_NAME_LEFT.length]!;
       const right =
-        DEV_NAME_RIGHT[Math.floor(this.nameSuggestCursor / DEV_NAME_LEFT.length) % DEV_NAME_RIGHT.length]!;
+        DEV_NAME_RIGHT[
+          Math.floor(this.nameSuggestCursor / DEV_NAME_LEFT.length) % DEV_NAME_RIGHT.length
+        ]!;
       this.nameSuggestCursor += 1;
       const displayName = `${left} ${right}`;
       if (displayName.length > 12) continue;
-      const taken = [...this.names.values()].some((n) => n.toLowerCase() === displayName.toLowerCase());
+      const taken = [...this.names.values()].some(
+        (n) => n.toLowerCase() === displayName.toLowerCase(),
+      );
       if (!taken) return { ok: true, displayName };
     }
     return { ok: true, displayName: 'Tin Rex' };

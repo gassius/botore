@@ -329,12 +329,13 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
         return {
           ok: false,
           code: (body && 'code' in body && body.code) || 'invalid_response',
-          message:
-            (body && 'message' in body && body.message) || 'Could not load your bots.',
+          message: (body && 'message' in body && body.message) || 'Could not load your bots.',
         };
       }
       const bots = Array.isArray(body.bots)
-        ? body.bots.map((row) => normalizeOwnedBotRow(row)).filter((b): b is OwnedBotSummary => b != null)
+        ? body.bots
+            .map((row) => normalizeOwnedBotRow(row))
+            .filter((b): b is OwnedBotSummary => b != null)
         : [];
       const cap =
         typeof body.cap === 'number' && Number.isFinite(body.cap) && body.cap >= 1
@@ -539,9 +540,10 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
   }
 }
 
-function normalizeOwnedBotRow(row: OwnedBotRpcRow | Record<string, unknown>): OwnedBotSummary | null {
-  const characterId =
-    typeof row.characterId === 'string' ? row.characterId.trim() : '';
+function normalizeOwnedBotRow(
+  row: OwnedBotRpcRow | Record<string, unknown>,
+): OwnedBotSummary | null {
+  const characterId = typeof row.characterId === 'string' ? row.characterId.trim() : '';
   if (!characterId) return null;
   const rawName = typeof row.displayName === 'string' ? row.displayName : '';
   return {

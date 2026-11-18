@@ -250,6 +250,7 @@ comment on function public.suggest_bot_name() is
 create or replace function public._resolve_active_owned_character(p_account_id uuid)
 returns table (character_id text, display_name text)
 language plpgsql
+volatile
 security definer
 set search_path = public
 as $$
@@ -389,10 +390,11 @@ comment on function public.get_owned_character() is
 -- ---------------------------------------------------------------------------
 -- list_owned_characters — collection + cap + active
 -- ---------------------------------------------------------------------------
+-- VOLATILE: may ensure_player_character + UPDATE accounts.active_character_id
 create or replace function public.list_owned_characters()
 returns jsonb
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public, extensions
 as $$
