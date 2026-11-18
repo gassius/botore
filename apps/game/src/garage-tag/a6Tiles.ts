@@ -4,74 +4,18 @@
  */
 /* eslint-disable @typescript-eslint/no-require-imports */
 import type { ImageSourcePropType } from 'react-native';
+import type { A6OpponentNpcId, A6PaintTileId, A6TileState, A6WeaponTileId } from './a6TilesIds';
+import { matchA6OpponentPanelId } from './a6OpponentMatch';
 
-export type A6PaintTileId =
-  | 'oxide'
-  | 'petrol'
-  | 'primer'
-  | 'ink'
-  | 'drab'
-  | 'cobalt'
-  | 'frost'
-  | 'cinder'
-  | 'hazard'
-  | 'racing';
-
-export type A6WeaponTileId = 'sword' | 'axe' | 'dagger' | 'mace' | 'hammer' | 'spear' | 'shield';
-
-export type A6TileState = 'default' | 'selected' | 'locked';
-
-export type A6OpponentNpcId =
-  | 'rivet-nan'
-  | 'boiler-joe'
-  | 'can-hook'
-  | 'slab-mick'
-  | 'ink-pip'
-  | 'drab-hank'
-  | 'frost-kit'
-  | 'cobalt-brute'
-  | 'primer-peg'
-  | 'petrol-gus'
-  | 'cinder-cal'
-  | 'weld-tess';
-
-export const A6_PAINT_TILE_IDS: readonly A6PaintTileId[] = [
-  'oxide',
-  'petrol',
-  'primer',
-  'ink',
-  'drab',
-  'cobalt',
-  'frost',
-  'cinder',
-  'hazard',
-  'racing',
-] as const;
-
-export const A6_WEAPON_TILE_IDS: readonly A6WeaponTileId[] = [
-  'sword',
-  'axe',
-  'dagger',
-  'mace',
-  'hammer',
-  'spear',
-  'shield',
-] as const;
-
-export const A6_OPPONENT_NPC_IDS: readonly A6OpponentNpcId[] = [
-  'rivet-nan',
-  'boiler-joe',
-  'can-hook',
-  'slab-mick',
-  'ink-pip',
-  'drab-hank',
-  'frost-kit',
-  'cobalt-brute',
-  'primer-peg',
-  'petrol-gus',
-  'cinder-cal',
-  'weld-tess',
-] as const;
+export type { A6OpponentNpcId, A6PaintTileId, A6TileState, A6WeaponTileId } from './a6TilesIds';
+export { A6_OPPONENT_NPC_IDS, A6_PAINT_TILE_IDS, A6_WEAPON_TILE_IDS } from './a6TilesIds';
+export {
+  A6_OPPONENT_BAKES,
+  a6NpcLoadoutMatchesBake,
+  matchA6OpponentPanelId,
+  resolveOpponentNpcId,
+  type A6OpponentBake,
+} from './a6OpponentMatch';
 
 const paintTiles: Record<A6PaintTileId, Record<A6TileState, ImageSourcePropType>> = {
   oxide: {
@@ -194,22 +138,12 @@ export function a6OpponentPanelSource(id: string): ImageSourcePropType | null {
   return opponentPanels[key] ?? null;
 }
 
-/** Map player-facing / DEV display names onto A6 NPC panel ids when possible. */
-export function resolveOpponentNpcId(displayName: string): A6OpponentNpcId | null {
-  const slug = displayName
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-  if ((A6_OPPONENT_NPC_IDS as readonly string[]).includes(slug)) {
-    return slug as A6OpponentNpcId;
-  }
-  // DEV roster aliases until live NPC names land.
-  const aliases: Record<string, A6OpponentNpcId> = {
-    'sir-bot': 'slab-mick',
-    'dex-bot': 'ink-pip',
-    'tank-bot': 'cobalt-brute',
-    'hp-bot': 'cobalt-brute',
-  };
-  return aliases[slug] ?? null;
+export function a6OpponentPanelForCandidate(input: {
+  readonly characterId: string;
+  readonly displayName: string;
+  readonly paint: string;
+  readonly weapon: string;
+}): ImageSourcePropType | null {
+  const npcId = matchA6OpponentPanelId(input);
+  return npcId ? a6OpponentPanelSource(npcId) : null;
 }

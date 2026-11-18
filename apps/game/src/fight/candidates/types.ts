@@ -7,6 +7,11 @@ export type OpponentCandidate = {
   readonly loadout: GarageLoadout;
   readonly loadoutVersionId: string | null;
   readonly atlasVersion: string;
+  /** Botore handle when a sanctioned read path supplies it; omit rather than invent. */
+  readonly botoreName?: string | null;
+  /** W–L when a sanctioned read path supplies it; omit rather than invent. */
+  readonly wins?: number | null;
+  readonly losses?: number | null;
 };
 
 export type ListCandidatesResult =

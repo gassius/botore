@@ -24,6 +24,10 @@ describe('E6 shared snap primitive wiring', () => {
     expect(src).toContain('SnapVerticalList');
     expect(src).toContain('OPPONENTS_LIST');
     expect(src).toContain('opponents-snap-list');
+    expect(src).not.toMatch(/clipHeight=\{OPPONENTS_LIST\.trackHeight\}/);
+    expect(src).not.toMatch(/resolveOpponentNpcId|sir-bot.*slab-mick/);
+    expect(src).toContain('a6OpponentPanelForCandidate');
+    expect(src).not.toMatch(/— W – — L/);
     expect(src).not.toMatch(/<ScrollView/);
   });
 

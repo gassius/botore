@@ -5,7 +5,7 @@
   "base_kit": {
     "family": "workshop-frame",
     "version": "v003.3",
-    "path": "/workspace/botore-art/2026-11-17-kit-v003/v003.3/kit-v003.3"
+    "path": "kit-v003.3"
   },
   "paint_composite_order": [
     "material_under",

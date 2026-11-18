@@ -11,7 +11,7 @@ import {
   StatusErrorBanner,
   garageTag,
 } from '../../garage-tag';
-import { a6OpponentPanelSource, resolveOpponentNpcId } from '../../garage-tag/a6Tiles';
+import { a6OpponentPanelForCandidate } from '../../garage-tag/a6Tiles';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
@@ -191,8 +191,6 @@ export function OpponentsScreen(props: {
               data={candidates}
               itemSize={OPPONENTS_LIST.cardHeight}
               gap={OPPONENTS_LIST.gap}
-              clipHeight={OPPONENTS_LIST.trackHeight}
-              sidePadding={0}
               designVisibleCount={OPPONENTS_LIST.visibleCount}
               onSnapIndexChange={setSnapIndex}
               keyExtractor={(c: OpponentCandidate) => c.characterId}
@@ -201,8 +199,21 @@ export function OpponentsScreen(props: {
               renderItem={({ item: c }) => {
                 const isSelected = selected?.characterId === c.characterId;
                 const name = playerFacingDisplayName(c.displayName);
-                const npcId = resolveOpponentNpcId(c.displayName);
-                const panel = npcId ? a6OpponentPanelSource(npcId) : null;
+                const panel = a6OpponentPanelForCandidate({
+                  characterId: c.characterId,
+                  displayName: c.displayName,
+                  paint: c.loadout.paint,
+                  weapon: c.loadout.weapon,
+                });
+                const botoreName =
+                  typeof c.botoreName === 'string' && c.botoreName.trim().length > 0
+                    ? c.botoreName.trim()
+                    : null;
+                const hasRecord =
+                  typeof c.wins === 'number' &&
+                  Number.isFinite(c.wins) &&
+                  typeof c.losses === 'number' &&
+                  Number.isFinite(c.losses);
                 return (
                   <Pressable
                     accessibilityRole="button"
@@ -221,7 +232,7 @@ export function OpponentsScreen(props: {
                           style={styles.panelArt}
                           resizeMode="contain"
                           accessibilityIgnoresInvertColors
-                          testID={`opponent-preview-${c.characterId}`}
+                          testID={`opponent-preview-panel-${c.characterId}`}
                         />
                       ) : (
                         <BotAssemblerSlot
@@ -244,14 +255,28 @@ export function OpponentsScreen(props: {
                       <Text style={styles.name} numberOfLines={2} allowFontScaling>
                         {name}
                       </Text>
-                      {/* D8: Botore name + W–L land with UI/data tickets; no weapon/paint chrome. */}
-                      <Text style={styles.botore} numberOfLines={1} allowFontScaling>
-                        Opponent
-                      </Text>
-                      <View style={styles.recordRule} />
-                      <Text style={styles.record} allowFontScaling>
-                        — W – — L
-                      </Text>
+                      {botoreName ? (
+                        <Text
+                          style={styles.botore}
+                          numberOfLines={1}
+                          allowFontScaling
+                          testID={`opponent-botore-${c.characterId}`}
+                        >
+                          {botoreName}
+                        </Text>
+                      ) : null}
+                      {hasRecord ? (
+                        <>
+                          <View style={styles.recordRule} />
+                          <Text
+                            style={styles.record}
+                            allowFontScaling
+                            testID={`opponent-record-${c.characterId}`}
+                          >
+                            {c.wins} W – {c.losses} L
+                          </Text>
+                        </>
+                      ) : null}
                     </View>
                     <SelectionCheck selected={isSelected} />
                   </Pressable>

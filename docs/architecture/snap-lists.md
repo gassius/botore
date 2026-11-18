@@ -44,17 +44,23 @@ Map: `apps/game/src/garage-tag/a6Tiles.ts`. Catalogue unlock of all 10+7 is **E7
 
 ## Opponents vertical list (D8 / A6 SCREENS-SPEC)
 
-| Metric            |               Value (pt) |
-| ----------------- | -----------------------: |
-| `cardHeight`      |                  **175** |
-| `gap`             |                   **10** |
-| **snap interval** |                  **185** |
-| `trackHeight`     | **545** (`3×175 + 2×10`) |
-| `visibleCount`    |                    **3** |
-| art panel         |            **170 × 169** |
-| robot body        |                  **150** |
+| Metric            |                                                    Value (pt) |
+| ----------------- | ------------------------------------------------------------: |
+| `cardHeight`      |                                                       **175** |
+| `gap`             |                                                        **10** |
+| **snap interval** |                                                       **185** |
+| `trackHeight`     | **545** design budget (`3×175 + 2×10`) — **not** a fixed clip |
+| `visibleCount`    |                   **3** design target; list measures viewport |
+| art panel         |                                                 **170 × 169** |
+| robot body        |                                                       **150** |
 
-Panel art: `apps/game/assets/a6-patterns-tott-v1/opponents/` (12 NPCs).
+`SnapVerticalList` measures its own height and uses `visibleWholeCount` +
+`sidePaddingForExactFit` so rest stops are whole 185-pitch cards under the
+footer (no fixed `clipHeight={545}`).
+
+Panel art: `apps/game/assets/a6-patterns-tott-v1/opponents/` (12 NPCs). Use a
+panel only when the candidate id is an exact A6 NPC id **and** paint/weapon
+match that NPC's bake; otherwise `BotAssemblerSlot` with the server loadout.
 
 Android design evidence: live-fight still `opponents-snap-rest` (seeded online
 roster, not C10 `sessionFailure`). Seed ships three system opponents so the
