@@ -214,109 +214,114 @@ export function OpponentsScreen(props: {
             <Text style={styles.rangeHint} allowFontScaling testID="opponents-range">
               {rangeStart}–{rangeEnd} of {candidates.length}
             </Text>
-            <SnapVerticalList
-              data={candidates}
-              itemSize={OPPONENTS_LIST.cardHeight}
-              gap={OPPONENTS_LIST.gap}
-              // Exact 3-card viewport: no exact-fit side pad (avoids empty gap under
-              // the counter that clipped the third card). Metrics unchanged.
-              sidePadding={0}
-              clipHeight={OPPONENTS_LIST.trackHeight}
-              designVisibleCount={OPPONENTS_LIST.visibleCount}
-              onSnapIndexChange={setSnapIndex}
-              keyExtractor={(c: OpponentCandidate) => c.characterId}
-              style={styles.list}
-              testID="opponents-snap-list"
-              renderItem={({ item: c }) => {
-                const isSelected = selected?.characterId === c.characterId;
-                const name = playerFacingDisplayName(c.displayName);
-                const panel = a6OpponentPanelForCandidate({
-                  characterId: c.characterId,
-                  displayName: c.displayName,
-                  paint: c.loadout.paint,
-                  weapon: c.loadout.weapon,
-                });
-                const botoreName =
-                  typeof c.botoreName === 'string' && c.botoreName.trim().length > 0
-                    ? playerFacingDisplayName(c.botoreName)
-                    : null;
-                const hasRecord =
-                  typeof c.wins === 'number' &&
-                  Number.isFinite(c.wins) &&
-                  typeof c.losses === 'number' &&
-                  Number.isFinite(c.losses);
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                    accessibilityLabel={`${name}${botoreName ? `, ${botoreName}` : ''}${
-                      hasRecord ? `, ${c.wins} wins ${c.losses} losses` : ''
-                    }${isSelected ? ', selected' : ''}`}
-                    onPress={() => {
-                      selectOpponent(c);
-                    }}
-                    style={[styles.card, isSelected ? styles.cardSelected : null]}
-                    testID={`opponent-${c.characterId}`}
-                  >
-                    <View style={styles.preview} testID={`opponent-preview-wrap-${c.characterId}`}>
-                      {panel ? (
-                        <Image
-                          source={panel}
-                          style={styles.panelArt}
-                          resizeMode="contain"
-                          accessibilityIgnoresInvertColors
-                          testID={`opponent-preview-panel-${c.characterId}`}
-                        />
-                      ) : (
-                        <BotAssemblerSlot
-                          loadout={{
-                            chassisId: c.loadout.chassis,
-                            paintId: c.loadout.paint,
-                            weaponId: c.loadout.weapon,
-                          }}
-                          facing="left"
-                          paintId={c.loadout.paint}
-                          weaponId={c.loadout.weapon}
-                          size={OPPONENTS_LIST.robotBodyHeight}
-                          reducedMotion
-                          motionPose="idle"
-                          testID={`opponent-preview-${c.characterId}`}
-                        />
-                      )}
-                    </View>
-                    <View style={styles.metaCol}>
-                      <Text style={styles.name} numberOfLines={2} allowFontScaling>
-                        {name}
-                      </Text>
-                      {botoreName ? (
-                        <Text
-                          style={styles.botore}
-                          numberOfLines={1}
-                          allowFontScaling
-                          testID={`opponent-botore-${c.characterId}`}
-                        >
-                          {botoreName}
+            <View style={styles.listHost} testID="opponents-list-host">
+              <SnapVerticalList
+                data={candidates}
+                itemSize={OPPONENTS_LIST.cardHeight}
+                gap={OPPONENTS_LIST.gap}
+                // Exact 3-card viewport: no exact-fit side pad (avoids empty gap under
+                // the counter). Host minHeight keeps FlatList from collapsing to 0.
+                sidePadding={0}
+                clipHeight={OPPONENTS_LIST.trackHeight}
+                designVisibleCount={OPPONENTS_LIST.visibleCount}
+                onSnapIndexChange={setSnapIndex}
+                keyExtractor={(c: OpponentCandidate) => c.characterId}
+                style={styles.list}
+                testID="opponents-snap-list"
+                renderItem={({ item: c }) => {
+                  const isSelected = selected?.characterId === c.characterId;
+                  const name = playerFacingDisplayName(c.displayName);
+                  const panel = a6OpponentPanelForCandidate({
+                    characterId: c.characterId,
+                    displayName: c.displayName,
+                    paint: c.loadout.paint,
+                    weapon: c.loadout.weapon,
+                  });
+                  const botoreName =
+                    typeof c.botoreName === 'string' && c.botoreName.trim().length > 0
+                      ? playerFacingDisplayName(c.botoreName)
+                      : null;
+                  const hasRecord =
+                    typeof c.wins === 'number' &&
+                    Number.isFinite(c.wins) &&
+                    typeof c.losses === 'number' &&
+                    Number.isFinite(c.losses);
+                  return (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: isSelected }}
+                      accessibilityLabel={`${name}${botoreName ? `, ${botoreName}` : ''}${
+                        hasRecord ? `, ${c.wins} wins ${c.losses} losses` : ''
+                      }${isSelected ? ', selected' : ''}`}
+                      onPress={() => {
+                        selectOpponent(c);
+                      }}
+                      style={[styles.card, isSelected ? styles.cardSelected : null]}
+                      testID={`opponent-${c.characterId}`}
+                    >
+                      <View
+                        style={styles.preview}
+                        testID={`opponent-preview-wrap-${c.characterId}`}
+                      >
+                        {panel ? (
+                          <Image
+                            source={panel}
+                            style={styles.panelArt}
+                            resizeMode="contain"
+                            accessibilityIgnoresInvertColors
+                            testID={`opponent-preview-panel-${c.characterId}`}
+                          />
+                        ) : (
+                          <BotAssemblerSlot
+                            loadout={{
+                              chassisId: c.loadout.chassis,
+                              paintId: c.loadout.paint,
+                              weaponId: c.loadout.weapon,
+                            }}
+                            facing="left"
+                            paintId={c.loadout.paint}
+                            weaponId={c.loadout.weapon}
+                            size={OPPONENTS_LIST.robotBodyHeight}
+                            reducedMotion
+                            motionPose="idle"
+                            testID={`opponent-preview-${c.characterId}`}
+                          />
+                        )}
+                      </View>
+                      <View style={styles.metaCol}>
+                        <Text style={styles.name} numberOfLines={2} allowFontScaling>
+                          {name}
                         </Text>
-                      ) : null}
-                      {hasRecord ? (
-                        <>
-                          <View style={styles.recordRule} />
+                        {botoreName ? (
                           <Text
-                            style={styles.record}
+                            style={styles.botore}
+                            numberOfLines={1}
                             allowFontScaling
-                            testID={`opponent-record-${c.characterId}`}
+                            testID={`opponent-botore-${c.characterId}`}
                           >
-                            <Text style={styles.recordNum}>{c.wins}</Text>W –{' '}
-                            <Text style={styles.recordNum}>{c.losses}</Text>L
+                            {botoreName}
                           </Text>
-                        </>
-                      ) : null}
-                    </View>
-                    <SelectionCheck selected={isSelected} style={styles.check} />
-                  </Pressable>
-                );
-              }}
-            />
+                        ) : null}
+                        {hasRecord ? (
+                          <>
+                            <View style={styles.recordRule} />
+                            <Text
+                              style={styles.record}
+                              allowFontScaling
+                              testID={`opponent-record-${c.characterId}`}
+                            >
+                              <Text style={styles.recordNum}>{c.wins}</Text>W –{' '}
+                              <Text style={styles.recordNum}>{c.losses}</Text>L
+                            </Text>
+                          </>
+                        ) : null}
+                      </View>
+                      <SelectionCheck selected={isSelected} style={styles.check} />
+                    </Pressable>
+                  );
+                }}
+              />
+            </View>
           </>
         ) : null}
       </View>
@@ -356,9 +361,16 @@ const styles = StyleSheet.create({
     color: garageTag.steel,
     textTransform: 'uppercase',
   },
+  listHost: {
+    flexGrow: 0,
+    flexShrink: 0,
+    minHeight: OPPONENTS_LIST.trackHeight,
+  },
   list: {
     flexGrow: 0,
     flexShrink: 0,
+    height: OPPONENTS_LIST.trackHeight,
+    minHeight: OPPONENTS_LIST.trackHeight,
   },
   card: {
     height: OPPONENTS_LIST.cardHeight,

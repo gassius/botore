@@ -261,4 +261,58 @@ describe('E6 A6 opponent panel matching (B1)', () => {
     expect(json).not.toContain('"Opponent"');
     expect(json).not.toContain('— W – — L');
   });
+
+  it('renders three whole opponent cards at rest under the range counter', async () => {
+    const backend = new DevFightBackendState(3);
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const candidates = new DevOpponentCandidatesAdapter(backend);
+    const fights = new DevFightRequestAdapter(backend);
+    const loadouts = new DevLoadoutSaveAdapter();
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <FightSessionProvider candidates={candidates} fights={fights}>
+              <OpponentsScreen onBack={() => undefined} onContinue={() => undefined} />
+            </FightSessionProvider>
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    for (let i = 0; i < 40; i += 1) {
+      await flush();
+      if (root.root.findAllByProps({ testID: 'opponents-snap-list' }).length > 0) break;
+    }
+
+    expect(root.root.findAllByProps({ testID: 'opponents-range' }).length).toBeGreaterThanOrEqual(
+      1,
+    );
+    expect(
+      root.root.findAllByProps({ testID: 'opponents-list-host' }).length,
+    ).toBeGreaterThanOrEqual(1);
+    const host = root.root.findByProps({ testID: 'opponents-list-host' });
+    expect(host.props.style).toMatchObject({ minHeight: 545 });
+
+    const cardIds = ['opp-dex-bot', 'opp-hp-bot', 'opp-sir-bot'];
+    for (const id of cardIds) {
+      expect(root.root.findAllByProps({ testID: `opponent-${id}` }).length).toBeGreaterThanOrEqual(
+        1,
+      );
+    }
+    const range = root.root.findByProps({ testID: 'opponents-range' });
+    expect(JSON.stringify(range.props.children)).toContain('3');
+    expect(JSON.stringify(root.toJSON())).toContain('Can Hook');
+    expect(JSON.stringify(root.toJSON())).toContain('Cobalt Brute');
+    expect(JSON.stringify(root.toJSON())).toContain('Slab Mick');
+    expect(JSON.stringify(root.toJSON())).not.toContain('opponents-snap-hint');
+  });
 });

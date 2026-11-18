@@ -55,8 +55,10 @@ Map: `apps/game/src/garage-tag/a6Tiles.ts`. Catalogue unlock of all 10+7 is **E7
 | robot body        |                                                       **150** |
 
 Opponents wires `clipHeight={OPPONENTS_LIST.trackHeight}` (545) with
-`sidePadding={0}` so exactly three whole 175pt cards sit under the range
-counter with no empty top pad and no duplicate snap-hint under the list.
+`sidePadding={0}` inside a host `minHeight` of the same track so exactly
+three whole 175pt cards sit under the range counter (no empty top pad, no
+duplicate snap-hint). Clipped `SnapVerticalList` uses `flexBasis: 'auto'` —
+never bare `flex: 1` — so the FlatList cannot collapse to height 0.
 `SnapVerticalList` still supports measured height + exact-fit padding for
 other callers.
 

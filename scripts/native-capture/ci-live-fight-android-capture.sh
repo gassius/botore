@@ -335,7 +335,13 @@ if [[ ! -e "${opponents_rest_matches[0]:-}" ]]; then
   exit 1
 fi
 write_manifest_line "${MANIFEST}" "still.android.opponents-snap-rest" "${opponents_rest_matches[0]}"
-echo "ok: ${opponents_rest_matches[0]}" >&2
+# Empty list boards are ~50–60KB cream chrome; three robot cards land larger.
+rest_bytes=$(wc -c < "${opponents_rest_matches[0]}")
+if [[ "${rest_bytes}" -lt 60000 ]]; then
+  echo "error: opponents-snap-rest looks empty (${rest_bytes} bytes < 60000) — list must show 3 cards" >&2
+  exit 1
+fi
+echo "ok: ${opponents_rest_matches[0]} (${rest_bytes} bytes)" >&2
 
 # 2) Confirm — both bots; deep-link weapon=axe so live-fight pin saves before Replay.
 CAPTURE_SETTLE_SEC=8 \

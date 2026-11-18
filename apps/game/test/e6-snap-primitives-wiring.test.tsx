@@ -29,8 +29,13 @@ describe('E6 shared snap primitive wiring', () => {
     // Exact 3-card clip + zero side pad: cards start under the counter, no gap.
     expect(src).toMatch(/clipHeight=\{OPPONENTS_LIST\.trackHeight\}/);
     expect(src).toMatch(/sidePadding=\{0\}/);
+    expect(src).toContain('opponents-list-host');
+    expect(src).toContain('minHeight: OPPONENTS_LIST.trackHeight');
     expect(src).toContain('opponents-range');
     expect(src).not.toContain('opponents-snap-hint');
+    const snapSrc = read('src/garage-tag/snap/SnapVerticalList.tsx');
+    expect(snapSrc).toContain('listClipped');
+    expect(snapSrc).toMatch(/flexBasis:\s*['\"]auto['\"]/);
     expect(src).not.toMatch(/resolveOpponentNpcId|sir-bot.*slab-mick/);
     expect(src).toContain('a6OpponentPanelForCandidate');
     expect(src).not.toMatch(/— W – — L/);

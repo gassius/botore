@@ -208,13 +208,14 @@ function SnapVerticalListInner(
       keyExtractor={keyExtractor as (item: unknown, index: number) => string}
       renderItem={wrappedRenderItem}
       style={[
-        styles.list,
+        // Clipped lists must NOT inherit flex:1 (flexBasis 0) — that collapses the
+        // FlatList to 0 height in a column parent after siblings take space.
+        clipped ? styles.listClipped : styles.listFlex,
         clipped
           ? {
               height: clipHeight,
+              minHeight: clipHeight,
               maxHeight: clipHeight,
-              flexGrow: 0,
-              flexShrink: 0,
               overflow: 'hidden',
             }
           : null,
@@ -223,6 +224,13 @@ function SnapVerticalListInner(
       contentContainerStyle={[
         {
           paddingVertical: sidePadding,
+          ...(clipped
+            ? {
+                // Keep content at least one full clip so items paint even before
+                // the first layout pass settles.
+                minHeight: clipHeight,
+              }
+            : null),
         },
         contentContainerStyle,
       ]}
@@ -251,8 +259,13 @@ export const SnapVerticalList = forwardRef(SnapVerticalListInner) as <T>(
 ) => React.ReactElement;
 
 const styles = StyleSheet.create({
-  list: {
+  listFlex: {
     flex: 1,
     minHeight: 0,
+  },
+  listClipped: {
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 'auto',
   },
 });
