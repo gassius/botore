@@ -75,6 +75,8 @@ describe('R6 privacy policy disclosure', () => {
     expect(blob).not.toMatch(/Block Store/i);
     expect(blob).toMatch(/players\.botore\.internal/);
     expect(blob).toContain(DOCUMENTED_ACCOUNT_DELETE_PATH);
+    expect(blob).toContain('Ludus → More → Delete account');
+    expect(blob).not.toMatch(/Stable → Delete account/);
     expect(blob).toMatch(/soft-delete|anonymiz/i);
     expect(blob).toMatch(
       /character rows|loadouts|inventory|battle_commands|auth\.users|audit logs/i,

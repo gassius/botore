@@ -31,6 +31,7 @@ describe('captureIntentState merge + consume', () => {
       fightViewMode: null,
       customiseScenario: null,
       resultScenario: null,
+      homeScenario: null,
     });
   });
 
@@ -55,6 +56,7 @@ describe('captureIntentState merge + consume', () => {
       fightViewMode: null,
       customiseScenario: null,
       resultScenario: null,
+      homeScenario: null,
     });
   });
 
@@ -81,6 +83,7 @@ describe('captureIntentState merge + consume', () => {
       fightViewMode: null,
       customiseScenario: null,
       resultScenario: null,
+      homeScenario: null,
     });
     expect(consumeCaptureRoute()).toBeNull();
   });
@@ -114,5 +117,12 @@ describe('captureIntentState merge + consume', () => {
     expect(peekCaptureIntent().resultScenario).toBe('victory');
     mergeCaptureFileIntent({ result: 'defeat' });
     expect(peekCaptureIntent().resultScenario).toBe('defeat');
+  });
+
+  it('accepts homeScenario more for E5 Ludus More sheet stills', () => {
+    mergeCaptureFileIntent({ route: 'Stable', homeScenario: 'more' });
+    expect(peekCaptureIntent().homeScenario).toBe('more');
+    mergeCaptureFileIntent({ home: 'more' });
+    expect(peekCaptureIntent().homeScenario).toBe('more');
   });
 });

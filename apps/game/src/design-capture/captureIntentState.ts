@@ -15,6 +15,8 @@ import {
   parseDesignCapturePoseCompare,
   parseDesignCaptureRankingScenario,
   parseDesignCaptureSessionFailure,
+  parseDesignCaptureHomeScenario,
+  type DesignCaptureHomeScenario,
 } from './captureEnv';
 
 /**
@@ -43,6 +45,7 @@ export type CaptureIntent = {
   customiseScenario: DesignCaptureCustomiseScenario | null;
   /** E1/D10: FightResult victory / defeat / victory-new-record overlay stills. */
   resultScenario: ResultCaptureScenario | null;
+  homeScenario: DesignCaptureHomeScenario | null;
 };
 
 const EMPTY: CaptureIntent = {
@@ -58,6 +61,7 @@ const EMPTY: CaptureIntent = {
   fightViewMode: null,
   customiseScenario: null,
   resultScenario: null,
+  homeScenario: null,
 };
 
 let intent: CaptureIntent = { ...EMPTY };
@@ -83,6 +87,7 @@ export function mergeIntent(next: Partial<CaptureIntent>): void {
     customiseScenario:
       next.customiseScenario === undefined ? intent.customiseScenario : next.customiseScenario,
     resultScenario: next.resultScenario === undefined ? intent.resultScenario : next.resultScenario,
+    homeScenario: next.homeScenario === undefined ? intent.homeScenario : next.homeScenario,
   };
 }
 
@@ -104,6 +109,8 @@ export function mergeCaptureFileIntent(raw: {
   customise?: string | null;
   resultScenario?: string | null;
   result?: string | null;
+  homeScenario?: string | null;
+  home?: string | null;
 }): void {
   const route = typeof raw.route === 'string' && isFirstRunRoute(raw.route) ? raw.route : null;
   mergeIntent({
@@ -138,6 +145,11 @@ export function mergeCaptureFileIntent(raw: {
     ...(raw.resultScenario !== undefined || raw.result !== undefined
       ? {
           resultScenario: parseResultCaptureScenario(raw.resultScenario ?? raw.result ?? undefined),
+        }
+      : {}),
+    ...(raw.homeScenario !== undefined || raw.home !== undefined
+      ? {
+          homeScenario: parseDesignCaptureHomeScenario(raw.homeScenario ?? raw.home ?? undefined),
         }
       : {}),
   });

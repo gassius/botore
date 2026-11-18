@@ -15,6 +15,7 @@ import {
   readDeletionSupportEmail,
 } from '../auth/deletionSupportContact';
 import { readSupabasePublicConfig } from '../auth/supabasePublicConfig';
+import { LUDUS_DELETE_ACCOUNT_PATH } from '../stableHomeCopy';
 
 /**
  * R5 public web deletion page (`/account/delete`).
@@ -166,7 +167,7 @@ export function PublicAccountDeleteScreen(): React.ReactElement {
       ) : mode === 'code' ? (
         <View style={styles.form}>
           <Text style={styles.body} allowFontScaling>
-            Enter the one-time web deletion code from Botore (Stable → Delete account → Mint web
+            Enter the one-time web deletion code from Botore ({LUDUS_DELETE_ACCOUNT_PATH} → Mint web
             deletion code), then type DELETE to confirm.
           </Text>
           <Text style={styles.label} allowFontScaling>

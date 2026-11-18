@@ -5,6 +5,7 @@ import type { FirstRunRoute } from '../first-run/routes';
 import type { ResultCaptureScenario } from '../result-overlay/designCaptureRecords';
 import {
   type DesignCaptureCustomiseScenario,
+  type DesignCaptureHomeScenario,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
   isDesignCaptureEnabled,
@@ -33,6 +34,7 @@ export function useDesignCaptureDeepLink(): void {
     setSessionFailureCapture,
     setCustomiseCaptureScenario,
     setResultCaptureScenario,
+    setHomeCaptureScenario,
     setFightViewMode,
   } = useFirstRun();
   const lastAppliedRoute = useRef<FirstRunRoute | null>(null);
@@ -41,6 +43,7 @@ export function useDesignCaptureDeepLink(): void {
     undefined,
   );
   const lastResultScenario = useRef<ResultCaptureScenario | null | undefined>(undefined);
+  const lastHomeScenario = useRef<DesignCaptureHomeScenario | null | undefined>(undefined);
   const lastRankingScenario = useRef<DesignCaptureRankingScenario | null | undefined>(undefined);
   const fileConsumed = useRef(false);
   const mutedRef = useRef(muted);
@@ -60,6 +63,7 @@ export function useDesignCaptureDeepLink(): void {
       fightViewMode?: 'firstWatch' | 'rewatch' | null;
       customiseScenario?: DesignCaptureCustomiseScenario | null;
       resultScenario?: ResultCaptureScenario | null;
+      homeScenario?: DesignCaptureHomeScenario | null;
     }) => {
       // Always replace live sessionFailure (including null clear) so sequential
       // stills never stick auth_expired into a later offline capture.
@@ -82,6 +86,17 @@ export function useDesignCaptureDeepLink(): void {
         setResultCaptureScenario(parsed.resultScenario ?? null);
       } else if (parsed.route === 'FightResult' && parsed.resultScenario) {
         setResultCaptureScenario(parsed.resultScenario);
+      }
+      // Ludus More sheet stills — refresh even on same-route Stable captures.
+      if (parsed.homeScenario !== lastHomeScenario.current) {
+        lastHomeScenario.current = parsed.homeScenario ?? null;
+        setHomeCaptureScenario(parsed.homeScenario ?? null);
+      } else if (parsed.route === 'Stable' && parsed.homeScenario) {
+        setHomeCaptureScenario(parsed.homeScenario);
+      } else if (parsed.route === 'Stable' && parsed.homeScenario == null) {
+        // Clear sticky More-open when a later garage still omits home=.
+        lastHomeScenario.current = null;
+        setHomeCaptureScenario(null);
       }
       // Ranking scenario before route so RankingSlot mounts the right port.
       // Same-route stills (bots → botores → empty → loading) refresh even when
@@ -151,6 +166,7 @@ export function useDesignCaptureDeepLink(): void {
         fightViewMode: parsed.fightViewMode,
         customiseScenario: parsed.customiseScenario,
         resultScenario: parsed.resultScenario,
+        homeScenario: parsed.homeScenario,
       });
       applyRouteIfNew(parsed.route, false);
     };
@@ -189,6 +205,8 @@ export function useDesignCaptureDeepLink(): void {
     setRankingCaptureScenario,
     setSessionFailureCapture,
     setCustomiseCaptureScenario,
+    setResultCaptureScenario,
+    setHomeCaptureScenario,
     setMuted,
   ]);
 }

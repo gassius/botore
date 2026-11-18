@@ -381,6 +381,7 @@ capture_named() {
   local mute="${5:-}"
   local customise="${6:-}"
   local ranking="${7:-}"
+  local home="${8:-}"
   local screencap_args=(
     --out "${OUT_DIR}"
     --udid "${UDID}"
@@ -399,6 +400,9 @@ capture_named() {
   if [[ -n "${ranking}" ]]; then
     screencap_args+=(--ranking "${ranking}")
   fi
+  if [[ -n "${home}" ]]; then
+    screencap_args+=(--home "${home}")
+  fi
   CAPTURE_SETTLE_SEC="${settle}" \
     CAPTURE_IOS_COLD_SEC="${CAPTURE_IOS_COLD_SEC:-16}" \
     "${SCRIPT_DIR}/ios-screencap.sh" "${screencap_args[@]}" >/dev/null
@@ -412,6 +416,8 @@ capture_named() {
 }
 
 capture_named Stable garage 5
+# E5/D5 Ludus More sheet — Ranking / Privacy / Delete / Sign out (red last)
+capture_named Stable garage-more 5 "" "" "" "" more
 # D3 Customise — early so PNG artifacts upload even if the live fight later fails.
 capture_named Customise customise-paint-clean 6 "" "" paint-clean
 capture_named Customise customise-paint-dirty 6 "" "" paint-dirty
@@ -494,8 +500,8 @@ capture_named Replay replay-muted 5 "${BATTLE_ID}" 1
 missing=0
 for label in \
   garage \
-  customise-paint-clean \
-  customise-paint-dirty \
+  garage-more \
+  customise-paint-clean \  customise-paint-dirty \
   customise-equipped \
   customise-weapon-soon \
   ranking-bots \

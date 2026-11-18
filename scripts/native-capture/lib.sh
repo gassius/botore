@@ -39,6 +39,7 @@ capture_url_for_route() {
   local customise="${9:-}"
   local pose_compare="${10:-}"
   local result="${11:-}"
+  local home="${12:-}"
   local query=()
   if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then
     query+=("mute=1")
@@ -69,6 +70,9 @@ capture_url_for_route() {
   fi
   if [[ -n "${result}" ]]; then
     query+=("result=${result}")
+  fi
+  if [[ -n "${home}" ]]; then
+    query+=("home=${home}")
   fi
   if [[ ${#query[@]} -eq 0 ]]; then
     printf '%s/%s' "${SCHEME_CAPTURE_PREFIX}" "${route}"

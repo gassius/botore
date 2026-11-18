@@ -234,6 +234,7 @@ capture_named() {
   local ranking="${4:-}"
   local mute="${5:-}"
   local customise="${6:-}"
+  local home="${7:-}"
   local args=(
     --out "${OUT_DIR}"
     --route "${route}"
@@ -247,6 +248,9 @@ capture_named() {
   fi
   if [[ -n "${customise}" ]]; then
     args+=(--customise "${customise}")
+  fi
+  if [[ -n "${home}" ]]; then
+    args+=(--home "${home}")
   fi
   CAPTURE_SETTLE_SEC="${settle}" \
     "${SCRIPT_DIR}/android-screencap.sh" \
@@ -293,6 +297,9 @@ wait_logcat_marker() {
 
 # 1) Garage (Stable equipped loadout)
 capture_named Stable garage 5
+
+# 1′) E5/D5 Ludus More sheet — Ranking / Privacy / Delete / Sign out (red last)
+capture_named Stable garage-more 5 "" "" "" more
 
 # 1a) D3 Customise — Paint clean / dirty+dot / Equipped / Weapon Coming soon
 # Capture early so design evidence lands even if later fight frames fail.
@@ -650,6 +657,7 @@ write_manifest_line "${MANIFEST}" "c10_session_failure" "design-capture-sessionF
 missing="${missing:-0}"
 required_labels=(
   garage
+  garage-more
   customise-paint-clean
   customise-paint-dirty
   customise-equipped

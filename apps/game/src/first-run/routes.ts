@@ -1,7 +1,10 @@
+import { STABLE_HOME_TITLE } from '../garage/stableHomeCopy';
+
 /**
  * Named first-run routes / slots (shared-ui-rig-contract).
  * Domain screens mount into these slots — shell does not own F8–F10 logic.
  * Settings is a side surface (Garage Tag entry), not part of the fight flow.
+ * Route id `Stable` is internal; player-facing home title is Ludus (D5).
  */
 export const FIRST_RUN_ROUTES = [
   'Stable',
@@ -17,7 +20,7 @@ export const FIRST_RUN_ROUTES = [
 export type FirstRunRoute = (typeof FIRST_RUN_ROUTES)[number];
 
 export const ROUTE_TITLES: Record<FirstRunRoute, string> = {
-  Stable: 'Stable',
+  Stable: STABLE_HOME_TITLE,
   Customise: 'Customise',
   Opponents: 'Opponents',
   ConfirmFight: 'Confirm Fight',

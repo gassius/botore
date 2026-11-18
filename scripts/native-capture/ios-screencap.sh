@@ -16,6 +16,7 @@ FIGHT_VIEW=""
 CUSTOMISE=""
 RANKING=""
 RESULT=""
+HOME_SCENARIO=""
 UDID="booted"
 
 while [[ $# -gt 0 ]]; do
@@ -64,6 +65,10 @@ while [[ $# -gt 0 ]]; do
       RESULT="$2"
       shift 2
       ;;
+    --home)
+      HOME_SCENARIO="$2"
+      shift 2
+      ;;
     --udid)
       UDID="$2"
       shift 2
@@ -93,6 +98,7 @@ write_capture_intent_file() {
   local customise="${7:-}"
   local ranking="${8:-}"
   local result="${9:-}"
+  local home="${10:-}"
   local data_dir
   data_dir="$(xcrun simctl get_app_container "${UDID}" "${BUNDLE_ID}" data 2>/dev/null || true)"
   if [[ -z "${data_dir}" || ! -d "${data_dir}" ]]; then
@@ -113,6 +119,7 @@ write_capture_intent_file() {
     CAPTURE_INTENT_CUSTOMISE="${customise}" \
     CAPTURE_INTENT_RANKING="${ranking}" \
     CAPTURE_INTENT_RESULT="${result}" \
+    CAPTURE_INTENT_HOME="${home}" \
     node -e '
       const o = {
         route: process.env.CAPTURE_INTENT_ROUTE || null,
@@ -124,6 +131,7 @@ write_capture_intent_file() {
         customiseScenario: process.env.CAPTURE_INTENT_CUSTOMISE || null,
         rankingScenario: process.env.CAPTURE_INTENT_RANKING || null,
         resultScenario: process.env.CAPTURE_INTENT_RESULT || null,
+        homeScenario: process.env.CAPTURE_INTENT_HOME || null,
       };
       if (!o.paintId) o.paintId = null;
       if (!o.weaponId) o.weaponId = null;
@@ -133,6 +141,7 @@ write_capture_intent_file() {
       if (!o.customiseScenario) o.customiseScenario = null;
       if (!o.rankingScenario) o.rankingScenario = null;
       if (!o.resultScenario) o.resultScenario = null;
+      if (!o.homeScenario) o.homeScenario = null;
       process.stdout.write(JSON.stringify(o) + "\n");
     ' >"${data_dir}/Documents/botore-design-capture-intent.json"
   echo "wrote capture intent → ${data_dir}/Documents/botore-design-capture-intent.json" >&2
@@ -181,7 +190,7 @@ if [[ -n "${ROUTE}" ]]; then
   xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
   dismiss_open_in_alert_if_any
   ensure_app_data_container
-  if ! write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" "${BATTLE_ID}" "${FIGHT_VIEW}" "${CUSTOMISE}" "${RANKING}" "${RESULT}"; then
+  if ! write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" "${BATTLE_ID}" "${FIGHT_VIEW}" "${CUSTOMISE}" "${RANKING}" "${RESULT}" "${HOME_SCENARIO}"; then
     echo "error: could not write capture intent file for ${ROUTE}" >&2
     exit 1
   fi
@@ -195,7 +204,7 @@ if [[ -n "${ROUTE}" ]]; then
   # Auth auto-sign-in + intent file poll + FirstRunShell route paint.
   sleep "${CAPTURE_IOS_COLD_SEC:-${CAPTURE_SETTLE_SEC:-16}}"
   # Re-write intent in case Documents was recreated, then bring app forward.
-  write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" "${BATTLE_ID}" "${FIGHT_VIEW}" "${CUSTOMISE}" "${RANKING}" "${RESULT}" || true
+  write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" "${BATTLE_ID}" "${FIGHT_VIEW}" "${CUSTOMISE}" "${RANKING}" "${RESULT}" "${HOME_SCENARIO}" || true
   xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
   sleep "${CAPTURE_SETTLE_SEC:-5}"
   dismiss_open_in_alert_if_any

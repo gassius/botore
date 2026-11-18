@@ -13,6 +13,7 @@ export function StableSlot(): React.ReactElement {
       onCustomise={() => goTo('Customise')}
       onFindOpponent={() => goTo('Opponents')}
       onSettings={() => goTo('Settings')}
+      onRanking={() => goTo('Ranking')}
     />
   );
 }
