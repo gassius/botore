@@ -552,24 +552,17 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     const incomingStart = toFight ? startMusic : startMenu;
     const outgoingStop = toFight ? stopMenu : stopMusic;
     const outgoing = toFight ? menu : music;
-    // Start incoming at 0 so the first buffer does not blip at full volume.
-    incomingStart({ volume: 0 });
     const canFade = Boolean(outgoing?.setVolume) && durationMs > 0;
+    const targetVol = trialAudioClipVolume(toFight ? 'musicLoop' : 'menuLoop');
+    // Only duck the incoming loop when a real fade can ramp it back up. Otherwise
+    // startLoop is still async and a sync setVolume on a null handle leaves the
+    // loop at 0 forever (post-victory_screen → crossfadeToMenu with music=null).
     if (!canFade) {
+      incomingStart();
       outgoingStop();
-      const toHandle = toFight ? music : menu;
-      const targetVol = trialAudioClipVolume(toFight ? 'musicLoop' : 'menuLoop');
-      if (toHandle?.setVolume) {
-        safeRun(
-          'setVolume',
-          () => toHandle.setVolume!(targetVol),
-          () => {
-            stats.failures += 1;
-          },
-        );
-      }
       return;
     }
+    incomingStart({ volume: 0 });
     if (outgoing) {
       fadeVolume(
         outgoing,
@@ -582,7 +575,6 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
       );
     }
     // Incoming handle may still be starting asynchronously — poll briefly for setVolume.
-    const targetVol = trialAudioClipVolume(toFight ? 'musicLoop' : 'menuLoop');
     const startedAt = Date.now();
     const tryFadeIn = () => {
       if (disposed) return;

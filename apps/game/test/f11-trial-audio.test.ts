@@ -876,4 +876,32 @@ describe('E8 PRR B1/B2 shared session wiring', () => {
     expect(fight?.volume).toBe(0);
     session.dispose();
   });
+
+  it('B3: menu → fight → victory_screen → menu restores menuLoop at target volume', async () => {
+    vi.useFakeTimers();
+    const { backend, loops } = recordingBackend();
+    const session = createTrialAudioSession({ backend, sources, muted: false, playing: true });
+    session.startMenuLoop();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(loops.filter((l) => l.source === 13)).toHaveLength(1);
+    expect(loops[0]?.volume).toBe(trialAudioClipVolume('menuLoop'));
+
+    session.crossfadeToFight({ durationMs: 100 });
+    await vi.advanceTimersByTimeAsync(0);
+    const fight = loops.find((l) => l.source === 8);
+    expect(fight?.volume).toBe(0);
+
+    // KO / Result path: victory stops fight music, then overlay crossfades to menu
+    // with no outgoing handle — must not leave the new menuLoop stuck at 0.
+    session.notifyCommand({ kind: 'victory_screen', winner: 'a' });
+    await vi.advanceTimersByTimeAsync(0);
+    session.crossfadeToMenu({ durationMs: 600 });
+    await vi.advanceTimersByTimeAsync(0);
+    const menuAfter = loops.filter((l) => l.source === 13).at(-1);
+    expect(menuAfter).toBeTruthy();
+    expect(menuAfter!.volume).toBe(trialAudioClipVolume('menuLoop'));
+    expect(menuAfter!.volume).toBeGreaterThan(0);
+    session.dispose();
+    vi.useRealTimers();
+  });
 });
