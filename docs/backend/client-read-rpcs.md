@@ -11,7 +11,11 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 
 | RPC                             | Args                | Success body                                                                                                     |
 | ------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `get_owned_character()`         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }`                                                                         |
+| `get_owned_character()`         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }` — **active** bot (E4 `0037`; auto-provisions first)                     |
+| `list_owned_characters()`       | none (`auth.uid()`) | E4: `{ ok, bots:[{characterId,displayName,wins,losses,paint,weapon,atlasVersion,isActive}], cap, ownedCount, activeCharacterId }` |
+| `suggest_bot_name()`            | none (`auth.uid()`) | E4: `{ ok, displayName }` — random fitting name ≤12                                                              |
+| `create_owned_character(name, paint?, weapon?)` | auth.uid() | E4 write: `{ ok, characterId, displayName, … }` or `{ ok:false, code: bot_cap_reached\|name_taken\|… }` |
+| `select_active_character(id)`   | auth.uid()          | E4 write: `{ ok, characterId, displayName }`                                                                     |
 | `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName, botoreName, wins, losses }] }` (0033)                       |
 | `get_fight_allowance_summary()` | none (`auth.uid()`) | E3: `{ ok, fightsRemaining, limit, scope, refillPolicy, nextRefillAt, utcDay, allowancesRemaining }` — see below |
 | `list_ranking()`                | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }`                                |
@@ -110,3 +114,17 @@ psql "$DATABASE_URL" -c "select public.get_owned_character()
   from (select set_config('request.jwt.claim.role','authenticated',true),
                set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true)) s;"
 ```
+
+### E4 multi-bot cap (`0037_multi_bot_cap.sql`)
+
+Config singleton `player_bot_config.bot_limit` (default **3**, no client
+`SELECT`). Cap is returned on `list_owned_characters` / create responses —
+UI must not hard-code “3”.
+
+- Drops `one_character_per_human_player`; trigger enforces the config cap for
+  human (`owner_is_npc = false`) player bots.
+- `accounts.active_character_id` persists selection; `get_owned_character` and
+  `rename_owned_character` act on the active bot.
+- First auth still auto-provisions one bot via `ensure_player_character`.
+- Display names: ≤12, uniqueness per account, profanity / reserved-shape
+  rejection (C17 — never show character ids as labels).

@@ -5,16 +5,35 @@ import {
   type ClientReadRpcFail,
   type OwnedCharacterRpcOk,
 } from '../../supabase/clientReadRpcs';
+import {
+  CREATE_OWNED_CHARACTER_RPC,
+  DEFAULT_PLAYER_BOT_CAP,
+  LIST_OWNED_CHARACTERS_RPC,
+  SELECT_ACTIVE_CHARACTER_RPC,
+  SUGGEST_BOT_NAME_RPC,
+  type CreateOwnedCharacterRpcOk,
+  type ListOwnedCharactersRpcOk,
+  type MultiBotRpcFail,
+  type OwnedBotRpcRow,
+  type SelectActiveCharacterRpcOk,
+  type SuggestBotNameRpcOk,
+} from '../../supabase/multiBotRpcs';
 import type { SupabasePublicConfig } from '../auth/supabasePublicConfig';
 import type { LoadoutSavePort } from './LoadoutSavePort';
 import { loadoutSavePlayerMessage } from './loadoutSaveErrors';
 import type {
+  CreateOwnedBotInput,
+  CreateOwnedBotResult,
   FetchCurrentLoadoutResult,
+  ListOwnedBotsResult,
+  OwnedBotSummary,
   OwnedCharacterResult,
   RenameCharacterInput,
   RenameCharacterResult,
   SaveLoadoutInput,
   SaveLoadoutResult,
+  SelectActiveBotResult,
+  SuggestBotNameResult,
 } from './loadoutTypes';
 import { normalizeGarageLoadout } from './normalizeLoadout';
 
@@ -283,11 +302,281 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
     }
   }
 
+  async listOwnedBots(accessToken: string): Promise<ListOwnedBotsResult> {
+    try {
+      const res = await fetch(`${this.config.url}/rest/v1/rpc/${LIST_OWNED_CHARACTERS_RPC}`, {
+        method: 'POST',
+        headers: {
+          ...this.headers(accessToken),
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
+        return {
+          ok: false,
+          code: resolveTransportFailureCode({
+            code: err.code ?? `http_${res.status}`,
+            message: err.message,
+            httpStatus: res.status,
+          }),
+          message: err.message ?? `Failed to list bots (${res.status})`,
+        };
+      }
+      const body = (await res.json()) as ListOwnedCharactersRpcOk | MultiBotRpcFail | null;
+      if (!body || typeof body !== 'object' || body.ok !== true) {
+        return {
+          ok: false,
+          code: (body && 'code' in body && body.code) || 'invalid_response',
+          message:
+            (body && 'message' in body && body.message) || 'Could not load your bots.',
+        };
+      }
+      const bots = Array.isArray(body.bots)
+        ? body.bots.map((row) => normalizeOwnedBotRow(row)).filter((b): b is OwnedBotSummary => b != null)
+        : [];
+      const cap =
+        typeof body.cap === 'number' && Number.isFinite(body.cap) && body.cap >= 1
+          ? Math.floor(body.cap)
+          : DEFAULT_PLAYER_BOT_CAP;
+      return {
+        ok: true,
+        bots,
+        cap,
+        ownedCount: typeof body.ownedCount === 'number' ? body.ownedCount : bots.length,
+        activeCharacterId:
+          typeof body.activeCharacterId === 'string' && body.activeCharacterId.trim()
+            ? body.activeCharacterId.trim()
+            : null,
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        code: 'network_error',
+        message: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  async suggestBotName(accessToken: string): Promise<SuggestBotNameResult> {
+    try {
+      const res = await fetch(`${this.config.url}/rest/v1/rpc/${SUGGEST_BOT_NAME_RPC}`, {
+        method: 'POST',
+        headers: {
+          ...this.headers(accessToken),
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
+        return {
+          ok: false,
+          code: resolveTransportFailureCode({
+            code: err.code ?? `http_${res.status}`,
+            message: err.message,
+            httpStatus: res.status,
+          }),
+          message: err.message ?? 'Could not suggest a name.',
+        };
+      }
+      const body = (await res.json()) as SuggestBotNameRpcOk | MultiBotRpcFail | null;
+      if (!body || typeof body !== 'object' || body.ok !== true) {
+        return {
+          ok: false,
+          code: (body && 'code' in body && body.code) || 'invalid_response',
+          message: (body && 'message' in body && body.message) || 'Could not suggest a name.',
+        };
+      }
+      const displayName = playerFacingDisplayName(body.displayName).slice(0, 12);
+      if (!displayName.trim()) {
+        return { ok: false, code: 'invalid_response', message: 'Could not suggest a name.' };
+      }
+      return { ok: true, displayName };
+    } catch (err) {
+      return {
+        ok: false,
+        code: 'network_error',
+        message: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  async createOwnedBot(input: CreateOwnedBotInput): Promise<CreateOwnedBotResult> {
+    try {
+      const res = await fetch(`${this.config.url}/rest/v1/rpc/${CREATE_OWNED_CHARACTER_RPC}`, {
+        method: 'POST',
+        headers: {
+          ...this.headers(input.accessToken),
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({
+          p_display_name: input.displayName,
+          p_paint: input.paint,
+          p_weapon: input.weapon,
+        }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
+        const code = resolveTransportFailureCode({
+          code: err.code ?? `http_${res.status}`,
+          message: err.message ?? err.details,
+          httpStatus: res.status,
+        });
+        return {
+          ok: false,
+          code,
+          message: multiBotPlayerMessage(code, err.message ?? err.details),
+        };
+      }
+      const body = (await res.json()) as CreateOwnedCharacterRpcOk | MultiBotRpcFail | null;
+      if (!body || typeof body !== 'object' || body.ok !== true) {
+        const code = (body && 'code' in body && body.code) || 'invalid_response';
+        return {
+          ok: false,
+          code,
+          message: multiBotPlayerMessage(
+            code,
+            (body && 'message' in body && body.message) || undefined,
+          ),
+        };
+      }
+      const characterId = typeof body.characterId === 'string' ? body.characterId.trim() : '';
+      const displayName = playerFacingDisplayName(
+        typeof body.displayName === 'string' ? body.displayName : '',
+      );
+      if (!characterId || !displayName.trim()) {
+        return {
+          ok: false,
+          code: 'invalid_response',
+          message: 'Could not create your bot. Try again.',
+        };
+      }
+      return {
+        ok: true,
+        characterId,
+        displayName,
+        ...(typeof body.cap === 'number' ? { cap: body.cap } : {}),
+        ...(typeof body.ownedCount === 'number' ? { ownedCount: body.ownedCount } : {}),
+      };
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      return {
+        ok: false,
+        code: 'network_error',
+        message: multiBotPlayerMessage('network_error', raw),
+      };
+    }
+  }
+
+  async selectActiveBot(input: {
+    characterId: string;
+    accessToken: string;
+  }): Promise<SelectActiveBotResult> {
+    try {
+      const res = await fetch(`${this.config.url}/rest/v1/rpc/${SELECT_ACTIVE_CHARACTER_RPC}`, {
+        method: 'POST',
+        headers: {
+          ...this.headers(input.accessToken),
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({ p_character_id: input.characterId }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
+        const code = resolveTransportFailureCode({
+          code: err.code ?? `http_${res.status}`,
+          message: err.message ?? err.details,
+          httpStatus: res.status,
+        });
+        return {
+          ok: false,
+          code,
+          message: multiBotPlayerMessage(code, err.message ?? err.details),
+        };
+      }
+      const body = (await res.json()) as SelectActiveCharacterRpcOk | MultiBotRpcFail | null;
+      if (!body || typeof body !== 'object' || body.ok !== true) {
+        const code = (body && 'code' in body && body.code) || 'invalid_response';
+        return {
+          ok: false,
+          code,
+          message: multiBotPlayerMessage(
+            code,
+            (body && 'message' in body && body.message) || undefined,
+          ),
+        };
+      }
+      const characterId = typeof body.characterId === 'string' ? body.characterId.trim() : '';
+      const displayName = playerFacingDisplayName(
+        typeof body.displayName === 'string' ? body.displayName : '',
+      );
+      if (!characterId || !displayName.trim()) {
+        return {
+          ok: false,
+          code: 'invalid_response',
+          message: 'Could not select that bot.',
+        };
+      }
+      return { ok: true, characterId, displayName };
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      return {
+        ok: false,
+        code: 'network_error',
+        message: multiBotPlayerMessage('network_error', raw),
+      };
+    }
+  }
+
   private headers(accessToken: string): Record<string, string> {
     return {
       apikey: this.config.anonKey,
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     };
+  }
+}
+
+function normalizeOwnedBotRow(row: OwnedBotRpcRow | Record<string, unknown>): OwnedBotSummary | null {
+  const characterId =
+    typeof row.characterId === 'string' ? row.characterId.trim() : '';
+  if (!characterId) return null;
+  const rawName = typeof row.displayName === 'string' ? row.displayName : '';
+  return {
+    characterId,
+    displayName: playerFacingDisplayName(rawName),
+    wins: typeof row.wins === 'number' && Number.isFinite(row.wins) ? Math.max(0, row.wins) : 0,
+    losses:
+      typeof row.losses === 'number' && Number.isFinite(row.losses) ? Math.max(0, row.losses) : 0,
+    paint: typeof row.paint === 'string' && row.paint.trim() ? row.paint.trim() : null,
+    weapon: typeof row.weapon === 'string' && row.weapon.trim() ? row.weapon.trim() : null,
+    atlasVersion:
+      typeof row.atlasVersion === 'string' && row.atlasVersion.trim()
+        ? row.atlasVersion.trim()
+        : null,
+    isActive: row.isActive === true,
+  };
+}
+
+function multiBotPlayerMessage(code: string, fallback?: string): string {
+  switch (code) {
+    case 'bot_cap_reached':
+      return 'Your Ludus is full';
+    case 'name_taken':
+      return 'You already have a bot with that name';
+    case 'invalid_display_name':
+      return typeof fallback === 'string' && fallback.trim()
+        ? fallback
+        : 'That name is not allowed';
+    case 'not_owned':
+      return 'That bot is not yours';
+    case 'network_error':
+      return 'Connection problem. Try again.';
+    default:
+      return typeof fallback === 'string' && fallback.trim()
+        ? fallback
+        : 'Something went wrong. Try again.';
   }
 }

@@ -3775,3 +3775,171 @@ begin
 
   raise notice 'TEST-OK D7 rename_owned_character';
 end $$;
+
+-- =============================================================================
+-- E4: multi-bot cap / create / select / list (0037)
+-- =============================================================================
+do $$
+declare
+  v_account uuid := 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee00e4';
+  v_res jsonb;
+  v_name text;
+  v_id1 text;
+  v_id2 text;
+  v_id3 text;
+  v_cap integer;
+  v_active text;
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'e4-multibot@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+
+  perform tests.assert(
+    exists (select 1 from public.player_bot_config where id is true and bot_limit = 3),
+    'player_bot_config default cap 3'
+  );
+
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.list_owned_characters()', 'EXECUTE'),
+    'authenticated EXECUTE list_owned_characters'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.list_owned_characters()', 'EXECUTE'),
+    'anon must not EXECUTE list_owned_characters'
+  );
+  perform tests.assert(
+    has_function_privilege(
+      'authenticated',
+      'public.create_owned_character(text, text, text)',
+      'EXECUTE'
+    ),
+    'authenticated EXECUTE create_owned_character'
+  );
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.select_active_character(text)', 'EXECUTE'),
+    'authenticated EXECUTE select_active_character'
+  );
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.suggest_bot_name()', 'EXECUTE'),
+    'authenticated EXECUTE suggest_bot_name'
+  );
+  perform tests.assert(
+    not has_table_privilege('authenticated', 'public.player_bot_config', 'SELECT'),
+    'authenticated has no SELECT on player_bot_config'
+  );
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  -- First list auto-provisions one bot via ensure.
+  v_res := public.list_owned_characters();
+  perform tests.assert((v_res->>'ok')::boolean, 'list_owned_characters auto-provisions');
+  v_cap := (v_res->>'cap')::integer;
+  perform tests.assert(v_cap = 3, 'list cap is 3');
+  perform tests.assert((v_res->>'ownedCount')::integer = 1, 'first ownedCount is 1');
+  v_id1 := v_res->'bots'->0->>'characterId';
+  v_active := v_res->>'activeCharacterId';
+  perform tests.assert(v_id1 is not null, 'first bot id');
+  perform tests.assert(v_active = v_id1, 'active equals first bot');
+
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'get_owned_character ok');
+  perform tests.assert(v_res->>'characterId' = v_id1, 'get_owned matches active');
+
+  v_res := public.suggest_bot_name();
+  perform tests.assert((v_res->>'ok')::boolean, 'suggest_bot_name ok');
+  v_name := v_res->>'displayName';
+  perform tests.assert(char_length(v_name) between 1 and 12, 'suggested name length');
+
+  v_res := public.create_owned_character(v_name, 'paint-cobalt', 'weapon-axe');
+  perform tests.assert((v_res->>'ok')::boolean, 'create second bot ok');
+  v_id2 := v_res->>'characterId';
+  perform tests.assert(v_id2 is not null and v_id2 <> v_id1, 'second characterId distinct');
+  perform tests.assert(v_res->>'displayName' = v_name, 'create keeps name');
+
+  v_res := public.get_owned_character();
+  perform tests.assert(v_res->>'characterId' = v_id2, 'create sets active');
+
+  v_res := public.create_owned_character(v_name, 'paint-primer', 'weapon-sword');
+  perform tests.assert(v_res->>'ok' = 'false', 'duplicate name rejected');
+  perform tests.assert(v_res->>'code' = 'name_taken', 'duplicate name code');
+
+  v_res := public.create_owned_character('player-hero', 'paint-crimson', 'weapon-sword');
+  perform tests.assert(v_res->>'ok' = 'false', 'reserved name rejected');
+
+  v_res := public.create_owned_character('fuck bot', 'paint-crimson', 'weapon-sword');
+  perform tests.assert(v_res->>'ok' = 'false', 'profanity rejected');
+
+  v_res := public.create_owned_character('', 'paint-crimson', 'weapon-sword');
+  perform tests.assert(v_res->>'ok' = 'false', 'empty name rejected');
+
+  v_name := 'Tin Scout';
+  if exists (
+    select 1 from public.characters c
+     where c.account_id = v_account and lower(c.display_name) = lower(v_name)
+  ) then
+    v_name := 'Ash Hawk';
+  end if;
+  v_res := public.create_owned_character(v_name, 'paint-navy', 'weapon-dagger');
+  perform tests.assert((v_res->>'ok')::boolean, 'create third bot ok');
+  v_id3 := v_res->>'characterId';
+
+  v_res := public.list_owned_characters();
+  perform tests.assert((v_res->>'ownedCount')::integer = 3, 'ownedCount at cap');
+  perform tests.assert(jsonb_array_length(v_res->'bots') = 3, 'bots array length 3');
+
+  v_res := public.create_owned_character('Cap Breaker', 'paint-crimson', 'weapon-sword');
+  perform tests.assert(v_res->>'ok' = 'false', 'fourth create rejected');
+  perform tests.assert(v_res->>'code' = 'bot_cap_reached', 'fourth create code');
+
+  v_res := public.select_active_character(v_id1);
+  perform tests.assert((v_res->>'ok')::boolean, 'select first bot ok');
+  v_res := public.get_owned_character();
+  perform tests.assert(v_res->>'characterId' = v_id1, 'active persisted');
+
+  v_res := public.select_active_character('opp-sir-bot');
+  perform tests.assert(v_res->>'ok' = 'false', 'opponent select rejected');
+  perform tests.assert(v_res->>'code' = 'not_owned', 'opponent select code');
+
+  -- Cross-account isolation: seed hero cannot be selected by this account
+  v_res := public.select_active_character('player-hero');
+  perform tests.assert(v_res->>'ok' = 'false', 'cross-account select rejected');
+
+  reset role;
+
+  set local role anon;
+  begin
+    perform public.list_owned_characters();
+    raise exception 'ANON FAIL: list_owned_characters allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.create_owned_character('Anon Bot', 'paint-crimson', 'weapon-sword');
+    raise exception 'ANON FAIL: create_owned_character allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.select_active_character('player-hero');
+    raise exception 'ANON FAIL: select_active_character allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+
+  raise notice 'TEST-OK E4 multi_bot_cap';
+end $$;

@@ -30,8 +30,10 @@ import {
   type LoadoutPreviewState,
 } from './loadout/loadoutState';
 import { loadoutSavePlayerMessage } from './loadout/loadoutSaveErrors';
+import type { OwnedBotSummary } from './loadout/loadoutTypes';
 import { withUpdatedPaint, withUpdatedWeapon } from './loadout/proofCatalogue';
 import { ensureRuntimePacksBestEffort } from '../atlas/atlasPackRuntime';
+import { DEFAULT_PLAYER_BOT_CAP } from '../supabase/multiBotRpcs';
 
 export type AuthBootError = {
   readonly code: string;
@@ -78,6 +80,17 @@ export type GarageSessionContextValue = {
   save: () => Promise<boolean>;
   /** D7 nameplate — persist via rename_owned_character; survives remount. */
   renameDisplayName: (displayName: string) => Promise<boolean>;
+  /** E4 — owned bots for Ludus carousel (cap from server). */
+  readonly ownedBots: readonly OwnedBotSummary[];
+  readonly botCap: number;
+  refreshOwnedBots: () => Promise<void>;
+  selectActiveBot: (characterId: string) => Promise<boolean>;
+  suggestBotName: () => Promise<string | null>;
+  createOwnedBot: (input: {
+    displayName: string;
+    paint: string;
+    weapon: string;
+  }) => Promise<{ ok: true; characterId: string } | { ok: false; message: string }>;
 };
 
 const GarageSessionContext = createContext<GarageSessionContextValue | null>(null);
@@ -99,14 +112,39 @@ export function GarageSessionProvider(props: {
   const [loadout, setLoadout] = useState<LoadoutPreviewState>(() =>
     createUnavailableLoadoutState(),
   );
+  const [ownedBots, setOwnedBots] = useState<readonly OwnedBotSummary[]>([]);
+  const [botCap, setBotCap] = useState(DEFAULT_PLAYER_BOT_CAP);
+
+  const refreshOwnedBots = useCallback(async () => {
+    const current = await auth.getSession();
+    if (!current) {
+      setOwnedBots([]);
+      setBotCap(DEFAULT_PLAYER_BOT_CAP);
+      return;
+    }
+    const listed = await loadouts.listOwnedBots(current.accessToken);
+    if (!listed.ok) {
+      return;
+    }
+    setOwnedBots(listed.bots);
+    setBotCap(listed.cap);
+  }, [auth, loadouts]);
 
   const hydrate = useCallback(async () => {
     const current = await auth.getSession();
     setSession(current);
     if (!current) {
       setLoadout(createUnavailableLoadoutState());
+      setOwnedBots([]);
+      setBotCap(DEFAULT_PLAYER_BOT_CAP);
       setBooting(false);
       return;
+    }
+
+    const listed = await loadouts.listOwnedBots(current.accessToken);
+    if (listed.ok) {
+      setOwnedBots(listed.bots);
+      setBotCap(listed.cap);
     }
 
     const owned = await loadouts.resolveOwnedCharacter(current.accessToken);
@@ -336,6 +374,8 @@ export function GarageSessionProvider(props: {
         await auth.signOut();
         setSession(null);
         setLoadout(createUnavailableLoadoutState());
+        setOwnedBots([]);
+        setBotCap(DEFAULT_PLAYER_BOT_CAP);
         setAuthBootError(null);
         setAccountDeletedNotice(false);
         silentAuthStarted.current = false;
@@ -365,6 +405,8 @@ export function GarageSessionProvider(props: {
             await auth.signOut();
             setSession(null);
             setLoadout(createUnavailableLoadoutState());
+            setOwnedBots([]);
+            setBotCap(DEFAULT_PLAYER_BOT_CAP);
             setAuthBootError(null);
             // Hold silent re-auth until Continue (same as real delete).
             setAccountDeletedNotice(true);
@@ -381,6 +423,8 @@ export function GarageSessionProvider(props: {
         await auth.signOut();
         setSession(null);
         setLoadout(createUnavailableLoadoutState());
+        setOwnedBots([]);
+        setBotCap(DEFAULT_PLAYER_BOT_CAP);
         setAuthBootError(null);
         // M4: show success until Continue before silent auth mints a fresh account.
         setAccountDeletedNotice(true);
@@ -513,7 +557,46 @@ export function GarageSessionProvider(props: {
           lastError: null,
           lastErrorCode: null,
         }));
+        await refreshOwnedBots();
         return true;
+      },
+      ownedBots,
+      botCap,
+      refreshOwnedBots,
+      selectActiveBot: async (characterId) => {
+        const current = await auth.getSession();
+        if (!current) return false;
+        const selected = await loadouts.selectActiveBot({
+          characterId,
+          accessToken: current.accessToken,
+        });
+        if (!selected.ok) return false;
+        setBooting(true);
+        await hydrate();
+        return true;
+      },
+      suggestBotName: async () => {
+        const current = await auth.getSession();
+        if (!current) return null;
+        const suggested = await loadouts.suggestBotName(current.accessToken);
+        if (!suggested.ok) return null;
+        return suggested.displayName;
+      },
+      createOwnedBot: async (input) => {
+        const current = await auth.getSession();
+        if (!current) {
+          return { ok: false as const, message: 'Session expired. Sign in again.' };
+        }
+        const created = await loadouts.createOwnedBot({
+          ...input,
+          accessToken: current.accessToken,
+        });
+        if (!created.ok) {
+          return { ok: false as const, message: created.message };
+        }
+        setBooting(true);
+        await hydrate();
+        return { ok: true as const, characterId: created.characterId };
       },
     }),
     [
@@ -525,8 +608,11 @@ export function GarageSessionProvider(props: {
       coldStartHoldTitle,
       coldStartIntentReady,
       loadout,
+      ownedBots,
+      botCap,
       hydrate,
       loadouts,
+      refreshOwnedBots,
       runSilentFirstLaunch,
     ],
   );
