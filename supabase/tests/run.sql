@@ -1833,27 +1833,7 @@ begin
   select count(*)::int into v_count
     from jsonb_array_elements(v_res->'opponents') o;
   perform tests.assert(v_count = 3, format('expected 3 opponents, got %s', v_count));
-  -- Names/Botore exact; W–L floor ≥ seed (F3 suites may add battles first).
-  perform tests.assert(
-    exists (
-      select 1
-        from jsonb_array_elements(v_res->'opponents') o
-       where o->>'characterId' = 'opp-sir-bot'
-         and o->>'displayName' = 'Slab Mick'
-         and o->>'botoreName' = 'Tito Rivet'
-    ),
-    'opp-sir-bot A5 name + Botore via opponent_lanistas'
-  );
-  perform tests.assert(
-    exists (
-      select 1
-        from jsonb_array_elements(v_res->'opponents') o
-       where o->>'characterId' = 'opp-sir-bot'
-         and (o->>'wins')::integer >= 13
-         and (o->>'losses')::integer >= 6
-    ),
-    'opp-sir-bot W-L at least seed floor'
-  );
+  -- A5 name + Botore exact; W–L floor ≥ seed (F3 suites may add battles first).
   perform tests.assert(
     exists (
       select 1
@@ -1878,17 +1858,17 @@ begin
     ),
     'opp-hp-bot A5 roster + botore + W-L'
   );
-  -- B1: opponents stay unowned; Botore via opponent_lanistas mapping.
   perform tests.assert(
-    not exists (
-      select 1 from public.characters
-       where is_opponent and account_id is not null
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'opponents') o
+       where o->>'characterId' = 'opp-sir-bot'
+         and o->>'displayName' = 'Slab Mick'
+         and o->>'botoreName' = 'Tito Rivet'
+         and (o->>'wins')::integer >= 13
+         and (o->>'losses')::integer >= 6
     ),
-    'system opponents keep account_id null (opponents_unowned)'
-  );
-  perform tests.assert(
-    (select count(*)::int from public.opponent_lanistas) = 3,
-    'opponent_lanistas maps three seed opponents'
+    'opp-sir-bot A5 roster + botore + W-L'
   );
 
   v_res := public.get_fight_allowance_summary();
@@ -1900,6 +1880,44 @@ begin
     'allowancesRemaining in 0..3'
   );
   reset role;
+
+  -- B1 table checks as postgres — authenticated has no SELECT on characters /
+  -- opponent_lanistas (capture-only; client reads go through the RPC above).
+  perform tests.assert(
+    not exists (
+      select 1 from public.characters
+       where is_opponent and account_id is not null
+    ),
+    'system opponents keep account_id null (opponents_unowned)'
+  );
+  perform tests.assert(
+    (select count(*)::int from public.opponent_lanistas) = 3,
+    'opponent_lanistas maps three seed opponents'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from public.opponent_lanistas ol
+        join public.profiles p on p.account_id = ol.lanista_account_id
+       where ol.character_id = 'opp-dex-bot'
+         and p.display_name = 'Magistra Volta'
+    )
+    and exists (
+      select 1
+        from public.opponent_lanistas ol
+        join public.profiles p on p.account_id = ol.lanista_account_id
+       where ol.character_id = 'opp-hp-bot'
+         and p.display_name = 'Doctore Ferro'
+    )
+    and exists (
+      select 1
+        from public.opponent_lanistas ol
+        join public.profiles p on p.account_id = ol.lanista_account_id
+       where ol.character_id = 'opp-sir-bot'
+         and p.display_name = 'Tito Rivet'
+    ),
+    'opponent_lanistas maps each A5 opponent to its Botore profile'
+  );
   raise notice 'TEST-OK B client-read RPC happy path (authenticated)';
 
   -- Negative: cross-account isolation — other account's unused slots are invisible
