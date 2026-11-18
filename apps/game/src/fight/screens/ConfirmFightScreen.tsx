@@ -79,6 +79,7 @@ export function ConfirmFightScreen(props: {
     candidatesKind,
     fightKind,
     prepareEligibility,
+    refreshCandidates,
     fightInFlight,
     bumpNavigationGeneration,
     navigationGeneration,
@@ -272,7 +273,14 @@ export function ConfirmFightScreen(props: {
               <Text style={styles.eligText}>Checking eligibility…</Text>
             </View>
           ) : confirmQuota ? (
-            <FightsRemainingPanel quota={confirmQuota} compact testID="confirm-fights-remaining" />
+            <FightsRemainingPanel
+              quota={confirmQuota}
+              compact
+              testID="confirm-fights-remaining"
+              onRefillDue={() => {
+                void refreshCandidates();
+              }}
+            />
           ) : (
             <Text style={styles.eligText} allowFontScaling testID="confirm-cost">
               Fights remaining: waiting for server…
@@ -319,7 +327,16 @@ export function ConfirmFightScreen(props: {
           </Text>
         </View>
 
-        {bakedFaceOff && !posePair && !clipStill ? (
+        {!canProgress || !confirmed ? (
+          <StatusErrorBanner
+            title="Equipped loadout unavailable"
+            detail={
+              loadout.lastError ??
+              'Server-confirmed loadout is required before starting a fight (F8 hydration).'
+            }
+            testID="confirm-hydration-blocked"
+          />
+        ) : bakedFaceOff && !posePair && !clipStill ? (
           <Image
             source={bakedFaceOff}
             style={styles.bakedLayer}
@@ -327,7 +344,7 @@ export function ConfirmFightScreen(props: {
             accessibilityIgnoresInvertColors
             testID="confirm-a6-faceoff"
           />
-        ) : confirmed && canProgress ? (
+        ) : (
           <>
             <View style={styles.nearBot} testID="confirm-fighter-you">
               <BotAssemblerSlot
@@ -364,15 +381,6 @@ export function ConfirmFightScreen(props: {
               />
             </View>
           </>
-        ) : (
-          <StatusErrorBanner
-            title="Equipped loadout unavailable"
-            detail={
-              loadout.lastError ??
-              'Server-confirmed loadout is required before starting a fight (F8 hydration).'
-            }
-            testID="confirm-hydration-blocked"
-          />
         )}
 
         <Text style={styles.vs} allowFontScaling testID="confirm-vs">

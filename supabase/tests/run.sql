@@ -1869,6 +1869,18 @@ begin
     ),
     'opp-hp-bot A5 roster + botore + W-L'
   );
+  -- B1: opponents stay unowned; Botore via opponent_lanistas mapping.
+  perform tests.assert(
+    not exists (
+      select 1 from public.characters
+       where is_opponent and account_id is not null
+    ),
+    'system opponents keep account_id null (opponents_unowned)'
+  );
+  perform tests.assert(
+    (select count(*)::int from public.opponent_lanistas) = 3,
+    'opponent_lanistas maps three seed opponents'
+  );
 
   v_res := public.get_fight_allowance_summary();
   perform tests.assert((v_res->>'ok')::boolean, 'get_fight_allowance_summary ok');

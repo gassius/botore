@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import type { ImageSourcePropType } from 'react-native';
+import { resolveA6OpponentPanelSlug } from './a6OpponentPanelResolve';
 
 /**
  * A6 D8 opponent panel art (ClickUp 1amjtreze87) — mirrored idle, 170×169.
- * Map known character / display names onto NPC slugs; otherwise fall back to
- * live BotAssembler in the card stage.
+ * Resolve from loadout (paint + weapon), then display name; never character id.
  */
 const OPPONENT_PANELS: Record<string, ImageSourcePropType> = {
   'boiler-joe': require('../../../assets/a6-opponents/boiler-joe.png'),
@@ -21,41 +21,12 @@ const OPPONENT_PANELS: Record<string, ImageSourcePropType> = {
   'weld-tess': require('../../../assets/a6-opponents/weld-tess.png'),
 };
 
-const NAME_TO_SLUG: Record<string, string> = {
-  'boiler joe': 'boiler-joe',
-  'can hook': 'can-hook',
-  'cinder cal': 'cinder-cal',
-  'cobalt brute': 'cobalt-brute',
-  'drab hank': 'drab-hank',
-  'frost kit': 'frost-kit',
-  'ink pip': 'ink-pip',
-  'petrol gus': 'petrol-gus',
-  'primer peg': 'primer-peg',
-  'rivet nan': 'rivet-nan',
-  'slab mick': 'slab-mick',
-  'weld tess': 'weld-tess',
-};
-
-/** Stable seed character ids → A6 panel slugs (D8). */
-const CHARACTER_ID_TO_SLUG: Record<string, string> = {
-  'opp-dex-bot': 'can-hook',
-  'opp-hp-bot': 'cobalt-brute',
-  'opp-sir-bot': 'slab-mick',
-};
-
 export function resolveA6OpponentPanel(input: {
-  characterId?: string | null;
   displayName?: string | null;
+  paintId?: string | null;
+  weaponId?: string | null;
 }): ImageSourcePropType | null {
-  const characterId = (input.characterId ?? '').trim().toLowerCase();
-  const fromId = CHARACTER_ID_TO_SLUG[characterId];
-  if (fromId && OPPONENT_PANELS[fromId]) return OPPONENT_PANELS[fromId];
-
-  const bare = characterId.replace(/^opp-/, '');
-  if (bare && OPPONENT_PANELS[bare]) return OPPONENT_PANELS[bare];
-
-  const name = (input.displayName ?? '').trim().toLowerCase();
-  const slug = NAME_TO_SLUG[name];
+  const slug = resolveA6OpponentPanelSlug(input);
   if (slug && OPPONENT_PANELS[slug]) return OPPONENT_PANELS[slug];
   return null;
 }

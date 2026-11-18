@@ -57,20 +57,28 @@ on conflict (account_id) do update
       emblem_id = excluded.emblem_id;
 
 -- Characters -----------------------------------------------------------------
--- System opponents keep stable ids; display names are A5 roster (a5fix/npcs.json).
--- Botore names come from the lanista profiles above via list_opponent_roster.
+-- System opponents keep stable ids + A5 roster names; account_id stays NULL
+-- (opponents_unowned). Lanista Botore names link via opponent_lanistas (0033).
 insert into public.characters (
     character_id, account_id, display_name, is_opponent, owner_is_npc
 ) values
   ('player-hero', '00000000-0000-4000-8000-000000000001', 'Hero', false, false),
-  ('opp-dex-bot', '00000000-0000-4000-8000-000000001201', 'Can Hook', true, true),
-  ('opp-hp-bot',  '00000000-0000-4000-8000-000000001202', 'Cobalt Brute', true, true),
-  ('opp-sir-bot', '00000000-0000-4000-8000-000000001203', 'Slab Mick', true, true)
+  ('opp-dex-bot', null, 'Can Hook', true, false),
+  ('opp-hp-bot',  null, 'Cobalt Brute', true, false),
+  ('opp-sir-bot', null, 'Slab Mick', true, false)
 on conflict (character_id) do update
   set account_id = excluded.account_id,
       display_name = excluded.display_name,
       is_opponent = excluded.is_opponent,
       owner_is_npc = excluded.owner_is_npc;
+
+insert into public.opponent_lanistas (character_id, lanista_account_id)
+values
+  ('opp-dex-bot', '00000000-0000-4000-8000-000000001201'),
+  ('opp-hp-bot',  '00000000-0000-4000-8000-000000001202'),
+  ('opp-sir-bot', '00000000-0000-4000-8000-000000001203')
+on conflict (character_id) do update
+  set lanista_account_id = excluded.lanista_account_id;
 
 -- Immutable build versions ----------------------------------------------------
 insert into public.character_build_versions (character_id, hp, strength, agility, speed, weapon_kind, weapon_power)

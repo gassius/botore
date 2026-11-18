@@ -16,9 +16,9 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
     losses: 2,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
-      paint: 'paint-cobalt',
-      weapon: 'weapon-axe',
-      soundTags: ['chassis.light', 'weapon.axe'],
+      paint: 'paint-crimson',
+      weapon: 'weapon-dagger',
+      soundTags: ['chassis.light', 'weapon.dagger'],
     },
     loadoutVersionId: 'dev-opp-dex',
     atlasVersion: PROOF_ATLAS_VERSION,
@@ -32,8 +32,8 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
       paint: 'paint-cobalt',
-      weapon: 'weapon-dagger',
-      soundTags: ['chassis.light', 'weapon.dagger'],
+      weapon: 'weapon-axe',
+      soundTags: ['chassis.light', 'weapon.axe'],
     },
     loadoutVersionId: 'dev-opp-hp',
     atlasVersion: PROOF_ATLAS_VERSION,
@@ -46,7 +46,7 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
     losses: 6,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
-      paint: 'paint-crimson',
+      paint: 'paint-cobalt',
       weapon: 'weapon-sword',
       soundTags: ['chassis.light', 'weapon.sword'],
     },

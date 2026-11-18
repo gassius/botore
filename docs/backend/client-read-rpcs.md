@@ -39,16 +39,19 @@ before merging the migration.
 ### D8 roster enrichment (`list_opponent_roster`)
 
 Migration `0033_list_opponent_roster_botore_record.sql` (**Carlos yes**
-2026-11-18 on draft #84; E7/#88 takes **0034** next). Each opponent row includes:
+2026-11-18 on draft #84; E7/#88 takes **0034** next). Each opponent row
+includes:
 
-| Field         | Source                                                                |
-| ------------- | --------------------------------------------------------------------- |
-| `botoreName`  | `profiles.display_name` via `characters.account_id` (null when unset) |
-| `wins`/`losses` | `bot_fight_records` coalesce 0                                      |
+| Field           | Source                                                             |
+| --------------- | ------------------------------------------------------------------ |
+| `botoreName`    | `profiles.display_name` via `opponent_lanistas` (not `account_id`) |
+| `wins`/`losses` | `bot_fight_records` coalesce 0                                     |
 
-No table `GRANT` to `authenticated`. Local seed renames system opponents to
-A5 names (Can Hook / Cobalt Brute / Slab Mick) and attaches lanista NPC
-accounts — seed only, not hosted `db push`.
+System opponents keep `characters.account_id` null (`opponents_unowned`).
+Lanista links live in `opponent_lanistas` — no table `GRANT` to
+`authenticated`. Local seed renames opponents to A5 names (Can Hook /
+Cobalt Brute / Slab Mick) and seeds lanista mapping + W–L — seed only, not
+hosted `db push`.
 
 Failures: `{ ok: false, code?, message? }` or PostgREST HTTP error (`42501`).
 After R5 soft-delete, `get_owned_character()` returns

@@ -194,3 +194,74 @@ revoke all on function public.get_fight_allowance_summary() from public;
 revoke all on function public.get_fight_allowance_summary() from anon;
 revoke all on function public.get_fight_allowance_summary() from service_role;
 grant execute on function public.get_fight_allowance_summary() to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- ensure_fight_allowances — slot count from fight_quota_config.fight_limit
+-- (was hard-coded 1..3 in 0016; E3 server-side config must drive issuance)
+-- ---------------------------------------------------------------------------
+create or replace function public.ensure_fight_allowances(
+    p_horizon_days integer default 1
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+    v_role text := coalesce(auth.role(), '');
+    v_today date := (now() at time zone 'utc')::date;
+    v_inserted integer := 0;
+    v_limit integer;
+begin
+    if v_role is distinct from 'service_role'
+       and current_user not in ('postgres', 'supabase_admin') then
+        raise exception 'ensure_fight_allowances requires service_role'
+            using errcode = '42501';
+    end if;
+
+    if p_horizon_days is null or p_horizon_days < 0 or p_horizon_days > 14 then
+        raise exception 'p_horizon_days must be between 0 and 14';
+    end if;
+
+    select c.fight_limit into v_limit
+      from public.fight_quota_config c
+     where c.id = true;
+    if v_limit is null then
+        v_limit := 3;
+    end if;
+
+    with candidates as (
+        select a.id as account_id, d::date as utc_day, s.slot_index
+          from public.accounts a
+          cross join generate_series(
+              v_today,
+              v_today + p_horizon_days,
+              interval '1 day'
+          ) as d
+          cross join generate_series(1, v_limit) as s(slot_index)
+    ),
+    ins as (
+        insert into public.fight_allowances (account_id, utc_day, slot_index)
+        select account_id, utc_day, slot_index from candidates
+        on conflict (account_id, utc_day, slot_index) do nothing
+        returning 1
+    )
+    select count(*)::integer into v_inserted from ins;
+
+    return jsonb_build_object(
+        'ok', true,
+        'inserted', v_inserted,
+        'horizonDays', p_horizon_days,
+        'fromDay', v_today,
+        'toDay', v_today + p_horizon_days,
+        'fightLimit', v_limit
+    );
+end;
+$$;
+
+comment on function public.ensure_fight_allowances(integer) is
+  'F4/E3: idempotent create of fight_quota_config.fight_limit slots per account for today..today+horizon (UTC).';
+
+revoke all on function public.ensure_fight_allowances(integer) from public;
+revoke all on function public.ensure_fight_allowances(integer) from anon;
+revoke all on function public.ensure_fight_allowances(integer) from authenticated;
+grant execute on function public.ensure_fight_allowances(integer) to service_role;

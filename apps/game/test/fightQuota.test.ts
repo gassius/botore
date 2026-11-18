@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { resolveA6OpponentPanelSlug } from '../src/fight/opponents/a6OpponentPanelResolve';
 import {
   formatRefillCountdown,
   msUntilRefill,
@@ -79,5 +80,33 @@ describe('E3 fight quota parse + countdown', () => {
     });
     expect(quota?.fightsRemaining).toBe(0);
     expect(quota?.nextRefillAt).toBe('2026-11-19T00:00:00Z');
+  });
+
+  it('resolves opponent panel slug from loadout, not character id', () => {
+    expect(
+      resolveA6OpponentPanelSlug({
+        paintId: 'paint-crimson',
+        weaponId: 'weapon-dagger',
+        displayName: 'Someone Else',
+      }),
+    ).toBe('can-hook');
+    expect(
+      resolveA6OpponentPanelSlug({
+        paintId: 'paint-cobalt',
+        weaponId: 'weapon-axe',
+      }),
+    ).toBe('cobalt-brute');
+    expect(
+      resolveA6OpponentPanelSlug({
+        paintId: 'paint-cobalt',
+        weaponId: 'weapon-sword',
+      }),
+    ).toBe('slab-mick');
+    expect(
+      resolveA6OpponentPanelSlug({
+        paintId: 'paint-unknown',
+        weaponId: 'weapon-sword',
+      }),
+    ).toBeNull();
   });
 });

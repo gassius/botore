@@ -150,7 +150,13 @@ export function OpponentsScreen(props: {
       ) : null}
 
       {list.status === 'ready' ? (
-        <FightsRemainingPanel quota={list.quota} testID="opponents-fights-remaining" />
+        <FightsRemainingPanel
+          quota={list.quota}
+          testID="opponents-fights-remaining"
+          onRefillDue={() => {
+            void refreshCandidates();
+          }}
+        />
       ) : null}
 
       {noAllowance && !recoverable ? (
@@ -222,8 +228,9 @@ export function OpponentsScreen(props: {
                   : null;
               const hasRecord = typeof c.wins === 'number' && typeof c.losses === 'number';
               const panelArt = resolveA6OpponentPanel({
-                characterId: c.characterId,
                 displayName: c.displayName,
+                paintId: c.loadout.paint,
+                weaponId: c.loadout.weapon,
               });
               return (
                 <Pressable

@@ -9,6 +9,8 @@ export type FightsRemainingPanelProps = {
   /** D9 compact strip under the tape table. */
   readonly compact?: boolean;
   readonly testID?: string;
+  /** Fired once when countdown hits 0 — parent should refresh quota. */
+  readonly onRefillDue?: () => void;
 };
 
 /**
@@ -17,12 +19,12 @@ export type FightsRemainingPanelProps = {
  * Limit / refill come only from the server quota — no "today" / "UTC" copy.
  */
 export function FightsRemainingPanel(props: FightsRemainingPanelProps): React.ReactElement {
-  const { quota, compact = false, testID = 'fights-remaining-panel' } = props;
+  const { quota, compact = false, testID = 'fights-remaining-panel', onRefillDue } = props;
   const remaining = Math.max(0, quota.fightsRemaining);
   const limit = Math.max(1, quota.limit);
   const isFull = remaining >= limit;
   const isEmpty = remaining < 1;
-  const countdown = useRefillCountdown(isFull ? null : quota.nextRefillAt);
+  const countdown = useRefillCountdown(isFull ? null : quota.nextRefillAt, onRefillDue);
 
   const pips = Array.from({ length: limit }, (_, i) => i < remaining);
 
