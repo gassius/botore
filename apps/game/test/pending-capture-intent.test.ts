@@ -30,6 +30,7 @@ describe('captureIntentState merge + consume', () => {
       sessionFailure: null,
       fightViewMode: null,
       customiseScenario: null,
+      resultScenario: null,
     });
   });
 
@@ -53,6 +54,7 @@ describe('captureIntentState merge + consume', () => {
       sessionFailure: null,
       fightViewMode: null,
       customiseScenario: null,
+      resultScenario: null,
     });
   });
 
@@ -78,6 +80,7 @@ describe('captureIntentState merge + consume', () => {
       sessionFailure: null,
       fightViewMode: null,
       customiseScenario: null,
+      resultScenario: null,
     });
     expect(consumeCaptureRoute()).toBeNull();
   });
@@ -104,5 +107,12 @@ describe('captureIntentState merge + consume', () => {
     expect(peekCaptureIntent().customiseScenario).toBe('paint-dirty');
     mergeCaptureFileIntent({ customise: 'weapon-soon' });
     expect(peekCaptureIntent().customiseScenario).toBe('weapon-soon');
+  });
+
+  it('accepts resultScenario for E1 FightResult victory/defeat stills', () => {
+    mergeCaptureFileIntent({ route: 'FightResult', resultScenario: 'victory' });
+    expect(peekCaptureIntent().resultScenario).toBe('victory');
+    mergeCaptureFileIntent({ result: 'defeat' });
+    expect(peekCaptureIntent().resultScenario).toBe('defeat');
   });
 });

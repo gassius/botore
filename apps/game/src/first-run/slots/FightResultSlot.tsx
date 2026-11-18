@@ -8,10 +8,12 @@ import {
   StatusErrorBanner,
   garageTag,
 } from '../../garage-tag';
+import { isDesignCaptureEnabled } from '../../design-capture';
 import { useFightSession } from '../../fight';
 import { CanonicalReplayPlayer } from '../../replay/CanonicalReplayPlayer';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
 import {
+  confirmedResultForResultCapture,
   ResultOverlay,
   ResultOverlayBand,
   resolveOutcomeKind,
@@ -24,6 +26,8 @@ import { useFirstRun } from '../FirstRunContext';
  * D2 first-run shows the Result overlay on Replay after KO. This slot stays for
  * design-capture deep links that still land on FightResult — same scrim + card
  * over the **live arena** (never a flat opaque fill).
+ * E1: `?result=victory|defeat` forces capture fixtures so both action-band
+ * stills are reviewable without a second live fight.
  */
 export function FightResultSlot(): React.ReactElement {
   const {
@@ -35,11 +39,20 @@ export function FightResultSlot(): React.ReactElement {
     reducedMotion,
     setFightViewMode,
     setShowResultOverlay,
+    resultCaptureScenario,
   } = useFirstRun();
   const { lastFight } = useFightSession();
   const insets = useSafeAreaInsets();
 
-  const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
+  const resolution = useMemo(() => {
+    if (isDesignCaptureEnabled() && resultCaptureScenario) {
+      return {
+        status: 'confirmed' as const,
+        confirmed: confirmedResultForResultCapture(resultCaptureScenario),
+      };
+    }
+    return resolveFirstRunConfirmedResult(lastFight);
+  }, [lastFight, resultCaptureScenario]);
 
   if (resolution.status === 'blocked') {
     return (
@@ -79,7 +92,7 @@ export function FightResultSlot(): React.ReactElement {
     <ResultOverlay
       confirmed={confirmed}
       record={captureRecord}
-      opponentBotoreName="Magistra Volta"
+      opponentBotoreName="Tito Rivet"
       muted={muted}
       musicEnabled={musicEnabled}
       effectsEnabled={effectsEnabled}

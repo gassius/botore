@@ -7,9 +7,11 @@ import { describe, expect, it } from 'vitest';
 import {
   buildResultCardModel,
   botFightRecordFromRankingRow,
+  formatFightsRemainingLine,
   formatRecordLine,
   formatResultContextLine,
   formatVsLine,
+  formatVsParts,
   resolveOutcomeKind,
 } from '../src/result-overlay/resultCardModel';
 import { RESULT_OVERLAY_DIM_OPACITY } from '../src/result-overlay/types';
@@ -199,38 +201,46 @@ describe('D2 result card model (player POV)', () => {
     const confirmed = confirmedStub({
       outcome: { reason: 'defeat', winner: 'player-hero', loser: 'opp-1' },
       newRecord: true,
+      allowancesRemaining: 1,
     });
     expect(resolveOutcomeKind(confirmed)).toBe('victory');
     const card = buildResultCardModel(confirmed, {
       record: resultCaptureRecord('victory-new-record'),
-      opponentBotoreName: 'Magistra Volta',
+      opponentBotoreName: 'Tito Rivet',
     });
     expect(card.outcomeKind).toBe('victory');
     expect(card.showNewRecord).toBe(true);
     expect(card.xpAwarded).toBe(24);
     expect(card.levelLabel).toBe('Level 4');
-    expect(card.wins).toBe(12);
+    expect(card.wins).toBe(13);
     expect(card.losses).toBe(6);
-    expect(card.contextLine).toBe('Best win streak: 4');
-    expect(card.vsLine).toBe('vs Sir Bot · Magistra Volta');
+    expect(card.contextLine).toBe('Fights remaining: 1');
+    expect(card.vsLine).toBe('vs Sir Bot · Tito Rivet');
     expect(card.vsLine).not.toMatch(/player-hero|opp-1|battle|checksum/i);
+    expect(formatVsParts(card.opponentBotName, card.opponentBotoreName)).toEqual({
+      bot: 'Sir Bot',
+      botore: 'Tito Rivet',
+    });
+    expect(formatVsLine(card.opponentBotName, card.opponentBotoreName)).toBe(card.vsLine);
   });
 
-  it('maps attacker loss to defeat with streak-ended context', () => {
+  it('maps attacker loss to defeat with Fights remaining (D10 SoT)', () => {
     const confirmed = confirmedStub({
       outcome: { reason: 'defeat', winner: 'opp-1', loser: 'player-hero' },
       xpAwarded: 8,
       newRecord: false,
+      allowancesRemaining: 1,
     });
     expect(resolveOutcomeKind(confirmed)).toBe('defeat');
     const card = buildResultCardModel(confirmed, {
       record: resultCaptureRecord('defeat'),
-      opponentBotoreName: 'Magistra Volta',
+      opponentBotoreName: 'Tito Rivet',
     });
     expect(card.outcomeKind).toBe('defeat');
     expect(card.showNewRecord).toBe(false);
     expect(card.xpAwarded).toBe(8);
-    expect(card.contextLine).toBe('Streak ended at 3');
+    expect(card.contextLine).toBe('Fights remaining: 1');
+    expect(formatFightsRemainingLine(1)).toBe('Fights remaining: 1');
     expect(formatRecordLine(11, 7)).toBe('Record  11W – 7L');
   });
 
@@ -254,16 +264,26 @@ describe('D2 result card model (player POV)', () => {
     expect(overlay).toContain('isDraw');
   });
 
-  it('omits W–L / level / streak when E2 record is absent (no invent)', () => {
+  it('omits W–L / level when E2 record is absent; fights remaining from confirmed only', () => {
     const confirmed = confirmedStub({
       outcome: { reason: 'defeat', winner: 'player-hero', loser: 'opp-1' },
+      allowancesRemaining: null,
     });
     const card = buildResultCardModel(confirmed);
     expect(card.wins).toBeNull();
     expect(card.losses).toBeNull();
     expect(card.levelLabel).toBeNull();
     expect(card.contextLine).toBeNull();
+    expect(formatVsParts('Sir Bot', null)).toEqual({ bot: 'Sir Bot', botore: null });
     expect(formatVsLine('Sir Bot', null)).toBe('vs Sir Bot');
+    expect(
+      buildResultCardModel(
+        confirmedStub({
+          outcome: { reason: 'defeat', winner: 'player-hero', loser: 'opp-1' },
+          allowancesRemaining: 2,
+        }),
+      ).contextLine,
+    ).toBe('Fights remaining: 2');
   });
 
   it('maps E2 ranking row into a fight-record snapshot', () => {
@@ -289,7 +309,10 @@ describe('D2 result card model (player POV)', () => {
     expect(called).toBe(false);
   });
 
-  it('formats context lines from optional streak fields only', () => {
+  it('formats D10 Fights remaining and optional streak helpers', () => {
+    expect(formatFightsRemainingLine(1)).toBe('Fights remaining: 1');
+    expect(formatFightsRemainingLine(0)).toBe('Fights remaining: 0');
+    expect(formatFightsRemainingLine(null)).toBeNull();
     expect(formatResultContextLine('victory', { wins: 1, losses: 0, bestWinStreak: 4 })).toBe(
       'Best win streak: 4',
     );
@@ -312,13 +335,29 @@ describe('D2 overlay + band source guards', () => {
     expect(overlay).not.toContain('DomainNote');
   });
 
-  it('band keeps Back to Stable / Watch again / Ranking testIDs', () => {
+  it('renders Fights remaining outside W–L-only gate and vs via formatVsParts', () => {
+    const overlay = readSource('src/result-overlay/ResultOverlay.tsx');
+    expect(overlay).toContain('formatVsParts');
+    expect(overlay).toContain('vsParts.bot');
+    expect(overlay).toContain('card.contextLine');
+    // Live path: context when record/W–L is absent (not nested only under wins/losses).
+    expect(overlay).toMatch(
+      /card\.wins !== null && card\.losses !== null[\s\S]*?: card\.contextLine \?/,
+    );
+  });
+
+  it('band keeps Back to Ludus / Watch again / Ranking testIDs (D10 SoT)', () => {
     const band = readSource('src/result-overlay/ResultOverlayBand.tsx');
     expect(band).toContain('result-stable');
     expect(band).toContain('result-watch');
     expect(band).toContain('result-ranking');
-    expect(band).toContain('Back to Stable');
-    expect(band).toContain('Watch again');
-    expect(band).toContain('Ranking');
+    expect(band).toContain('BACK_TO_LUDUS_LABEL');
+    expect(band).toContain('WATCH_AGAIN_LABEL');
+    expect(band).toContain('RANKING_LABEL');
+    expect(band).not.toContain('Back to Stable');
+    const copy = readSource('src/result-overlay/copy.ts');
+    expect(copy).toContain("BACK_TO_LUDUS_LABEL = 'Back to Ludus'");
+    expect(copy).toContain("WATCH_AGAIN_LABEL = 'Watch again'");
+    expect(copy).toContain("RANKING_LABEL = 'Ranking'");
   });
 });

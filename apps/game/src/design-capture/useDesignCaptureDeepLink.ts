@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Linking } from 'react-native';
 import { useFirstRun } from '../first-run/FirstRunContext';
 import type { FirstRunRoute } from '../first-run/routes';
+import type { ResultCaptureScenario } from '../result-overlay/designCaptureRecords';
 import {
   type DesignCaptureCustomiseScenario,
   type DesignCaptureRankingScenario,
@@ -31,6 +32,7 @@ export function useDesignCaptureDeepLink(): void {
     setRankingCaptureScenario,
     setSessionFailureCapture,
     setCustomiseCaptureScenario,
+    setResultCaptureScenario,
     setFightViewMode,
   } = useFirstRun();
   const lastAppliedRoute = useRef<FirstRunRoute | null>(null);
@@ -38,6 +40,7 @@ export function useDesignCaptureDeepLink(): void {
   const lastCustomiseScenario = useRef<DesignCaptureCustomiseScenario | null | undefined>(
     undefined,
   );
+  const lastResultScenario = useRef<ResultCaptureScenario | null | undefined>(undefined);
   const lastRankingScenario = useRef<DesignCaptureRankingScenario | null | undefined>(undefined);
   const fileConsumed = useRef(false);
   const mutedRef = useRef(muted);
@@ -56,6 +59,7 @@ export function useDesignCaptureDeepLink(): void {
       sessionFailure?: DesignCaptureSessionFailure | null;
       fightViewMode?: 'firstWatch' | 'rewatch' | null;
       customiseScenario?: DesignCaptureCustomiseScenario | null;
+      resultScenario?: ResultCaptureScenario | null;
     }) => {
       // Always replace live sessionFailure (including null clear) so sequential
       // stills never stick auth_expired into a later offline capture.
@@ -71,6 +75,13 @@ export function useDesignCaptureDeepLink(): void {
       } else if (parsed.route === 'Customise' && parsed.customiseScenario) {
         // Re-assert when stills repeat the same scenario after another route.
         setCustomiseCaptureScenario(parsed.customiseScenario);
+      }
+      // Same-route FightResult stills (victory → defeat) refresh even when goTo skips.
+      if (parsed.resultScenario !== lastResultScenario.current) {
+        lastResultScenario.current = parsed.resultScenario ?? null;
+        setResultCaptureScenario(parsed.resultScenario ?? null);
+      } else if (parsed.route === 'FightResult' && parsed.resultScenario) {
+        setResultCaptureScenario(parsed.resultScenario);
       }
       // Ranking scenario before route so RankingSlot mounts the right port.
       // Same-route stills (bots → botores → empty → loading) refresh even when
@@ -139,6 +150,7 @@ export function useDesignCaptureDeepLink(): void {
         sessionFailure: parsed.sessionFailure,
         fightViewMode: parsed.fightViewMode,
         customiseScenario: parsed.customiseScenario,
+        resultScenario: parsed.resultScenario,
       });
       applyRouteIfNew(parsed.route, false);
     };

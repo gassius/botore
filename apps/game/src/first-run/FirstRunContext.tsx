@@ -7,6 +7,7 @@ import {
   readDesignCaptureSessionFailure,
 } from '../design-capture';
 import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
+import type { ResultCaptureScenario } from '../result-overlay/designCaptureRecords';
 import {
   resolveFirstRunGoBackTarget,
   shouldReopenResultOverlayOnBack,
@@ -59,6 +60,12 @@ export type FirstRunContextValue = {
   customiseCaptureScenario: DesignCaptureCustomiseScenario | null;
   setCustomiseCaptureScenario: (scenario: DesignCaptureCustomiseScenario | null) => void;
   /**
+   * E1/D10 design-capture: FightResult victory / defeat / victory-new-record stills.
+   * Replaced on every capture deep link — never sticky across stills.
+   */
+  resultCaptureScenario: ResultCaptureScenario | null;
+  setResultCaptureScenario: (scenario: ResultCaptureScenario | null) => void;
+  /**
    * D1 Fight View mode — firstWatch hides transport/back; rewatch shows back + Replay only.
    * Set by ConfirmFight (firstWatch) / Result Watch again (rewatch).
    */
@@ -100,6 +107,9 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
     );
   const [customiseCaptureScenario, setCustomiseCaptureScenario] =
     useState<DesignCaptureCustomiseScenario | null>(() => pending.customiseScenario ?? null);
+  const [resultCaptureScenario, setResultCaptureScenario] = useState<ResultCaptureScenario | null>(
+    () => pending.resultScenario ?? null,
+  );
   const [fightViewMode, setFightViewMode] = useState<FightViewMode>('firstWatch');
   const [showResultOverlay, setShowResultOverlay] = useState(false);
 
@@ -154,6 +164,8 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       setSessionFailureCapture,
       customiseCaptureScenario,
       setCustomiseCaptureScenario,
+      resultCaptureScenario,
+      setResultCaptureScenario,
       fightViewMode,
       setFightViewMode,
       showResultOverlay,
@@ -181,6 +193,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       rankingCaptureScenario,
       sessionFailureCapture,
       customiseCaptureScenario,
+      resultCaptureScenario,
     ],
   );
 

@@ -90,52 +90,78 @@ else
   done < <(list_default_routes)
 fi
 
+# E1/D10: FightResult expands to victory + defeat action-band stills.
+fight_result_scenarios_for_route() {
+  local route="$1"
+  if [[ "${route}" == "FightResult" ]]; then
+    printf '%s\n' victory defeat
+  else
+    printf '%s\n' ""
+  fi
+}
+
 capture_android_route() {
   local route="$1"
-  local paint weapon
+  local paint weapon scenario name_suffix
   paint="$(welcome_paint_for_route "${route}")"
   weapon="$(welcome_weapon_for_route "${route}")"
-  local args=(--out "${OUT_DIR}" --route "${route}" --name "${route}")
-  if [[ -n "${MUTE}" ]]; then args+=(--mute); fi
-  if [[ -n "${paint}" ]]; then args+=(--paint "${paint}"); fi
-  if [[ -n "${weapon}" ]]; then args+=(--weapon "${weapon}"); fi
-  local file
-  file="$("${SCRIPT_DIR}/android-screencap.sh" "${args[@]}")"
-  # Trim accidental whitespace/newlines from command substitution.
-  file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
-  write_manifest_line "${MANIFEST}" "still.android.${route}" "${file}"
-  echo "android still: ${file}" >&2
-  if [[ "${DO_CLIPS}" == "1" ]]; then
-    local clip
-    clip="$("${SCRIPT_DIR}/android-screenrecord.sh" "${args[@]}" --seconds "${CAPTURE_SECONDS:-6}")"
-    clip="$(printf '%s' "${clip}" | tr -d '\r' | tail -n 1)"
-    write_manifest_line "${MANIFEST}" "clip.android.${route}" "${clip}"
-    echo "android clip: ${clip}" >&2
-  fi
+  while IFS= read -r scenario; do
+    name_suffix=""
+    local args=(--out "${OUT_DIR}" --route "${route}")
+    if [[ -n "${scenario}" ]]; then
+      name_suffix="-${scenario}"
+      args+=(--result "${scenario}")
+    fi
+    args+=(--name "${route}${name_suffix}")
+    if [[ -n "${MUTE}" ]]; then args+=(--mute); fi
+    if [[ -n "${paint}" ]]; then args+=(--paint "${paint}"); fi
+    if [[ -n "${weapon}" ]]; then args+=(--weapon "${weapon}"); fi
+    local file
+    file="$("${SCRIPT_DIR}/android-screencap.sh" "${args[@]}")"
+    # Trim accidental whitespace/newlines from command substitution.
+    file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
+    write_manifest_line "${MANIFEST}" "still.android.${route}${name_suffix}" "${file}"
+    echo "android still: ${file}" >&2
+    if [[ "${DO_CLIPS}" == "1" ]]; then
+      local clip
+      clip="$("${SCRIPT_DIR}/android-screenrecord.sh" "${args[@]}" --seconds "${CAPTURE_SECONDS:-6}")"
+      clip="$(printf '%s' "${clip}" | tr -d '\r' | tail -n 1)"
+      write_manifest_line "${MANIFEST}" "clip.android.${route}${name_suffix}" "${clip}"
+      echo "android clip: ${clip}" >&2
+    fi
+  done < <(fight_result_scenarios_for_route "${route}")
 }
 
 capture_ios_route() {
   local route="$1"
-  local paint weapon
+  local paint weapon scenario name_suffix
   paint="$(welcome_paint_for_route "${route}")"
   weapon="$(welcome_weapon_for_route "${route}")"
-  local args=(--out "${OUT_DIR}" --route "${route}" --name "${route}")
-  if [[ -n "${MUTE}" ]]; then args+=(--mute); fi
-  if [[ -n "${paint}" ]]; then args+=(--paint "${paint}"); fi
-  if [[ -n "${weapon}" ]]; then args+=(--weapon "${weapon}"); fi
-  if [[ -n "${CAPTURE_IOS_UDID:-}" ]]; then args+=(--udid "${CAPTURE_IOS_UDID}"); fi
-  local file
-  file="$("${SCRIPT_DIR}/ios-screencap.sh" "${args[@]}")"
-  file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
-  write_manifest_line "${MANIFEST}" "still.ios.${route}" "${file}"
-  echo "ios still: ${file}" >&2
-  if [[ "${DO_CLIPS}" == "1" ]]; then
-    local clip
-    clip="$("${SCRIPT_DIR}/ios-record.sh" "${args[@]}" --seconds "${CAPTURE_SECONDS:-6}")"
-    clip="$(printf '%s' "${clip}" | tr -d '\r' | tail -n 1)"
-    write_manifest_line "${MANIFEST}" "clip.ios.${route}" "${clip}"
-    echo "ios clip: ${clip}" >&2
-  fi
+  while IFS= read -r scenario; do
+    name_suffix=""
+    local args=(--out "${OUT_DIR}" --route "${route}")
+    if [[ -n "${scenario}" ]]; then
+      name_suffix="-${scenario}"
+      args+=(--result "${scenario}")
+    fi
+    args+=(--name "${route}${name_suffix}")
+    if [[ -n "${MUTE}" ]]; then args+=(--mute); fi
+    if [[ -n "${paint}" ]]; then args+=(--paint "${paint}"); fi
+    if [[ -n "${weapon}" ]]; then args+=(--weapon "${weapon}"); fi
+    if [[ -n "${CAPTURE_IOS_UDID:-}" ]]; then args+=(--udid "${CAPTURE_IOS_UDID}"); fi
+    local file
+    file="$("${SCRIPT_DIR}/ios-screencap.sh" "${args[@]}")"
+    file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
+    write_manifest_line "${MANIFEST}" "still.ios.${route}${name_suffix}" "${file}"
+    echo "ios still: ${file}" >&2
+    if [[ "${DO_CLIPS}" == "1" ]]; then
+      local clip
+      clip="$("${SCRIPT_DIR}/ios-record.sh" "${args[@]}" --seconds "${CAPTURE_SECONDS:-6}")"
+      clip="$(printf '%s' "${clip}" | tr -d '\r' | tail -n 1)"
+      write_manifest_line "${MANIFEST}" "clip.ios.${route}${name_suffix}" "${clip}"
+      echo "ios clip: ${clip}" >&2
+    fi
+  done < <(fight_result_scenarios_for_route "${route}")
 }
 
 case "${PLATFORM}" in
