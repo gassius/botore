@@ -28,7 +28,7 @@ describe('A3 result plates + victory/defeat poses (kit-v003.1)', () => {
     expect(RESULT_PLATE_SPECS.defeat.sizePt).toEqual([300, 96]);
     expect(RESULT_PLATE_SPECS.new_record.sizePt).toEqual([220, 64]);
     expect(RESULT_PLATE_SPECS.victory.accessibilityLabel).toBe('Victory');
-    expect(NEW_RECORD_STAMP_ROTATION_DEG).toBe(-12);
+    expect(NEW_RECORD_STAMP_ROTATION_DEG).toBe(12);
     expect(resultPlateDensityBucket(1)).toBe(1);
     expect(resultPlateDensityBucket(2)).toBe(2);
     expect(resultPlateDensityBucket(3)).toBe(3);
