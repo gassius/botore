@@ -15,11 +15,15 @@
 -- Fix:
 --   1) ensure_player_character grants when owned quantity < 1 (not merely
 --      when no historical positive grant row exists — revoke-safe).
+--      Quantity is computed with an inline SUM (VOLATILE plpgsql statement),
+--      not via STABLE owned_part_quantity inside a mutating INSERT/SELECT.
 --   2) get_owned_character always invokes ensure so starter/A6 grants sync
 --      for existing characters on hydrate.
 --   3) save_bot_loadout (authenticated owner path) calls ensure before
 --      ownership asserts so Equip self-heals without requiring a remount.
---   4) Idempotent inventory backfill for A6 paints/weapons (safe re-run).
+--   4) current_bot_loadouts ties on created_at break by loadout_version_id
+--      (same-tx now() collisions no longer hide the newest Equip).
+--   5) Idempotent A6 inventory backfill (safe re-run; ledger SUM subquery).
 --
 -- Prefix: E4 owns 0037; this PR owns 0038. Fight-end / name-input: 0039+.
 
@@ -45,6 +49,7 @@ declare
     v_loadout_version_id uuid;
     v_build_count integer;
     v_part_id text;
+    v_qty integer;
     v_today date := (now() at time zone 'utc')::date;
     v_normalized jsonb;
     v_sound_tags jsonb;
@@ -196,13 +201,22 @@ begin
         'weapon-shield'
     ]
     loop
-        -- 0038: grant when current balance < 1 (revoke-safe), not historical row.
+        -- 0038: grant when current balance < 1 (revoke-safe).
+        -- Inline SUM in this VOLATILE plpgsql statement — do not call STABLE
+        -- owned_part_quantity from a mutating INSERT/SELECT path.
         if exists (
             select 1 from public.parts_catalogue pc
              where pc.part_id = v_part_id and pc.is_active
-        ) and public.owned_part_quantity(p_account_id, v_part_id) < 1 then
-            insert into public.inventory_ledger (account_id, part_id, delta, reason)
-            values (p_account_id, v_part_id, 1, 'grant');
+        ) then
+            select coalesce(sum(il.delta), 0)::integer
+              into v_qty
+              from public.inventory_ledger il
+             where il.account_id = p_account_id
+               and il.part_id = v_part_id;
+            if v_qty < 1 then
+                insert into public.inventory_ledger (account_id, part_id, delta, reason)
+                values (p_account_id, v_part_id, 1, 'grant');
+            end if;
         end if;
     end loop;
 
@@ -569,7 +583,27 @@ comment on function public.save_bot_loadout(text, jsonb, text) is
   'Validates ownership + slot compatibility; authenticated re-pins current draft atlas (E1) and ensures A6 inventory grants before asserts (0038); appends immutable loadout version.';
 
 -- ---------------------------------------------------------------------------
+-- current_bot_loadouts: tie-break same created_at (tx-stable now()) by version id
+-- ---------------------------------------------------------------------------
+create or replace view public.current_bot_loadouts
+with (security_invoker = true) as
+select distinct on (character_id)
+    loadout_version_id,
+    character_id,
+    loadout,
+    atlas_version,
+    created_at
+from public.bot_loadout_versions
+order by character_id, created_at desc, loadout_version_id desc;
+
+grant select on public.current_bot_loadouts to authenticated, anon;
+
+comment on view public.current_bot_loadouts is
+  'Latest confirmed loadout per character. Ties on created_at break by loadout_version_id desc (0038).';
+
+-- ---------------------------------------------------------------------------
 -- Idempotent A6 inventory backfill (safe if 0035 already applied)
+-- Inline ledger SUM — avoid STABLE owned_part_quantity in mutating INSERT.
 -- ---------------------------------------------------------------------------
 insert into public.inventory_ledger (account_id, part_id, delta, reason)
 select c.account_id, p.part_id, 1, 'grant'
@@ -598,4 +632,9 @@ where c.is_opponent = false
     select 1 from public.parts_catalogue pc
      where pc.part_id = p.part_id and pc.is_active
   )
-  and public.owned_part_quantity(c.account_id, p.part_id) < 1;
+  and coalesce((
+    select sum(il.delta)::integer
+      from public.inventory_ledger il
+     where il.account_id = c.account_id
+       and il.part_id = p.part_id
+  ), 0) < 1;
