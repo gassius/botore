@@ -171,7 +171,13 @@ d('client-read RPCs via PostgREST (local supabase)', () => {
     const { status, json } = await rpc(anon, accessToken, 'list_opponent_roster');
     expect(status).toBe(200);
     expect(json.ok).toBe(true);
-    const opponents = json.opponents as Array<{ characterId: string; displayName: string }>;
+    const opponents = json.opponents as Array<{
+      characterId: string;
+      displayName: string;
+      botoreName: string | null;
+      wins: number;
+      losses: number;
+    }>;
     expect(Array.isArray(opponents)).toBe(true);
     expect(opponents).toHaveLength(3);
     expect(opponents.map((o) => o.characterId).sort()).toEqual([
@@ -179,6 +185,25 @@ d('client-read RPCs via PostgREST (local supabase)', () => {
       'opp-hp-bot',
       'opp-sir-bot',
     ]);
+    const byId = Object.fromEntries(opponents.map((o) => [o.characterId, o]));
+    expect(byId['opp-dex-bot']).toMatchObject({
+      displayName: 'Can Hook',
+      botoreName: 'Magistra Volta',
+      wins: 19,
+      losses: 2,
+    });
+    expect(byId['opp-hp-bot']).toMatchObject({
+      displayName: 'Cobalt Brute',
+      botoreName: 'Doctore Ferro',
+      wins: 15,
+      losses: 5,
+    });
+    expect(byId['opp-sir-bot']).toMatchObject({
+      displayName: 'Slab Mick',
+      botoreName: 'Tito Rivet',
+      wins: 13,
+      losses: 6,
+    });
   });
 
   it('get_fight_allowance_summary returns E3 quota contract for auth.uid()', async () => {

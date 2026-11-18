@@ -34,18 +34,25 @@ const NAME_TO_SLUG: Record<string, string> = {
   'rivet nan': 'rivet-nan',
   'slab mick': 'slab-mick',
   'weld tess': 'weld-tess',
-  // First-run seed labels → closest A6 panels until roster remap.
-  'sir bot': 'weld-tess',
-  'dex bot': 'frost-kit',
-  'tank bot': 'cobalt-brute',
+};
+
+/** Stable seed character ids → A6 panel slugs (D8). */
+const CHARACTER_ID_TO_SLUG: Record<string, string> = {
+  'opp-dex-bot': 'can-hook',
+  'opp-hp-bot': 'cobalt-brute',
+  'opp-sir-bot': 'slab-mick',
 };
 
 export function resolveA6OpponentPanel(input: {
   characterId?: string | null;
   displayName?: string | null;
 }): ImageSourcePropType | null {
-  const id = (input.characterId ?? '').toLowerCase().replace(/^opp-/, '');
-  if (id && OPPONENT_PANELS[id]) return OPPONENT_PANELS[id];
+  const characterId = (input.characterId ?? '').trim().toLowerCase();
+  const fromId = CHARACTER_ID_TO_SLUG[characterId];
+  if (fromId && OPPONENT_PANELS[fromId]) return OPPONENT_PANELS[fromId];
+
+  const bare = characterId.replace(/^opp-/, '');
+  if (bare && OPPONENT_PANELS[bare]) return OPPONENT_PANELS[bare];
 
   const name = (input.displayName ?? '').trim().toLowerCase();
   const slug = NAME_TO_SLUG[name];

@@ -29,6 +29,10 @@ export type OwnedCharacterRpcOk = {
 export type OpponentRosterEntry = {
   readonly characterId: string;
   readonly displayName: string;
+  /** Lanista / botore display name when the system opponent is owned by an NPC account. */
+  readonly botoreName?: string | null;
+  readonly wins?: number;
+  readonly losses?: number;
 };
 
 export type OpponentRosterRpcOk = {

@@ -12,7 +12,7 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 | RPC                             | Args                | Success body                                                                                                     |
 | ------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `get_owned_character()`         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }`                                                                         |
-| `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName }] }`                                                        |
+| `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName, botoreName, wins, losses }] }` (0034)                       |
 | `get_fight_allowance_summary()` | none (`auth.uid()`) | E3: `{ ok, fightsRemaining, limit, scope, refillPolicy, nextRefillAt, utcDay, allowancesRemaining }` — see below |
 | `list_ranking()`                | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }`                                |
 | `list_bot_ranking()`            | none (`auth.uid()`) | `{ ok: true, tab: "bots", rows: [...] }` — see `docs/backend/ranking.md` (E2)                                    |
@@ -35,6 +35,20 @@ Compat: `allowancesRemaining` aliases `fightsRemaining`; `utcDay` remains.
 Client UI (Opponents / Confirm) must derive the countdown only from
 `nextRefillAt` — never hard-code “3” or “midnight”. **Carlos yes** required
 before merging the migration.
+
+### D8 roster enrichment (`list_opponent_roster`)
+
+Migration `0034_list_opponent_roster_botore_record.sql` (**Carlos yes**
+2026-11-18 on draft #84). Each opponent row includes:
+
+| Field         | Source                                                                |
+| ------------- | --------------------------------------------------------------------- |
+| `botoreName`  | `profiles.display_name` via `characters.account_id` (null when unset) |
+| `wins`/`losses` | `bot_fight_records` coalesce 0                                      |
+
+No table `GRANT` to `authenticated`. Local seed renames system opponents to
+A5 names (Can Hook / Cobalt Brute / Slab Mick) and attaches lanista NPC
+accounts — seed only, not hosted `db push`.
 
 Failures: `{ ok: false, code?, message? }` or PostgREST HTTP error (`42501`).
 After R5 soft-delete, `get_owned_character()` returns

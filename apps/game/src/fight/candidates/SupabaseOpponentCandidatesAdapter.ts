@@ -4,10 +4,8 @@ import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { resolveTransportFailureCode } from '../../session-failure';
 import {
   FIGHT_ALLOWANCE_SUMMARY_RPC,
-  LIST_BOT_RANKING_RPC,
   OPPONENT_ROSTER_RPC,
   type ClientReadRpcFail,
-  type ListBotRankingRpcOk,
   type OpponentRosterRpcOk,
 } from '../../supabase/clientReadRpcs';
 import { parseFightQuotaSummary } from '../quota/fightQuotaTypes';
@@ -168,40 +166,6 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         });
       }
 
-      // Best-effort W–L / botore from E2 ranking — never invent when missing.
-      const rankingByBot = new Map<
-        string,
-        { botoreName: string | null; wins: number; losses: number }
-      >();
-      try {
-        const rankRes = await fetch(`${this.config.url}/rest/v1/rpc/${LIST_BOT_RANKING_RPC}`, {
-          method: 'POST',
-          headers: {
-            ...this.headers(input.accessToken),
-            Prefer: 'return=representation',
-          },
-          body: JSON.stringify({}),
-        });
-        if (rankRes.ok) {
-          const rankBody = (await rankRes.json()) as ListBotRankingRpcOk | ClientReadRpcFail | null;
-          if (rankBody && typeof rankBody === 'object' && rankBody.ok === true) {
-            for (const row of rankBody.rows ?? []) {
-              if (typeof row.botId !== 'string' || row.botId.length < 1) continue;
-              rankingByBot.set(row.botId, {
-                botoreName:
-                  typeof row.botoreName === 'string' && row.botoreName.trim().length > 0
-                    ? row.botoreName.trim()
-                    : null,
-                wins: typeof row.wins === 'number' ? row.wins : 0,
-                losses: typeof row.losses === 'number' ? row.losses : 0,
-              });
-            }
-          }
-        }
-      } catch {
-        // Ranking is optional enrichment for D8/D9 cards — roster still usable.
-      }
-
       const candidates: OpponentCandidate[] = [];
       for (const c of opponents) {
         const id = typeof c.characterId === 'string' ? c.characterId : '';
@@ -212,18 +176,18 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
           typeof c.displayName === 'string' && c.displayName.trim().length > 0
             ? c.displayName.trim()
             : null;
-        const rank = rankingByBot.get(id);
+        const rawBotore =
+          typeof c.botoreName === 'string' && c.botoreName.trim().length > 0
+            ? c.botoreName.trim()
+            : null;
+        const wins = typeof c.wins === 'number' ? c.wins : null;
+        const losses = typeof c.losses === 'number' ? c.losses : null;
         candidates.push({
           ...withLoadout,
           // C16/C17: platform + raw character ids never become opponent labels.
           displayName: playerFacingDisplayName(rawName),
-          ...(rank
-            ? {
-                botoreName: rank.botoreName ? playerFacingDisplayName(rank.botoreName) : null,
-                wins: rank.wins,
-                losses: rank.losses,
-              }
-            : {}),
+          botoreName: rawBotore ? playerFacingDisplayName(rawBotore) : null,
+          ...(wins !== null && losses !== null ? { wins, losses } : {}),
         });
       }
 

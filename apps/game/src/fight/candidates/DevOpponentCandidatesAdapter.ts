@@ -6,13 +6,14 @@ import { DevFightBackendState, getSharedDevFightBackend } from '../dev/DevFightB
 import type { OpponentCandidatesPort } from './OpponentCandidatesPort';
 import type { ListCandidatesResult, OpponentCandidate, PrepareEligibilityResult } from './types';
 
+/** A5 roster names (a5fix/npcs.json) + A6 D8 lanista / record pairings. */
 const DEV_OPPONENTS: readonly OpponentCandidate[] = [
   {
     characterId: 'opp-dex-bot',
-    displayName: 'Dex Bot',
+    displayName: 'Can Hook',
     botoreName: 'Magistra Volta',
-    wins: 14,
-    losses: 5,
+    wins: 19,
+    losses: 2,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
       paint: 'paint-cobalt',
@@ -24,10 +25,10 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
   },
   {
     characterId: 'opp-hp-bot',
-    displayName: 'Tank Bot',
+    displayName: 'Cobalt Brute',
     botoreName: 'Doctore Ferro',
-    wins: 9,
-    losses: 9,
+    wins: 15,
+    losses: 5,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
       paint: 'paint-cobalt',
@@ -39,10 +40,10 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
   },
   {
     characterId: 'opp-sir-bot',
-    displayName: 'Sir Bot',
+    displayName: 'Slab Mick',
     botoreName: 'Tito Rivet',
-    wins: 16,
-    losses: 4,
+    wins: 13,
+    losses: 6,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
       paint: 'paint-crimson',

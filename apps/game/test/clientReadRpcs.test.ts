@@ -61,7 +61,13 @@ describe('ticket B client-read RPC adapters', () => {
             JSON.stringify({
               ok: true,
               opponents: [
-                { characterId: 'opp-sir-bot', displayName: 'Sir Bot' },
+                {
+                  characterId: 'opp-sir-bot',
+                  displayName: 'Slab Mick',
+                  botoreName: 'Tito Rivet',
+                  wins: 13,
+                  losses: 6,
+                },
                 { characterId: 'opp-incomplete', displayName: 'Incomplete' },
               ],
             }),
@@ -122,9 +128,14 @@ describe('ticket B client-read RPC adapters', () => {
     expect(result.quota.refillPolicy).toBe('daily_utc_midnight');
     expect(result.quota.nextRefillAt).toBe('2026-11-10T00:00:00Z');
     expect(result.candidates.map((c) => c.characterId)).toEqual(['opp-sir-bot']);
+    expect(result.candidates[0]?.displayName).toBe('Slab Mick');
+    expect(result.candidates[0]?.botoreName).toBe('Tito Rivet');
+    expect(result.candidates[0]?.wins).toBe(13);
+    expect(result.candidates[0]?.losses).toBe(6);
     expect(fetches.some((u) => u.includes(`/rpc/${OPPONENT_ROSTER_RPC}`))).toBe(true);
     expect(fetches.some((u) => u.includes(`/rpc/${FIGHT_ALLOWANCE_SUMMARY_RPC}`))).toBe(true);
     expect(fetches.some((u) => u.includes('/current_bot_loadouts'))).toBe(true);
+    expect(fetches.some((u) => u.includes(`/rpc/${LIST_BOT_RANKING_RPC}`))).toBe(false);
     expect(fetches.some((u) => u.includes('/rest/v1/characters'))).toBe(false);
     expect(fetches.some((u) => u.includes('/rest/v1/fight_allowances'))).toBe(false);
   });

@@ -24,7 +24,10 @@ import { loadDevGoldenConfirmedResult } from '../src/replay/loadDevReplay';
 
 const sir: OpponentCandidate = {
   characterId: 'opp-sir-bot',
-  displayName: 'Sir Bot',
+  displayName: 'Slab Mick',
+  botoreName: 'Tito Rivet',
+  wins: 13,
+  losses: 6,
   loadout: { ...DEFAULT_CONFIRMED_LOADOUT, paint: 'paint-cobalt', weapon: 'weapon-sword' },
   loadoutVersionId: 'dev-opp-sir',
   atlasVersion: 'v1',
@@ -32,7 +35,10 @@ const sir: OpponentCandidate = {
 
 const dex: OpponentCandidate = {
   characterId: 'opp-dex-bot',
-  displayName: 'Dex Bot',
+  displayName: 'Can Hook',
+  botoreName: 'Magistra Volta',
+  wins: 19,
+  losses: 2,
   loadout: { ...DEFAULT_CONFIRMED_LOADOUT, paint: 'paint-crimson', weapon: 'weapon-dagger' },
   loadoutVersionId: 'dev-opp-dex',
   atlasVersion: 'v1',
@@ -361,7 +367,7 @@ describe('server-derived allowance day (P2)', () => {
           return new Response(
             JSON.stringify({
               ok: true,
-              opponents: [{ characterId: 'opp-sir-bot', displayName: 'Sir Bot' }],
+              opponents: [{ characterId: 'opp-sir-bot', displayName: 'Slab Mick' }],
             }),
             { status: 200 },
           );

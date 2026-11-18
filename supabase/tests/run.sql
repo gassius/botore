@@ -1838,9 +1838,36 @@ begin
       select 1
         from jsonb_array_elements(v_res->'opponents') o
        where o->>'characterId' = 'opp-sir-bot'
-         and o->>'displayName' = 'Sir Bot'
+         and o->>'displayName' = 'Slab Mick'
+         and o->>'botoreName' = 'Tito Rivet'
+         and (o->>'wins')::integer = 13
+         and (o->>'losses')::integer = 6
     ),
-    'opp-sir-bot in roster'
+    'opp-sir-bot A5 roster + botore + W-L'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'opponents') o
+       where o->>'characterId' = 'opp-dex-bot'
+         and o->>'displayName' = 'Can Hook'
+         and o->>'botoreName' = 'Magistra Volta'
+         and (o->>'wins')::integer = 19
+         and (o->>'losses')::integer = 2
+    ),
+    'opp-dex-bot A5 roster + botore + W-L'
+  );
+  perform tests.assert(
+    exists (
+      select 1
+        from jsonb_array_elements(v_res->'opponents') o
+       where o->>'characterId' = 'opp-hp-bot'
+         and o->>'displayName' = 'Cobalt Brute'
+         and o->>'botoreName' = 'Doctore Ferro'
+         and (o->>'wins')::integer = 15
+         and (o->>'losses')::integer = 5
+    ),
+    'opp-hp-bot A5 roster + botore + W-L'
   );
 
   v_res := public.get_fight_allowance_summary();
