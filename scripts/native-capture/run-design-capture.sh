@@ -171,8 +171,8 @@ case "${PLATFORM}" in
     ;;
 esac
 
-# A2b: ConfirmFight stills for sword/axe/dagger + kit fight preview frames
-# (attack + knockout) so design can verify all three weapons on phone artifacts.
+# A2b: ConfirmFight stills for sword/axe/dagger + axe clip-attack / clip-knockout
+# phone stills (smear + floor) + kit fight preview frames.
 if [[ "${CAPTURE_A2B_WEAPONS:-1}" == "1" || "${CAPTURE_A2B_WEAPONS:-1}" == "true" ]]; then
   write_manifest_line "${MANIFEST}" a2b_weapons "sword,axe,dagger+knockout"
   for weapon in sword axe dagger; do
@@ -207,8 +207,28 @@ if [[ "${CAPTURE_A2B_WEAPONS:-1}" == "1" || "${CAPTURE_A2B_WEAPONS:-1}" == "true
     esac
   done
 
-  PREVIEW_DIR="${REPO_ROOT}/apps/game/assets/workshop-frame-kit-v003/previews"
-  if [[ -d "${PREVIEW_DIR}/frames" ]]; then
+  # Phone-rendered axe attack (with smear) + axe knockout on floor — design gate.
+  case "${PLATFORM}" in
+    android|both)
+      file="$("${SCRIPT_DIR}/android-screencap.sh" \
+        --out "${OUT_DIR}" --route ConfirmFight --name "ConfirmFight-axe-attack" \
+        --paint petrol --weapon axe --pose-compare clip-attack)"
+      file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
+      write_manifest_line "${MANIFEST}" "still.android.ConfirmFight-axe-attack" "${file}"
+      file="$("${SCRIPT_DIR}/android-screencap.sh" \
+        --out "${OUT_DIR}" --route ConfirmFight --name "ConfirmFight-axe-knockout" \
+        --paint petrol --weapon axe --pose-compare clip-knockout)"
+      file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
+      write_manifest_line "${MANIFEST}" "still.android.ConfirmFight-axe-knockout" "${file}"
+      ;;
+  esac
+
+  # Kit previews are omitted from the repo (EAS weight); optional off-repo sheet dir.
+  PREVIEW_DIR="${BOTORE_A2B_PREVIEW_DIR:-}"
+  if [[ -z "${PREVIEW_DIR}" && -d "${REPO_ROOT}/apps/game/assets/workshop-frame-kit-v003/previews" ]]; then
+    PREVIEW_DIR="${REPO_ROOT}/apps/game/assets/workshop-frame-kit-v003/previews"
+  fi
+  if [[ -n "${PREVIEW_DIR}" && -d "${PREVIEW_DIR}/frames" ]]; then
     mkdir -p "${OUT_DIR}/a2b-kit-v003.3-fight"
     cp -f "${PREVIEW_DIR}/frames"/frames-*-{attack,knockout}.png \
       "${OUT_DIR}/a2b-kit-v003.3-fight/" 2>/dev/null || true
@@ -220,6 +240,8 @@ if [[ "${CAPTURE_A2B_WEAPONS:-1}" == "1" || "${CAPTURE_A2B_WEAPONS:-1}" == "true
     fi
     write_manifest_line "${MANIFEST}" a2b_kit_previews "${OUT_DIR}/a2b-kit-v003.3-fight"
     echo "a2b kit fight previews → ${OUT_DIR}/a2b-kit-v003.3-fight" >&2
+  else
+    echo "note: kit previews omitted from repo; axe clip-attack/knockout phone stills cover design gate" >&2
   fi
 fi
 

@@ -33,6 +33,8 @@ export type FightTimelineSmear = {
   readonly png: string;
   readonly offsetRigPx: readonly [number, number];
   readonly z: number;
+  /** Kit `size_1x` — BotAssembler scales this by display/canvas ratio. */
+  readonly size1x?: readonly [number, number];
 };
 
 export type FightTimelineBeat = {
@@ -288,11 +290,31 @@ function expandFromClips(
     }
   }
 
-  let firstStrikeIndex = -1;
+  let contactOrStrikeIndex = -1;
   for (let i = 0; i < clip.meta.length; i += 1) {
     if (clip.meta[i]!.label === 'key:strike' || i === contactFrame) {
-      firstStrikeIndex = i;
+      contactOrStrikeIndex = i;
       break;
+    }
+  }
+  // Basic (quick): keep the strike-arc / smear travel — start at the first
+  // smear frame or first breakdown after windup, not at contact (which snaps).
+  let basicStartIndex = contactOrStrikeIndex;
+  if (quickAttack) {
+    const fxStart = clip.fx && clip.fx.length > 0 ? Math.min(...clip.fx.map((f) => f.frame)) : -1;
+    let breakdownAfterWindup = -1;
+    let sawWindup = false;
+    for (let i = 0; i < clip.meta.length; i += 1) {
+      const label = clip.meta[i]!.label;
+      if (label === 'key:windup') sawWindup = true;
+      if (sawWindup && label.startsWith('breakdown:')) {
+        breakdownAfterWindup = i;
+        break;
+      }
+    }
+    const candidates = [fxStart, breakdownAfterWindup].filter((n) => n >= 0);
+    if (candidates.length > 0) {
+      basicStartIndex = Math.min(...candidates);
     }
   }
 
@@ -315,7 +337,7 @@ function expandFromClips(
     if (sequence === 'attack' && isHitStop && !hitConnects) {
       continue;
     }
-    if (quickAttack && firstStrikeIndex >= 0 && i < firstStrikeIndex) {
+    if (quickAttack && basicStartIndex >= 0 && i < basicStartIndex) {
       continue;
     }
     if (reduced && isHitStop) {
@@ -359,11 +381,13 @@ function expandFromClips(
     }
 
     const fx = fxByFrame.get(i);
+    const size1x = fx?.size_1x;
     const smear: FightTimelineSmear | undefined = fx
       ? {
           png: fx.png,
           offsetRigPx: fx.offset_rig_px,
           z: fx.z ?? 84,
+          ...(size1x && size1x.length >= 2 ? { size1x: [size1x[0]!, size1x[1]!] as const } : {}),
         }
       : undefined;
 
@@ -432,4 +456,57 @@ export function hitStopFrames(weapon: KitWeaponKind): number {
   return expandWeaponSequence(weapon, 'attack', { hitConnects: true })
     .filter((b) => b.hitStop)
     .reduce((sum, b) => sum + b.frames, 0);
+}
+
+/**
+ * Design-capture stills: mid-attack (contact + smear) or floor/defeat pose from
+ * kit clips for the active weapon.
+ */
+export function designCaptureClipPresentation(
+  weapon: KitWeaponKind,
+  mode: 'clip-attack' | 'clip-knockout',
+): {
+  readonly motionPose: MotionPose;
+  readonly poseOverride: KitPoseEntry;
+  readonly smearOverlay?: FightTimelineSmear;
+} | null {
+  if (mode === 'clip-attack') {
+    const beats = expandWeaponSequence(weapon, 'attack', {
+      hitConnects: true,
+      attack: 'weapon',
+    });
+    const pick =
+      beats.find((b) => b.smear && b.markers.includes('swing')) ??
+      beats.find((b) => Boolean(b.smear)) ??
+      beats.find((b) => b.markers.includes('swing')) ??
+      beats[0];
+    if (!pick?.pose) return null;
+    return {
+      motionPose: motionPoseFromKitKey(pick.poseKey),
+      poseOverride: pick.pose,
+      ...(pick.smear ? { smearOverlay: pick.smear } : {}),
+    };
+  }
+
+  const beats = expandWeaponSequence(weapon, 'knockout');
+  const floorOrDefeat =
+    [...beats].reverse().find((b) => canonicalKitPoseKey(b.poseKey) === 'defeat') ??
+    beats.find((b) => b.poseKey.toLowerCase().includes('floor')) ??
+    beats[beats.length - 1];
+  if (!floorOrDefeat?.pose) return null;
+  return {
+    motionPose: motionPoseFromKitKey(floorOrDefeat.poseKey),
+    poseOverride: floorOrDefeat.pose,
+  };
+}
+
+/** Index of the knockout beat that should freeze for defeat FX capture (loser down). */
+export function defeatCaptureBeatIndex(beats: readonly FightTimelineBeat[]): number {
+  const defeatKey = beats.findIndex((b) => canonicalKitPoseKey(b.poseKey) === 'defeat');
+  if (defeatKey >= 0) return defeatKey;
+  const floor = beats.findIndex((b) => b.poseKey.toLowerCase().includes('floor'));
+  if (floor >= 0) return floor;
+  const marker = beats.findIndex((b) => b.markers.includes('defeat'));
+  if (marker >= 0) return marker;
+  return Math.max(0, beats.length - 1);
 }

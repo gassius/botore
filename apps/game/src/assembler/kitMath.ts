@@ -18,6 +18,52 @@ export function kitLayerAnchorLeft(
   return mirrored ? canvasSize - worldX : worldX;
 }
 
+/**
+ * Attack smear tiles are authored top-left at `offsetX` with width `width`
+ * (kit `size_1x`). Facing-right: `left = offsetX * scale`. Facing-left: mirror
+ * the full box — `left = canvasSize − (offsetX + width) * scale` — then flip
+ * the image so the arc stays in front of the far fighter.
+ */
+export function kitSmearAnchorLeft(
+  offsetX: number,
+  width: number,
+  scale: number,
+  canvasSize: number,
+  mirrored: boolean,
+): number {
+  if (!mirrored) return offsetX * scale;
+  return canvasSize - (offsetX + width) * scale;
+}
+
+/** Layout box for a kit smear tile — tested for both facings (PRR #77). */
+export function smearOverlayLayout(input: {
+  readonly offsetRigPx: readonly [number, number];
+  readonly size1x: readonly [number, number];
+  readonly scale: number;
+  readonly canvasSize: number;
+  readonly mirrored: boolean;
+}): {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+} {
+  const width = input.size1x[0] * input.scale;
+  const height = input.size1x[1] * input.scale;
+  return {
+    left: kitSmearAnchorLeft(
+      input.offsetRigPx[0],
+      input.size1x[0],
+      input.scale,
+      input.canvasSize,
+      input.mirrored,
+    ),
+    top: input.offsetRigPx[1] * input.scale,
+    width,
+    height,
+  };
+}
+
 export type Mat3 = readonly [
   number,
   number,

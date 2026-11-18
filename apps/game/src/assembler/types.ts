@@ -117,6 +117,7 @@ export interface BotAssemblerProps {
     readonly png: string;
     readonly offsetRigPx: readonly [number, number];
     readonly z: number;
+    readonly size1x?: readonly [number, number];
   };
   /** When true, skip non-essential motion (pose snaps / reduced amplitude). */
   readonly reducedMotion?: boolean;

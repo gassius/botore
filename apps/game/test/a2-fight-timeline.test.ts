@@ -7,6 +7,7 @@ import {
   A2_FPS,
   attackTotalFrames,
   canonicalKitPoseKey,
+  designCaptureClipPresentation,
   expandTimingSegments,
   expandWeaponSequence,
   framesToMs,
@@ -160,7 +161,7 @@ describe('A2b frame-marker audio cues', () => {
     ).toBe(true);
   });
 
-  it('trims windup/hold for basic; weapon keeps full anticipation', () => {
+  it('trims anticipation for basic but keeps strike-arc / smear travel', () => {
     const basic = expandWeaponSequence('sword', 'attack', {
       hitConnects: true,
       attack: 'basic',
@@ -169,13 +170,29 @@ describe('A2b frame-marker audio cues', () => {
       hitConnects: true,
       attack: 'weapon',
     });
-    expect(basic.some((b) => b.poseKey === 'windup')).toBe(false);
-    expect(heavy.some((b) => b.poseKey === 'windup')).toBe(true);
     expect(basic.reduce((n, b) => n + b.frames, 0)).toBeLessThan(
       heavy.reduce((n, b) => n + b.frames, 0),
     );
+    // Sword smear tiles start at frame 15 — basic must keep them (not snap to contact).
+    expect(basic.filter((b) => b.smear).length).toBe(4);
+    expect(heavy.filter((b) => b.smear).length).toBe(4);
     expect(basic.some((b) => b.markers.includes('swing'))).toBe(true);
     expect(heavy.some((b) => b.markers.includes('swing'))).toBe(true);
+  });
+
+  it('clears walk-in with an idle beat so poseOverride does not stick', () => {
+    const queue = compileAnimationQueue(swordConnectReplay());
+    const nearWalkEnd = queue.findIndex(
+      (c, i) =>
+        c.kind === 'motion_beat' &&
+        c.actor === 'near' &&
+        c.poseKey === 'idle' &&
+        !c.pose &&
+        i > 0 &&
+        queue[i - 1]?.kind === 'motion_beat' &&
+        (queue[i - 1] as { actor?: string }).actor === 'near',
+    );
+    expect(nearWalkEnd).toBeGreaterThan(0);
   });
 
   it('marks dodge on first dodge frame and defeat on first fall frame', () => {
@@ -187,6 +204,34 @@ describe('A2b frame-marker audio cues', () => {
     expect(isKnockoutFallPoseKey(defeat!.poseKey)).toBe(true);
     expect(ko.at(-1)?.poseKey).toBe('defeat');
     expect(ko.every((b) => b.pose)).toBe(true);
+  });
+
+  it('carries smear size1x from kit fx and holds defeat FX on floor/defeat', () => {
+    const attack = expandWeaponSequence('dagger', 'attack', { hitConnects: true });
+    const smeared = attack.find((b) => b.smear);
+    expect(smeared?.smear?.size1x?.[0]).toBeGreaterThan(0);
+    expect(smeared?.smear?.size1x?.[1]).toBeGreaterThan(0);
+
+    const axeAttack = designCaptureClipPresentation('axe', 'clip-attack');
+    expect(axeAttack?.smearOverlay?.png).toMatch(/smear-axe/);
+    expect(axeAttack?.smearOverlay?.size1x).toBeTruthy();
+    const axeKo = designCaptureClipPresentation('axe', 'clip-knockout');
+    expect(axeKo?.poseOverride.root.y).toBeGreaterThan(80);
+
+    const queue = compileAnimationQueue(swordConnectReplay());
+    const defeatFx = queue.filter(
+      (c): c is Extract<(typeof queue)[number], { kind: 'motion_beat' }> =>
+        c.kind === 'motion_beat' && c.fxFamily === 'defeat',
+    );
+    expect(defeatFx).toHaveLength(1);
+    expect(defeatFx[0]?.poseKey).toBe('defeat');
+    expect(defeatFx[0]?.pose?.root.y).toBeGreaterThan(80);
+    // Must not freeze on the standing first knockout frame.
+    const firstKo = queue.find(
+      (c): c is Extract<(typeof queue)[number], { kind: 'motion_beat' }> =>
+        c.kind === 'motion_beat' && c.actor === 'far' && c.poseKey === 'idle',
+    );
+    expect(firstKo?.fxFamily).not.toBe('defeat');
   });
 
   it('compiled queue fires cues only on those frame markers', () => {

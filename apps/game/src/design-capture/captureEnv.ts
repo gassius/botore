@@ -43,8 +43,12 @@ export type DesignCaptureSessionFailure = 'offline' | 'auth_expired';
 export type DesignCaptureCustomiseScenario =
   'paint-clean' | 'paint-dirty' | 'equipped' | 'weapon-soon';
 
-/** C11: dual-fighter quick vs heavy pose stills under design-capture only. */
-export type DesignCapturePoseCompare = 'quick-vs-heavy';
+/**
+ * Design-capture pose stills:
+ * - `quick-vs-heavy` — dual-fighter quick vs heavy (C11)
+ * - `clip-attack` / `clip-knockout` — kit clip frames for the deep-link weapon (A2b)
+ */
+export type DesignCapturePoseCompare = 'quick-vs-heavy' | 'clip-attack' | 'clip-knockout';
 
 export type DesignCaptureConfig = {
   readonly enabled: boolean;
@@ -63,6 +67,8 @@ export function parseDesignCapturePoseCompare(
   if (v === '1' || v === 'true' || v === 'yes' || v === 'quick-vs-heavy') {
     return 'quick-vs-heavy';
   }
+  if (v === 'clip-attack' || v === 'clip_attack') return 'clip-attack';
+  if (v === 'clip-knockout' || v === 'clip_knockout') return 'clip-knockout';
   return null;
 }
 

@@ -317,6 +317,53 @@ capture_named Settings settings 4
 # 2) Confirm — both bots (orchestrator selects opponent)
 capture_named ConfirmFight confirm 8
 
+# 2b) A2b axe evidence: phone still mid-attack (smear) + knockout on floor, plus
+# kit fight-sheet frames (sword/axe/dagger) for design verify of all three weapons.
+CAPTURE_SETTLE_SEC=3 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route ConfirmFight \
+  --name ConfirmFight-axe-attack \
+  --paint petrol \
+  --weapon axe \
+  --pose-compare clip-attack >/dev/null || true
+CAPTURE_SETTLE_SEC=3 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route ConfirmFight \
+  --name ConfirmFight-axe-knockout \
+  --paint petrol \
+  --weapon axe \
+  --pose-compare clip-knockout >/dev/null || true
+for a2b_label in ConfirmFight-axe-attack ConfirmFight-axe-knockout; do
+  a2b_matches=( "${OUT_DIR}"/android-*-"${a2b_label}".png )
+  if [[ -e "${a2b_matches[0]:-}" ]]; then
+    write_manifest_line "${MANIFEST}" "still.android.${a2b_label}" "${a2b_matches[0]}"
+    echo "ok: ${a2b_matches[0]}" >&2
+  else
+    echo "note: missing ${a2b_label} PNG (non-gating)" >&2
+  fi
+done
+PREVIEW_DIR="${BOTORE_A2B_PREVIEW_DIR:-}"
+if [[ -z "${PREVIEW_DIR}" && -d "${REPO_ROOT}/apps/game/assets/workshop-frame-kit-v003/previews" ]]; then
+  PREVIEW_DIR="${REPO_ROOT}/apps/game/assets/workshop-frame-kit-v003/previews"
+fi
+if [[ -n "${PREVIEW_DIR}" && -d "${PREVIEW_DIR}/frames" ]]; then
+  mkdir -p "${OUT_DIR}/a2b-kit-v003.3-fight"
+  cp -f "${PREVIEW_DIR}/frames"/frames-*-{attack,knockout}.png \
+    "${OUT_DIR}/a2b-kit-v003.3-fight/" 2>/dev/null || true
+  cp -f "${PREVIEW_DIR}/frames"/knockout-strip-*.png \
+    "${OUT_DIR}/a2b-kit-v003.3-fight/" 2>/dev/null || true
+  if [[ -d "${PREVIEW_DIR}/fight" ]]; then
+    cp -f "${PREVIEW_DIR}/fight"/*phone*.mp4 \
+      "${OUT_DIR}/a2b-kit-v003.3-fight/" 2>/dev/null || true
+  fi
+  write_manifest_line "${MANIFEST}" a2b_kit_previews "${OUT_DIR}/a2b-kit-v003.3-fight"
+  echo "a2b kit fight previews → ${OUT_DIR}/a2b-kit-v003.3-fight" >&2
+else
+  echo "note: kit previews omitted from repo; ConfirmFight-axe-attack/knockout stills remain" >&2
+fi
+
 # 3) Replay — live-capture starts paused (~3s idle) so replay-start is NOT the
 # first hit-hold frame. Settle must stay below FX_CAPTURE_IDLE_BEFORE_PLAY_MS.
 # Then poll fight proof + arena/FX markers; stills land while FX peak is frozen.

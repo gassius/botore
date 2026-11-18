@@ -16,6 +16,7 @@ import { type BattleEvent, type BattleReplay, validateReplay } from '@botore/rep
 import type { KitPoseEntry, KitWeaponKind } from './assembler/workshopFrameTypes';
 import {
   A2_FPS,
+  defeatCaptureBeatIndex,
   expandWeaponSequence,
   framesToMs,
   type FightAudioMarker,
@@ -214,10 +215,18 @@ export function compileAnimationQueue(
   if (started && started.type === 'battle_started') {
     queue.push({ kind: 'show_battle', attacker: started.attacker, defender: started.defender });
     // One walk-in cycle per fighter (kit art); root translation lands with D1.
+    // Clear poseOverride after the loop so fighters do not freeze mid-stride.
     for (const fighter of replay.fighters) {
       const weapon = weaponKindFor(replay, fighter.characterId);
       const walk = expandWeaponSequence(weapon, 'walk_in', { reducedMotion });
       pushBeats(queue, fighter.characterId, walk);
+      queue.push({
+        kind: 'motion_beat',
+        actor: fighter.characterId,
+        poseKey: 'idle',
+        frames: 1,
+        markers: [],
+      });
     }
   }
 
@@ -306,7 +315,13 @@ export function compileAnimationQueue(
       case 'character_defeated': {
         const weapon = weaponKindFor(replay, ev.characterId);
         const beats = expandWeaponSequence(weapon, 'knockout', { reducedMotion });
-        pushBeats(queue, ev.characterId, beats, { fxOnFirst: 'defeat' });
+        // Hold defeat FX on floor/A3 defeat — not the first standing knockout frame.
+        const defeatFxAt = defeatCaptureBeatIndex(beats);
+        beats.forEach((beat, index) => {
+          pushMotionBeat(queue, ev.characterId, beat, {
+            ...(index === defeatFxAt ? { fxFamily: 'defeat' as const } : {}),
+          });
+        });
         break;
       }
       case 'battle_ended':

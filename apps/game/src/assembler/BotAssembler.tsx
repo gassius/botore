@@ -12,7 +12,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { assembleBot, provisionalMotionOffset } from './assemble';
-import { kitLayerAnchorLeft } from './kitMath';
+import { kitLayerAnchorLeft, smearOverlayLayout } from './kitMath';
 import type { AssembledLayer, BotAssemblerProps } from './types';
 import { workshopFramePartSource } from './workshopFrameAssets';
 import { workshopFrameSmearSource } from './workshopFrameSmearAssets';
@@ -267,27 +267,39 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
             />
           ),
         )}
-        {!assembled.placeholder && smearOverlay && smearSource ? (
-          <View
-            pointerEvents="none"
-            testID={`${testID}-smear`}
-            style={{
-              position: 'absolute',
-              left: kitLayerAnchorLeft(
-                smearOverlay.offsetRigPx[0],
+        {!assembled.placeholder && smearOverlay && smearSource && smearOverlay.size1x
+          ? (() => {
+              const box = smearOverlayLayout({
+                offsetRigPx: smearOverlay.offsetRigPx,
+                size1x: smearOverlay.size1x,
                 scale,
-                size,
-                assembled.mirrored,
-              ),
-              top: smearOverlay.offsetRigPx[1] * scale,
-              zIndex: smearOverlay.z,
-              // Mirror with the bot; smear art is authored for facing-right.
-              transform: assembled.mirrored ? [{ scaleX: -1 }] : [],
-            }}
-          >
-            <Image source={smearSource} />
-          </View>
-        ) : null}
+                canvasSize: size,
+                mirrored: assembled.mirrored,
+              });
+              return (
+                <View
+                  pointerEvents="none"
+                  testID={`${testID}-smear`}
+                  style={{
+                    position: 'absolute',
+                    left: box.left,
+                    top: box.top,
+                    width: box.width,
+                    height: box.height,
+                    zIndex: smearOverlay.z,
+                    // Mirror content inside the already-mirrored box (far fighter).
+                    transform: assembled.mirrored ? [{ scaleX: -1 }] : [],
+                  }}
+                >
+                  <Image
+                    source={smearSource}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="stretch"
+                  />
+                </View>
+              );
+            })()
+          : null}
       </Animated.View>
       {__DEV__ ? (
         <Text style={styles.badge} testID={`${testID}-badge`}>
