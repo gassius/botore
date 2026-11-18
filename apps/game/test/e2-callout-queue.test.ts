@@ -18,8 +18,11 @@ import {
 } from '../src/fight-view/calloutQueue';
 import {
   FIGHT_VIEW_ARENA_NAME,
+  FIGHT_VIEW_ARENA_TAG_LEFT,
+  FIGHT_VIEW_ARENA_TAG_LEFT_BESIDE_BACK,
   FIGHT_VIEW_BAND_CONTENT_HEIGHT,
   FIGHT_VIEW_CALLOUT_PLATE_HEIGHT,
+  arenaLocationTagLeft,
   formatArenaLocationLabel,
   fightViewShellHeights,
 } from '../src/fight-view/types';
@@ -164,6 +167,13 @@ describe('E2 fixed band + arena location tag (D10)', () => {
     const slot = readSource('src/first-run/slots/ReplaySlot.tsx');
     expect(slot).toContain('ArenaLocationTag');
     expect(slot).toContain('FIGHT_VIEW_HUD_BELOW_INSET');
+    expect(slot).toContain('arenaLocationTagLeft(isRewatch)');
     expect(slot).not.toContain('arenaName=');
+  });
+
+  it('rewatch insets the arena tag past the Back chevron; first watch keeps mockup left', () => {
+    expect(arenaLocationTagLeft(false)).toBe(FIGHT_VIEW_ARENA_TAG_LEFT);
+    expect(arenaLocationTagLeft(true)).toBe(FIGHT_VIEW_ARENA_TAG_LEFT_BESIDE_BACK);
+    expect(FIGHT_VIEW_ARENA_TAG_LEFT_BESIDE_BACK).toBeGreaterThanOrEqual(10 + 48 + 8);
   });
 });

@@ -6,6 +6,9 @@ export {
   FIGHT_VIEW_BAND_CONTENT_HEIGHT,
   FIGHT_VIEW_CALLOUT_PLATE_HEIGHT,
   FIGHT_VIEW_ARENA_NAME,
+  FIGHT_VIEW_ARENA_TAG_LEFT,
+  FIGHT_VIEW_ARENA_TAG_LEFT_BESIDE_BACK,
+  arenaLocationTagLeft,
   formatArenaLocationLabel,
   fightViewShellHeights,
 } from './types';

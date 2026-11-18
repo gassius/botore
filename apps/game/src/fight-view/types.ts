@@ -35,9 +35,26 @@ export const FIGHT_VIEW_CALLOUT_PLATE_HEIGHT = 96;
 /** Arena place name — shown as an in-arena location tag, not a bottom pill (D10). */
 export const FIGHT_VIEW_ARENA_NAME = 'Repair Yard';
 
+/** First-watch / D10 mockup left edge for the in-arena location tag. */
+export const FIGHT_VIEW_ARENA_TAG_LEFT = 12;
+
+/**
+ * Rewatch Back hit target: `backWrap.left` (10) + 48dp GlyphButton + 8dp gap.
+ * Keeps `ARENA · REPAIR YARD` fully readable beside the chevron.
+ */
+export const FIGHT_VIEW_ARENA_TAG_LEFT_BESIDE_BACK = 66;
+
 /** Player-facing location label: `ARENA · REPAIR YARD`. */
 export function formatArenaLocationLabel(arenaName: string = FIGHT_VIEW_ARENA_NAME): string {
   return `ARENA · ${arenaName.trim().toUpperCase()}`;
+}
+
+/**
+ * Horizontal inset for the arena location tag.
+ * Rewatch Back shares the under-HUD strip — inset past the chevron so both stay readable.
+ */
+export function arenaLocationTagLeft(hasRewatchBack: boolean): number {
+  return hasRewatchBack ? FIGHT_VIEW_ARENA_TAG_LEFT_BESIDE_BACK : FIGHT_VIEW_ARENA_TAG_LEFT;
 }
 
 /** Pure shell split for layout asserts (phone 390×844). */

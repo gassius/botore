@@ -14,6 +14,7 @@ import { useFightSession } from '../../fight';
 import type { ArenaFxFamily } from '../../arena/environmentPin';
 import {
   advanceCalloutQueue,
+  arenaLocationTagLeft,
   ArenaLocationTag,
   calloutFromCommand,
   createOnceHandoff,
@@ -338,7 +339,10 @@ export function ReplaySlot(): React.ReactElement {
         />
       ) : null}
       {!showResultOverlay ? (
-        <ArenaLocationTag top={topInset + FIGHT_VIEW_HUD_BELOW_INSET + 6} />
+        <ArenaLocationTag
+          top={topInset + FIGHT_VIEW_HUD_BELOW_INSET + 6}
+          left={arenaLocationTagLeft(isRewatch)}
+        />
       ) : null}
       {showResultOverlay ? (
         <ResultOverlay

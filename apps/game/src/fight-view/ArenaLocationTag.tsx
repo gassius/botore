@@ -5,23 +5,33 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { garageTag } from '../garage-tag';
-import { FIGHT_VIEW_ARENA_NAME, formatArenaLocationLabel } from './types';
+import {
+  FIGHT_VIEW_ARENA_NAME,
+  FIGHT_VIEW_ARENA_TAG_LEFT,
+  formatArenaLocationLabel,
+} from './types';
 
 export type ArenaLocationTagProps = {
   readonly arenaName?: string;
   /** Distance from the top of the arena (safe-area + HUD chrome). */
   readonly top: number;
+  /**
+   * Left inset. First watch uses the D10 mockup edge; rewatch must clear the
+   * Back chevron (`arenaLocationTagLeft(true)`).
+   */
+  readonly left?: number;
   readonly testID?: string;
 };
 
 export function ArenaLocationTag({
   arenaName = FIGHT_VIEW_ARENA_NAME,
   top,
+  left = FIGHT_VIEW_ARENA_TAG_LEFT,
   testID = 'fight-view-arena-tag',
 }: ArenaLocationTagProps): React.ReactElement {
   return (
     <View
-      style={[styles.wrap, { top }]}
+      style={[styles.wrap, { top, left }]}
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
@@ -43,7 +53,6 @@ export function ArenaLocationTag({
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    left: 12,
     zIndex: 6,
     flexDirection: 'row',
     alignItems: 'center',
