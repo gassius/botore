@@ -3366,3 +3366,197 @@ begin
 
   raise notice 'TEST-OK E2 ranking bot+botore';
 end $$;
+
+-- =========================================================================
+-- E3: server-driven fight quota (0031_fight_quota_config)
+-- =========================================================================
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_res jsonb;
+  v_day date := (now() at time zone 'utc')::date;
+  v_next text;
+  v_rolling_next timestamptz;
+  v_cfg_limit integer;
+  v_cfg_scope text;
+  v_cfg_policy text;
+begin
+  -- Config table exists; authenticated has no direct SELECT (RPC-only).
+  perform tests.assert(
+    to_regclass('public.fight_quota_config') is not null,
+    'fight_quota_config table exists'
+  );
+  perform tests.assert(
+    not has_table_privilege('authenticated', 'public.fight_quota_config', 'SELECT'),
+    'authenticated must not SELECT fight_quota_config'
+  );
+  perform tests.assert(
+    not has_table_privilege('anon', 'public.fight_quota_config', 'SELECT'),
+    'anon must not SELECT fight_quota_config'
+  );
+
+  select fight_limit, scope, refill_policy
+    into v_cfg_limit, v_cfg_scope, v_cfg_policy
+    from public.fight_quota_config
+   where id = true;
+  perform tests.assert(v_cfg_limit = 3, 'default fight_limit=3');
+  perform tests.assert(v_cfg_scope = 'player', 'default scope=player');
+  perform tests.assert(v_cfg_policy = 'daily_utc_midnight', 'default refill_policy=daily_utc_midnight');
+
+  -- Ensure today slots exist for the seed account.
+  insert into public.fight_allowances (account_id, utc_day, slot_index)
+  select v_account, v_day, s
+    from generate_series(1, 3) as s
+  on conflict do nothing;
+  update public.fight_allowances
+     set used_at = null
+   where account_id = v_account
+     and utc_day = v_day;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  v_res := public.get_fight_allowance_summary();
+  perform tests.assert((v_res->>'ok')::boolean, 'E3 summary ok');
+  perform tests.assert((v_res->>'fightsRemaining')::integer = 3, 'remaining math full=3');
+  perform tests.assert((v_res->>'limit')::integer = 3, 'limit from config');
+  perform tests.assert(v_res->>'scope' = 'player', 'scope from config');
+  perform tests.assert(v_res->>'refillPolicy' = 'daily_utc_midnight', 'policy from config');
+  perform tests.assert(
+    (v_res->>'allowancesRemaining')::integer = (v_res->>'fightsRemaining')::integer,
+    'allowancesRemaining aliases fightsRemaining'
+  );
+  perform tests.assert(v_res->>'utcDay' = v_day::text, 'utcDay is server UTC today');
+
+  -- nextRefillAt is formatted in UTC inside the RPC (= next UTC midnight).
+  v_next := v_res->>'nextRefillAt';
+  perform tests.assert(
+    v_next = to_char(
+      ((v_day + 1)::timestamp at time zone 'utc') at time zone 'utc',
+      'YYYY-MM-DD"T"HH24:MI:SS"Z"'
+    ),
+    format('daily nextRefillAt is next UTC midnight (got %s)', v_next)
+  );
+
+  -- Exhausted state
+  reset role;
+  update public.fight_allowances
+     set used_at = now()
+   where account_id = v_account
+     and utc_day = v_day;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_fight_allowance_summary();
+  perform tests.assert((v_res->>'fightsRemaining')::integer = 0, 'exhausted remaining=0');
+  perform tests.assert((v_res->>'limit')::integer = 3, 'exhausted still reports config limit');
+  reset role;
+
+  -- Midnight UTC reset: yesterday exhausted does not affect today remaining.
+  insert into public.fight_allowances (account_id, utc_day, slot_index, used_at)
+  select v_account, v_day - 1, s, now() - interval '1 day'
+    from generate_series(1, 3) as s
+  on conflict (account_id, utc_day, slot_index) do update
+    set used_at = excluded.used_at;
+  update public.fight_allowances
+     set used_at = null
+   where account_id = v_account
+     and utc_day = v_day;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_fight_allowance_summary();
+  perform tests.assert(
+    (v_res->>'fightsRemaining')::integer = 3,
+    'UTC day rollover: today unused slots refill remaining'
+  );
+  reset role;
+
+  -- rolling_per_fight fixture: switch config, assert contract without breaking daily restore.
+  update public.fight_quota_config
+     set refill_policy = 'rolling_per_fight',
+         rolling_refill_seconds = 7200,
+         fight_limit = 3,
+         scope = 'player',
+         updated_at = now()
+   where id = true;
+
+  -- Consume one slot so earliest used_at drives next refill.
+  update public.fight_allowances
+     set used_at = timestamptz '2026-11-18T10:00:00Z'
+   where account_id = v_account
+     and utc_day = v_day
+     and slot_index = 1;
+  update public.fight_allowances
+     set used_at = null
+   where account_id = v_account
+     and utc_day = v_day
+     and slot_index in (2, 3);
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_fight_allowance_summary();
+  perform tests.assert(v_res->>'refillPolicy' = 'rolling_per_fight', 'fixture rolling policy');
+  perform tests.assert((v_res->>'fightsRemaining')::integer = 2, 'rolling remaining after one consume');
+  v_rolling_next := timestamptz '2026-11-18T10:00:00Z' + interval '7200 seconds';
+  perform tests.assert(
+    v_res->>'nextRefillAt' = to_char(v_rolling_next at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+    format('rolling nextRefillAt = earliest used_at + interval (got %s)', v_res->>'nextRefillAt')
+  );
+  reset role;
+
+  -- Config limit/scope readable from RPC (not a compiled client constant).
+  update public.fight_quota_config
+     set fight_limit = 2,
+         scope = 'bot',
+         refill_policy = 'daily_utc_midnight',
+         updated_at = now()
+   where id = true;
+  update public.fight_allowances
+     set used_at = null
+   where account_id = v_account
+     and utc_day = v_day;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_fight_allowance_summary();
+  perform tests.assert((v_res->>'limit')::integer = 2, 'limit follows config change');
+  perform tests.assert(v_res->>'scope' = 'bot', 'scope follows config change');
+  -- Cap remaining at config limit even if 3 unused slot rows exist.
+  perform tests.assert(
+    (v_res->>'fightsRemaining')::integer = 2,
+    'remaining capped by config limit'
+  );
+  reset role;
+
+  -- Restore live defaults for later suites / seed consumers.
+  update public.fight_quota_config
+     set fight_limit = 3,
+         scope = 'player',
+         refill_policy = 'daily_utc_midnight',
+         rolling_refill_seconds = 7200,
+         updated_at = now()
+   where id = true;
+  update public.fight_allowances
+     set used_at = null
+   where account_id = v_account
+     and utc_day = v_day;
+
+  -- C17: player-facing payload must not embed account uuid.
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_fight_allowance_summary();
+  perform tests.assert(
+    position(v_account::text in v_res::text) = 0,
+    'C17: summary must not embed account id'
+  );
+  reset role;
+
+  raise notice 'TEST-OK E3 fight quota summary';
+end $$;

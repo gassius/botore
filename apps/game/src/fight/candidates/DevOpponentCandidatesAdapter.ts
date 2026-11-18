@@ -76,20 +76,22 @@ export class DevOpponentCandidatesAdapter implements OpponentCandidatesPort {
     if (this.forceNetworkError) {
       return { ok: false, code: 'network_error', message: 'DEV network failure (candidates)' };
     }
-    const utcDay = this.backend.utcDay();
+    const quota = this.backend.quota();
     if (this.forceEmpty) {
       return {
         ok: true,
         candidates: [],
-        allowancesRemaining: this.backend.allowancesRemaining,
-        utcDay,
+        allowancesRemaining: quota.allowancesRemaining,
+        utcDay: quota.utcDay,
+        quota,
       };
     }
     return {
       ok: true,
       candidates: [...DEV_OPPONENTS],
-      allowancesRemaining: this.backend.allowancesRemaining,
-      utcDay,
+      allowancesRemaining: quota.allowancesRemaining,
+      utcDay: quota.utcDay,
+      quota,
     };
   }
 

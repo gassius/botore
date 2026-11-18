@@ -26,6 +26,7 @@ import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import { canContinueToConfirm } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
+import { FightsRemainingPanel } from '../quota/FightsRemainingPanel';
 
 /** Opponents domain — mounts into shell Opponents slot. */
 export function OpponentsScreen(props: {
@@ -138,8 +139,8 @@ export function OpponentsScreen(props: {
 
       {noAllowance && !recoverable ? (
         <StatusErrorBanner
-          title="No fight allowance left"
-          detail="Your daily fight slots are used. Come back after UTC midnight — allowance is server-owned."
+          title="No fights remaining"
+          detail="Come back when the refill clock hits zero. Quota is server-owned."
           testID="opponents-no-allowance"
         />
       ) : null}
@@ -176,12 +177,17 @@ export function OpponentsScreen(props: {
         />
       ) : null}
 
+      {list.status === 'ready' ? (
+        <FightsRemainingPanel quota={list.quota} testID="opponents-fights-remaining" />
+      ) : null}
+
       {list.status === 'ready' && list.candidates.length > 0 ? (
         <>
-          <Text style={styles.allowance} allowFontScaling testID="opponents-allowance">
-            Allowance remaining today: {list.allowancesRemaining}
-            {candidatesKind === 'dev' ? ' · DEV roster' : ''}
-          </Text>
+          {candidatesKind === 'dev' ? (
+            <Text style={styles.allowance} allowFontScaling testID="opponents-dev-roster">
+              DEV roster
+            </Text>
+          ) : null}
           <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
             {list.candidates.map((c) => {
               const isSelected = selected?.characterId === c.characterId;

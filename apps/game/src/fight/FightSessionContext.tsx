@@ -14,6 +14,7 @@ import { ensureRuntimePacksBestEffort } from '../atlas/atlasPackRuntime';
 import { readSupabasePublicConfig } from '../garage/auth/supabasePublicConfig';
 import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { createOpponentCandidatesClient } from './candidates/createOpponentCandidatesClient';
+import { DevOpponentCandidatesAdapter } from './candidates/DevOpponentCandidatesAdapter';
 import type { OpponentCandidatesPort } from './candidates/OpponentCandidatesPort';
 import type { OpponentCandidate, PrepareEligibilityResult } from './candidates/types';
 import {
@@ -22,6 +23,7 @@ import {
   shouldPreserveUnresolvedIntent,
   type InFlightFight,
 } from './fightSessionLifecycle';
+import type { FightQuotaSummary } from './quota/fightQuotaTypes';
 import { createFightRequestClient } from './request/createFightRequestClient';
 import type { FightRequestPort } from './request/FightRequestPort';
 import { resolveFightIntent, type FightIntent } from './request/idempotency';
@@ -48,12 +50,14 @@ export type FightListState =
       readonly candidates: readonly OpponentCandidate[];
       readonly allowancesRemaining: number;
       readonly utcDay: string;
+      readonly quota: FightQuotaSummary;
     }
   | {
       readonly status: 'error';
       readonly code: string;
       readonly message: string;
       readonly allowancesRemaining?: number;
+      readonly quota?: FightQuotaSummary;
     };
 
 export type FightSubmitState =
@@ -181,6 +185,14 @@ export function FightSessionProvider(props: {
       });
       return;
     }
+    // E3 design-capture: force remaining / exhausted on the shared DEV backend.
+    if (isDesignCaptureEnabled() && candidatesPort instanceof DevOpponentCandidatesAdapter) {
+      const scenario = peekCaptureIntent().fightQuotaScenario;
+      if (scenario === 'exhausted') candidatesPort.allowancesRemaining = 0;
+      if (scenario === 'remaining') {
+        candidatesPort.allowancesRemaining = Math.max(1, candidatesPort.allowancesRemaining || 2);
+      }
+    }
     setList({ status: 'loading' });
     const result = await candidatesPort.listCandidates({
       accessToken: session.accessToken,
@@ -194,6 +206,7 @@ export function FightSessionProvider(props: {
         ...(result.allowancesRemaining !== undefined
           ? { allowancesRemaining: result.allowancesRemaining }
           : {}),
+        ...(result.quota ? { quota: result.quota } : {}),
       });
       return;
     }
@@ -202,6 +215,7 @@ export function FightSessionProvider(props: {
       candidates: result.candidates,
       allowancesRemaining: result.allowancesRemaining,
       utcDay: result.utcDay,
+      quota: result.quota,
     });
     setSelected((prev) => {
       if (!prev) return null;
@@ -304,12 +318,25 @@ export function FightSessionProvider(props: {
           });
           const currentList = listRef.current;
           if (result.code === 'allowance_exhausted' && currentList.status === 'ready') {
-            setList({ ...currentList, allowancesRemaining: 0 });
+            setList({
+              ...currentList,
+              allowancesRemaining: 0,
+              quota: { ...currentList.quota, fightsRemaining: 0, allowancesRemaining: 0 },
+            });
           } else if (
             typeof result.allowancesRemaining === 'number' &&
             currentList.status === 'ready'
           ) {
-            setList({ ...currentList, allowancesRemaining: result.allowancesRemaining });
+            const remaining = result.allowancesRemaining;
+            setList({
+              ...currentList,
+              allowancesRemaining: remaining,
+              quota: {
+                ...currentList.quota,
+                fightsRemaining: remaining,
+                allowancesRemaining: remaining,
+              },
+            });
           }
         }
         return null;
@@ -358,7 +385,16 @@ export function FightSessionProvider(props: {
       setSubmit({ status: 'success', fight: fightWithBuilds });
       const currentList = listRef.current;
       if (currentList.status === 'ready') {
-        setList({ ...currentList, allowancesRemaining: fightWithBuilds.allowancesRemaining });
+        const remaining = fightWithBuilds.allowancesRemaining;
+        setList({
+          ...currentList,
+          allowancesRemaining: remaining,
+          quota: {
+            ...currentList.quota,
+            fightsRemaining: remaining,
+            allowancesRemaining: remaining,
+          },
+        });
       }
       syncIntent(intentAfterFightResult({ prior: intent, resultOk: true, code: null }));
       return fightWithBuilds;

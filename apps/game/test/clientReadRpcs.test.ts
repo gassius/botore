@@ -72,6 +72,11 @@ describe('ticket B client-read RPC adapters', () => {
           return new Response(
             JSON.stringify({
               ok: true,
+              fightsRemaining: 2,
+              limit: 3,
+              scope: 'player',
+              refillPolicy: 'daily_utc_midnight',
+              nextRefillAt: '2026-11-10T00:00:00Z',
               utcDay: '2026-11-09',
               allowancesRemaining: 2,
             }),
@@ -111,6 +116,11 @@ describe('ticket B client-read RPC adapters', () => {
     if (!result.ok) return;
     expect(result.allowancesRemaining).toBe(2);
     expect(result.utcDay).toBe('2026-11-09');
+    expect(result.quota.fightsRemaining).toBe(2);
+    expect(result.quota.limit).toBe(3);
+    expect(result.quota.scope).toBe('player');
+    expect(result.quota.refillPolicy).toBe('daily_utc_midnight');
+    expect(result.quota.nextRefillAt).toBe('2026-11-10T00:00:00Z');
     expect(result.candidates.map((c) => c.characterId)).toEqual(['opp-sir-bot']);
     expect(fetches.some((u) => u.includes(`/rpc/${OPPONENT_ROSTER_RPC}`))).toBe(true);
     expect(fetches.some((u) => u.includes(`/rpc/${FIGHT_ALLOWANCE_SUMMARY_RPC}`))).toBe(true);

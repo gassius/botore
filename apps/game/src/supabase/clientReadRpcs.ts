@@ -36,9 +36,20 @@ export type OpponentRosterRpcOk = {
   readonly opponents: readonly OpponentRosterEntry[];
 };
 
+/**
+ * E3 fight quota summary. `allowancesRemaining` / `utcDay` kept for compat;
+ * UI should prefer fightsRemaining + nextRefillAt (no hard-coded limit/reset).
+ */
 export type FightAllowanceSummaryRpcOk = {
   readonly ok: true;
+  readonly fightsRemaining: number;
+  readonly limit: number;
+  readonly scope: 'player' | 'bot';
+  readonly refillPolicy: 'daily_utc_midnight' | 'rolling_per_fight';
+  /** ISO-8601 UTC instant for the next refill clock. */
+  readonly nextRefillAt: string;
   readonly utcDay: string;
+  /** Alias of fightsRemaining (pre-E3 clients). */
   readonly allowancesRemaining: number;
 };
 

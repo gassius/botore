@@ -562,11 +562,16 @@ console.log('SMOKE-OK prepare_fight_context');
   if (
     !allow.ok ||
     typeof allow.utcDay !== 'string' ||
-    typeof allow.allowancesRemaining !== 'number'
+    typeof allow.allowancesRemaining !== 'number' ||
+    typeof allow.fightsRemaining !== 'number' ||
+    typeof allow.limit !== 'number' ||
+    typeof allow.scope !== 'string' ||
+    typeof allow.refillPolicy !== 'string' ||
+    typeof allow.nextRefillAt !== 'string'
   ) {
     fail(`get_fight_allowance_summary unexpected: ${allowJson}`);
   }
-  console.log('SMOKE-OK client-read RPCs (owned / roster / allowance)');
+  console.log('SMOKE-OK client-read RPCs (owned / roster / allowance+E3 quota)');
 }
 
 // F3: persist one fight, retry same key, assert no double consume / XP.

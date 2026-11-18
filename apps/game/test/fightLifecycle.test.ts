@@ -370,6 +370,11 @@ describe('server-derived allowance day (P2)', () => {
           return new Response(
             JSON.stringify({
               ok: true,
+              fightsRemaining: 3,
+              limit: 3,
+              scope: 'player',
+              refillPolicy: 'daily_utc_midnight',
+              nextRefillAt: '2026-11-10T00:00:00Z',
               utcDay: '2026-11-09',
               allowancesRemaining: 3,
             }),
@@ -409,6 +414,8 @@ describe('server-derived allowance day (P2)', () => {
     if (!result.ok) return;
     expect(result.utcDay).toBe('2026-11-09');
     expect(result.allowancesRemaining).toBe(3);
+    expect(result.quota.nextRefillAt).toBe('2026-11-10T00:00:00Z');
+    expect(result.quota.limit).toBe(3);
     expect(result.candidates).toHaveLength(1);
     expect(result.candidates[0]?.characterId).toBe('opp-sir-bot');
     expect(fetches.some((u) => u.includes('/rest/v1/characters'))).toBe(false);

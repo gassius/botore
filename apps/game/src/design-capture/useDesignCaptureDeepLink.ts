@@ -167,6 +167,7 @@ export function useDesignCaptureDeepLink(): void {
         customiseScenario: parsed.customiseScenario,
         resultScenario: parsed.resultScenario,
         homeScenario: parsed.homeScenario,
+        fightQuotaScenario: parsed.fightQuotaScenario,
       });
       applyRouteIfNew(parsed.route, false);
     };

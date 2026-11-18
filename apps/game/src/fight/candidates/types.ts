@@ -1,4 +1,5 @@
 import type { GarageLoadout } from '../../garage/loadout/loadoutTypes';
+import type { FightQuotaSummary } from '../quota/fightQuotaTypes';
 
 /** System opponent from list_opponent_roster + current_bot_loadouts. */
 export type OpponentCandidate = {
@@ -15,6 +16,8 @@ export type ListCandidatesResult =
       readonly candidates: readonly OpponentCandidate[];
       readonly allowancesRemaining: number;
       readonly utcDay: string;
+      /** E3 server-driven quota; preferred over hard-coded remaining/limit. */
+      readonly quota: FightQuotaSummary;
     }
   | {
       readonly ok: false;
@@ -22,6 +25,7 @@ export type ListCandidatesResult =
       readonly message: string;
       readonly allowancesRemaining?: number;
       readonly utcDay?: string;
+      readonly quota?: FightQuotaSummary;
     };
 
 /** Eligibility from prepare_fight_context — no allowance consume; no invented costs. */

@@ -181,7 +181,7 @@ d('client-read RPCs via PostgREST (local supabase)', () => {
     ]);
   });
 
-  it('get_fight_allowance_summary returns utcDay + remaining for auth.uid()', async () => {
+  it('get_fight_allowance_summary returns E3 quota contract for auth.uid()', async () => {
     expect(ready).toBe(true);
     const { status, json } = await rpc(anon, accessToken, 'get_fight_allowance_summary');
     expect(status).toBe(200);
@@ -190,6 +190,12 @@ d('client-read RPCs via PostgREST (local supabase)', () => {
     expect((json.utcDay as string).length).toBeGreaterThanOrEqual(10);
     expect(Number(json.allowancesRemaining)).toBeGreaterThanOrEqual(0);
     expect(Number(json.allowancesRemaining)).toBeLessThanOrEqual(3);
+    expect(Number(json.fightsRemaining)).toBe(Number(json.allowancesRemaining));
+    expect(Number(json.limit)).toBeGreaterThanOrEqual(1);
+    expect(['player', 'bot']).toContain(json.scope);
+    expect(['daily_utc_midnight', 'rolling_per_fight']).toContain(json.refillPolicy);
+    expect(typeof json.nextRefillAt).toBe('string');
+    expect((json.nextRefillAt as string).length).toBeGreaterThan(10);
   });
 
   it('anon cannot execute get_fight_allowance_summary', async () => {

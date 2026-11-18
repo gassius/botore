@@ -29,6 +29,8 @@ import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import { computeConfirmFightControls, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
+import { FightsRemainingPanel } from '../quota/FightsRemainingPanel';
+import type { FightQuotaSummary } from '../quota/fightQuotaTypes';
 
 function capturePoseMode(): DesignCapturePoseCompare | null {
   if (!isDesignCaptureEnabled()) return null;
@@ -95,6 +97,15 @@ export function ConfirmFightScreen(props: {
     submit.status === 'error' && submit.allowancesRemaining !== undefined
       ? submit.allowancesRemaining
       : (eligAllowances ?? allowancesFromList);
+  const quotaFromList = list.status === 'ready' ? list.quota : null;
+  const confirmQuota: FightQuotaSummary | null =
+    quotaFromList && allowances !== null
+      ? {
+          ...quotaFromList,
+          fightsRemaining: allowances,
+          allowancesRemaining: allowances,
+        }
+      : quotaFromList;
   const posePair = capturePosePair();
   const captureWeaponId =
     isDesignCaptureEnabled() && peekCaptureIntent().weaponId
@@ -308,11 +319,11 @@ export function ConfirmFightScreen(props: {
           <ActivityIndicator color={garageTag.mustard} />
           <Text style={styles.cost}>Checking eligibility…</Text>
         </View>
+      ) : confirmQuota ? (
+        <FightsRemainingPanel quota={confirmQuota} compact testID="confirm-fights-remaining" />
       ) : (
         <Text style={styles.cost} allowFontScaling testID="confirm-cost">
-          {allowances === null
-            ? 'Allowance: waiting for server…'
-            : `Uses 1 fight slot · ${allowances} remaining today`}
+          Fights remaining: waiting for server…
           {candidatesKind === 'dev' ? ' · DEV' : ''}
         </Text>
       )}
@@ -327,8 +338,8 @@ export function ConfirmFightScreen(props: {
 
       {noAllowance || allowanceError ? (
         <StatusErrorBanner
-          title="No fight allowance left"
-          detail="The server reports zero remaining slots for today. No fight was started."
+          title="No fights remaining"
+          detail="The server reports zero remaining fights. No fight was started."
           testID="confirm-no-allowance"
         />
       ) : null}

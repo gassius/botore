@@ -51,6 +51,13 @@ export type DesignCaptureCustomiseScenario =
 export type DesignCaptureHomeScenario = 'more';
 
 /**
+ * E3 fight-quota capture stills (Opponents + Confirm).
+ * - remaining: fightsRemaining > 0
+ * - exhausted: fightsRemaining = 0 (countdown hero)
+ */
+export type DesignCaptureFightQuotaScenario = 'remaining' | 'exhausted';
+
+/**
  * Design-capture pose stills:
  * - `quick-vs-heavy` — dual-fighter quick vs heavy (C11)
  * - `clip-attack` / `clip-knockout` — kit clip frames for the deep-link weapon (A2b)
@@ -151,6 +158,15 @@ export function parseDesignCaptureHomeScenario(
 ): DesignCaptureHomeScenario | null {
   const v = trimPublic(raw ?? undefined)?.toLowerCase();
   if (v === 'more') return 'more';
+  return null;
+}
+
+export function parseDesignCaptureFightQuotaScenario(
+  raw: string | null | undefined,
+): DesignCaptureFightQuotaScenario | null {
+  const v = trimPublic(raw ?? undefined)?.toLowerCase();
+  if (v === 'remaining' || v === 'full' || v === 'gt0' || v === '>0') return 'remaining';
+  if (v === 'exhausted' || v === 'empty' || v === 'zero' || v === '0') return 'exhausted';
   return null;
 }
 
@@ -280,6 +296,7 @@ const EMPTY_CAPTURE_URL = {
   customiseScenario: null,
   resultScenario: null,
   homeScenario: null,
+  fightQuotaScenario: null,
 } as const;
 
 export function parseDesignCaptureUrl(url: string): {
@@ -295,6 +312,7 @@ export function parseDesignCaptureUrl(url: string): {
   customiseScenario: DesignCaptureCustomiseScenario | null;
   resultScenario: ResultCaptureScenario | null;
   homeScenario: DesignCaptureHomeScenario | null;
+  fightQuotaScenario: DesignCaptureFightQuotaScenario | null;
 } {
   const trimmed = url.trim();
   if (!trimmed.toLowerCase().startsWith(`${DESIGN_CAPTURE_SCHEME}:`)) {
@@ -359,6 +377,9 @@ export function parseDesignCaptureUrl(url: string): {
   const homeScenario = parseDesignCaptureHomeScenario(
     params.get('home') ?? params.get('homeScenario') ?? params.get('home_scenario'),
   );
+  const fightQuotaScenario = parseDesignCaptureFightQuotaScenario(
+    params.get('fightQuota') ?? params.get('fight_quota') ?? params.get('quota'),
+  );
 
   return {
     route,
@@ -373,6 +394,7 @@ export function parseDesignCaptureUrl(url: string): {
     customiseScenario,
     resultScenario,
     homeScenario,
+    fightQuotaScenario,
   };
 }
 
@@ -390,6 +412,7 @@ export function buildDesignCaptureUrl(
     customiseScenario?: DesignCaptureCustomiseScenario;
     resultScenario?: ResultCaptureScenario;
     homeScenario?: DesignCaptureHomeScenario;
+    fightQuotaScenario?: DesignCaptureFightQuotaScenario;
   },
 ): string {
   const query: string[] = [];
@@ -415,6 +438,9 @@ export function buildDesignCaptureUrl(
   }
   if (opts?.homeScenario) {
     query.push(`home=${encodeURIComponent(opts.homeScenario)}`);
+  }
+  if (opts?.fightQuotaScenario) {
+    query.push(`fightQuota=${encodeURIComponent(opts.fightQuotaScenario)}`);
   }
   const q = query.length > 0 ? `?${query.join('&')}` : '';
   return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${q}`;
