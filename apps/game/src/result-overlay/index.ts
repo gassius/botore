@@ -13,7 +13,11 @@ export {
 } from './resultCardModel';
 export type { BotFightRecordSnapshot, ResultCardModel, ResultOverlayOutcomeKind } from './types';
 export { RESULT_OVERLAY_DIM_OPACITY, RESULT_PLATE_DROP_MS } from './types';
-export { parseResultCaptureScenario, resultCaptureRecord } from './designCaptureRecords';
+export {
+  confirmedResultForResultCapture,
+  parseResultCaptureScenario,
+  resultCaptureRecord,
+} from './designCaptureRecords';
 export type { ResultCaptureScenario } from './designCaptureRecords';
 export {
   E2_BOT_RANKING_RPC_ENABLED,

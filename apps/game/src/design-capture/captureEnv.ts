@@ -1,4 +1,8 @@
 import { FIRST_RUN_ROUTES, isFirstRunRoute, type FirstRunRoute } from '../first-run/routes';
+import {
+  parseResultCaptureScenario,
+  type ResultCaptureScenario,
+} from '../result-overlay/designCaptureRecords';
 
 /**
  * Design-capture helpers for native phone screenshots/clips (C7).
@@ -263,6 +267,7 @@ const EMPTY_CAPTURE_URL = {
   sessionFailure: null,
   fightViewMode: null,
   customiseScenario: null,
+  resultScenario: null,
 } as const;
 
 export function parseDesignCaptureUrl(url: string): {
@@ -276,6 +281,7 @@ export function parseDesignCaptureUrl(url: string): {
   sessionFailure: DesignCaptureSessionFailure | null;
   fightViewMode: DesignCaptureFightViewMode | null;
   customiseScenario: DesignCaptureCustomiseScenario | null;
+  resultScenario: ResultCaptureScenario | null;
 } {
   const trimmed = url.trim();
   if (!trimmed.toLowerCase().startsWith(`${DESIGN_CAPTURE_SCHEME}:`)) {
@@ -334,6 +340,9 @@ export function parseDesignCaptureUrl(url: string): {
   const customiseScenario = parseDesignCaptureCustomiseScenario(
     params.get('customise') ?? params.get('customiseScenario') ?? params.get('customise_scenario'),
   );
+  const resultScenario = parseResultCaptureScenario(
+    params.get('result') ?? params.get('resultScenario') ?? params.get('result_scenario'),
+  );
 
   return {
     route,
@@ -346,6 +355,7 @@ export function parseDesignCaptureUrl(url: string): {
     sessionFailure,
     fightViewMode,
     customiseScenario,
+    resultScenario,
   };
 }
 
@@ -361,6 +371,7 @@ export function buildDesignCaptureUrl(
     sessionFailure?: DesignCaptureSessionFailure;
     fightViewMode?: DesignCaptureFightViewMode;
     customiseScenario?: DesignCaptureCustomiseScenario;
+    resultScenario?: ResultCaptureScenario;
   },
 ): string {
   const query: string[] = [];
@@ -380,6 +391,9 @@ export function buildDesignCaptureUrl(
   }
   if (opts?.customiseScenario) {
     query.push(`customise=${encodeURIComponent(opts.customiseScenario)}`);
+  }
+  if (opts?.resultScenario) {
+    query.push(`result=${encodeURIComponent(opts.resultScenario)}`);
   }
   const q = query.length > 0 ? `?${query.join('&')}` : '';
   return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${q}`;

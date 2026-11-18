@@ -187,5 +187,22 @@ describe('E1 reconcile with #78 / #80 — no parallel result route', () => {
     expect(capture).toContain("goTo('Stable')");
     expect(capture).toContain("goTo('Ranking')");
     expect(capture).toContain("goTo('Replay')");
+    expect(capture).toContain('confirmedResultForResultCapture');
+    expect(capture).toContain('resultCaptureScenario');
+  });
+});
+
+describe('E1 design-capture victory/defeat fixtures', () => {
+  it('forces player-POV victory and defeat for FightResult stills', async () => {
+    const { confirmedResultForResultCapture } = await import(
+      '../src/result-overlay/designCaptureRecords'
+    );
+    const { resolveOutcomeKind } = await import('../src/result-overlay/resultCardModel');
+    const victory = confirmedResultForResultCapture('victory');
+    const defeat = confirmedResultForResultCapture('defeat');
+    expect(resolveOutcomeKind(victory)).toBe('victory');
+    expect(resolveOutcomeKind(defeat)).toBe('defeat');
+    expect(victory.serverConfirmed).toBe(true);
+    expect(defeat.xpAwarded).toBe(8);
   });
 });
