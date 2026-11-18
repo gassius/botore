@@ -19,7 +19,7 @@ import {
 } from './trialPartAudioMetroAssets';
 import { profilesFromFightBuilds } from './partAudioResolve';
 import type { TrialAudioUiCueId } from './trialAudioPin';
-import { useSharedTrialAudio } from './TrialAudioProvider';
+import { useSharedTrialAudio } from './trialAudioContext';
 
 export type TrialReplayAudioApi = {
   onCommand: (cmd: AnimationCommand) => void;

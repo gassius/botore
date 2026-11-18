@@ -1,14 +1,16 @@
 /**
  * App-wide trial audio session — one stack for menu music, UI SFX, and fight.
  * Mount near GarageRoot so splash can sting before FirstRunShell exists.
+ * Metro `.m4a` requires stay in this runtime module only.
  */
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { createExpoAvBackend } from './expoAvBackend';
 import {
   createTrialAudioSession,
   type PlayCueOptions,
   type TrialAudioSession,
 } from './TrialAudioSession';
+import { TrialAudioContext, type TrialAudioApi } from './trialAudioContext';
 import { TRIAL_AUDIO_METRO_SOURCES } from './trialAudioMetroAssets';
 import {
   TRIAL_AMBIENT_METRO_SOURCE,
@@ -17,23 +19,8 @@ import {
 import type { TrialAudioUiCueId } from './trialAudioPin';
 import type { FighterAudioProfile } from './partAudioResolve';
 
-export type TrialAudioApi = {
-  playUiTap: () => void;
-  playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
-  playSplashSting: () => void;
-  playFaceOffSting: () => void;
-  startMenuLoop: () => void;
-  crossfadeToFight: (opts?: { durationMs?: number }) => void;
-  crossfadeToMenu: (opts?: { durationMs?: number }) => void;
-  setFighterProfiles: (profiles: readonly FighterAudioProfile[]) => void;
-  notifyCommand: TrialAudioSession['notifyCommand'];
-  setPlaying: (playing: boolean) => void;
-  reset: () => void;
-  /** Imperative session for rare call sites (tests / adapters). */
-  getSession: () => TrialAudioSession | null;
-};
-
-const TrialAudioContext = createContext<TrialAudioApi | null>(null);
+export type { TrialAudioApi } from './trialAudioContext';
+export { useSharedTrialAudio } from './trialAudioContext';
 
 export function TrialAudioProvider(props: {
   muted: boolean;
@@ -91,13 +78,15 @@ export function TrialAudioProvider(props: {
   const api = useMemo<TrialAudioApi>(
     () => ({
       playUiTap: () => safe((s) => s.playUiTap()),
-      playCue: (id, options) => safe((s) => s.playCue(id, options)),
+      playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) =>
+        safe((s) => s.playCue(id, options)),
       playSplashSting: () => safe((s) => s.playSplashSting()),
       playFaceOffSting: () => safe((s) => s.playFaceOffSting()),
       startMenuLoop: () => safe((s) => s.startMenuLoop()),
       crossfadeToFight: (opts) => safe((s) => s.crossfadeToFight(opts)),
       crossfadeToMenu: (opts) => safe((s) => s.crossfadeToMenu(opts)),
-      setFighterProfiles: (profiles) => safe((s) => s.setFighterProfiles(profiles)),
+      setFighterProfiles: (profiles: readonly FighterAudioProfile[]) =>
+        safe((s) => s.setFighterProfiles(profiles)),
       notifyCommand: (cmd) => safe((s) => s.notifyCommand(cmd)),
       setPlaying: (playing) => safe((s) => s.setPlaying(playing)),
       reset: () => safe((s) => s.reset()),
@@ -107,8 +96,4 @@ export function TrialAudioProvider(props: {
   );
 
   return <TrialAudioContext.Provider value={api}>{props.children}</TrialAudioContext.Provider>;
-}
-
-export function useSharedTrialAudio(): TrialAudioApi | null {
-  return useContext(TrialAudioContext);
 }

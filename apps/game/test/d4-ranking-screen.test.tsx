@@ -58,6 +58,19 @@ vi.mock('../src/session-failure/useForcedSessionFailure', () => ({
   useForcedSessionFailure: () => null,
 }));
 
+/** E8 wired UI cues into Ranking; vitest cannot parse Metro `require(.m4a)`. */
+vi.mock('../src/audio/useTrialUiAudio', () => ({
+  useTrialUiAudio: () => ({
+    playUiTap: () => undefined,
+    playCue: () => undefined,
+    playSplashSting: () => undefined,
+    playFaceOffSting: () => undefined,
+    startMenuLoop: () => undefined,
+    crossfadeToFight: () => undefined,
+    crossfadeToMenu: () => undefined,
+  }),
+}));
+
 vi.mock('../src/ranking/RankingPortrait', () => ({
   RankingPortrait: (props: { testID?: string }) =>
     React.createElement('RankingPortrait', { testID: props.testID ?? 'ranking-portrait' }),

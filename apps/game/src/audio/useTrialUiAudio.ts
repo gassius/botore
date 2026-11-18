@@ -1,18 +1,13 @@
 /**
  * Trial UI-cue + menu-music API for screens.
- * Prefers the app-wide TrialAudioProvider session so menu music stays continuous;
- * falls back to a local session when no provider is mounted (unit tests).
+ * Prefers the app-wide TrialAudioProvider session so menu music stays continuous.
+ * Without a provider (headless / unit tests), returns a silent no-op API so
+ * importing this hook never loads Metro `.m4a` requires.
  */
-import { useCallback, useEffect, useRef } from 'react';
-import { createExpoAvBackend } from './expoAvBackend';
-import {
-  createTrialAudioSession,
-  type PlayCueOptions,
-  type TrialAudioSession,
-} from './TrialAudioSession';
-import { TRIAL_AUDIO_METRO_SOURCES } from './trialAudioMetroAssets';
+import { useCallback, useMemo } from 'react';
+import type { PlayCueOptions } from './TrialAudioSession';
 import type { TrialAudioUiCueId } from './trialAudioPin';
-import { useSharedTrialAudio, type TrialAudioApi } from './TrialAudioProvider';
+import { useSharedTrialAudio, type TrialAudioApi } from './trialAudioContext';
 
 export type TrialUiAudioApi = {
   playUiTap: () => void;
@@ -22,6 +17,16 @@ export type TrialUiAudioApi = {
   startMenuLoop: () => void;
   crossfadeToFight: (opts?: { durationMs?: number }) => void;
   crossfadeToMenu: (opts?: { durationMs?: number }) => void;
+};
+
+const NOOP_UI_AUDIO: TrialUiAudioApi = {
+  playUiTap: () => undefined,
+  playCue: () => undefined,
+  playSplashSting: () => undefined,
+  playFaceOffSting: () => undefined,
+  startMenuLoop: () => undefined,
+  crossfadeToFight: () => undefined,
+  crossfadeToMenu: () => undefined,
 };
 
 function toUiApi(api: TrialAudioApi): TrialUiAudioApi {
@@ -36,64 +41,18 @@ function toUiApi(api: TrialAudioApi): TrialUiAudioApi {
   };
 }
 
-export function useTrialUiAudio(opts: {
+export function useTrialUiAudio(_opts: {
   muted: boolean;
   musicEnabled?: boolean;
   effectsEnabled?: boolean;
   enabled?: boolean;
 }): TrialUiAudioApi {
   const shared = useSharedTrialAudio();
-  const sessionRef = useRef<TrialAudioSession | null>(null);
-  const mutedRef = useRef(opts.muted);
-  const musicEnabledRef = useRef(opts.musicEnabled !== false);
-  const effectsEnabledRef = useRef(opts.effectsEnabled !== false);
-  mutedRef.current = opts.muted;
-  musicEnabledRef.current = opts.musicEnabled !== false;
-  effectsEnabledRef.current = opts.effectsEnabled !== false;
-  const enabled = opts.enabled !== false;
-
-  useEffect(() => {
-    if (shared || !enabled) {
-      sessionRef.current = null;
-      return;
-    }
-    const session = createTrialAudioSession({
-      backend: createExpoAvBackend(),
-      sources: TRIAL_AUDIO_METRO_SOURCES,
-      muted: mutedRef.current,
-      musicEnabled: musicEnabledRef.current,
-      effectsEnabled: effectsEnabledRef.current,
-      playing: true,
-    });
-    sessionRef.current = session;
-    return () => {
-      session.dispose();
-      if (sessionRef.current === session) sessionRef.current = null;
-    };
-  }, [enabled, shared]);
-
-  useEffect(() => {
-    if (shared) return;
-    sessionRef.current?.setMuted(opts.muted);
-  }, [opts.muted, shared]);
-
-  useEffect(() => {
-    if (shared) return;
-    sessionRef.current?.setMusicEnabled(opts.musicEnabled !== false);
-  }, [opts.musicEnabled, shared]);
-
-  useEffect(() => {
-    if (shared) return;
-    sessionRef.current?.setEffectsEnabled(opts.effectsEnabled !== false);
-  }, [opts.effectsEnabled, shared]);
+  const enabled = _opts.enabled !== false;
 
   const playUiTap = useCallback(() => {
     try {
-      if (shared) {
-        shared.playUiTap();
-        return;
-      }
-      sessionRef.current?.playUiTap();
+      shared?.playUiTap();
     } catch {
       // ignore
     }
@@ -102,11 +61,7 @@ export function useTrialUiAudio(opts: {
   const playCue = useCallback(
     (id: TrialAudioUiCueId, options?: PlayCueOptions) => {
       try {
-        if (shared) {
-          shared.playCue(id, options);
-          return;
-        }
-        sessionRef.current?.playCue(id, options);
+        shared?.playCue(id, options);
       } catch {
         // ignore
       }
@@ -116,11 +71,7 @@ export function useTrialUiAudio(opts: {
 
   const playSplashSting = useCallback(() => {
     try {
-      if (shared) {
-        shared.playSplashSting();
-        return;
-      }
-      sessionRef.current?.playSplashSting();
+      shared?.playSplashSting();
     } catch {
       // ignore
     }
@@ -128,11 +79,7 @@ export function useTrialUiAudio(opts: {
 
   const playFaceOffSting = useCallback(() => {
     try {
-      if (shared) {
-        shared.playFaceOffSting();
-        return;
-      }
-      sessionRef.current?.playFaceOffSting();
+      shared?.playFaceOffSting();
     } catch {
       // ignore
     }
@@ -140,11 +87,7 @@ export function useTrialUiAudio(opts: {
 
   const startMenuLoop = useCallback(() => {
     try {
-      if (shared) {
-        shared.startMenuLoop();
-        return;
-      }
-      sessionRef.current?.startMenuLoop();
+      shared?.startMenuLoop();
     } catch {
       // ignore
     }
@@ -153,11 +96,7 @@ export function useTrialUiAudio(opts: {
   const crossfadeToFight = useCallback(
     (fadeOpts?: { durationMs?: number }) => {
       try {
-        if (shared) {
-          shared.crossfadeToFight(fadeOpts);
-          return;
-        }
-        sessionRef.current?.crossfadeToFight(fadeOpts);
+        shared?.crossfadeToFight(fadeOpts);
       } catch {
         // ignore
       }
@@ -168,11 +107,7 @@ export function useTrialUiAudio(opts: {
   const crossfadeToMenu = useCallback(
     (fadeOpts?: { durationMs?: number }) => {
       try {
-        if (shared) {
-          shared.crossfadeToMenu(fadeOpts);
-          return;
-        }
-        sessionRef.current?.crossfadeToMenu(fadeOpts);
+        shared?.crossfadeToMenu(fadeOpts);
       } catch {
         // ignore
       }
@@ -180,9 +115,22 @@ export function useTrialUiAudio(opts: {
     [shared],
   );
 
-  if (shared) return toUiApi(shared);
-
-  return {
+  return useMemo(() => {
+    if (!enabled) return NOOP_UI_AUDIO;
+    if (shared) return toUiApi(shared);
+    // Headless / no provider: silent no-op (never require Metro assets).
+    return {
+      playUiTap,
+      playCue,
+      playSplashSting,
+      playFaceOffSting,
+      startMenuLoop,
+      crossfadeToFight,
+      crossfadeToMenu,
+    };
+  }, [
+    enabled,
+    shared,
     playUiTap,
     playCue,
     playSplashSting,
@@ -190,5 +138,5 @@ export function useTrialUiAudio(opts: {
     startMenuLoop,
     crossfadeToFight,
     crossfadeToMenu,
-  };
+  ]);
 }

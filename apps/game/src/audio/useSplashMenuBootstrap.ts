@@ -3,7 +3,7 @@
  * Idempotent for the life of the shared session.
  */
 import { useEffect, useRef } from 'react';
-import { useSharedTrialAudio } from './TrialAudioProvider';
+import { useSharedTrialAudio } from './trialAudioContext';
 
 export function useSplashMenuBootstrap(active: boolean): void {
   const audio = useSharedTrialAudio();
