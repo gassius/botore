@@ -4,7 +4,7 @@
  */
 import { useEffect, useRef } from 'react';
 import type { FirstRunRoute } from '../first-run/routes';
-import { useSharedTrialAudio } from './TrialAudioProvider';
+import { useSharedTrialAudio } from './trialAudioContext';
 
 const MENU_CROSSFADE_MS = 600;
 
