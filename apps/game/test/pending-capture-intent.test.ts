@@ -32,6 +32,7 @@ describe('captureIntentState merge + consume', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
   });
 
@@ -57,6 +58,7 @@ describe('captureIntentState merge + consume', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
   });
 
@@ -84,6 +86,7 @@ describe('captureIntentState merge + consume', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
     expect(consumeCaptureRoute()).toBeNull();
   });

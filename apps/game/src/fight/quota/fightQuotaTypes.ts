@@ -1,0 +1,101 @@
+/**
+ * E3 server-driven fight quota contract (ClickUp 1amjtrezeba).
+ * Values come from get_fight_allowance_summary — never hard-code limit/reset in UI.
+ */
+
+export type FightQuotaScope = 'player' | 'bot';
+
+export type FightQuotaRefillPolicy = 'daily_utc_midnight' | 'rolling_per_fight';
+
+/** Player-facing quota summary from the sanctioned RPC (no account ids). */
+export type FightQuotaSummary = {
+  readonly fightsRemaining: number;
+  readonly limit: number;
+  readonly scope: FightQuotaScope;
+  readonly refillPolicy: FightQuotaRefillPolicy;
+  /** ISO-8601 UTC instant; countdown derives only from this. */
+  readonly nextRefillAt: string;
+  /** Compat / day key for daily policy. */
+  readonly utcDay: string;
+  /** Alias of fightsRemaining for pre-E3 call sites. */
+  readonly allowancesRemaining: number;
+};
+
+export function isFightQuotaScope(value: unknown): value is FightQuotaScope {
+  return value === 'player' || value === 'bot';
+}
+
+export function isFightQuotaRefillPolicy(value: unknown): value is FightQuotaRefillPolicy {
+  return value === 'daily_utc_midnight' || value === 'rolling_per_fight';
+}
+
+/** Parse RPC JSON into FightQuotaSummary; returns null when required fields missing. */
+export function parseFightQuotaSummary(body: unknown): FightQuotaSummary | null {
+  if (!body || typeof body !== 'object') return null;
+  const b = body as Record<string, unknown>;
+  if (b.ok !== true) return null;
+
+  const fightsRemaining =
+    typeof b.fightsRemaining === 'number'
+      ? b.fightsRemaining
+      : typeof b.allowancesRemaining === 'number'
+        ? b.allowancesRemaining
+        : null;
+  const limit = typeof b.limit === 'number' ? b.limit : null;
+  const scope = isFightQuotaScope(b.scope) ? b.scope : null;
+  const refillPolicy = isFightQuotaRefillPolicy(b.refillPolicy) ? b.refillPolicy : null;
+  const nextRefillAt =
+    typeof b.nextRefillAt === 'string' && b.nextRefillAt.length > 0 ? b.nextRefillAt : null;
+  const utcDay = typeof b.utcDay === 'string' ? b.utcDay : '';
+
+  if (
+    fightsRemaining === null ||
+    limit === null ||
+    scope === null ||
+    refillPolicy === null ||
+    nextRefillAt === null
+  ) {
+    // Compat: pre-E3 bodies still usable for remaining/day only.
+    if (typeof b.allowancesRemaining === 'number' && typeof b.utcDay === 'string') {
+      const remaining = b.allowancesRemaining;
+      return {
+        fightsRemaining: remaining,
+        limit: typeof b.limit === 'number' ? b.limit : remaining,
+        scope: isFightQuotaScope(b.scope) ? b.scope : 'player',
+        refillPolicy: isFightQuotaRefillPolicy(b.refillPolicy)
+          ? b.refillPolicy
+          : 'daily_utc_midnight',
+        nextRefillAt: typeof b.nextRefillAt === 'string' ? b.nextRefillAt : '',
+        utcDay: b.utcDay,
+        allowancesRemaining: remaining,
+      };
+    }
+    return null;
+  }
+
+  return {
+    fightsRemaining,
+    limit,
+    scope,
+    refillPolicy,
+    nextRefillAt,
+    utcDay,
+    allowancesRemaining:
+      typeof b.allowancesRemaining === 'number' ? b.allowancesRemaining : fightsRemaining,
+  };
+}
+
+/** Format a non-negative millisecond delta as HH:MM:SS. */
+export function formatRefillCountdown(msRemaining: number): string {
+  const totalSec = Math.max(0, Math.floor(msRemaining / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+export function msUntilRefill(nextRefillAt: string, nowMs: number = Date.now()): number {
+  const target = Date.parse(nextRefillAt);
+  if (!Number.isFinite(target)) return 0;
+  return Math.max(0, target - nowMs);
+}

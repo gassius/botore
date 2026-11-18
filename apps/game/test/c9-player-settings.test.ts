@@ -109,6 +109,7 @@ describe('C9 Settings route', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
   });
 });

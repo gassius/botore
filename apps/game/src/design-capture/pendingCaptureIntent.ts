@@ -42,6 +42,7 @@ function applyUrl(url: string | null): void {
     customiseScenario: parsed.customiseScenario,
     resultScenario: parsed.resultScenario,
     homeScenario: parsed.homeScenario,
+    fightQuotaScenario: parsed.fightQuotaScenario,
   });
 }
 

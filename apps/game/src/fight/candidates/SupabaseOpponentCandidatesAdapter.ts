@@ -6,9 +6,9 @@ import {
   FIGHT_ALLOWANCE_SUMMARY_RPC,
   OPPONENT_ROSTER_RPC,
   type ClientReadRpcFail,
-  type FightAllowanceSummaryRpcOk,
   type OpponentRosterRpcOk,
 } from '../../supabase/clientReadRpcs';
+import { parseFightQuotaSummary } from '../quota/fightQuotaTypes';
 import type { OpponentCandidatesPort } from './OpponentCandidatesPort';
 import type { ListCandidatesResult, OpponentCandidate, PrepareEligibilityResult } from './types';
 
@@ -17,7 +17,7 @@ type ErrBody = { message?: string; code?: string; details?: string; hint?: strin
 /**
  * Live reads via ticket-B SECURITY DEFINER RPCs + sanctioned loadout view:
  * - `list_opponent_roster` (system opponents for Confirm / prepare_fight_context)
- * - `get_fight_allowance_summary` ({ utcDay, allowancesRemaining })
+ * - `get_fight_allowance_summary` (E3: fightsRemaining/limit/scope/refillPolicy/nextRefillAt)
  * - `current_bot_loadouts` (opponent loadouts once character ids are known)
  * - `prepare_fight_context` RPC for eligibility (does not consume allowance)
  *
@@ -81,7 +81,7 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
 
       const rosterBody = (await rosterRes.json()) as OpponentRosterRpcOk | ClientReadRpcFail | null;
       const allowBody = (await allowRes.json()) as
-        FightAllowanceSummaryRpcOk | ClientReadRpcFail | null;
+        Record<string, unknown> | ClientReadRpcFail | null;
 
       if (!rosterBody || typeof rosterBody !== 'object' || rosterBody.ok !== true) {
         return {
@@ -97,29 +97,32 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         };
       }
 
-      let utcDay = '';
-      let allowancesRemaining = 0;
-      if (allowBody && typeof allowBody === 'object' && allowBody.ok === true) {
-        utcDay = typeof allowBody.utcDay === 'string' ? allowBody.utcDay : '';
-        allowancesRemaining =
-          typeof allowBody.allowancesRemaining === 'number' ? allowBody.allowancesRemaining : 0;
-      } else if (allowBody && typeof allowBody === 'object' && allowBody.ok === false) {
-        return {
-          ok: false,
-          code: allowBody.code ?? 'allowance_unavailable',
-          message: allowBody.message ?? 'Fight allowance summary unavailable',
-        };
-      } else {
+      const quota = parseFightQuotaSummary(allowBody);
+      if (!quota) {
+        if (
+          allowBody &&
+          typeof allowBody === 'object' &&
+          (allowBody as ClientReadRpcFail).ok === false
+        ) {
+          const fail = allowBody as ClientReadRpcFail;
+          return {
+            ok: false,
+            code: fail.code ?? 'allowance_unavailable',
+            message: fail.message ?? 'Fight allowance summary unavailable',
+          };
+        }
         return {
           ok: false,
           code: 'invalid_response',
           message: 'Allowance summary RPC returned a malformed body',
         };
       }
+      const utcDay = quota.utcDay;
+      const allowancesRemaining = quota.allowancesRemaining;
 
       const opponents = Array.isArray(rosterBody.opponents) ? rosterBody.opponents : [];
       if (opponents.length === 0) {
-        return { ok: true, candidates: [], allowancesRemaining, utcDay };
+        return { ok: true, candidates: [], allowancesRemaining, utcDay, quota };
       }
 
       const ids = opponents
@@ -143,6 +146,7 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
           message: err.message ?? `Failed to load opponent loadouts (${loadRes.status})`,
           allowancesRemaining,
           utcDay,
+          quota,
         };
       }
 
@@ -172,14 +176,22 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
           typeof c.displayName === 'string' && c.displayName.trim().length > 0
             ? c.displayName.trim()
             : null;
+        const rawBotore =
+          typeof c.botoreName === 'string' && c.botoreName.trim().length > 0
+            ? c.botoreName.trim()
+            : null;
+        const wins = typeof c.wins === 'number' ? c.wins : null;
+        const losses = typeof c.losses === 'number' ? c.losses : null;
         candidates.push({
           ...withLoadout,
           // C16/C17: platform + raw character ids never become opponent labels.
           displayName: playerFacingDisplayName(rawName),
+          botoreName: rawBotore ? playerFacingDisplayName(rawBotore) : null,
+          ...(wins !== null && losses !== null ? { wins, losses } : {}),
         });
       }
 
-      return { ok: true, candidates, allowancesRemaining, utcDay };
+      return { ok: true, candidates, allowancesRemaining, utcDay, quota };
     } catch (err) {
       return {
         ok: false,

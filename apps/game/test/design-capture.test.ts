@@ -69,6 +69,7 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Replay?mute=1')).toEqual({
       route: 'Replay',
@@ -83,6 +84,7 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
     expect(parseDesignCaptureUrl('botore://capture?route=Ranking')).toEqual({
       route: 'Ranking',
@@ -97,6 +99,7 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Ranking?ranking=empty')).toEqual({
       route: 'Ranking',
@@ -111,6 +114,7 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Stable?paint=petrol&weapon=axe')).toEqual({
       route: 'Stable',
@@ -125,6 +129,7 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
     expect(parseDesignCaptureUrl('botore://capture/Stable?failClosed=1')).toEqual({
       route: 'Stable',
@@ -139,6 +144,7 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
     expect(parseDesignCaptureUrl('https://example.com/capture/Replay')).toEqual({
       route: null,
@@ -153,6 +159,7 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
     expect(
       buildDesignCaptureUrl('Stable', { mute: true, paintId: 'petrol', weaponId: 'dagger' }),
@@ -179,6 +186,7 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
     expect(buildDesignCaptureUrl('ConfirmFight', { poseCompare: 'quick-vs-heavy' })).toBe(
       `${DESIGN_CAPTURE_SCHEME}://capture/ConfirmFight?poseCompare=quick-vs-heavy`,
@@ -199,6 +207,7 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: null,
+      fightQuotaScenario: null,
     });
     expect(buildDesignCaptureUrl('Ranking', { sessionFailure: 'auth_expired' })).toBe(
       `${DESIGN_CAPTURE_SCHEME}://capture/Ranking?sessionFailure=auth_expired`,
@@ -311,9 +320,22 @@ describe('C7 design-capture helpers', () => {
       customiseScenario: null,
       resultScenario: null,
       homeScenario: 'more',
+      fightQuotaScenario: null,
     });
     expect(buildDesignCaptureUrl('Stable', { homeScenario: 'more' })).toBe(
       `${DESIGN_CAPTURE_SCHEME}://capture/Stable?home=more`,
+    );
+  });
+
+  it('parses E3 fightQuota remaining/exhausted capture scenarios', () => {
+    expect(parseDesignCaptureUrl('botore://capture/Opponents?fightQuota=remaining')).toEqual(
+      expect.objectContaining({ route: 'Opponents', fightQuotaScenario: 'remaining' }),
+    );
+    expect(parseDesignCaptureUrl('botore://capture/ConfirmFight?fightQuota=exhausted')).toEqual(
+      expect.objectContaining({ route: 'ConfirmFight', fightQuotaScenario: 'exhausted' }),
+    );
+    expect(buildDesignCaptureUrl('Opponents', { fightQuotaScenario: 'exhausted' })).toBe(
+      `${DESIGN_CAPTURE_SCHEME}://capture/Opponents?fightQuota=exhausted`,
     );
   });
 });

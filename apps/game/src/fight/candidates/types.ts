@@ -1,9 +1,15 @@
 import type { GarageLoadout } from '../../garage/loadout/loadoutTypes';
+import type { FightQuotaSummary } from '../quota/fightQuotaTypes';
 
 /** System opponent from list_opponent_roster + current_bot_loadouts. */
 export type OpponentCandidate = {
   readonly characterId: string;
   readonly displayName: string;
+  /** Botore display name when known (D8); omit rather than invent. */
+  readonly botoreName?: string | null;
+  /** W–L when known from ranking (D8); omit rather than invent. */
+  readonly wins?: number | null;
+  readonly losses?: number | null;
   readonly loadout: GarageLoadout;
   readonly loadoutVersionId: string | null;
   readonly atlasVersion: string;
@@ -15,6 +21,8 @@ export type ListCandidatesResult =
       readonly candidates: readonly OpponentCandidate[];
       readonly allowancesRemaining: number;
       readonly utcDay: string;
+      /** E3 server-driven quota; preferred over hard-coded remaining/limit. */
+      readonly quota: FightQuotaSummary;
     }
   | {
       readonly ok: false;
@@ -22,6 +30,7 @@ export type ListCandidatesResult =
       readonly message: string;
       readonly allowancesRemaining?: number;
       readonly utcDay?: string;
+      readonly quota?: FightQuotaSummary;
     };
 
 /** Eligibility from prepare_fight_context — no allowance consume; no invented costs. */

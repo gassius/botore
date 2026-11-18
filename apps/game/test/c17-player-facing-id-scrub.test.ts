@@ -89,7 +89,7 @@ describe('C17 player-facing id / debug scrub', () => {
   it('formatOutcomeLine / fighterDisplayName never emit raw character ids or UUIDs', () => {
     const fighters = [
       { characterId: 'player-hero', displayName: 'Hero' },
-      { characterId: 'opp-sir-bot', displayName: 'Sir Bot' },
+      { characterId: 'opp-sir-bot', displayName: 'Slab Mick' },
     ] as const;
     const defeat: BattleOutcome = {
       winner: 'player-hero',

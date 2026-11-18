@@ -171,7 +171,13 @@ d('client-read RPCs via PostgREST (local supabase)', () => {
     const { status, json } = await rpc(anon, accessToken, 'list_opponent_roster');
     expect(status).toBe(200);
     expect(json.ok).toBe(true);
-    const opponents = json.opponents as Array<{ characterId: string; displayName: string }>;
+    const opponents = json.opponents as Array<{
+      characterId: string;
+      displayName: string;
+      botoreName: string | null;
+      wins: number;
+      losses: number;
+    }>;
     expect(Array.isArray(opponents)).toBe(true);
     expect(opponents).toHaveLength(3);
     expect(opponents.map((o) => o.characterId).sort()).toEqual([
@@ -179,9 +185,29 @@ d('client-read RPCs via PostgREST (local supabase)', () => {
       'opp-hp-bot',
       'opp-sir-bot',
     ]);
+    const byId = Object.fromEntries(opponents.map((o) => [o.characterId, o]));
+    expect(byId['opp-dex-bot']).toMatchObject({
+      displayName: 'Can Hook',
+      botoreName: 'Magistra Volta',
+    });
+    expect(byId['opp-hp-bot']).toMatchObject({
+      displayName: 'Cobalt Brute',
+      botoreName: 'Doctore Ferro',
+    });
+    expect(byId['opp-sir-bot']).toMatchObject({
+      displayName: 'Slab Mick',
+      botoreName: 'Tito Rivet',
+    });
+    // Seed floors; prior suite battles may increase counts.
+    expect(byId['opp-dex-bot']!.wins).toBeGreaterThanOrEqual(19);
+    expect(byId['opp-dex-bot']!.losses).toBeGreaterThanOrEqual(2);
+    expect(byId['opp-hp-bot']!.wins).toBeGreaterThanOrEqual(15);
+    expect(byId['opp-hp-bot']!.losses).toBeGreaterThanOrEqual(5);
+    expect(byId['opp-sir-bot']!.wins).toBeGreaterThanOrEqual(13);
+    expect(byId['opp-sir-bot']!.losses).toBeGreaterThanOrEqual(6);
   });
 
-  it('get_fight_allowance_summary returns utcDay + remaining for auth.uid()', async () => {
+  it('get_fight_allowance_summary returns E3 quota contract for auth.uid()', async () => {
     expect(ready).toBe(true);
     const { status, json } = await rpc(anon, accessToken, 'get_fight_allowance_summary');
     expect(status).toBe(200);
@@ -190,6 +216,12 @@ d('client-read RPCs via PostgREST (local supabase)', () => {
     expect((json.utcDay as string).length).toBeGreaterThanOrEqual(10);
     expect(Number(json.allowancesRemaining)).toBeGreaterThanOrEqual(0);
     expect(Number(json.allowancesRemaining)).toBeLessThanOrEqual(3);
+    expect(Number(json.fightsRemaining)).toBe(Number(json.allowancesRemaining));
+    expect(Number(json.limit)).toBeGreaterThanOrEqual(1);
+    expect(['player', 'bot']).toContain(json.scope);
+    expect(['daily_utc_midnight', 'rolling_per_fight']).toContain(json.refillPolicy);
+    expect(typeof json.nextRefillAt).toBe('string');
+    expect((json.nextRefillAt as string).length).toBeGreaterThan(10);
   });
 
   it('anon cannot execute get_fight_allowance_summary', async () => {

@@ -72,28 +72,63 @@ export CAPTURE_EMULATOR_SUPABASE_URL="${SUPABASE_URL}"
 node "${SCRIPT_DIR}/prepare-live-fight-backend.mjs" --write /tmp/botore-live-fight-local.env
 
 # Pin cloudflared (host network) — do not float on :latest (C7c PRR P2).
+# Quick tunnels (trycloudflare.com) are account-less and rate-limited; retry on
+# Tunnelstore 429 instead of burning the full poll budget once (PR #84 CI).
 CLOUDFLARED_IMAGE="${CAPTURE_CLOUDFLARED_IMAGE:-cloudflare/cloudflared:2026.10.7}"
-echo "starting Cloudflare quick tunnel (docker, host network, image=${CLOUDFLARED_IMAGE})…" >&2
-docker rm -f botore-cf-tunnel >/dev/null 2>&1 || true
+TUNNEL_ATTEMPTS="${CAPTURE_CLOUDFLARED_ATTEMPTS:-5}"
+TUNNEL_POLL_ITERS="${CAPTURE_CLOUDFLARED_POLL_ITERS:-45}"
+TUNNEL_BACKOFF_SEC="${CAPTURE_CLOUDFLARED_BACKOFF_SEC:-15}"
+echo "starting Cloudflare quick tunnel (docker, host network, image=${CLOUDFLARED_IMAGE}, attempts=${TUNNEL_ATTEMPTS})…" >&2
 docker pull "${CLOUDFLARED_IMAGE}" >/dev/null
-docker run -d --name botore-cf-tunnel --network host \
-  "${CLOUDFLARED_IMAGE}" \
-  tunnel --no-autoupdate --url "${SUPABASE_URL}" >/dev/null
 
 TUNNEL_URL=""
-for _ in $(seq 1 90); do
-  TUNNEL_URL="$(
-    docker logs botore-cf-tunnel 2>&1 \
-      | grep -Eo 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' \
-      | head -n 1 || true
-  )"
+for attempt in $(seq 1 "${TUNNEL_ATTEMPTS}"); do
+  echo "cloudflared quick-tunnel attempt ${attempt}/${TUNNEL_ATTEMPTS}…" >&2
+  docker rm -f botore-cf-tunnel >/dev/null 2>&1 || true
+  docker run -d --name botore-cf-tunnel --network host \
+    "${CLOUDFLARED_IMAGE}" \
+    tunnel --no-autoupdate --url "${SUPABASE_URL}" >/dev/null
+
+  rate_limited=0
+  for _ in $(seq 1 "${TUNNEL_POLL_ITERS}"); do
+    logs="$(docker logs botore-cf-tunnel 2>&1 || true)"
+    TUNNEL_URL="$(
+      printf '%s\n' "${logs}" \
+        | grep -Eo 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' \
+        | head -n 1 || true
+    )"
+    if [[ -n "${TUNNEL_URL}" ]]; then
+      break
+    fi
+    # Fail this attempt early on Cloudflare Tunnelstore rate limits.
+    if printf '%s\n' "${logs}" | grep -Eqi \
+      'status 429|Tunnelstore request failed|failed to request quick Tunnel'; then
+      rate_limited=1
+      echo "warn: quick tunnel provisioning rate-limited or failed; will retry" >&2
+      break
+    fi
+    sleep 2
+  done
+
   if [[ -n "${TUNNEL_URL}" ]]; then
     break
   fi
-  sleep 2
+
+  docker rm -f botore-cf-tunnel >/dev/null 2>&1 || true
+  if [[ "${attempt}" -ge "${TUNNEL_ATTEMPTS}" ]]; then
+    break
+  fi
+  backoff=$((TUNNEL_BACKOFF_SEC * attempt))
+  if [[ "${rate_limited}" == "1" ]]; then
+    # Extra pause after 429 — Tunnelstore cool-down is coarser than a miss.
+    backoff=$((backoff + TUNNEL_BACKOFF_SEC))
+  fi
+  echo "warn: no trycloudflare.com URL on attempt ${attempt}; sleeping ${backoff}s…" >&2
+  sleep "${backoff}"
 done
+
 if [[ -z "${TUNNEL_URL}" ]]; then
-  echo "error: cloudflared did not print a trycloudflare.com URL" >&2
+  echo "error: cloudflared did not print a trycloudflare.com URL after ${TUNNEL_ATTEMPTS} attempts" >&2
   docker logs botore-cf-tunnel >&2 || true
   exit 1
 fi

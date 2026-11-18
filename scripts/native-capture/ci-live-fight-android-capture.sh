@@ -318,6 +318,9 @@ capture_named Ranking ranking-loading 3 loading
 # 1b) C9 Settings — mute / Music / Effects / reduced motion
 capture_named Settings settings 4
 
+# 1c) D8 Opponents — live A5 roster names + Botore + W–L (E3 quota panel).
+capture_named Opponents opponents-roster 6
+
 # 2) Confirm — both bots; deep-link weapon=axe so live-fight pin saves before Replay.
 CAPTURE_SETTLE_SEC=8 \
   "${SCRIPT_DIR}/android-screencap.sh" \

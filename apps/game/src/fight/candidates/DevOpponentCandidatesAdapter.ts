@@ -6,22 +6,14 @@ import { DevFightBackendState, getSharedDevFightBackend } from '../dev/DevFightB
 import type { OpponentCandidatesPort } from './OpponentCandidatesPort';
 import type { ListCandidatesResult, OpponentCandidate, PrepareEligibilityResult } from './types';
 
+/** A5 roster names (a5fix/npcs.json) + A6 D8 lanista / record pairings. */
 const DEV_OPPONENTS: readonly OpponentCandidate[] = [
   {
-    characterId: 'opp-sir-bot',
-    displayName: 'Sir Bot',
-    loadout: {
-      ...DEFAULT_CONFIRMED_LOADOUT,
-      paint: 'paint-cobalt',
-      weapon: 'weapon-sword',
-      soundTags: ['chassis.light', 'weapon.sword'],
-    },
-    loadoutVersionId: 'dev-opp-sir',
-    atlasVersion: PROOF_ATLAS_VERSION,
-  },
-  {
     characterId: 'opp-dex-bot',
-    displayName: 'Dex Bot',
+    displayName: 'Can Hook',
+    botoreName: 'Magistra Volta',
+    wins: 19,
+    losses: 2,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
       paint: 'paint-crimson',
@@ -33,7 +25,10 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
   },
   {
     characterId: 'opp-hp-bot',
-    displayName: 'Tank Bot',
+    displayName: 'Cobalt Brute',
+    botoreName: 'Doctore Ferro',
+    wins: 15,
+    losses: 5,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
       paint: 'paint-cobalt',
@@ -41,6 +36,21 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
       soundTags: ['chassis.light', 'weapon.axe'],
     },
     loadoutVersionId: 'dev-opp-hp',
+    atlasVersion: PROOF_ATLAS_VERSION,
+  },
+  {
+    characterId: 'opp-sir-bot',
+    displayName: 'Slab Mick',
+    botoreName: 'Tito Rivet',
+    wins: 13,
+    losses: 6,
+    loadout: {
+      ...DEFAULT_CONFIRMED_LOADOUT,
+      paint: 'paint-cobalt',
+      weapon: 'weapon-sword',
+      soundTags: ['chassis.light', 'weapon.sword'],
+    },
+    loadoutVersionId: 'dev-opp-sir',
     atlasVersion: PROOF_ATLAS_VERSION,
   },
 ];
@@ -76,20 +86,22 @@ export class DevOpponentCandidatesAdapter implements OpponentCandidatesPort {
     if (this.forceNetworkError) {
       return { ok: false, code: 'network_error', message: 'DEV network failure (candidates)' };
     }
-    const utcDay = this.backend.utcDay();
+    const quota = this.backend.quota();
     if (this.forceEmpty) {
       return {
         ok: true,
         candidates: [],
-        allowancesRemaining: this.backend.allowancesRemaining,
-        utcDay,
+        allowancesRemaining: quota.allowancesRemaining,
+        utcDay: quota.utcDay,
+        quota,
       };
     }
     return {
       ok: true,
       candidates: [...DEV_OPPONENTS],
-      allowancesRemaining: this.backend.allowancesRemaining,
-      utcDay,
+      allowancesRemaining: quota.allowancesRemaining,
+      utcDay: quota.utcDay,
+      quota,
     };
   }
 

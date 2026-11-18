@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,18 +18,18 @@ import {
   SelectionCheck,
   StatusErrorBanner,
   garageTag,
-  weaponGlyphSource,
 } from '../../garage-tag';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
-import { paintUiAlias, weaponUiAlias } from '../../garage/loadout/proofCatalogue';
 import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import { canContinueToConfirm } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
+import { A6_OPPONENTS, resolveA6OpponentPanel } from '../opponents/a6OpponentPanelAssets';
+import { FightsRemainingPanel } from '../quota/FightsRemainingPanel';
 
-/** Opponents domain — mounts into shell Opponents slot. */
+/** Opponents domain — D8 snapped list + Fights Remaining (E3). */
 export function OpponentsScreen(props: {
   onBack: () => void;
   onContinue: () => void;
@@ -43,6 +45,8 @@ export function OpponentsScreen(props: {
     refreshCandidates,
     selectOpponent,
   } = useFightSession();
+  const [visibleRange, setVisibleRange] = useState({ start: 1, end: 3 });
+  const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     void refreshCandidates();
@@ -65,7 +69,6 @@ export function OpponentsScreen(props: {
     forced ?? (listFailure === 'offline' || listFailure === 'auth_expired' ? listFailure : null);
   const otherError =
     list.status === 'error' && failureKind === null && list.code !== 'allowance_exhausted';
-  // Never present a network/auth failure as an empty "no opponents" board.
   const showEmpty = emptyCandidates && !failureKind;
 
   const recoverable =
@@ -80,6 +83,16 @@ export function OpponentsScreen(props: {
       allowancesRemaining: list.status === 'ready' ? list.allowancesRemaining : 0,
       pendingIntent,
     });
+
+  const candidateCount = list.status === 'ready' ? list.candidates.length : 0;
+
+  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y;
+    const index = Math.round(y / A6_OPPONENTS.snapInterval);
+    const start = Math.max(1, index + 1);
+    const end = Math.min(candidateCount, start + 2);
+    setVisibleRange({ start, end: Math.max(start, end) });
+  };
 
   return (
     <ScreenChrome
@@ -136,10 +149,20 @@ export function OpponentsScreen(props: {
         </View>
       ) : null}
 
+      {list.status === 'ready' ? (
+        <FightsRemainingPanel
+          quota={list.quota}
+          testID="opponents-fights-remaining"
+          onRefillDue={() => {
+            void refreshCandidates();
+          }}
+        />
+      ) : null}
+
       {noAllowance && !recoverable ? (
         <StatusErrorBanner
-          title="No fight allowance left"
-          detail="Your daily fight slots are used. Come back after UTC midnight — allowance is server-owned."
+          title="No fights remaining"
+          detail="Come back when the refill clock hits zero. Quota is server-owned."
           testID="opponents-no-allowance"
         />
       ) : null}
@@ -178,68 +201,102 @@ export function OpponentsScreen(props: {
 
       {list.status === 'ready' && list.candidates.length > 0 ? (
         <>
-          <Text style={styles.allowance} allowFontScaling testID="opponents-allowance">
-            Allowance remaining today: {list.allowancesRemaining}
-            {candidatesKind === 'dev' ? ' · DEV roster' : ''}
-          </Text>
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
+          {candidatesKind === 'dev' ? (
+            <Text style={styles.devHint} allowFontScaling testID="opponents-dev-roster">
+              DEV roster
+            </Text>
+          ) : null}
+          <ScrollView
+            ref={scrollRef}
+            style={styles.scroll}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            snapToInterval={A6_OPPONENTS.snapInterval}
+            decelerationRate="fast"
+            disableIntervalMomentum
+            snapToAlignment="start"
+            onMomentumScrollEnd={onScrollEnd}
+            onScrollEndDrag={onScrollEnd}
+            testID="opponents-list"
+          >
             {list.candidates.map((c) => {
               const isSelected = selected?.characterId === c.characterId;
-              const weapon = weaponUiAlias(c.loadout.weapon);
-              const paint = paintUiAlias(c.loadout.paint);
               const name = playerFacingDisplayName(c.displayName);
+              const botore =
+                typeof c.botoreName === 'string' && c.botoreName.trim().length > 0
+                  ? playerFacingDisplayName(c.botoreName)
+                  : null;
+              const hasRecord = typeof c.wins === 'number' && typeof c.losses === 'number';
+              const panelArt = resolveA6OpponentPanel({
+                displayName: c.displayName,
+                paintId: c.loadout.paint,
+                weaponId: c.loadout.weapon,
+              });
               return (
                 <Pressable
                   key={c.characterId}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
-                  accessibilityLabel={`${name}, ${weapon}${isSelected ? ', selected' : ''}`}
+                  accessibilityLabel={`${name}${botore ? `, ${botore}` : ''}${
+                    hasRecord ? `, ${c.wins} wins ${c.losses} losses` : ''
+                  }${isSelected ? ', selected' : ''}`}
                   onPress={() => {
                     selectOpponent(c);
                   }}
                   style={[styles.card, isSelected ? styles.cardSelected : null]}
                   testID={`opponent-${c.characterId}`}
                 >
-                  <View style={styles.preview} testID={`opponent-preview-wrap-${c.characterId}`}>
-                    <BotAssemblerSlot
-                      loadout={{
-                        chassisId: c.loadout.chassis,
-                        paintId: c.loadout.paint,
-                        weaponId: c.loadout.weapon,
-                      }}
-                      facing="left"
-                      paintId={c.loadout.paint}
-                      weaponId={c.loadout.weapon}
-                      size={112}
-                      reducedMotion
-                      motionPose="idle"
-                      testID={`opponent-preview-${c.characterId}`}
-                    />
+                  <View style={styles.stage} testID={`opponent-preview-wrap-${c.characterId}`}>
+                    {panelArt ? (
+                      <Image
+                        source={panelArt}
+                        style={styles.panelArt}
+                        resizeMode="contain"
+                        accessibilityIgnoresInvertColors
+                        testID={`opponent-a6-panel-${c.characterId}`}
+                      />
+                    ) : (
+                      <BotAssemblerSlot
+                        loadout={{
+                          chassisId: c.loadout.chassis,
+                          paintId: c.loadout.paint,
+                          weaponId: c.loadout.weapon,
+                        }}
+                        facing="left"
+                        paintId={c.loadout.paint}
+                        weaponId={c.loadout.weapon}
+                        size={A6_OPPONENTS.robotBody}
+                        reducedMotion
+                        motionPose="idle"
+                        testID={`opponent-preview-${c.characterId}`}
+                      />
+                    )}
                   </View>
                   <View style={styles.metaCol}>
                     <Text style={styles.name} numberOfLines={2} allowFontScaling>
                       {name}
                     </Text>
-                    <Text style={styles.paint} allowFontScaling>
-                      Paint · {paint}
-                    </Text>
-                    <View style={styles.weaponChip} testID={`opponent-weapon-${c.characterId}`}>
-                      <Image
-                        source={weaponGlyphSource(weapon)}
-                        style={styles.weaponGlyph}
-                        resizeMode="contain"
-                        accessibilityIgnoresInvertColors
-                      />
-                      <Text style={styles.weaponLabel} allowFontScaling>
-                        {weapon}
+                    {botore ? (
+                      <Text style={styles.botore} numberOfLines={1} allowFontScaling>
+                        {botore}
                       </Text>
-                    </View>
+                    ) : null}
+                    {hasRecord ? (
+                      <Text style={styles.record} allowFontScaling>
+                        <Text style={styles.recordNum}>{c.wins}</Text>W –{' '}
+                        <Text style={styles.recordNum}>{c.losses}</Text>L
+                      </Text>
+                    ) : null}
                   </View>
-                  <SelectionCheck selected={isSelected} />
+                  <SelectionCheck selected={isSelected} style={styles.check} />
                 </Pressable>
               );
             })}
           </ScrollView>
+          <Text style={styles.hint} allowFontScaling testID="opponents-snap-hint">
+            {visibleRange.start}–{visibleRange.end} of {candidateCount} · scroll snaps one card at a
+            time
+          </Text>
         </>
       ) : null}
     </ScreenChrome>
@@ -259,85 +316,97 @@ const styles = StyleSheet.create({
     color: garageTag.steel,
     textTransform: 'uppercase',
   },
-  allowance: {
+  devHint: {
     fontWeight: '800',
-    fontSize: 12,
+    fontSize: 11,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: garageTag.graphite,
-    marginBottom: 8,
+    color: garageTag.steel,
+    marginBottom: 4,
   },
   scroll: {
     flexGrow: 0,
-    maxHeight: 520,
+    maxHeight: A6_OPPONENTS.snapInterval * 3 - A6_OPPONENTS.cardGap,
   },
   list: {
-    gap: 12,
-    paddingBottom: 8,
+    gap: A6_OPPONENTS.cardGap,
+    paddingBottom: 4,
   },
   card: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    minHeight: 168,
-    padding: 12,
-    backgroundColor: garageTag.cream,
+    alignItems: 'stretch',
+    height: A6_OPPONENTS.cardHeight,
+    backgroundColor: garageTag.white,
     borderWidth: garageTag.outline,
     borderColor: garageTag.graphite,
-    borderRadius: garageTag.cutCorner,
+    borderRadius: 10,
+    overflow: 'hidden',
+    position: 'relative',
   },
   cardSelected: {
-    borderWidth: 4,
-    borderColor: garageTag.mustard,
+    backgroundColor: garageTag.mustard,
   },
-  preview: {
-    width: 120,
-    paddingTop: 4,
+  stage: {
+    width: A6_OPPONENTS.stageWidth,
+    height: A6_OPPONENTS.stageHeight,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    flexShrink: 0,
+    justifyContent: 'flex-end',
+    borderRightWidth: garageTag.outline,
+    borderRightColor: garageTag.graphite,
+    backgroundColor: '#e3cfa9',
+    overflow: 'hidden',
+  },
+  panelArt: {
+    width: A6_OPPONENTS.stageWidth,
+    height: A6_OPPONENTS.stageHeight,
   },
   metaCol: {
     flex: 1,
-    gap: 8,
+    gap: 4,
     minWidth: 0,
-    paddingTop: 8,
-    paddingRight: 28,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    paddingRight: 36,
+    justifyContent: 'center',
   },
   name: {
-    fontWeight: '800',
-    fontSize: 16,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: garageTag.graphite,
-  },
-  paint: {
-    fontWeight: '700',
-    fontSize: 11,
-    color: garageTag.steel,
-    textTransform: 'uppercase',
-  },
-  weaponChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderWidth: garageTag.outline,
-    borderColor: garageTag.graphite,
-    borderRadius: garageTag.cutCorner,
-    backgroundColor: garageTag.paper,
-  },
-  weaponGlyph: {
-    width: 28,
-    height: 28,
-  },
-  weaponLabel: {
-    fontWeight: '800',
-    fontSize: 12,
+    fontWeight: '900',
+    fontSize: 22,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     color: garageTag.graphite,
+  },
+  botore: {
+    fontWeight: '700',
+    fontSize: 13,
+    color: '#6b6356',
+  },
+  record: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(48,45,39,0.3)',
+    borderStyle: 'dashed',
+    fontWeight: '700',
+    fontSize: 14,
+    color: garageTag.graphite,
+  },
+  recordNum: {
+    fontWeight: '900',
+    fontSize: 22,
+  },
+  check: {
+    position: 'absolute',
+    right: -6,
+    top: -6,
+  },
+  hint: {
+    textAlign: 'center',
+    fontSize: 10.5,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: '#8a8070',
+    marginTop: 8,
   },
 });

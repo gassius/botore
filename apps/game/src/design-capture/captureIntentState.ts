@@ -6,11 +6,13 @@ import {
 } from '../result-overlay/designCaptureRecords';
 import {
   type DesignCaptureCustomiseScenario,
+  type DesignCaptureFightQuotaScenario,
   type DesignCaptureFightViewMode,
   type DesignCapturePoseCompare,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
   parseDesignCaptureCustomiseScenario,
+  parseDesignCaptureFightQuotaScenario,
   parseDesignCaptureFightView,
   parseDesignCapturePoseCompare,
   parseDesignCaptureRankingScenario,
@@ -45,7 +47,10 @@ export type CaptureIntent = {
   customiseScenario: DesignCaptureCustomiseScenario | null;
   /** E1/D10: FightResult victory / defeat / victory-new-record overlay stills. */
   resultScenario: ResultCaptureScenario | null;
+  /** E5/D5: Ludus home More sheet still. */
   homeScenario: DesignCaptureHomeScenario | null;
+  /** E3: force remaining > 0 or exhausted quota stills. */
+  fightQuotaScenario: DesignCaptureFightQuotaScenario | null;
 };
 
 const EMPTY: CaptureIntent = {
@@ -62,6 +67,7 @@ const EMPTY: CaptureIntent = {
   customiseScenario: null,
   resultScenario: null,
   homeScenario: null,
+  fightQuotaScenario: null,
 };
 
 let intent: CaptureIntent = { ...EMPTY };
@@ -88,6 +94,8 @@ export function mergeIntent(next: Partial<CaptureIntent>): void {
       next.customiseScenario === undefined ? intent.customiseScenario : next.customiseScenario,
     resultScenario: next.resultScenario === undefined ? intent.resultScenario : next.resultScenario,
     homeScenario: next.homeScenario === undefined ? intent.homeScenario : next.homeScenario,
+    fightQuotaScenario:
+      next.fightQuotaScenario === undefined ? intent.fightQuotaScenario : next.fightQuotaScenario,
   };
 }
 
@@ -111,6 +119,8 @@ export function mergeCaptureFileIntent(raw: {
   result?: string | null;
   homeScenario?: string | null;
   home?: string | null;
+  fightQuotaScenario?: string | null;
+  fightQuota?: string | null;
 }): void {
   const route = typeof raw.route === 'string' && isFirstRunRoute(raw.route) ? raw.route : null;
   mergeIntent({
@@ -150,6 +160,13 @@ export function mergeCaptureFileIntent(raw: {
     ...(raw.homeScenario !== undefined || raw.home !== undefined
       ? {
           homeScenario: parseDesignCaptureHomeScenario(raw.homeScenario ?? raw.home ?? undefined),
+        }
+      : {}),
+    ...(raw.fightQuotaScenario !== undefined || raw.fightQuota !== undefined
+      ? {
+          fightQuotaScenario: parseDesignCaptureFightQuotaScenario(
+            raw.fightQuotaScenario ?? raw.fightQuota ?? undefined,
+          ),
         }
       : {}),
   });

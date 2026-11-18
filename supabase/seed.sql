@@ -29,13 +29,56 @@ on conflict (account_id) do update
   set botore_id = coalesce(public.profiles.botore_id, excluded.botore_id),
       emblem_id = coalesce(nullif(public.profiles.emblem_id, ''), excluded.emblem_id);
 
+-- D8 lanista NPC accounts for system fight opponents (A5 / A6 mockup names).
+-- Local / CI seed only — never applied by hosted db push.
+insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+values
+  ('00000000-0000-4000-8000-000000001201', 'npc-magistra@botore.npc', '', now(), '{"provider":"email","providers":["email"]}'::jsonb),
+  ('00000000-0000-4000-8000-000000001202', 'npc-doctore@botore.npc', '', now(), '{"provider":"email","providers":["email"]}'::jsonb),
+  ('00000000-0000-4000-8000-000000001203', 'npc-tito@botore.npc', '', now(), '{"provider":"email","providers":["email"]}'::jsonb)
+on conflict (id) do nothing;
+
+insert into public.accounts (id, is_npc)
+values
+  ('00000000-0000-4000-8000-000000001201', true),
+  ('00000000-0000-4000-8000-000000001202', true),
+  ('00000000-0000-4000-8000-000000001203', true)
+on conflict (id) do update
+  set is_npc = excluded.is_npc;
+
+insert into public.profiles (account_id, display_name, botore_id, emblem_id)
+values
+  ('00000000-0000-4000-8000-000000001201', 'Magistra Volta', 'npc-magistra-volta', 'emblem-coil'),
+  ('00000000-0000-4000-8000-000000001202', 'Doctore Ferro', 'npc-doctore-ferro', 'emblem-anvil'),
+  ('00000000-0000-4000-8000-000000001203', 'Tito Rivet', 'npc-tito-rivet', 'emblem-cog')
+on conflict (account_id) do update
+  set display_name = excluded.display_name,
+      botore_id = coalesce(public.profiles.botore_id, excluded.botore_id),
+      emblem_id = excluded.emblem_id;
+
 -- Characters -----------------------------------------------------------------
-insert into public.characters (character_id, account_id, display_name, is_opponent) values
-  ('player-hero', '00000000-0000-4000-8000-000000000001', 'Hero', false),
-  ('opp-sir-bot', null, 'Sir Bot', true),
-  ('opp-dex-bot', null, 'Dex Bot', true),
-  ('opp-hp-bot',  null, 'Tank Bot', true)
-on conflict do nothing;
+-- System opponents keep stable ids + A5 roster names; account_id stays NULL
+-- (opponents_unowned). Lanista Botore names link via opponent_lanistas (0033).
+insert into public.characters (
+    character_id, account_id, display_name, is_opponent, owner_is_npc
+) values
+  ('player-hero', '00000000-0000-4000-8000-000000000001', 'Hero', false, false),
+  ('opp-dex-bot', null, 'Can Hook', true, false),
+  ('opp-hp-bot',  null, 'Cobalt Brute', true, false),
+  ('opp-sir-bot', null, 'Slab Mick', true, false)
+on conflict (character_id) do update
+  set account_id = excluded.account_id,
+      display_name = excluded.display_name,
+      is_opponent = excluded.is_opponent,
+      owner_is_npc = excluded.owner_is_npc;
+
+insert into public.opponent_lanistas (character_id, lanista_account_id)
+values
+  ('opp-dex-bot', '00000000-0000-4000-8000-000000001201'),
+  ('opp-hp-bot',  '00000000-0000-4000-8000-000000001202'),
+  ('opp-sir-bot', '00000000-0000-4000-8000-000000001203')
+on conflict (character_id) do update
+  set lanista_account_id = excluded.lanista_account_id;
 
 -- Immutable build versions ----------------------------------------------------
 insert into public.character_build_versions (character_id, hp, strength, agility, speed, weapon_kind, weapon_power)
@@ -652,4 +695,94 @@ begin
       ('00000000-0000-4000-8000-000000001104', 'npc-bot-arc', null, 2, 'battle'),
       ('00000000-0000-4000-8000-000000001104', 'npc-bot-arc', null, 2, 'battle');
   end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- System opponent W–L for D8 cards (A6 mockup: Can Hook 19–2, Cobalt Brute
+-- 15–5, Slab Mick 13–6). Local / CI seed only. Sacrificial defenders rotate
+-- among ranking NPC bots so bot_fight_records derives real counts.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_seeded boolean;
+  v_i int;
+  v_battle uuid;
+  v_opp text;
+  v_account uuid;
+  v_wins int;
+  v_losses int;
+  v_defenders text[] := array[
+    'npc-bot-keel', 'npc-bot-helix', 'npc-bot-junk', 'npc-bot-current',
+    'npc-bot-zap', 'npc-bot-barnacle', 'npc-bot-spool', 'npc-bot-tangle',
+    'npc-bot-girder', 'npc-bot-flare', 'npc-bot-sprocket', 'npc-bot-shard'
+  ];
+  v_rec record;
+begin
+  select exists (
+    select 1 from public.battles where battle_id = 'b0000000-0000-4000-8000-000000000001'
+  ) into v_seeded;
+  if v_seeded then
+    return;
+  end if;
+
+  for v_rec in
+    select * from (values
+      ('opp-dex-bot', '00000000-0000-4000-8000-000000001201'::uuid, 19, 2, 0),
+      ('opp-hp-bot',  '00000000-0000-4000-8000-000000001202'::uuid, 15, 5, 100),
+      ('opp-sir-bot', '00000000-0000-4000-8000-000000001203'::uuid, 13, 6, 200)
+    ) as t(opp, account_id, wins, losses, id_base)
+  loop
+    v_opp := v_rec.opp;
+    v_account := v_rec.account_id;
+    v_wins := v_rec.wins;
+    v_losses := v_rec.losses;
+
+    for v_i in 1..v_wins loop
+      v_battle := (
+        'b0000000-0000-4000-8000-' || lpad((v_rec.id_base + v_i)::text, 12, '0')
+      )::uuid;
+      insert into public.battles (
+          battle_id, rules_version, seed, started_at, ended_at,
+          initiator_account_id, initiator_account_character,
+          winner_id, end_reason, utc_day
+      ) values (
+          v_battle, 'combat-v1', 'sys-opp-win-' || v_opp || '-' || v_i,
+          now() - ((v_rec.id_base + v_i) || ' hours')::interval,
+          now() - ((v_rec.id_base + v_i) || ' hours')::interval,
+          v_account, v_opp, v_opp, 'defeat',
+          (now() at time zone 'utc')::date
+      );
+      insert into public.battle_participants (
+          battle_id, character_id, side, hp_before, hp_after, weapon_kind, weapon_power
+      ) values
+        (v_battle, v_opp, 'attacker', 34, 20, 'sword', 3),
+        (v_battle, v_defenders[((v_i - 1) % array_length(v_defenders, 1)) + 1],
+         'defender', 30, 0, 'sword', 3);
+    end loop;
+
+    for v_i in 1..v_losses loop
+      v_battle := (
+        'b0000000-0000-4000-8000-' || lpad((v_rec.id_base + 50 + v_i)::text, 12, '0')
+      )::uuid;
+      insert into public.battles (
+          battle_id, rules_version, seed, started_at, ended_at,
+          initiator_account_id, initiator_account_character,
+          winner_id, end_reason, utc_day
+      ) values (
+          v_battle, 'combat-v1', 'sys-opp-loss-' || v_opp || '-' || v_i,
+          now() - ((v_rec.id_base + 50 + v_i) || ' hours')::interval,
+          now() - ((v_rec.id_base + 50 + v_i) || ' hours')::interval,
+          v_account, v_opp,
+          v_defenders[((v_i - 1) % array_length(v_defenders, 1)) + 1],
+          'defeat',
+          (now() at time zone 'utc')::date
+      );
+      insert into public.battle_participants (
+          battle_id, character_id, side, hp_before, hp_after, weapon_kind, weapon_power
+      ) values
+        (v_battle, v_opp, 'attacker', 34, 0, 'sword', 3),
+        (v_battle, v_defenders[((v_i - 1) % array_length(v_defenders, 1)) + 1],
+         'defender', 30, 18, 'sword', 3);
+    end loop;
+  end loop;
 end $$;
