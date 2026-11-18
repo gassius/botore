@@ -1,5 +1,5 @@
--- 0034: list_opponent_roster — Botore name + W–L for D8 Opponents cards
--- Prefix 0034: #84 owns 0032 fight quota; #88 owns 0033 A6 paints/weapons.
+-- 0033: list_opponent_roster — Botore name + W–L for D8 Opponents cards
+-- Prefix 0033: #84 owns 0032 fight quota; E7/#88 renames paints/weapons to 0034 (after this D8 roster RPC).
 --
 -- ClickUp: D8 Opponents (1amjtrezebu) · E3 (1amjtrezeba)
 -- Carlos yes: 2026-11-18 (supervisor GO on draft #84).

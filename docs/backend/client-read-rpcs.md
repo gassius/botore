@@ -12,7 +12,7 @@ C3 adapters call these names directly (`apps/game/src/supabase/clientReadRpcs.ts
 | RPC                             | Args                | Success body                                                                                                     |
 | ------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `get_owned_character()`         | none (`auth.uid()`) | `{ ok: true, characterId, displayName }`                                                                         |
-| `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName, botoreName, wins, losses }] }` (0034)                       |
+| `list_opponent_roster()`        | none                | `{ ok: true, opponents: [{ characterId, displayName, botoreName, wins, losses }] }` (0033)                       |
 | `get_fight_allowance_summary()` | none (`auth.uid()`) | E3: `{ ok, fightsRemaining, limit, scope, refillPolicy, nextRefillAt, utcDay, allowancesRemaining }` — see below |
 | `list_ranking()`                | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }`                                |
 | `list_bot_ranking()`            | none (`auth.uid()`) | `{ ok: true, tab: "bots", rows: [...] }` — see `docs/backend/ranking.md` (E2)                                    |
@@ -38,8 +38,8 @@ before merging the migration.
 
 ### D8 roster enrichment (`list_opponent_roster`)
 
-Migration `0034_list_opponent_roster_botore_record.sql` (**Carlos yes**
-2026-11-18 on draft #84). Each opponent row includes:
+Migration `0033_list_opponent_roster_botore_record.sql` (**Carlos yes**
+2026-11-18 on draft #84; E7/#88 takes **0034** next). Each opponent row includes:
 
 | Field         | Source                                                                |
 | ------------- | --------------------------------------------------------------------- |
