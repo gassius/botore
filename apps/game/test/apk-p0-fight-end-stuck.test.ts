@@ -147,16 +147,9 @@ describe('APK P0 — last-command dwell must not tear down the fight loop', () =
   });
 });
 
-describe('APK P0 — player + overlay wiring guards', () => {
-  it('CanonicalReplayPlayer keeps the loop alive through final dwell before onFinished', () => {
-    const player = readSource('src/replay/CanonicalReplayPlayer.tsx');
-    expect(player).toContain('playbackUiAfterCommandTick');
-    expect(player).toContain('shouldContinuePlaybackLoopAfterTick');
-    // Must not emit plain after-advance on the tick path (that clears playing at end).
-    expect(player).not.toMatch(
-      /emitPlayback\(\s*playbackUiAfterAdvance\(playbackUiRef\.current,\s*pb\.position\)\s*\)/,
-    );
-  });
+describe('APK P0 — overlay wiring guards', () => {
+  // Player loop regression is covered by apk-p0-canonical-replay-player-finish.test.tsx
+  // (real CanonicalReplayPlayer + fake rAF). Source-regex emitPlayback guards dropped (PRR M1).
 
   it('Result overlay content is box-none; action band stays above the arena for taps', () => {
     const overlay = readSource('src/result-overlay/ResultOverlay.tsx');
