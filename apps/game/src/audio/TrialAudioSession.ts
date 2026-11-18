@@ -490,23 +490,26 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     }
     const steps = Math.max(4, Math.round(ms / 50));
     let i = 0;
-    const timer = setInterval(() => {
-      i += 1;
-      const t = i / steps;
-      const v = from + (to - from) * t;
-      safeRun(
-        'setVolume',
-        () => setVol(v),
-        () => {
-          stats.failures += 1;
-        },
-      );
-      if (i >= steps) {
-        clearInterval(timer);
-        fadeTimers.delete(timer);
-        onDone?.();
-      }
-    }, Math.max(16, Math.round(ms / steps)));
+    const timer = setInterval(
+      () => {
+        i += 1;
+        const t = i / steps;
+        const v = from + (to - from) * t;
+        safeRun(
+          'setVolume',
+          () => setVol(v),
+          () => {
+            stats.failures += 1;
+          },
+        );
+        if (i >= steps) {
+          clearInterval(timer);
+          fadeTimers.delete(timer);
+          onDone?.();
+        }
+      },
+      Math.max(16, Math.round(ms / steps)),
+    );
     fadeTimers.add(timer);
   };
 

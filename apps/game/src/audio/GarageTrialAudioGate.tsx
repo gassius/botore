@@ -6,9 +6,7 @@ import React from 'react';
 import { usePlayerSettings } from '../settings';
 import { TrialAudioProvider } from './TrialAudioProvider';
 
-export function GarageTrialAudioGate(props: {
-  children: React.ReactNode;
-}): React.ReactElement {
+export function GarageTrialAudioGate(props: { children: React.ReactNode }): React.ReactElement {
   const settings = usePlayerSettings();
   return (
     <TrialAudioProvider

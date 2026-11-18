@@ -27,4 +27,3 @@ export const TRIAL_AUDIO_METRO_SOURCES: Readonly<Record<TrialAudioClipId, AudioS
   uiError: require('../../assets/trial-audio-v004/clips/ui-error.m4a') as AudioSource,
   uiToggle: require('../../assets/trial-audio-v004/clips/ui-toggle.m4a') as AudioSource,
 };
-
