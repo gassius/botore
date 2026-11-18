@@ -14,6 +14,9 @@ export type A6OpponentBake = {
 export const A6_OPPONENT_BAKES: Readonly<Record<A6OpponentNpcId, A6OpponentBake>> = {
   'rivet-nan': { paint: 'oxide', weapon: 'sword' },
   'boiler-joe': { paint: 'petrol', weapon: 'hammer' },
+  // Primer body; kit spear is the boat-hook (tape label "Hook"). Panel PNG is
+  // the shared Opponents/ToTT art source — shield off-hand is not a separate
+  // catalogue slot on this bake yet.
   'can-hook': { paint: 'primer', weapon: 'spear' },
   'slab-mick': { paint: 'cinder', weapon: 'mace' },
   'ink-pip': { paint: 'ink', weapon: 'dagger' },

@@ -36,7 +36,7 @@ import { useFightSession } from '../FightSessionContext';
 import { resolveA6OpponentPanel } from '../opponents/a6OpponentPanelAssets';
 import { FightsRemainingPanel } from '../quota/FightsRemainingPanel';
 import type { FightQuotaSummary } from '../quota/fightQuotaTypes';
-import { buildTapeRows, designCaptureTapeStats } from '../taleOfTheTape';
+import { buildTapeRows, designCaptureTapeStats, formatTapeRecord } from '../taleOfTheTape';
 
 function capturePoseMode(): DesignCapturePoseCompare | null {
   if (!isDesignCaptureEnabled()) return null;
@@ -151,24 +151,35 @@ export function ConfirmFightScreen(props: {
 
   const tapeRows = useMemo(() => {
     if (!confirmed || !selected || !opponentPresentation) return [];
-    // Design-capture stills share Result overlay fixture W–L / streak / level
-    // (same pack as FightResultSlot) so ToTT is reviewable. Live path still
-    // hides ranking rows until OpponentCandidate/join lands — never MOCK HP.
+    // YOU: design-capture stills share Result overlay fixture W–L / streak / level.
+    // THEM Record must match the Opponents card — same candidate wins/losses
+    // (never the defeat Result fixture 11W–7L). Streak/level stay capture-only
+    // until ranking join lands. Never MOCK HP.
     const captureYou = isDesignCaptureEnabled() ? designCaptureTapeStats('victory') : null;
     const captureThem = isDesignCaptureEnabled() ? designCaptureTapeStats('defeat') : null;
+    const hasRosterRecord =
+      typeof selected.wins === 'number' &&
+      Number.isFinite(selected.wins) &&
+      typeof selected.losses === 'number' &&
+      Number.isFinite(selected.losses);
+    const opponentRecord = hasRosterRecord
+      ? formatTapeRecord(selected.wins!, selected.losses!)
+      : null;
     return buildTapeRows({
       playerPaint: confirmed.paint,
       playerWeapon: confirmed.weapon,
       opponentPaint: opponentPresentation.paintId,
       opponentWeapon: opponentPresentation.weaponId,
       playerRecord: captureYou?.record ?? null,
-      opponentRecord: captureThem?.record ?? null,
+      opponentRecord,
       playerWinStreak: captureYou?.winStreak ?? null,
       opponentWinStreak: captureThem?.winStreak ?? null,
       playerLevel: captureYou?.level ?? null,
       opponentLevel: captureThem?.level ?? null,
       weaponLabel: weaponDisplayLabel,
       paintLabel: paintDisplayLabel,
+      opponentWeaponLabel: opponentPresentation.weaponLabel,
+      opponentPaintLabel: opponentPresentation.paintLabel,
     });
   }, [confirmed, selected, opponentPresentation]);
 

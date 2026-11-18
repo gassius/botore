@@ -2,10 +2,16 @@
  * Shared Opponents card + Tale of the Tape presentation for A6 roster NPCs.
  * One resolver — both screens use the same paint/weapon and art source.
  * Known A6 NPCs (by character id or display name) use the authored bake, not a
- * separate combat-seed loadout, so Can Hook is primer+spear panel art on both.
+ * separate combat-seed loadout. Can Hook: primer + Hook (kit spear / shield
+ * off-hand read) so the WEAPON tape row matches the card identity.
  */
 
-import { paintCatalogueId, weaponCatalogueId } from '../garage/loadout/proofCatalogue';
+import {
+  paintCatalogueId,
+  paintDisplayLabel,
+  weaponCatalogueId,
+  weaponDisplayLabel,
+} from '../garage/loadout/proofCatalogue';
 import { A6_OPPONENT_BAKES, resolveOpponentNpcId, type A6OpponentBake } from './a6OpponentMatch';
 import type { A6OpponentNpcId, A6PaintTileId, A6WeaponTileId } from './a6TilesIds';
 
@@ -24,8 +30,18 @@ export type OpponentPresentation = {
   readonly paintId: string;
   /** Catalogue weapon id for assembler / tape / panel bake. */
   readonly weaponId: string;
+  /** Player-facing WEAPON tape / card label (Can Hook → Hook, not Spear). */
+  readonly weaponLabel: string;
+  /** Player-facing PAINT tape label. */
+  readonly paintLabel: string;
   /** True when both screens should render the authored A6 panel PNG. */
   readonly usePanelArt: boolean;
+};
+
+/** Player-facing weapon name for an A6 NPC bake (overrides catalogue when needed). */
+const A6_NPC_WEAPON_LABEL: Partial<Readonly<Record<A6OpponentNpcId, string>>> = {
+  // Boat-hook identity — kit/combat maps spear; tape must not say Spear.
+  'can-hook': 'Hook',
 };
 
 /** Catalogue ids for an A6 bake (cobalt visual → paint-navy). */
@@ -39,17 +55,27 @@ export function a6BakeCatalogueLoadout(bake: A6OpponentBake): {
   };
 }
 
+function labelsFor(paintId: string, weaponId: string, npcId: A6OpponentNpcId | null) {
+  return {
+    paintLabel: paintDisplayLabel(paintId),
+    weaponLabel: (npcId && A6_NPC_WEAPON_LABEL[npcId]) || weaponDisplayLabel(weaponId),
+  };
+}
+
 /** Shared presentation for Opponents card and Confirm Fight / ToTT face-off. */
 export function resolveOpponentPresentation(
   input: OpponentPresentationInput,
 ): OpponentPresentation {
   const npcId = resolveOpponentNpcId(input.characterId) ?? resolveOpponentNpcId(input.displayName);
   if (!npcId) {
+    const paintId = input.paintId;
+    const weaponId = input.weaponId;
     return {
       npcId: null,
-      paintId: input.paintId,
-      weaponId: input.weaponId,
+      paintId,
+      weaponId,
       usePanelArt: false,
+      ...labelsFor(paintId, weaponId, null),
     };
   }
   const bake = A6_OPPONENT_BAKES[npcId];
@@ -59,6 +85,7 @@ export function resolveOpponentPresentation(
     paintId,
     weaponId,
     usePanelArt: true,
+    ...labelsFor(paintId, weaponId, npcId),
   };
 }
 

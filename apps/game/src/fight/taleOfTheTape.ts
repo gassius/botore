@@ -58,6 +58,9 @@ export function buildTapeRows(input: {
   opponentLevel?: string | null;
   weaponLabel: (id: string) => string;
   paintLabel: (id: string) => string;
+  /** Shared-resolver THEM overrides (e.g. Can Hook → Hook). */
+  opponentWeaponLabel?: string | null;
+  opponentPaintLabel?: string | null;
 }): readonly TapeRow[] {
   const rows: TapeRow[] = [];
   if (input.playerRecord || input.opponentRecord) {
@@ -84,12 +87,12 @@ export function buildTapeRows(input: {
   rows.push({
     label: 'Weapon',
     you: input.weaponLabel(input.playerWeapon),
-    them: input.weaponLabel(input.opponentWeapon),
+    them: input.opponentWeaponLabel ?? input.weaponLabel(input.opponentWeapon),
   });
   rows.push({
     label: 'Paint',
     you: input.paintLabel(input.playerPaint),
-    them: input.paintLabel(input.opponentPaint),
+    them: input.opponentPaintLabel ?? input.paintLabel(input.opponentPaint),
   });
   return rows;
 }
