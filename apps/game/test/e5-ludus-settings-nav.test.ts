@@ -9,7 +9,7 @@ function readSource(rel: string): string {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-describe('E5 Ludus home nav + Sign out under More', () => {
+describe('E5 Ludus home nav + Sign out under More (D5 mockup IA)', () => {
   it('single-sources home title as Ludus (D5) for title and Back-to label', () => {
     expect(STABLE_HOME_TITLE).toBe('Ludus');
     expect(BACK_TO_STABLE_LABEL).toBe('Back to Ludus');
@@ -26,9 +26,12 @@ describe('E5 Ludus home nav + Sign out under More', () => {
     expect(band).toContain('BACK_TO_STABLE_LABEL');
     expect(band).not.toContain('"Back to Stable"');
     expect(band).not.toContain("'Back to Stable'");
+
+    const routes = readSource('src/first-run/routes.ts');
+    expect(routes).toContain('Stable: STABLE_HOME_TITLE');
   });
 
-  it('main footer: Settings above More last; Sign out only under More; Create Bot slot reserved', () => {
+  it('main footer: Customise / Find opponent / Settings|More; Sign out only in More sheet', () => {
     const stable = readSource('src/garage/screens/StableScreen.tsx');
 
     expect(stable).toContain('testID="stable-settings"');
@@ -36,32 +39,33 @@ describe('E5 Ludus home nav + Sign out under More', () => {
     expect(stable).toContain('testID="stable-sign-out"');
     expect(stable).toContain('testID="stable-privacy-policy"');
     expect(stable).toContain('testID="stable-delete-account"');
-    expect(stable).toContain('onCreateBot');
-    expect(stable).toContain('testID="stable-create-bot"');
+    expect(stable).toContain('testID="stable-more-sheet"');
+    expect(stable).toContain('styles.row2');
 
-    // Settings is a main-footer control (outside moreOpen), not inside the More sheet.
-    const moreOpenBlock = stable.slice(
-      stable.indexOf('{moreOpen ? ('),
-      stable.indexOf(') : (', stable.indexOf('{moreOpen ? (')),
+    // Create Bot is carousel slot (E4/D5), not a main footer button.
+    expect(stable).not.toContain('testID="stable-create-bot"');
+    expect(stable).toMatch(/Create Bot lives in the bot carousel/);
+
+    // Sign out / Privacy / Delete live in the More sheet, not the main footer stack.
+    const footerBlock = stable.slice(
+      stable.indexOf('const footer = ('),
+      stable.indexOf('return (', stable.indexOf('const footer = (')),
     );
-    expect(moreOpenBlock).toContain('stable-sign-out');
-    expect(moreOpenBlock).toContain('stable-privacy-policy');
-    expect(moreOpenBlock).toContain('stable-delete-account');
-    expect(moreOpenBlock).not.toContain('stable-settings');
+    expect(footerBlock).toContain('stable-settings');
+    expect(footerBlock).toContain('stable-more');
+    expect(footerBlock).not.toContain('stable-sign-out');
+    expect(footerBlock).not.toContain('stable-privacy-policy');
 
-    const mainBlock = stable.slice(stable.indexOf(') : (', stable.indexOf('{moreOpen ? (')));
-    expect(mainBlock).toContain('stable-settings');
-    expect(mainBlock).toContain('stable-more');
-    expect(mainBlock).not.toContain('stable-sign-out');
+    const sheetBlock = stable.slice(stable.indexOf('stable-more-sheet'));
+    expect(sheetBlock).toContain('stable-sign-out');
+    expect(sheetBlock).toContain('stable-privacy-policy');
+    expect(sheetBlock).toContain('stable-delete-account');
+    expect(sheetBlock).toContain('MORE_SIGN_OUT');
 
-    // More is last among the primary main controls (settings precedes more).
-    const settingsIdx = mainBlock.indexOf('stable-settings');
-    const moreIdx = mainBlock.indexOf('stable-more');
-    const createIdx = mainBlock.indexOf('stable-create-bot');
+    const settingsIdx = footerBlock.indexOf('stable-settings');
+    const moreIdx = footerBlock.indexOf('stable-more');
     expect(settingsIdx).toBeGreaterThan(-1);
     expect(moreIdx).toBeGreaterThan(settingsIdx);
-    expect(createIdx).toBeGreaterThan(-1);
-    expect(createIdx).toBeLessThan(settingsIdx);
   });
 
   it('removes inert arm/paint tiles from the home hero', () => {
@@ -70,5 +74,11 @@ describe('E5 Ludus home nav + Sign out under More', () => {
     expect(stable).not.toContain('stable-weapon');
     expect(stable).not.toContain('paintChip');
     expect(stable).not.toContain('Paint:');
+  });
+
+  it('wires Ranking into More from StableSlot', () => {
+    const slot = readSource('src/first-run/slots/StableSlot.tsx');
+    expect(slot).toContain('onRanking');
+    expect(slot).toContain("goTo('Ranking')");
   });
 });
