@@ -96,7 +96,6 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
   }, [autoLoad, controller]);
 
   const loadBusy = session.phase === 'loading' || session.phase === 'idle' || session.refreshing;
-  const showingDev = session.rows.some((row) => row.source === 'dev-fixture');
 
   const footer = onBack ? (
     <PrimaryButton label="Back to stable" onPress={onBack} testID="ranking-back" />
@@ -109,7 +108,6 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
       {...(footer ? { footer } : {})}
     >
       <ScreenHeader title="Ranking" {...(onBack ? { onBack } : {})} testID="ranking-header" />
-      {showingDev ? <DevFixtureBanner /> : null}
       <RankingBody
         session={session}
         onRetry={() => void controller.load()}
@@ -122,21 +120,6 @@ export const RankingScreen: React.FC<RankingScreenProps> = ({
     </ScreenChrome>
   );
 };
-
-function DevFixtureBanner(): React.ReactElement {
-  return (
-    <View
-      accessibilityRole="text"
-      accessibilityLabel="Development ranking fixtures, not live players"
-      style={styles.devBanner}
-      testID="ranking-dev-banner"
-    >
-      <Text style={styles.devBannerText} allowFontScaling>
-        DEV FIXTURES — NOT LIVE PLAYERS
-      </Text>
-    </View>
-  );
-}
 
 type RankingBodyProps = {
   session: RankingSessionState;
@@ -304,7 +287,6 @@ function RankingList({ rows, refreshing }: RankingListProps): React.ReactElement
 }
 
 function RankingRowView({ row }: { row: RankingRow }): React.ReactElement {
-  const sourceLabel = row.source === 'live' ? 'Live' : 'DEV fixture';
   return (
     <GaragePanel
       rivets={false}
@@ -329,9 +311,11 @@ function RankingRowView({ row }: { row: RankingRow }): React.ReactElement {
             style={styles.nameplate}
             testID={`ranking-name-${row.botId}`}
           />
-          <Text style={styles.sourceLabel} allowFontScaling>
-            {typeof row.totalXp === 'number' ? `${sourceLabel} · ${row.totalXp} XP` : sourceLabel}
-          </Text>
+          {typeof row.totalXp === 'number' ? (
+            <Text style={styles.sourceLabel} allowFontScaling>
+              {row.totalXp} XP
+            </Text>
+          ) : null}
         </View>
       </View>
     </GaragePanel>
@@ -339,19 +323,6 @@ function RankingRowView({ row }: { row: RankingRow }): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  devBanner: {
-    backgroundColor: garageTag.graphite,
-    borderRadius: garageTag.cutCorner,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  devBannerText: {
-    color: garageTag.mustard,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    textAlign: 'center',
-  },
   centerState: {
     flexGrow: 1,
     alignItems: 'center',

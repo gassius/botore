@@ -35,10 +35,9 @@ import { EventFxLayer } from '../arena/EventFxLayer';
 import { RepairYardArena } from '../arena/RepairYardArena';
 import type { ArenaFxFamily } from '../arena/environmentPin';
 import { garageTag } from '../garage-tag';
-import { playerFacingDisplayName } from '../identity/platformPlayerId';
 import { compileAnimationQueue, commandDuration, PlaybackController } from '../replay-playback';
 import type { ConfirmedFightResult } from './confirmedResult';
-import { formatOutcomeLine, resolvePlaybackMedia } from './confirmedResult';
+import { fighterDisplayName, formatOutcomeLine, resolvePlaybackMedia } from './confirmedResult';
 import { assemblerLoadoutFromBuild } from './fighterLoadout';
 import { formatArenaReadyLog, fxFamilyFromAnimationCommand } from './fxCaptureHold';
 import {
@@ -51,7 +50,6 @@ import {
   initialPlaybackUi,
   pauseState,
   playbackUiAfterAdvance,
-  progressFromPosition,
   restartState,
   resumeState,
   togglePlayState,
@@ -488,19 +486,6 @@ export const CanonicalReplayPlayer = forwardRef<
 
   return (
     <View testID={testID} style={styles.root}>
-      <View style={styles.metaRow} onLayout={() => undefined} testID={`${testID}-meta`}>
-        <Text style={styles.metaBadge} testID={`${testID}-source`}>
-          {result.label === 'DEV' ? 'DEV recorded fixture' : 'Server confirmed'}
-        </Text>
-        {muted || reducedMotion ? (
-          <Text style={styles.metaMuted} testID={`${testID}-media`}>
-            {[muted ? 'muted' : null, reducedMotion ? 'reduced-motion' : null]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
-        ) : null}
-      </View>
-
       {/* Flexible stage viewport — measured after chrome reservation via flex. */}
       <View style={styles.stageSlot} onLayout={onStageLayout} testID={`${testID}-stage-slot`}>
         <View style={[styles.stageFrame, { width: fit.width, height: fit.height }]}>
@@ -568,10 +553,10 @@ export const CanonicalReplayPlayer = forwardRef<
             {presentation.banner ? (
               <Text style={styles.banner} testID={`${testID}-banner`}>
                 {presentation.banner === nearFighter.characterId
-                  ? playerFacingDisplayName(nearFighter.displayName)
+                  ? fighterDisplayName(nearFighter.characterId, result.replay.fighters)
                   : presentation.banner === farFighter.characterId
-                    ? playerFacingDisplayName(farFighter.displayName)
-                    : playerFacingDisplayName(presentation.banner)}
+                    ? fighterDisplayName(farFighter.characterId, result.replay.fighters)
+                    : fighterDisplayName(presentation.banner, result.replay.fighters)}
               </Text>
             ) : null}
           </RepairYardArena>
@@ -580,13 +565,17 @@ export const CanonicalReplayPlayer = forwardRef<
 
       <View style={styles.hpRow} testID={`${testID}-hp`}>
         <View style={styles.hpBlock}>
-          <Text style={styles.hpLabel}>{playerFacingDisplayName(nearFighter.displayName)}</Text>
+          <Text style={styles.hpLabel}>
+            {fighterDisplayName(nearFighter.characterId, result.replay.fighters)}
+          </Text>
           <View style={styles.hpTrack}>
             <View style={[styles.hpFillNear, { width: `${presentation.hp.near * 100}%` }]} />
           </View>
         </View>
         <View style={styles.hpBlock}>
-          <Text style={styles.hpLabel}>{playerFacingDisplayName(farFighter.displayName)}</Text>
+          <Text style={styles.hpLabel}>
+            {fighterDisplayName(farFighter.characterId, result.replay.fighters)}
+          </Text>
           <View style={styles.hpTrack}>
             <View style={[styles.hpFillFar, { width: `${presentation.hp.far * 100}%` }]} />
           </View>
@@ -635,10 +624,8 @@ export const CanonicalReplayPlayer = forwardRef<
 
       {presentation.showResult ? (
         <View style={styles.resultStrip} testID={`${testID}-inline-result`}>
-          <Text style={styles.resultText}>{formatOutcomeLine(result.outcome)}</Text>
-          <Text style={styles.metaMuted}>
-            checksum {result.replayChecksum.slice(0, 12)}… · {queue.length} cmds ·{' '}
-            {Math.round(progressFromPosition(playbackUi.commandIndex, queue.length) * 100)}%
+          <Text style={styles.resultText}>
+            {formatOutcomeLine(result.outcome, result.replay.fighters)}
           </Text>
         </View>
       ) : null}
@@ -659,18 +646,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingBottom: 8,
     minHeight: 0,
-  },
-  metaRow: {
-    width: '100%',
-    paddingVertical: 6,
-    gap: 2,
-    flexShrink: 0,
-  },
-  metaBadge: {
-    color: garageTag.mustard,
-    fontWeight: '800',
-    fontSize: 12,
-    letterSpacing: 0.3,
   },
   metaMuted: {
     color: garageTag.steel,

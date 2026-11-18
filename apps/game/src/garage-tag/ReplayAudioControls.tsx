@@ -12,13 +12,13 @@ export type ReplayAudioControlsProps = {
   onTogglePlay: () => void;
   onToggleMute: () => void;
   onReplay?: () => void;
-  reducedMotion?: boolean;
   testID?: string;
 };
 
 /**
  * Recorded-replay controls only — never attack/skill actions.
  * Mute exposes actual state via a11y label + selected glyph.
+ * Reduced-motion preference lives in Settings only (C17 design).
  */
 export function ReplayAudioControls({
   playing,
@@ -27,7 +27,6 @@ export function ReplayAudioControls({
   onTogglePlay,
   onToggleMute,
   onReplay,
-  reducedMotion = false,
   testID,
 }: ReplayAudioControlsProps): React.ReactElement {
   const clamped = Math.max(0, Math.min(1, progress));
@@ -70,11 +69,6 @@ export function ReplayAudioControls({
           />
         ) : null}
       </View>
-      {reducedMotion ? (
-        <Text style={styles.motionNote} allowFontScaling>
-          Reduced motion on — outcomes preserved
-        </Text>
-      ) : null}
     </View>
   );
 }
@@ -129,10 +123,5 @@ const styles = StyleSheet.create({
     borderColor: garageTag.graphite,
     top: '50%',
     marginTop: -10,
-  },
-  motionNote: {
-    fontSize: 12,
-    color: garageTag.steel,
-    fontWeight: '600',
   },
 });

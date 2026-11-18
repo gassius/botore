@@ -4,6 +4,7 @@ export {
   confirmedResultFromFightResponse,
   confirmedResultFromFightSuccess,
   ConfirmedResultIntegrityError,
+  fighterDisplayName,
   formatOutcomeLine,
   resolvePlaybackMedia,
 } from './confirmedResult';

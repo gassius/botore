@@ -29,6 +29,7 @@ import {
   setPendingLoadout,
   type LoadoutPreviewState,
 } from './loadout/loadoutState';
+import { loadoutSavePlayerMessage } from './loadout/loadoutSaveErrors';
 import { withUpdatedPaint, withUpdatedWeapon } from './loadout/proofCatalogue';
 import { ensureRuntimePacksBestEffort } from '../atlas/atlasPackRuntime';
 
@@ -140,10 +141,8 @@ export function GarageSessionProvider(props: {
           accountId: current.userId,
           characterId: owned.character.characterId,
           // C16: never hold platform player ids in garage UI state.
-          displayName: playerFacingDisplayName(
-            owned.character.displayName,
-            owned.character.characterId,
-          ),
+          // C17: never fall back to character UUID / player-hero as a label.
+          displayName: playerFacingDisplayName(owned.character.displayName),
           confirmedLoadout: fetched.snapshot.loadout,
           confirmedVersionId: fetched.snapshot.loadoutVersionId,
           atlasVersion: fetched.snapshot.atlasVersion,
@@ -168,10 +167,7 @@ export function GarageSessionProvider(props: {
         markHydrationUnavailable(prev, {
           accountId: current.userId,
           characterId: owned.character.characterId,
-          displayName: playerFacingDisplayName(
-            owned.character.displayName,
-            owned.character.characterId,
-          ),
+          displayName: playerFacingDisplayName(owned.character.displayName),
           message: fetched.message,
           code: fetched.code,
         }),
@@ -412,17 +408,39 @@ export function GarageSessionProvider(props: {
           setSession(null);
           // F8: keep last confirmed; surface auth-expired so Customise is not silent.
           setLoadout((s) =>
-            failSave(s, 'Session expired. Sign in again to continue.', 'unauthenticated'),
+            failSave(
+              s,
+              loadoutSavePlayerMessage({
+                code: 'unauthenticated',
+                message: 'Session expired. Sign in again to save.',
+              }),
+              'unauthenticated',
+            ),
           );
+          return false;
+        }
+        if (loadout.saving) {
           return false;
         }
         if (
           loadout.hydration !== 'ready' ||
           !loadout.characterId ||
           !loadout.pendingLoadout ||
-          !loadout.dirty ||
-          loadout.saving
+          !loadout.dirty
         ) {
+          // Never silent when the player asked to save but state is blocked.
+          if (loadout.dirty) {
+            setLoadout((s) =>
+              failSave(
+                s,
+                loadoutSavePlayerMessage({
+                  code: 'save_blocked',
+                  message: 'Could not save changes. Server-confirmed loadout is unavailable.',
+                }),
+                'save_blocked',
+              ),
+            );
+          }
           return false;
         }
         const pending = loadout.pendingLoadout;
@@ -436,6 +454,7 @@ export function GarageSessionProvider(props: {
           accessToken: current.accessToken,
         });
         if (!result.ok) {
+          // Adapter already mapped to player-facing copy — pass through once.
           setLoadout((s) => failSave(s, result.message, result.code));
           return false;
         }

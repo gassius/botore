@@ -158,7 +158,6 @@ export function ReplaySlot(): React.ReactElement {
         playing={playback.playing}
         muted={muted}
         progress={playback.progress}
-        reducedMotion={reducedMotion}
         onTogglePlay={() => {
           playerRef.current?.playUiTap();
           playerRef.current?.togglePlay();

@@ -32,7 +32,7 @@ export const FightResultSlotScreen: React.FC<FightResultSlotScreenProps> = ({
       <View style={styles.root} testID="fight-result-slot-screen-blocked">
         <StatusErrorBanner
           title="Backend result required"
-          detail="XP and allowances come from server-confirmed combat-v1 only. Playable builds do not invent sample progression."
+          detail="XP and allowances come from a confirmed fight only. Playable builds do not invent sample progression."
           testID="fight-result-slot-misconfigured"
         />
       </View>

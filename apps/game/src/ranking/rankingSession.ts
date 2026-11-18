@@ -91,7 +91,6 @@ export async function loadRankingFromPort(port: RankingReadPort): Promise<Rankin
 /** Display helper: rows stay in port order; ownership cue is label-based. */
 export function rankingRowAccessibilityLabel(row: RankingRow): string {
   const ownership = row.isCurrentBot ? ', your bot' : '';
-  const source = row.source === 'dev-fixture' ? ', development fixture' : '';
   const name = playerFacingDisplayName(row.displayName);
-  return `Rank ${row.rank}, ${name}${ownership}${source}`;
+  return `Rank ${row.rank}, ${name}${ownership}`;
 }

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   PLAYER_FACING_NAME_FALLBACK,
+  looksLikeInternalCharacterId,
   looksLikePlatformPlayerId,
   playerFacingDisplayName,
 } from '../src/identity/platformPlayerId';
@@ -30,15 +31,10 @@ const PLATFORM_IDS = [
   'platformId',
 ] as const;
 
-const SAFE_NAMES = [
-  'Pilot',
-  'Hero',
-  'Sir Bot',
-  'DEV · BOLT',
-  'player-hero',
-  'opp-sir-bot',
-  'Deleted',
-] as const;
+const SAFE_NAMES = ['Pilot', 'Hero', 'Sir Bot', 'DEV · BOLT', 'Deleted'] as const;
+
+/** C17: seeded character ids are no longer player-facing labels. */
+const RAW_CHARACTER_IDS = ['player-hero', 'opp-sir-bot', 'opp-dex-bot'] as const;
 
 /** Product surfaces that must never render or bind platform ids. */
 const PRODUCT_UI_SOURCES = [
@@ -66,14 +62,40 @@ describe('C16 platform player id UI guards', () => {
     }
   });
 
-  it('keeps display names and botore character ids', () => {
+  it('keeps human display names and redacts raw character ids', () => {
     for (const name of SAFE_NAMES) {
       expect(looksLikePlatformPlayerId(name), name).toBe(false);
       expect(playerFacingDisplayName(name)).toBe(name);
     }
+    for (const id of RAW_CHARACTER_IDS) {
+      expect(playerFacingDisplayName(id)).toBe(PLAYER_FACING_NAME_FALLBACK);
+    }
     expect(playerFacingDisplayName(null)).toBe(PLAYER_FACING_NAME_FALLBACK);
     expect(playerFacingDisplayName('   ')).toBe(PLAYER_FACING_NAME_FALLBACK);
-    expect(playerFacingDisplayName('T:hero', 'player-hero')).toBe('player-hero');
+    // Platform id + raw character-id fallback → Pilot (never player-hero).
+    expect(playerFacingDisplayName('T:hero', 'player-hero')).toBe(PLAYER_FACING_NAME_FALLBACK);
+    expect(playerFacingDisplayName('T:hero', 'Hero')).toBe('Hero');
+  });
+
+  it('rejects embedded UUID (incl. nil) and long hex production shapes', () => {
+    const hex32 = 'a'.repeat(32);
+    const uuidShapes = [
+      'Bot 550e8400-e29b-41d4-a716-446655440000',
+      '00000000-0000-0000-0000-000000000000',
+    ] as const;
+    for (const shape of uuidShapes) {
+      expect(looksLikePlatformPlayerId(shape), shape).toBe(true);
+      expect(playerFacingDisplayName(shape), shape).toBe(PLAYER_FACING_NAME_FALLBACK);
+    }
+    const hexShapes = [
+      `botore-player-${hex32}`,
+      `player-${hex32}`,
+      `token ${'b'.repeat(24)}`,
+    ] as const;
+    for (const shape of hexShapes) {
+      expect(looksLikeInternalCharacterId(shape), shape).toBe(true);
+      expect(playerFacingDisplayName(shape), shape).toBe(PLAYER_FACING_NAME_FALLBACK);
+    }
   });
 
   it('redacts platform ids from ranking accessibility labels and fixture rows', async () => {
@@ -157,6 +179,6 @@ describe('C16 platform player id UI guards', () => {
     expect(player).not.toMatch(/env \{media\.environmentVersion\}/);
     expect(player).not.toMatch(/nearLoadout\.paint/);
     expect(player).not.toContain('environment-v001');
-    expect(player).toContain('playerFacingDisplayName(nearFighter.displayName)');
+    expect(player).toContain('fighterDisplayName(nearFighter.characterId');
   });
 });

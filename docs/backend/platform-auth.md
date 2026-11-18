@@ -65,7 +65,9 @@ weapon-sword), profile, and today’s fight allowances. The RPC is idempotent.
 (Retry Load / existing sessions). Starter loadout is inserted **directly** into
 `bot_loadout_versions` and does **not** require atlas v1 to be published or
 uploaded — Stable paints via Metro workshop-frame-v002. Authenticated
-Customise `save_bot_loadout` still needs a published atlas version later.
+Customise `save_bot_loadout` may re-pin that current atlas while changing
+paint/weapon even if Storage publish is still pending (E1 / migration
+`0028`); pinning a _different_ unpublished atlas still fails.
 
 Concurrent mint harden: Edge retries `verifyOtp` once with a fresh
 `generateLink` when the first token is consumed by a raced sibling call; the

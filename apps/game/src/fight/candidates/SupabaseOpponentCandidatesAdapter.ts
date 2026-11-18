@@ -153,7 +153,8 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         if (!characterId) continue;
         byId.set(characterId, {
           characterId,
-          displayName: playerFacingDisplayName(characterId, characterId),
+          // C17: never seed labels from character ids (UUID / player-hero).
+          displayName: playerFacingDisplayName(null),
           loadout: normalizeGarageLoadout(row.loadout),
           loadoutVersionId:
             typeof row.loadout_version_id === 'string' ? row.loadout_version_id : null,
@@ -170,11 +171,11 @@ export class SupabaseOpponentCandidatesAdapter implements OpponentCandidatesPort
         const rawName =
           typeof c.displayName === 'string' && c.displayName.trim().length > 0
             ? c.displayName.trim()
-            : id;
+            : null;
         candidates.push({
           ...withLoadout,
-          // C16: platform ids never become opponent labels; fall back to botore id.
-          displayName: playerFacingDisplayName(rawName, id),
+          // C16/C17: platform + raw character ids never become opponent labels.
+          displayName: playerFacingDisplayName(rawName),
         });
       }
 

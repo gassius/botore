@@ -7,6 +7,7 @@ import {
 } from '../../supabase/clientReadRpcs';
 import type { SupabasePublicConfig } from '../auth/supabasePublicConfig';
 import type { LoadoutSavePort } from './LoadoutSavePort';
+import { loadoutSavePlayerMessage } from './loadoutSaveErrors';
 import type {
   FetchCurrentLoadoutResult,
   OwnedCharacterResult,
@@ -80,9 +81,9 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
       const rawName =
         typeof body.displayName === 'string' && body.displayName.trim().length > 0
           ? body.displayName.trim()
-          : characterId;
-      // C16: prefer botore character id over any platform-shaped label.
-      const displayName = playerFacingDisplayName(rawName, characterId);
+          : null;
+      // C16/C17: never fall back to character UUID / player-hero as a label.
+      const displayName = playerFacingDisplayName(rawName);
       return {
         ok: true,
         character: { characterId, displayName },
@@ -169,17 +170,18 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as RpcErrorBody;
+        const code = resolveTransportFailureCode({
+          code: err.code ?? `http_${res.status}`,
+          message: err.message ?? err.details,
+          httpStatus: res.status,
+        });
         return {
           ok: false,
-          code: resolveTransportFailureCode({
-            code: err.code ?? `http_${res.status}`,
+          code,
+          message: loadoutSavePlayerMessage({
+            code,
             message: err.message ?? err.details,
-            httpStatus: res.status,
           }),
-          message:
-            err.message ??
-            err.details ??
-            'Could not save changes. Your equipped loadout is unchanged.',
         };
       }
       const versionId = await res.json();
@@ -187,7 +189,10 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
         return {
           ok: false,
           code: 'invalid_response',
-          message: 'Save succeeded without a loadout version id.',
+          message: loadoutSavePlayerMessage({
+            code: 'invalid_response',
+            message: 'Save succeeded without a loadout version id.',
+          }),
         };
       }
       return {
@@ -197,10 +202,11 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
         loadout: input.loadout,
       };
     } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
       return {
         ok: false,
         code: 'network_error',
-        message: err instanceof Error ? err.message : String(err),
+        message: loadoutSavePlayerMessage({ code: 'network_error', message: raw }),
       };
     }
   }

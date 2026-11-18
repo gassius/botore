@@ -207,12 +207,6 @@ export function CustomiseScreen(props: {
         testID="customise-bot"
       />
 
-      <Text style={styles.confirmed} allowFontScaling>
-        Confirmed: {paintUiAlias(loadout.confirmedLoadout.paint)} ·{' '}
-        {weaponUiAlias(loadout.confirmedLoadout.weapon)}
-        {loadout.confirmedVersionId ? ` · ${loadout.confirmedVersionId.slice(0, 8)}…` : ''}
-      </Text>
-
       <TabBar
         tabs={[
           { id: 'paint', label: 'Paint' },
@@ -306,10 +300,6 @@ const styles = StyleSheet.create({
   clean: {
     color: garageTag.steel,
     fontSize: 13,
-  },
-  confirmed: {
-    fontSize: 12,
-    color: garageTag.steel,
   },
   row: {
     flexDirection: 'row',

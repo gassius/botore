@@ -3,6 +3,7 @@
  * Shell owns ScreenChrome / header / footer; this module does not duplicate shell.
  *
  * Plays Result UI cues: NEW RECORD stamp (after win delay) + XP bar ticks (gated).
+ * C17: no UUIDs, checksums, raw character/part ids, or server-debug badges.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -15,8 +16,9 @@ import {
 } from '../audio';
 import { useTrialUiAudio } from '../audio/useTrialUiAudio';
 import { GaragePanel, Nameplate, garageTag } from '../garage-tag';
+import { paintDisplayLabel, weaponDisplayLabel } from '../garage/loadout/proofCatalogue';
 import type { ConfirmedFightResult } from './confirmedResult';
-import { formatOutcomeLine } from './confirmedResult';
+import { fighterDisplayName, formatOutcomeLine } from './confirmedResult';
 
 export interface FightResultContentProps {
   readonly confirmed: ConfirmedFightResult;
@@ -40,11 +42,18 @@ export function FightResultContent({
   rng01,
   nowMs,
 }: FightResultContentProps): React.ReactElement {
-  const outcomeLine = formatOutcomeLine(confirmed.outcome);
-  const winnerName =
+  const fighters = confirmed.replay.fighters;
+  const outcomeLine = formatOutcomeLine(confirmed.outcome, fighters);
+  const winnerId =
     confirmed.outcome.reason === 'defeat'
       ? confirmed.outcome.winner
       : confirmed.outcome.winnerByTiebreak;
+  const winnerLabel = winnerId ? fighterDisplayName(winnerId, fighters) : null;
+  const isDraw = !winnerId;
+  const attackerName = fighterDisplayName(fighters[0]?.characterId, fighters);
+  const defenderName = fighterDisplayName(fighters[1]?.characterId, fighters);
+  // Reset cue timers when the confirmed fight identity changes (avoid raw id literals in UI source).
+  const confirmedFightKey = `${outcomeLine}|${confirmed.xpAwarded ?? 0}|${confirmed.allowancesRemaining}`;
   const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const showNewRecord = useMemo(
     () => shouldShowNewRecordStamp({ serverNewRecord: confirmed.newRecord }),
@@ -85,7 +94,7 @@ export function FightResultContent({
     return () => {
       clearTimeout(timer);
     };
-  }, [showNewRecord, confirmed.battleId]);
+  }, [showNewRecord, confirmedFightKey]);
 
   useEffect(() => {
     xpGateRef.current.reset();
@@ -111,17 +120,13 @@ export function FightResultContent({
     return () => {
       clearInterval(timer);
     };
-  }, [xpTarget, confirmed.battleId]);
+  }, [xpTarget, confirmedFightKey]);
 
   return (
     <View style={styles.root} testID={testID}>
-      <Text style={styles.source} testID={`${testID}-source`} allowFontScaling>
-        {confirmed.label === 'DEV' ? 'DEV — not server-confirmed' : 'CONFIRMED'}
-      </Text>
-
       <Nameplate
-        name={outcomeLine}
-        {...(winnerName ? { badge: 'Result' } : {})}
+        name={winnerLabel ?? outcomeLine}
+        badge={isDraw ? 'Result' : 'Winner'}
         testID={`${testID}-outcome`}
       />
 
@@ -136,12 +141,6 @@ export function FightResultContent({
       <GaragePanel style={styles.panel} testID={`${testID}-progression`}>
         <Text style={styles.panelTitle} allowFontScaling>
           Progression
-        </Text>
-        <Text style={styles.line} allowFontScaling>
-          Battle {confirmed.battleId}
-        </Text>
-        <Text style={styles.meta} allowFontScaling>
-          Rules {confirmed.rulesVersion} · checksum {confirmed.replayChecksum.slice(0, 12)}…
         </Text>
         {confirmed.serverConfirmed ? (
           <>
@@ -169,39 +168,25 @@ export function FightResultContent({
             <Text style={styles.meta} allowFontScaling>
               Allowances remaining: {confirmed.allowancesRemaining}
             </Text>
-            <Text style={styles.meta} allowFontScaling>
-              UTC day: {confirmed.utcDay} · {confirmed.persistence}
-            </Text>
           </>
         ) : (
           <Text style={styles.meta} allowFontScaling>
-            XP / allowances unavailable until an F9 fight response. Outcome is from the sealed
-            recorded replay only.
+            XP and allowances appear after a confirmed fight.
           </Text>
         )}
       </GaragePanel>
 
       <GaragePanel style={styles.panel} testID={`${testID}-builds`}>
         <Text style={styles.panelTitle} allowFontScaling>
-          Stored builds
+          Bots
         </Text>
-        <Text style={styles.meta} allowFontScaling>
-          Attacker: {confirmed.builds.attacker.paint} · {confirmed.builds.attacker.weapon}
-          {confirmed.builds.attacker.loadoutVersionId
-            ? ` · ${confirmed.builds.attacker.loadoutVersionId}`
-            : ''}
+        <Text style={styles.line} allowFontScaling>
+          {attackerName}: {paintDisplayLabel(confirmed.builds.attacker.paint)} ·{' '}
+          {weaponDisplayLabel(confirmed.builds.attacker.weapon)}
         </Text>
-        <Text style={styles.meta} allowFontScaling>
-          Defender: {confirmed.builds.defender.paint} · {confirmed.builds.defender.weapon}
-          {confirmed.builds.defender.loadoutVersionId
-            ? ` · ${confirmed.builds.defender.loadoutVersionId}`
-            : ''}
-        </Text>
-        <Text style={styles.meta} allowFontScaling>
-          Media: env {confirmed.media.environmentVersion} · kit {confirmed.media.kitVersion}
-          {confirmed.media.atlasVersions
-            ? ` · atlas ${confirmed.media.atlasVersions.attacker}/${confirmed.media.atlasVersions.defender}`
-            : ''}
+        <Text style={styles.line} allowFontScaling>
+          {defenderName}: {paintDisplayLabel(confirmed.builds.defender.paint)} ·{' '}
+          {weaponDisplayLabel(confirmed.builds.defender.weapon)}
         </Text>
       </GaragePanel>
     </View>
@@ -211,12 +196,6 @@ export function FightResultContent({
 const styles = StyleSheet.create({
   root: {
     gap: 12,
-  },
-  source: {
-    color: garageTag.mustard,
-    fontWeight: '800',
-    fontSize: 12,
-    letterSpacing: 0.4,
   },
   stampSlot: {
     minHeight: 28,
@@ -244,6 +223,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 14,
     color: garageTag.graphite,
+    lineHeight: 20,
   },
   xp: {
     fontWeight: '800',
