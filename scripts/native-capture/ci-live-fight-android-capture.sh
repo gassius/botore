@@ -85,18 +85,18 @@ done <"${REPO_ROOT}/apps/game/.env"
 export EXPO_PUBLIC_DESIGN_CAPTURE=1
 export EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT=1
 export EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE=Stable
+# A2b design gate: Fight View must seal an axe attacker (smear + KO evidence).
+export EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON="${EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON:-axe}"
 export EXPO_USE_COMMUNITY_AUTOLINKING=0
 # Native splash must outlast emulator/SpringBoard compositing (~40s+ on GHA).
 export EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS="${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS:-60000}"
-if ! grep -q '^EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=' "${REPO_ROOT}/apps/game/.env" 2>/dev/null; then
-  echo "EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS}" >>"${REPO_ROOT}/apps/game/.env"
-else
-  # Keep a single bake value (prepare-live-fight may have rewritten .env).
-  tmp_env="$(mktemp)"
-  grep -v '^EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=' "${REPO_ROOT}/apps/game/.env" >"${tmp_env}"
-  echo "EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS}" >>"${tmp_env}"
-  mv "${tmp_env}" "${REPO_ROOT}/apps/game/.env"
-fi
+# Keep a single bake value for splash hold + capture weapon (prepare may rewrite .env).
+tmp_env="$(mktemp)"
+grep -vE '^EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=|^EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON=' \
+  "${REPO_ROOT}/apps/game/.env" >"${tmp_env}" || true
+echo "EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS=${EXPO_PUBLIC_COLD_START_SPLASH_HOLD_MS}" >>"${tmp_env}"
+echo "EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON=${EXPO_PUBLIC_DESIGN_CAPTURE_WEAPON}" >>"${tmp_env}"
+mv "${tmp_env}" "${REPO_ROOT}/apps/game/.env"
 
 if [[ -z "${EXPO_PUBLIC_SUPABASE_URL:-}" || -z "${EXPO_PUBLIC_SUPABASE_ANON_KEY:-}" ]]; then
   echo "error: live fight .env missing EXPO_PUBLIC_SUPABASE_*" >&2
@@ -314,60 +314,38 @@ capture_named Ranking ranking-loading 3 loading
 # 1b) C9 Settings — mute / Music / Effects / reduced motion
 capture_named Settings settings 4
 
-# 2) Confirm — both bots (orchestrator selects opponent)
-capture_named ConfirmFight confirm 8
-
-# 2b) A2b axe evidence: phone still mid-attack (smear) + knockout on floor, plus
-# kit fight-sheet frames (sword/axe/dagger) for design verify of all three weapons.
-CAPTURE_SETTLE_SEC=3 \
+# 2) Confirm — both bots; deep-link weapon=axe so live-fight pin saves before Replay.
+CAPTURE_SETTLE_SEC=8 \
   "${SCRIPT_DIR}/android-screencap.sh" \
   --out "${OUT_DIR}" \
   --route ConfirmFight \
-  --name ConfirmFight-axe-attack \
-  --paint petrol \
-  --weapon axe \
-  --pose-compare clip-attack >/dev/null || true
-CAPTURE_SETTLE_SEC=3 \
-  "${SCRIPT_DIR}/android-screencap.sh" \
-  --out "${OUT_DIR}" \
-  --route ConfirmFight \
-  --name ConfirmFight-axe-knockout \
-  --paint petrol \
-  --weapon axe \
-  --pose-compare clip-knockout >/dev/null || true
-for a2b_label in ConfirmFight-axe-attack ConfirmFight-axe-knockout; do
-  a2b_matches=( "${OUT_DIR}"/android-*-"${a2b_label}".png )
-  if [[ -e "${a2b_matches[0]:-}" ]]; then
-    write_manifest_line "${MANIFEST}" "still.android.${a2b_label}" "${a2b_matches[0]}"
-    echo "ok: ${a2b_matches[0]}" >&2
-  else
-    echo "note: missing ${a2b_label} PNG (non-gating)" >&2
-  fi
-done
-PREVIEW_DIR="${BOTORE_A2B_PREVIEW_DIR:-}"
-if [[ -z "${PREVIEW_DIR}" && -d "${REPO_ROOT}/apps/game/assets/workshop-frame-kit-v003/previews" ]]; then
-  PREVIEW_DIR="${REPO_ROOT}/apps/game/assets/workshop-frame-kit-v003/previews"
+  --name confirm \
+  --weapon axe >/dev/null
+confirm_matches=( "${OUT_DIR}"/android-*-confirm.png )
+if [[ ! -e "${confirm_matches[0]:-}" ]]; then
+  echo "error: missing PNG for confirm" >&2
+  exit 1
 fi
-if [[ -n "${PREVIEW_DIR}" && -d "${PREVIEW_DIR}/frames" ]]; then
-  mkdir -p "${OUT_DIR}/a2b-kit-v003.3-fight"
-  cp -f "${PREVIEW_DIR}/frames"/frames-*-{attack,knockout}.png \
-    "${OUT_DIR}/a2b-kit-v003.3-fight/" 2>/dev/null || true
-  cp -f "${PREVIEW_DIR}/frames"/knockout-strip-*.png \
-    "${OUT_DIR}/a2b-kit-v003.3-fight/" 2>/dev/null || true
-  if [[ -d "${PREVIEW_DIR}/fight" ]]; then
-    cp -f "${PREVIEW_DIR}/fight"/*phone*.mp4 \
-      "${OUT_DIR}/a2b-kit-v003.3-fight/" 2>/dev/null || true
-  fi
-  write_manifest_line "${MANIFEST}" a2b_kit_previews "${OUT_DIR}/a2b-kit-v003.3-fight"
-  echo "a2b kit fight previews → ${OUT_DIR}/a2b-kit-v003.3-fight" >&2
-else
-  echo "note: kit previews omitted from repo; ConfirmFight-axe-attack/knockout stills remain" >&2
-fi
+write_manifest_line "${MANIFEST}" "still.android.confirm" "${confirm_matches[0]}"
+echo "ok: ${confirm_matches[0]}" >&2
 
 # 3) Replay — live-capture starts paused (~3s idle) so replay-start is NOT the
 # first hit-hold frame. Settle must stay below FX_CAPTURE_IDLE_BEFORE_PLAY_MS.
 # Then poll fight proof + arena/FX markers; stills land while FX peak is frozen.
-capture_named Replay replay-start 2
+# Weapon=axe keeps the capture pin if Confirm settle raced the save.
+CAPTURE_SETTLE_SEC=2 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Replay \
+  --name replay-start \
+  --weapon axe >/dev/null
+replay_start_matches=( "${OUT_DIR}"/android-*-replay-start.png )
+if [[ ! -e "${replay_start_matches[0]:-}" ]]; then
+  echo "error: missing PNG for replay-start" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "still.android.replay-start" "${replay_start_matches[0]}"
+echo "ok: ${replay_start_matches[0]}" >&2
 
 FIGHT_LINE=""
 FIGHT_JSON=""
@@ -509,6 +487,41 @@ if [[ "${FX_DODGE}" -eq 0 ]]; then
   echo "note: no dodge in sealed replay — dodge FX correctly not invented" >&2
 fi
 
+# A2b design gate: Fight View axe mid-attack (smear) + axe KO on floor.
+# Promote the live replay FX holds — do not use ConfirmFight idle stills.
+ATTACKER_WEAPON="$(node -e "const j=JSON.parse(process.argv[1]); console.log(String(j.attackerWeapon||''))" "${FIGHT_JSON}")"
+write_manifest_line "${MANIFEST}" attacker_weapon "${ATTACKER_WEAPON}"
+if [[ "${ATTACKER_WEAPON}" != *axe* ]]; then
+  echo "error: live fight attackerWeapon=${ATTACKER_WEAPON} (want weapon-axe) — axe Fight View evidence missing" >&2
+  logcat_dump | grep -aE 'BOTORE_CAPTURE_WEAPON_PIN|BOTORE_CAPTURE_FIGHT_' >&2 || true
+  exit 1
+fi
+hit_matches=( "${OUT_DIR}"/android-*-replay-fx-hit.png )
+defeat_matches=( "${OUT_DIR}"/android-*-replay-fx-defeat.png )
+if [[ ! -e "${hit_matches[0]:-}" || ! -e "${defeat_matches[0]:-}" ]]; then
+  echo "error: missing replay-fx-hit / replay-fx-defeat for axe Fight View copies" >&2
+  exit 1
+fi
+STAMP="$(stamp)"
+axe_attack="${OUT_DIR}/android-${STAMP}-FightView-axe-attack.png"
+axe_ko="${OUT_DIR}/android-${STAMP}-FightView-axe-knockout.png"
+# Keep prior design-review filenames as aliases (content is Fight View, not Confirm).
+alias_attack="${OUT_DIR}/android-${STAMP}-ConfirmFight-axe-attack.png"
+alias_ko="${OUT_DIR}/android-${STAMP}-ConfirmFight-axe-knockout.png"
+cp "${hit_matches[0]}" "${axe_attack}"
+cp "${defeat_matches[0]}" "${axe_ko}"
+cp "${axe_attack}" "${alias_attack}"
+cp "${axe_ko}" "${alias_ko}"
+if cmp -s "${axe_attack}" "${axe_ko}"; then
+  echo "error: FightView-axe-attack is byte-identical to FightView-axe-knockout" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "still.android.FightView-axe-attack" "${axe_attack}"
+write_manifest_line "${MANIFEST}" "still.android.FightView-axe-knockout" "${axe_ko}"
+write_manifest_line "${MANIFEST}" "still.android.ConfirmFight-axe-attack" "${alias_attack}"
+write_manifest_line "${MANIFEST}" "still.android.ConfirmFight-axe-knockout" "${alias_ko}"
+echo "ok: Fight View axe attack=${axe_attack} knockout=${axe_ko} (attacker=${ATTACKER_WEAPON})" >&2
+
 # Optional clip AFTER stills only (serial adb). Bound with timeout so a wedged
 # screenrecord cannot hang the job past the hold/stills phase.
 if [[ "${CAPTURE_CLIPS:-false}" == "true" || "${CAPTURE_CLIPS:-0}" == "1" ]]; then
@@ -631,6 +644,8 @@ required_labels=(
   arena-layers
   replay-fx-hit
   replay-fx-defeat
+  FightView-axe-attack
+  FightView-axe-knockout
   result
   replay-muted
   ranking-live

@@ -207,21 +207,9 @@ if [[ "${CAPTURE_A2B_WEAPONS:-1}" == "1" || "${CAPTURE_A2B_WEAPONS:-1}" == "true
     esac
   done
 
-  # Phone-rendered axe attack (with smear) + axe knockout on floor — design gate.
-  case "${PLATFORM}" in
-    android|both)
-      file="$("${SCRIPT_DIR}/android-screencap.sh" \
-        --out "${OUT_DIR}" --route ConfirmFight --name "ConfirmFight-axe-attack" \
-        --paint petrol --weapon axe --pose-compare clip-attack)"
-      file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
-      write_manifest_line "${MANIFEST}" "still.android.ConfirmFight-axe-attack" "${file}"
-      file="$("${SCRIPT_DIR}/android-screencap.sh" \
-        --out "${OUT_DIR}" --route ConfirmFight --name "ConfirmFight-axe-knockout" \
-        --paint petrol --weapon axe --pose-compare clip-knockout)"
-      file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
-      write_manifest_line "${MANIFEST}" "still.android.ConfirmFight-axe-knockout" "${file}"
-      ;;
-  esac
+  # Axe Fight View attack/KO evidence comes from ci-live-fight-android-capture
+  # (replay-fx-hit / replay-fx-defeat with attackerWeapon=axe). Do not fake it
+  # from ConfirmFight idle stills.
 
   # Kit previews are omitted from the repo (EAS weight); optional off-repo sheet dir.
   PREVIEW_DIR="${BOTORE_A2B_PREVIEW_DIR:-}"
