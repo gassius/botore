@@ -122,8 +122,9 @@ describe('C11 heavy-hit pose mapping', () => {
     const farBeats = queue.filter(
       (c) => c.kind === 'motion_beat' && c.actor === 'far' && c.poseKey !== 'walk_in',
     );
-    // basic trims anticipation; weapon keeps full windup so quick vs heavy stay readable.
-    expect(nearBeats.some((c) => c.kind === 'motion_beat' && c.poseKey === 'windup')).toBe(false);
+    // basic starts at strike-arc (keeps smear travel; lastKey may still read
+    // windup until key:strike); weapon keeps full anticipation so quick vs
+    // heavy stay readable by frame count + swing markers.
     expect(nearBeats.some((c) => c.kind === 'motion_beat' && c.markers.includes('swing'))).toBe(
       true,
     );
@@ -131,6 +132,10 @@ describe('C11 heavy-hit pose mapping', () => {
     expect(farBeats.some((c) => c.kind === 'motion_beat' && c.markers.includes('swing'))).toBe(
       true,
     );
+    const nearAttackSmears = nearBeats.filter(
+      (c) => c.kind === 'motion_beat' && Boolean(c.smear),
+    ).length;
+    expect(nearAttackSmears).toBeGreaterThan(0);
     const nearFrames = nearBeats.reduce((n, c) => n + (c.kind === 'motion_beat' ? c.frames : 0), 0);
     const farFrames = farBeats.reduce((n, c) => n + (c.kind === 'motion_beat' ? c.frames : 0), 0);
     expect(nearFrames).toBeLessThan(farFrames);
