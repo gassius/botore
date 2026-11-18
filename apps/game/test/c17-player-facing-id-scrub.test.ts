@@ -24,6 +24,7 @@ const PLAYER_FACING_SOURCES = [
   'src/fight-view/calloutFromCommand.ts',
   'src/result-overlay/ResultOverlay.tsx',
   'src/result-overlay/ResultOverlayBand.tsx',
+  'src/result-overlay/copy.ts',
   'src/result-overlay/resultCardModel.ts',
   'src/screens/ReplaySlotScreen.tsx',
   'src/screens/FightResultSlotScreen.tsx',

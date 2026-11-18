@@ -312,13 +312,18 @@ describe('D2 overlay + band source guards', () => {
     expect(overlay).not.toContain('DomainNote');
   });
 
-  it('band keeps Back to Stable / Watch again / Ranking testIDs', () => {
+  it('band keeps Back to Ludus / Watch again / Ranking testIDs (D10 SoT)', () => {
     const band = readSource('src/result-overlay/ResultOverlayBand.tsx');
     expect(band).toContain('result-stable');
     expect(band).toContain('result-watch');
     expect(band).toContain('result-ranking');
-    expect(band).toContain('Back to Stable');
-    expect(band).toContain('Watch again');
-    expect(band).toContain('Ranking');
+    expect(band).toContain('BACK_TO_LUDUS_LABEL');
+    expect(band).toContain('WATCH_AGAIN_LABEL');
+    expect(band).toContain('RANKING_LABEL');
+    expect(band).not.toContain('Back to Stable');
+    const copy = readSource('src/result-overlay/copy.ts');
+    expect(copy).toContain("BACK_TO_LUDUS_LABEL = 'Back to Ludus'");
+    expect(copy).toContain("WATCH_AGAIN_LABEL = 'Watch again'");
+    expect(copy).toContain("RANKING_LABEL = 'Ranking'");
   });
 });

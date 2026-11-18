@@ -1,12 +1,15 @@
 /**
- * D2 bottom band — Back to Stable / Watch again / Ranking.
+ * D2/D10 bottom band — Back to Ludus / Watch again / Ranking.
  * Same functions as the retired Fight Result footer.
+ * D10 SoT: Stable rename in copy is Ludus (route id remains Stable).
  */
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { garageTag, uiKitAssets } from '../garage-tag';
+import { BACK_TO_LUDUS_LABEL, RANKING_LABEL, WATCH_AGAIN_LABEL } from './copy';
 
 export type ResultOverlayBandProps = {
+  /** Navigate to the main/garage route (`Stable` id → Ludus copy). */
   readonly onBackToStable: () => void;
   readonly onWatchAgain: () => void;
   readonly onRanking: () => void;
@@ -23,19 +26,19 @@ export function ResultOverlayBand({
     <View style={styles.band} testID={testID}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Back to Stable"
+        accessibilityLabel={BACK_TO_LUDUS_LABEL}
         onPress={onBackToStable}
         style={({ pressed }) => [styles.primary, pressed ? styles.primaryPressed : null]}
         testID="result-stable"
       >
         <Text style={styles.primaryLabel} allowFontScaling>
-          Back to Stable
+          {BACK_TO_LUDUS_LABEL}
         </Text>
       </Pressable>
       <View style={styles.row}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Watch again"
+          accessibilityLabel={WATCH_AGAIN_LABEL}
           onPress={onWatchAgain}
           style={({ pressed }) => [
             styles.secondary,
@@ -51,12 +54,12 @@ export function ResultOverlayBand({
             accessibilityIgnoresInvertColors
           />
           <Text style={styles.secondaryLabel} allowFontScaling>
-            Watch again
+            {WATCH_AGAIN_LABEL}
           </Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Ranking"
+          accessibilityLabel={RANKING_LABEL}
           onPress={onRanking}
           style={({ pressed }) => [
             styles.secondary,
@@ -66,7 +69,7 @@ export function ResultOverlayBand({
           testID="result-ranking"
         >
           <Text style={styles.secondaryLabel} allowFontScaling>
-            Ranking
+            {RANKING_LABEL}
           </Text>
         </Pressable>
       </View>

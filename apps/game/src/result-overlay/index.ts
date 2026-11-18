@@ -2,6 +2,7 @@ export { ResultOverlay } from './ResultOverlay';
 export type { ResultOverlayProps } from './ResultOverlay';
 export { ResultOverlayBand } from './ResultOverlayBand';
 export type { ResultOverlayBandProps } from './ResultOverlayBand';
+export { BACK_TO_LUDUS_LABEL, RANKING_LABEL, WATCH_AGAIN_LABEL } from './copy';
 export {
   buildResultCardModel,
   botFightRecordFromRankingRow,
