@@ -93,9 +93,14 @@ describe('E1 Result overlay copy (D10 SoT)', () => {
     expect(model).toContain('formatFightsRemainingLine');
     expect(model).toContain('Fights remaining:');
     expect(model).toContain('confirmed.allowancesRemaining');
+    expect(model).toContain('formatVsParts');
     const overlay = readSource('src/result-overlay/ResultOverlay.tsx');
     expect(overlay).toContain('vsBot');
-    expect(overlay).toContain('opponentBotName');
+    expect(overlay).toContain('formatVsParts');
+    expect(overlay).toContain('vsParts.bot');
+    expect(overlay).toMatch(
+      /card\.wins !== null && card\.losses !== null[\s\S]*?: card\.contextLine \?/,
+    );
   });
 });
 

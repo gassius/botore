@@ -195,10 +195,14 @@ describe('C17 player-facing id / debug scrub', () => {
     const model = stripComments(readSource('src/result-overlay/resultCardModel.ts'));
     expect(overlay).toContain('ResultPlate');
     expect(overlay).toContain('+{xpDisplay} XP');
+    expect(overlay).toContain('formatVsParts');
+    expect(overlay).toContain('vsParts.bot');
     expect(overlay).not.toContain('battleId');
     expect(overlay).not.toContain('replayChecksum');
     expect(overlay).not.toContain('DomainNote');
     expect(model).toContain('fighterDisplayName');
+    expect(model).toContain('formatVsParts');
+    expect(model).toContain('formatVsLine');
     expect(model).not.toMatch(/Winner:\s*</);
     expect(model).not.toContain('battleId');
   });

@@ -50,11 +50,26 @@ export function formatResultContextLine(
   return null;
 }
 
+/** Shared vs-line parts — screen + d2/c17 tests must use this, not hand-built strings. */
+export type VsLineParts = {
+  readonly bot: string;
+  readonly botore: string | null;
+};
+
+export function formatVsParts(
+  opponentBotName: string,
+  opponentBotoreName: string | null,
+): VsLineParts {
+  const botore =
+    typeof opponentBotoreName === 'string' && opponentBotoreName.trim().length > 0
+      ? opponentBotoreName.trim()
+      : null;
+  return { bot: opponentBotName, botore };
+}
+
 export function formatVsLine(opponentBotName: string, opponentBotoreName: string | null): string {
-  if (opponentBotoreName && opponentBotoreName.trim().length > 0) {
-    return `vs ${opponentBotName} · ${opponentBotoreName.trim()}`;
-  }
-  return `vs ${opponentBotName}`;
+  const { bot, botore } = formatVsParts(opponentBotName, opponentBotoreName);
+  return botore ? `vs ${bot} · ${botore}` : `vs ${bot}`;
 }
 
 /**

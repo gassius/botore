@@ -16,7 +16,7 @@ import { ResultDefeatPose, ResultPlate, ResultVictoryPoseSlot } from '../result-
 import { assemblerLoadoutFromBuild } from '../replay/fighterLoadout';
 import type { ConfirmedFightResult } from '../replay/confirmedResult';
 import { BotAssembler } from '../assembler';
-import { buildResultCardModel } from './resultCardModel';
+import { buildResultCardModel, formatVsParts } from './resultCardModel';
 import type { BotFightRecordSnapshot } from './types';
 import { RESULT_OVERLAY_DIM_OPACITY, RESULT_PLATE_DROP_MS } from './types';
 
@@ -53,6 +53,10 @@ export function ResultOverlay({
   const card = useMemo(
     () => buildResultCardModel(confirmed, { record, opponentBotoreName }),
     [confirmed, record, opponentBotoreName],
+  );
+  const vsParts = useMemo(
+    () => formatVsParts(card.opponentBotName, card.opponentBotoreName),
+    [card.opponentBotName, card.opponentBotoreName],
   );
   const loadout = useMemo(
     () => assemblerLoadoutFromBuild(confirmed.builds.attacker),
@@ -285,12 +289,18 @@ export function ResultOverlay({
                 </Text>
               ) : null}
             </View>
+          ) : card.contextLine ? (
+            // Live fights often have null W–L while E2 ranking RPC is gated off;
+            // still show D10 "Fights remaining" from the confirmed fight.
+            <Text style={styles.context} allowFontScaling testID={`${testID}-context`}>
+              {card.contextLine}
+            </Text>
           ) : null}
         </View>
 
         <Text style={styles.vsLine} allowFontScaling testID={`${testID}-vs`}>
-          vs <Text style={styles.vsBot}>{card.opponentBotName}</Text>
-          {card.opponentBotoreName ? ` · ${card.opponentBotoreName}` : ''}
+          vs <Text style={styles.vsBot}>{vsParts.bot}</Text>
+          {vsParts.botore ? ` · ${vsParts.botore}` : ''}
         </Text>
       </View>
     </View>

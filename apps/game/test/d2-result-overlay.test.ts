@@ -11,6 +11,7 @@ import {
   formatRecordLine,
   formatResultContextLine,
   formatVsLine,
+  formatVsParts,
   resolveOutcomeKind,
 } from '../src/result-overlay/resultCardModel';
 import { RESULT_OVERLAY_DIM_OPACITY } from '../src/result-overlay/types';
@@ -216,6 +217,11 @@ describe('D2 result card model (player POV)', () => {
     expect(card.contextLine).toBe('Fights remaining: 1');
     expect(card.vsLine).toBe('vs Sir Bot · Tito Rivet');
     expect(card.vsLine).not.toMatch(/player-hero|opp-1|battle|checksum/i);
+    expect(formatVsParts(card.opponentBotName, card.opponentBotoreName)).toEqual({
+      bot: 'Sir Bot',
+      botore: 'Tito Rivet',
+    });
+    expect(formatVsLine(card.opponentBotName, card.opponentBotoreName)).toBe(card.vsLine);
   });
 
   it('maps attacker loss to defeat with Fights remaining (D10 SoT)', () => {
@@ -268,6 +274,7 @@ describe('D2 result card model (player POV)', () => {
     expect(card.losses).toBeNull();
     expect(card.levelLabel).toBeNull();
     expect(card.contextLine).toBeNull();
+    expect(formatVsParts('Sir Bot', null)).toEqual({ bot: 'Sir Bot', botore: null });
     expect(formatVsLine('Sir Bot', null)).toBe('vs Sir Bot');
     expect(
       buildResultCardModel(
@@ -326,6 +333,17 @@ describe('D2 overlay + band source guards', () => {
     expect(overlay).not.toContain('battleId');
     expect(overlay).not.toContain('replayChecksum');
     expect(overlay).not.toContain('DomainNote');
+  });
+
+  it('renders Fights remaining outside W–L-only gate and vs via formatVsParts', () => {
+    const overlay = readSource('src/result-overlay/ResultOverlay.tsx');
+    expect(overlay).toContain('formatVsParts');
+    expect(overlay).toContain('vsParts.bot');
+    expect(overlay).toContain('card.contextLine');
+    // Live path: context when record/W–L is absent (not nested only under wins/losses).
+    expect(overlay).toMatch(
+      /card\.wins !== null && card\.losses !== null[\s\S]*?: card\.contextLine \?/,
+    );
   });
 
   it('band keeps Back to Ludus / Watch again / Ranking testIDs (D10 SoT)', () => {
