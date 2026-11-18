@@ -1,17 +1,28 @@
 /**
- * Bottom band under the arena: optional event call-out + arena name (first watch),
+ * Bottom band under the arena: fixed-height call-out slot (first watch),
  * or a single REPLAY button (rewatch). Never shows scrubber / pause / Continue / Mute.
+ * Height is always FIGHT_VIEW_BAND_CONTENT_HEIGHT so the arena never jumps (D10 / E2).
  */
-import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { garageTag, uiKitAssets } from '../garage-tag';
+import { FIGHT_VIEW_CALLOUT_MIN_DWELL_MS, formatCalloutHeadline } from './calloutQueue';
 import type { FightViewCallout, FightViewMode } from './types';
-import { FIGHT_VIEW_ARENA_NAME } from './types';
+import { FIGHT_VIEW_BAND_CONTENT_HEIGHT, FIGHT_VIEW_CALLOUT_PLATE_HEIGHT } from './types';
 
 export type FightViewBottomBandProps = {
   readonly mode: FightViewMode;
   readonly callout: FightViewCallout | null;
-  readonly arenaName?: string;
+  /** Collapse counter for the visible plate (`HIT ×3`). */
+  readonly calloutCount?: number;
+  /** Pending queue length — rendered as dots top-right. */
+  readonly pendingCount?: number;
+  /**
+   * Changes only when a new plate starts its dwell (not on ×n collapse).
+   * Restarts the mustard timer bar.
+   */
+  readonly dwellKey?: number | null;
+  readonly reducedMotion?: boolean;
   readonly onReplay?: () => void;
   readonly testID?: string;
 };
@@ -19,10 +30,37 @@ export type FightViewBottomBandProps = {
 export function FightViewBottomBand({
   mode,
   callout,
-  arenaName = FIGHT_VIEW_ARENA_NAME,
+  calloutCount = 1,
+  pendingCount = 0,
+  dwellKey = null,
+  reducedMotion = false,
   onReplay,
   testID = 'fight-view-band',
 }: FightViewBottomBandProps): React.ReactElement {
+  const progress = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    progress.stopAnimation();
+    if (!callout || dwellKey === null) {
+      progress.setValue(0);
+      return;
+    }
+    progress.setValue(1);
+    if (reducedMotion) {
+      // Still show the plate; no animated timer (D10: no flashy transitions).
+      return;
+    }
+    const anim = Animated.timing(progress, {
+      toValue: 0,
+      duration: FIGHT_VIEW_CALLOUT_MIN_DWELL_MS,
+      useNativeDriver: false,
+    });
+    anim.start();
+    return () => {
+      anim.stop();
+    };
+  }, [callout, dwellKey, reducedMotion, progress]);
+
   if (mode === 'rewatch') {
     return (
       <View style={styles.band} testID={testID}>
@@ -47,6 +85,8 @@ export function FightViewBottomBand({
     );
   }
 
+  const dots = Math.max(0, pendingCount);
+
   return (
     <View style={styles.band} testID={testID}>
       {callout ? (
@@ -55,27 +95,47 @@ export function FightViewBottomBand({
           <View style={[styles.rivet, styles.rivetTR]} />
           <View style={[styles.rivet, styles.rivetBL]} />
           <View style={[styles.rivet, styles.rivetBR]} />
-          <Text style={styles.headline} allowFontScaling>
-            {callout.headline}
+          {dots > 0 ? (
+            <View style={styles.dots} testID={`${testID}-queue-dots`}>
+              {Array.from({ length: dots }, (_, i) => (
+                <View key={`q-${i}`} style={styles.dot} />
+              ))}
+            </View>
+          ) : null}
+          <Text style={styles.headline} allowFontScaling numberOfLines={1}>
+            {formatCalloutHeadline(callout, calloutCount)}
           </Text>
-          <Text style={styles.detail} allowFontScaling>
+          <Text style={styles.detail} allowFontScaling numberOfLines={2}>
             {callout.detail}
           </Text>
+          <View style={styles.timerTrack} testID={`${testID}-timer`}>
+            {reducedMotion ? (
+              <View style={[styles.timerFill, styles.timerFillFull]} />
+            ) : (
+              <Animated.View
+                style={[
+                  styles.timerFill,
+                  {
+                    width: progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
+              />
+            )}
+          </View>
         </View>
       ) : (
         <View style={styles.emptyCallout} testID={`${testID}-callout-empty`} />
       )}
-      <View style={styles.tags}>
-        <Text style={styles.tag} allowFontScaling testID={`${testID}-arena-name`}>
-          {arenaName}
-        </Text>
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   band: {
+    height: FIGHT_VIEW_BAND_CONTENT_HEIGHT,
     backgroundColor: garageTag.cream,
     borderTopWidth: 4,
     borderTopColor: garageTag.graphite,
@@ -83,16 +143,21 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 18,
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   plate: {
+    height: FIGHT_VIEW_CALLOUT_PLATE_HEIGHT,
     position: 'relative',
     backgroundColor: garageTag.cream,
     borderWidth: 3,
     borderColor: garageTag.graphite,
     borderRadius: 7,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
+    paddingBottom: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   rivet: {
     position: 'absolute',
@@ -105,8 +170,22 @@ const styles = StyleSheet.create({
   rivetTR: { top: 5, right: 5 },
   rivetBL: { bottom: 5, left: 5 },
   rivetBR: { bottom: 5, right: 5 },
+  dots: {
+    position: 'absolute',
+    top: 8,
+    right: 14,
+    flexDirection: 'row',
+    gap: 4,
+    zIndex: 2,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: garageTag.graphite,
+  },
   headline: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '900',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -117,29 +196,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#5b544a',
-    marginTop: 3,
+    marginTop: 2,
     textAlign: 'center',
   },
+  timerTrack: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 3,
+    backgroundColor: 'rgba(48,45,39,0.12)',
+  },
+  timerFill: {
+    height: 3,
+    backgroundColor: garageTag.mustard,
+  },
+  timerFillFull: {
+    width: '100%',
+  },
   emptyCallout: {
-    minHeight: 64,
-  },
-  tags: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 14,
-  },
-  tag: {
-    fontSize: 11,
-    letterSpacing: 1.6,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    color: '#6b6356',
+    height: FIGHT_VIEW_CALLOUT_PLATE_HEIGHT,
     borderWidth: 2,
+    borderStyle: 'dashed',
     borderColor: '#b9a98c',
-    borderRadius: 20,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    overflow: 'hidden',
+    borderRadius: 7,
   },
   replayBtn: {
     minHeight: 52,

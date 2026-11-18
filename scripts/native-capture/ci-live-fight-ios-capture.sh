@@ -425,7 +425,18 @@ capture_named Ranking ranking-loading 4 "" "" "" loading
 # C9 Settings — mute / Music / Effects / reduced motion
 capture_named Settings settings 5
 capture_named ConfirmFight confirm 8
+# E2 / D10 — quiet call-out band while live-capture is still idle (empty dashed plate).
+capture_named Replay replay-start 2
+start_matches=( "${OUT_DIR}"/ios-*-replay-start.png )
+if [[ -e "${start_matches[0]:-}" ]]; then
+  write_manifest_line "${MANIFEST}" "still.ios.fight-view-callout-quiet" "${start_matches[0]}"
+fi
 capture_named Replay replay-impact 14
+# E2 / D10 — mid-fight call-out plate (alias of replay-impact for design review).
+impact_matches=( "${OUT_DIR}"/ios-*-replay-impact.png )
+if [[ -e "${impact_matches[0]:-}" ]]; then
+  write_manifest_line "${MANIFEST}" "still.ios.fight-view-callout-mid" "${impact_matches[0]}"
+fi
 
 # Read fight proof from Documents (primary) or OSLog (fallback).
 FIGHT_JSON=""
@@ -493,6 +504,7 @@ for label in \
   ranking-loading \
   settings \
   confirm \
+  replay-start \
   replay-impact \
   result \
   replay-muted
