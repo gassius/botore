@@ -5,10 +5,7 @@ import { SnapCarousel, type SnapCarouselHandle, LUDUS_BOT_CAROUSEL } from '../..
 import type { OwnedBotSummary } from '../loadout/loadoutTypes';
 import { LudusBotCard } from './LudusBotCard';
 import { LudusCreateSlotCard } from './LudusCreateSlotCard';
-import {
-  buildLudusCarouselItems,
-  type LudusCarouselItemModel,
-} from './ludusCarouselModel';
+import { buildLudusCarouselItems, type LudusCarouselItemModel } from './ludusCarouselModel';
 
 export type LudusCarouselItem = LudusCarouselItemModel;
 

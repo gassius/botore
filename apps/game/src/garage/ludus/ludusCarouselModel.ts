@@ -1,10 +1,7 @@
 import type { OwnedBotSummary } from '../loadout/loadoutTypes';
 
 /** Pure: Create Bot slot appears while owned < cap. */
-export function ludusCarouselShowsCreate(
-  bots: readonly OwnedBotSummary[],
-  cap: number,
-): boolean {
+export function ludusCarouselShowsCreate(bots: readonly OwnedBotSummary[], cap: number): boolean {
   return bots.length < Math.max(0, cap);
 }
 

@@ -36,15 +36,8 @@ export function StableScreen(props: {
   onRanking?: () => void;
   onCreateBot?: () => void;
 }): React.ReactElement {
-  const {
-    loadout,
-    canProgress,
-    signOut,
-    retryHydration,
-    ownedBots,
-    botCap,
-    selectActiveBot,
-  } = useGarageSession();
+  const { loadout, canProgress, signOut, retryHydration, ownedBots, botCap, selectActiveBot } =
+    useGarageSession();
   const { homeCaptureScenario, muted, musicEnabled, effectsEnabled } = useFirstRun();
   const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const insets = useSafeAreaInsets();
@@ -52,9 +45,7 @@ export function StableScreen(props: {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [moreOpen, setMoreOpen] = useState(() => homeCaptureScenario === 'more');
-  const [onCreateSlide, setOnCreateSlide] = useState(
-    () => homeCaptureScenario === 'create-slot',
-  );
+  const [onCreateSlide, setOnCreateSlide] = useState(() => homeCaptureScenario === 'create-slot');
 
   const ownedCount = ownedBots.length;
   const cap = botCap > 0 ? botCap : 3;
