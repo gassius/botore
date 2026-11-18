@@ -44,11 +44,15 @@ export function isMajorCallout(callout: FightViewCallout): boolean {
   return h.includes('ko') || h.includes('heavy');
 }
 
+/** Headline without trailing bangs — used with a separate oxide `×n` (D10 mockup). */
+export function formatCalloutHeadlineBase(callout: FightViewCallout): string {
+  return callout.headline.replace(/!+\s*$/u, '').trim();
+}
+
 /** Player-facing headline; collapses repeats as `HIT ×3` (uppercase via style). */
 export function formatCalloutHeadline(callout: FightViewCallout, count: number): string {
   if (count <= 1) return callout.headline;
-  const base = callout.headline.replace(/!+\s*$/u, '').trim();
-  return `${base} ×${count}`;
+  return `${formatCalloutHeadlineBase(callout)} ×${count}`;
 }
 
 function dwellElapsed(

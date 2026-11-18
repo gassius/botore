@@ -141,12 +141,16 @@ describe('E2 fixed band + arena location tag (D10)', () => {
     expect(shell.arenaHeight + shell.bandHeight).toBe(844);
   });
 
-  it('band styles honour constant height empty or filled', () => {
+  it('band styles honour constant height empty or filled (D10 mockup)', () => {
     const band = readSource('src/fight-view/FightViewBottomBand.tsx');
     expect(band).toContain('height: FIGHT_VIEW_BAND_CONTENT_HEIGHT');
     expect(band).toContain('height: FIGHT_VIEW_CALLOUT_PLATE_HEIGHT');
     expect(band).toContain("borderStyle: 'dashed'");
+    expect(band).toContain('#c9b896');
+    expect(band).toContain('garageTag.white');
+    expect(band).toContain('garageTag.oxide');
     expect(band).toContain('FIGHT_VIEW_CALLOUT_MIN_DWELL_MS');
+    expect(band).not.toContain('styles.rivet');
     expect(band).not.toContain('Repair Yard');
     expect(band).not.toContain('arena-name');
   });

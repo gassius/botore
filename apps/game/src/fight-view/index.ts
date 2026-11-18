@@ -16,6 +16,7 @@ export {
   advanceCalloutQueue,
   enqueueCallout,
   formatCalloutHeadline,
+  formatCalloutHeadlineBase,
   initialCalloutQueueState,
   isMajorCallout,
   msUntilCalloutAdvance,

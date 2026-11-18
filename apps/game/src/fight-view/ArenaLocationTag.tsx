@@ -1,5 +1,5 @@
 /**
- * In-arena location tag (D10): `ARENA · REPAIR YARD`.
+ * In-arena location tag (D10 mockup): mustard pin + `ARENA · REPAIR YARD`.
  * Small dark label under the HUD — not a pill, not tappable.
  */
 import React from 'react';
@@ -28,8 +28,10 @@ export function ArenaLocationTag({
       testID={testID}
     >
       <View style={styles.pin} testID={`${testID}-pin`}>
-        <View style={styles.pinHead} />
-        <View style={styles.pinPoint} />
+        <View style={styles.pinBody}>
+          <View style={styles.pinHole} />
+        </View>
+        <View style={styles.pinTip} />
       </View>
       <Text style={styles.label} allowFontScaling numberOfLines={1}>
         {formatArenaLocationLabel(arenaName)}
@@ -46,39 +48,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(36,33,29,0.82)',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    backgroundColor: 'rgba(36,33,29,0.78)',
+    paddingTop: 3,
+    paddingBottom: 3,
+    paddingLeft: 6,
+    paddingRight: 8,
     borderRadius: 4,
   },
   pin: {
-    width: 8,
-    height: 11,
+    width: 11,
+    height: 13,
     alignItems: 'center',
   },
-  pinHead: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+  pinBody: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
     backgroundColor: garageTag.mustard,
-    borderWidth: 1.5,
-    borderColor: garageTag.cream,
+    borderWidth: 1.2,
+    borderColor: garageTag.graphite,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  pinPoint: {
+  pinHole: {
+    width: 3.2,
+    height: 3.2,
+    borderRadius: 2,
+    backgroundColor: garageTag.graphite,
+  },
+  pinTip: {
     width: 0,
     height: 0,
-    marginTop: -1,
-    borderLeftWidth: 3,
-    borderRightWidth: 3,
-    borderTopWidth: 4,
+    marginTop: -1.5,
+    borderLeftWidth: 3.5,
+    borderRightWidth: 3.5,
+    borderTopWidth: 5,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: garageTag.mustard,
   },
   label: {
-    color: garageTag.cream,
+    color: '#e8dac0',
     fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.1,
+    fontWeight: '800',
+    letterSpacing: 1.4,
   },
 });

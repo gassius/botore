@@ -2,13 +2,17 @@
  * Bottom band under the arena: fixed-height call-out slot (first watch),
  * or a single REPLAY button (rewatch). Never shows scrubber / pause / Continue / Mute.
  * Height is always FIGHT_VIEW_BAND_CONTENT_HEIGHT so the arena never jumps (D10 / E2).
+ * Visual SoT: inbox mockups d10-fight-view-callout / d10-fight-view-quiet.
  */
 import React, { useEffect, useRef } from 'react';
 import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { garageTag, uiKitAssets } from '../garage-tag';
-import { FIGHT_VIEW_CALLOUT_MIN_DWELL_MS, formatCalloutHeadline } from './calloutQueue';
+import { FIGHT_VIEW_CALLOUT_MIN_DWELL_MS, formatCalloutHeadlineBase } from './calloutQueue';
 import type { FightViewCallout, FightViewMode } from './types';
 import { FIGHT_VIEW_BAND_CONTENT_HEIGHT, FIGHT_VIEW_CALLOUT_PLATE_HEIGHT } from './types';
+
+/** D10 empty-slot dashed border. */
+const SLOT_DASH = '#c9b896';
 
 export type FightViewBottomBandProps = {
   readonly mode: FightViewMode;
@@ -86,15 +90,13 @@ export function FightViewBottomBand({
   }
 
   const dots = Math.max(0, pendingCount);
+  const baseHeadline = callout ? formatCalloutHeadlineBase(callout) : '';
+  const showCount = Boolean(callout && calloutCount > 1);
 
   return (
     <View style={styles.band} testID={testID}>
       {callout ? (
         <View style={styles.plate} testID={`${testID}-callout`}>
-          <View style={[styles.rivet, styles.rivetTL]} />
-          <View style={[styles.rivet, styles.rivetTR]} />
-          <View style={[styles.rivet, styles.rivetBL]} />
-          <View style={[styles.rivet, styles.rivetBR]} />
           {dots > 0 ? (
             <View style={styles.dots} testID={`${testID}-queue-dots`}>
               {Array.from({ length: dots }, (_, i) => (
@@ -102,9 +104,21 @@ export function FightViewBottomBand({
               ))}
             </View>
           ) : null}
-          <Text style={styles.headline} allowFontScaling numberOfLines={1}>
-            {formatCalloutHeadline(callout, calloutCount)}
-          </Text>
+          <View style={styles.headlineRow}>
+            <Text style={styles.headline} allowFontScaling numberOfLines={1}>
+              {baseHeadline}
+            </Text>
+            {showCount ? (
+              <Text
+                style={styles.count}
+                allowFontScaling
+                numberOfLines={1}
+                testID={`${testID}-count`}
+              >
+                ×{calloutCount}
+              </Text>
+            ) : null}
+          </View>
           <Text style={styles.detail} allowFontScaling numberOfLines={2}>
             {callout.detail}
           </Text>
@@ -148,55 +162,57 @@ const styles = StyleSheet.create({
   plate: {
     height: FIGHT_VIEW_CALLOUT_PLATE_HEIGHT,
     position: 'relative',
-    backgroundColor: garageTag.cream,
+    backgroundColor: garageTag.white,
     borderWidth: 3,
     borderColor: garageTag.graphite,
-    borderRadius: 7,
-    paddingVertical: 10,
+    borderRadius: 8,
     paddingHorizontal: 16,
-    paddingBottom: 14,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  rivet: {
-    position: 'absolute',
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: garageTag.graphite,
-  },
-  rivetTL: { top: 5, left: 5 },
-  rivetTR: { top: 5, right: 5 },
-  rivetBL: { bottom: 5, left: 5 },
-  rivetBR: { bottom: 5, right: 5 },
   dots: {
     position: 'absolute',
-    top: 8,
-    right: 14,
+    top: 6,
+    right: 8,
     flexDirection: 'row',
-    gap: 4,
+    gap: 3,
     zIndex: 2,
   },
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: garageTag.graphite,
+    backgroundColor: SLOT_DASH,
+  },
+  headlineRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    maxWidth: '100%',
   },
   headline: {
-    fontSize: 26,
+    fontSize: 30,
     fontWeight: '900',
-    letterSpacing: 1.2,
+    letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: garageTag.graphite,
     textAlign: 'center',
+    lineHeight: 32,
+  },
+  count: {
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+    color: garageTag.oxide,
+    marginLeft: 6,
+    lineHeight: 28,
   },
   detail: {
     fontSize: 13,
     fontWeight: '600',
     color: '#5b544a',
-    marginTop: 2,
+    marginTop: 5,
     textAlign: 'center',
   },
   timerTrack: {
@@ -204,11 +220,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 3,
-    backgroundColor: 'rgba(48,45,39,0.12)',
+    height: 4,
   },
   timerFill: {
-    height: 3,
+    height: 4,
     backgroundColor: garageTag.mustard,
   },
   timerFillFull: {
@@ -216,10 +231,11 @@ const styles = StyleSheet.create({
   },
   emptyCallout: {
     height: FIGHT_VIEW_CALLOUT_PLATE_HEIGHT,
-    borderWidth: 2,
+    borderWidth: 3,
     borderStyle: 'dashed',
-    borderColor: '#b9a98c',
-    borderRadius: 7,
+    borderColor: SLOT_DASH,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
   },
   replayBtn: {
     minHeight: 52,
