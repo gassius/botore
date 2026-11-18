@@ -135,6 +135,12 @@ describe('Workshop Frame kit-v003.3 adapter (ACTIVE pin)', () => {
     expect(OXIDE_PAINT.armourColor.toLowerCase()).not.toBe(PETROL_PAINT.armourColor.toLowerCase());
     expect(channelColorForPart('oxide', 'torso').toLowerCase()).toBe('#e8771c');
     expect(channelColorForPart('oxide', 'upper_arm_l').toLowerCase()).toBe('#e4d8b8');
+    // Melee heads → accent stain; shield face → main (A4 weapons v1).
+    expect(channelColorForPart('oxide', 'weapon_mace').toLowerCase()).toBe('#3a2e28');
+    expect(channelColorForPart('oxide', 'weapon_hammer').toLowerCase()).toBe('#3a2e28');
+    expect(channelColorForPart('oxide', 'weapon_spear').toLowerCase()).toBe('#3a2e28');
+    expect(channelColorForPart('oxide', 'weapon_shield').toLowerCase()).toBe('#e8771c');
+    expect(resolvePaintVisual('paint-navy').label).toBe('Navy');
     expect(patternFillRelPath('hazard', 'torso')).toBe(
       'a6-paints-v4/pattern-fills/hazard/torso.png',
     );

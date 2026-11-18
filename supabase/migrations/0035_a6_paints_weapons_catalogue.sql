@@ -29,7 +29,7 @@ insert into public.parts_catalogue (
   ('paint-primer', 'paint', 'Primer', null, null, '[]'::jsonb, '{}'::jsonb, 'parts/paint-primer', true),
   ('paint-ink', 'paint', 'Ink', null, null, '[]'::jsonb, '{}'::jsonb, 'parts/paint-ink', true),
   ('paint-drab', 'paint', 'Drab', null, null, '[]'::jsonb, '{}'::jsonb, 'parts/paint-drab', true),
-  ('paint-navy', 'paint', 'Cobalt', null, null, '[]'::jsonb, '{}'::jsonb, 'parts/paint-navy', true),
+  ('paint-navy', 'paint', 'Navy', null, null, '[]'::jsonb, '{}'::jsonb, 'parts/paint-navy', true),
   ('paint-frost', 'paint', 'Frost', null, null, '[]'::jsonb, '{}'::jsonb, 'parts/paint-frost', true),
   ('paint-cinder', 'paint', 'Cinder', null, null, '[]'::jsonb, '{}'::jsonb, 'parts/paint-cinder', true),
   ('paint-hazard', 'paint', 'Hazard', null, null, '[]'::jsonb, '{}'::jsonb, 'parts/paint-hazard', true),
@@ -319,6 +319,9 @@ comment on function public.ensure_player_character(uuid) is
 insert into public.inventory_ledger (account_id, part_id, delta, reason)
 select c.account_id, p.part_id, 1, 'grant'
 from public.characters c
+join public.accounts a
+  on a.id = c.account_id
+ and a.deleted_at is null
 cross join (
   values
     ('paint-primer'),

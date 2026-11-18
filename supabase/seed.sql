@@ -144,7 +144,7 @@ insert into public.parts_catalogue (
     'parts/paint-drab', true
   ),
   (
-    'paint-navy', 'paint', 'Cobalt', null, null,
+    'paint-navy', 'paint', 'Navy', null, null,
     '[]'::jsonb, '{}'::jsonb,
     'parts/paint-navy', true
   ),

@@ -50,7 +50,7 @@ export type MotionPose =
 /**
  * A6 paints v4 visuals (8 solids + hazard/racing patterns).
  * Legacy catalogue aliases: paint-crimson→oxide, paint-cobalt→petrol.
- * Cobalt visual uses catalogue id `paint-navy` (avoids collision with petrol).
+ * Navy (cobalt visual) uses catalogue id `paint-navy` (avoids collision with petrol / paint-cobalt).
  */
 export type SamplePaintVisual =
   | 'oxide'

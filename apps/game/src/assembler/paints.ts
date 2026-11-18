@@ -139,7 +139,8 @@ function channelForPart(partId: string): PaintChannel {
   if (MAIN_PARTS.has(partId) || partId === 'weapon_shield') return 'main';
   if (TRIM_PARTS.has(partId)) return 'trim';
   if (ACCENT_PARTS.has(partId)) return 'accent';
-  // Weapons (non-shield) and unlisted parts follow the main / token colour.
+  // A4 weapons v1: melee heads take the accent stain; shield face stays main.
+  if (partId.startsWith('weapon_') && partId !== 'weapon_shield') return 'accent';
   return 'main';
 }
 

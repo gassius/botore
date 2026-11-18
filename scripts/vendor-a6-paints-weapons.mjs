@@ -222,10 +222,18 @@ function main() {
   const paints = JSON.parse(readFileSync(paintsPath, 'utf8'));
   if (paints.pass !== 'v4') fail(`expected paints pass v4, got ${paints.pass}`);
 
-  // Vendor paints.json + wear + carousel swatches into game assets.
+  // Vendor paints.json + carousel swatches into game assets.
   const paintPack = join(GAME_ASSETS, 'a6-paints-v4');
   ensureDir(paintPack);
-  copyFileSync(paintsPath, join(paintPack, 'paints.json'));
+  // Blank workstation path — paints.json is imported into the JS bundle.
+  if (paints.base_kit && typeof paints.base_kit === 'object') {
+    paints.base_kit.path = '';
+  }
+  // Catalogue display for paint-navy visual must stay distinct from legacy paint-cobalt ("Cobalt").
+  for (const entry of paints.paints ?? []) {
+    if (entry?.id === 'cobalt') entry.name = 'Navy';
+  }
+  writeFileSync(join(paintPack, 'paints.json'), `${JSON.stringify(paints, null, 2)}\n`);
   writeFileSync(
     join(paintPack, 'PROVENANCE.md'),
     [
@@ -239,15 +247,7 @@ function main() {
     ].join('\n'),
   );
 
-  // Wear maps from A4 paints zip (unchanged in A6); fall back to a6 if present.
-  const a4PaintsZip = join(STORE, 'Botore-A4-paints-v3.zip');
-  if (existsSync(a4PaintsZip)) {
-    unzip(a4PaintsZip, join(TMP, 'a4-paints'));
-    const wearSrc = join(TMP, 'a4-paints', 'Botore-A4-paints-v3', 'wear');
-    if (existsSync(wearSrc)) {
-      cpSync(wearSrc, join(paintPack, 'wear'), { recursive: true });
-    }
-  }
+  // Wear maps / a5Npc / tott face-off are unused on the client path — do not vendor them.
 
   const swatchDest = join(GAME_ASSETS, 'customise-tiles', 'swatch');
   ensureDir(swatchDest);
@@ -258,32 +258,13 @@ function main() {
 
   const glyphDest = join(GAME_ASSETS, 'customise-tiles', 'weapon');
   ensureDir(glyphDest);
-  const weaponTileSrc = join(a6Root, 'tiles', 'tile-weapon');
-  if (existsSync(weaponTileSrc)) {
-    for (const f of readdirSync(weaponTileSrc)) {
-      if (f.includes('@2x') || f.includes('@3x')) continue;
-      if (!f.includes('-default')) continue;
-      copyFileSync(join(weaponTileSrc, f), join(glyphDest, f));
-    }
-  }
-  // Prefer mockup weapon icons when present (cleaner glyphs).
-  const mockWeapons = join(STORE, 'mockups-apk-2026-11-18', 'assets');
+  // Ship A6 tiles/weapon art (not APK-review mockup w-*.png overrides).
+  const a6WeaponGlyphs = join(a6Root, 'tiles', 'weapon');
   for (const id of ['mace', 'hammer', 'spear', 'shield', 'sword', 'axe', 'dagger']) {
-    const src = join(mockWeapons, `w-${id}.png`);
-    if (existsSync(src)) copyFileSync(src, join(glyphDest, `${id}.png`));
+    const src = join(a6WeaponGlyphs, `${id}.png`);
+    if (!existsSync(src)) fail(`missing A6 weapon glyph ${src}`);
+    copyFileSync(src, join(glyphDest, `${id}.png`));
   }
-
-  // a5fix NPC data + cobalt-brute portraits/renders
-  const a5Dest = join(GAME_ASSETS, 'a5fix');
-  ensureDir(a5Dest);
-  copyFileSync(join(a6Root, 'a5fix', 'npcs.json'), join(a5Dest, 'npcs.json'));
-  cpSync(join(a6Root, 'a5fix', 'portraits'), join(a5Dest, 'portraits'), { recursive: true });
-  cpSync(join(a6Root, 'a5fix', 'renders'), join(a5Dest, 'renders'), { recursive: true });
-
-  // Face-off layers for D9
-  const tottDest = join(GAME_ASSETS, 'tott');
-  ensureDir(tottDest);
-  cpSync(join(a6Root, 'tott'), tottDest, { recursive: true });
 
   // Vendor weapons into kit materials/masks/parts
   const solidPaintIds = paints.solid_ids ?? [
@@ -331,7 +312,8 @@ function main() {
   const kitClips = JSON.parse(readFileSync(kitClipsPath, 'utf8'));
   const packClips = JSON.parse(readFileSync(packClipsPath, 'utf8'));
   kitClips.clips = { ...kitClips.clips, ...packClips.clips };
-  writeFileSync(kitClipsPath, `${JSON.stringify(kitClips, null, 2)}\n`);
+  // Compact JSON — pretty-print bloated the Metro-imported clips ~6×.
+  writeFileSync(kitClipsPath, `${JSON.stringify(kitClips)}\n`);
 
   for (const scale of ['fx', 'fx@2x']) {
     const smearSrc = join(weaponsRoot, scale, 'smears');

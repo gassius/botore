@@ -5,7 +5,7 @@
  * in-app title. ui-kit-v0.1 keeps panels/buttons/tabs/glyphs + robot-head
  * ranking marks only — its wordmark/icon/static-launch are retired.
  *
- * E7: weapon glyphs prefer customise-tiles/weapon/*.png; sword/axe/dagger
+ * E7: weapon glyphs from A6 tiles/weapon via customise-tiles/weapon/*.png; sword/axe/dagger
  * fall back to ui-kit glyphs when customise-tiles missing.
  */
 import wordmarkDark from '../../assets/launch-v001/wordmark/wordmark-dark-2400w.png';

@@ -22,7 +22,7 @@ export const PROOF_PAINTS = [
   { partId: 'paint-primer', label: 'Primer', uiAlias: 'primer' as const },
   { partId: 'paint-ink', label: 'Ink', uiAlias: 'ink' as const },
   { partId: 'paint-drab', label: 'Drab', uiAlias: 'drab' as const },
-  { partId: 'paint-navy', label: 'Cobalt', uiAlias: 'cobalt' as const },
+  { partId: 'paint-navy', label: 'Navy', uiAlias: 'cobalt' as const },
   { partId: 'paint-frost', label: 'Frost', uiAlias: 'frost' as const },
   { partId: 'paint-cinder', label: 'Cinder', uiAlias: 'cinder' as const },
   { partId: 'paint-hazard', label: 'Hazard', uiAlias: 'hazard' as const },
