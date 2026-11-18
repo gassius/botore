@@ -15,6 +15,28 @@ export { SelectionCheck, type SelectionCheckProps } from './SelectionCheck';
 export { PaintSwatch, type PaintSwatchProps } from './PaintSwatch';
 export { WeaponGlyphSlot, type WeaponGlyphSlotProps } from './WeaponGlyphSlot';
 export { PartPickerStrip, type PartPickerCard, type PartPickerStripProps } from './PartPickerStrip';
+export {
+  CUSTOMISE_CAROUSEL,
+  LUDUS_BOT_CAROUSEL,
+  OPPONENTS_LIST,
+  SnapCarousel,
+  SnapVerticalList,
+  customiseCarouselSnapInterval,
+  ludusBotCarouselSnapInterval,
+  maxSnapIndex,
+  offsetForSnapIndex,
+  opponentsListSnapInterval,
+  sidePaddingForExactFit,
+  snapContentLength,
+  snapInterval,
+  viewportFitsWholeItems,
+  visibleWholeCount,
+  type SnapAxisMetrics,
+  type SnapCarouselHandle,
+  type SnapCarouselProps,
+  type SnapVerticalListHandle,
+  type SnapVerticalListProps,
+} from './snap';
 export { Nameplate, type NameplateProps } from './Nameplate';
 export { GlyphButton, type GlyphButtonProps } from './GlyphButton';
 export { ReplayAudioControls, type ReplayAudioControlsProps } from './ReplayAudioControls';

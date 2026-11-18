@@ -14,6 +14,19 @@ vi.mock('react-native', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ({ children, ...props }: any) =>
       R.createElement(name, props, children);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const FlatList = ({ data, renderItem, keyExtractor, ...props }: any) =>
+    R.createElement(
+      'FlatList',
+      props,
+      (data ?? []).map((item: unknown, index: number) =>
+        R.createElement(
+          R.Fragment,
+          { key: keyExtractor ? keyExtractor(item, index) : String(index) },
+          renderItem?.({ item, index }),
+        ),
+      ),
+    );
   return {
     View: make('View'),
     Text: make('Text'),
@@ -24,7 +37,12 @@ vi.mock('react-native', async () => {
     Linking: { openURL: async () => undefined },
     Platform: { OS: 'web' },
     ScrollView: make('ScrollView'),
+    FlatList,
     Pressable: make('Pressable'),
+    AccessibilityInfo: {
+      isReduceMotionEnabled: async () => false,
+      addEventListener: () => ({ remove: () => undefined }),
+    },
   };
 });
 

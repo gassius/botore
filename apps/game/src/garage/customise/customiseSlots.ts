@@ -96,8 +96,8 @@ export const CUSTOMISE_STAGE_HEIGHT = 410;
 /** Floor so the robot stage stays visibly larger than pre-D3 on short phones. */
 export const CUSTOMISE_STAGE_MIN_HEIGHT = 300;
 
-/** Horizontal picker card size from D3 mockup (pt). */
-export const PART_PICKER_CARD = { width: 104, height: 134 } as const;
+/** Horizontal picker card size — E6 / D7 snap carousel (pt). */
+export const PART_PICKER_CARD = { width: 105, height: 128 } as const;
 
 /** Bot display width inside the ~410pt stage (scales with flex stage). */
 export const CUSTOMISE_BOT_SIZE = 360;

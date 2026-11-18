@@ -321,6 +321,22 @@ capture_named Settings settings 4
 # 1c) D8 Opponents — live A5 roster names + Botore + W–L (E3 quota panel).
 capture_named Opponents opponents-roster 6
 
+# 1c′) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
+# Need ≥3 whole 175pt cards (185 snap, 150pt robots). Capture before C10
+# offline/auth stills so the pack has a real snapped list.
+CAPTURE_SETTLE_SEC=6 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Opponents \
+  --name opponents-snap-rest >/dev/null
+opponents_rest_matches=( "${OUT_DIR}"/android-*-opponents-snap-rest.png )
+if [[ ! -e "${opponents_rest_matches[0]:-}" ]]; then
+  echo "error: missing PNG for opponents-snap-rest" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "still.android.opponents-snap-rest" "${opponents_rest_matches[0]}"
+echo "ok: ${opponents_rest_matches[0]}" >&2
+
 # 2) Confirm — both bots; deep-link weapon=axe so live-fight pin saves before Replay.
 CAPTURE_SETTLE_SEC=8 \
   "${SCRIPT_DIR}/android-screencap.sh" \
@@ -670,6 +686,8 @@ required_labels=(
   ranking-empty
   ranking-loading
   settings
+  opponents-roster
+  opponents-snap-rest
   confirm
   arena-layers
   replay-fx-hit
