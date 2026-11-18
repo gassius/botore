@@ -4,6 +4,7 @@ import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { useFirstRun } from '../first-run/FirstRunContext';
 import { countFxEventsFromReplay } from '../replay/fxCaptureHold';
 import { isLiveFightCaptureEnabled } from './captureEnv';
+import { loadoutHasCaptureWeapon, resolveCaptureWeaponCatalogueId } from './captureWeapon';
 import { writeFightProofFile, writeLastFightFile } from './readCaptureIntentFile';
 
 export type CaptureFightProof = {
@@ -33,6 +34,7 @@ function logFightProof(proof: CaptureFightProof): void {
  * C3 live-fight capture orchestrator (opt-in only).
  *
  * When `EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT=1` and Supabase public env is baked:
+ * - Pin capture weapon (e.g. axe) onto the confirmed loadout before combat-v1.
  * - On ConfirmFight: refresh roster + select first fight-ready opponent (dual-bot still).
  * - On Replay: start combat-v1 once if needed so playback is server-precomputed.
  * - Emit fight proof to logcat for the CI manifest.
@@ -40,7 +42,7 @@ function logFightProof(proof: CaptureFightProof): void {
 export function useDesignCaptureLiveFight(): void {
   const enabled = isLiveFightCaptureEnabled();
   const { route } = useFirstRun();
-  const { canProgress, session, loadout } = useGarageSession();
+  const { canProgress, session, loadout, selectWeapon, save } = useGarageSession();
   const {
     list,
     selected,
@@ -56,6 +58,8 @@ export function useDesignCaptureLiveFight(): void {
   const fightStartedForKey = useRef<string | null>(null);
   const proofLoggedForBattle = useRef<string | null>(null);
   const progressBlockedLogged = useRef(false);
+  const weaponSaveInFlight = useRef(false);
+  const wantedWeapon = resolveCaptureWeaponCatalogueId();
 
   useEffect(() => {
     if (!enabled) return;
@@ -90,6 +94,48 @@ export function useDesignCaptureLiveFight(): void {
     loadout.lastError,
   ]);
 
+  // A2b: pin axe (or other capture weapon) on confirmed loadout before startFight
+  // so Fight View sealed builds show the right blade + smears.
+  useEffect(() => {
+    if (!enabled || !canProgress || !session) return;
+    if (route !== 'ConfirmFight' && route !== 'Replay' && route !== 'Customise') return;
+    if (!wantedWeapon) return;
+    if (loadoutHasCaptureWeapon(loadout.confirmedLoadout?.weapon, wantedWeapon)) return;
+    if (loadout.saving || weaponSaveInFlight.current) return;
+
+    if (loadout.pendingLoadout?.weapon !== wantedWeapon) {
+      selectWeapon(wantedWeapon);
+      console.log(`BOTORE_CAPTURE_WEAPON_PIN:pending=${wantedWeapon}`);
+      return;
+    }
+    if (!loadout.dirty) return;
+
+    weaponSaveInFlight.current = true;
+    void save()
+      .then((ok) => {
+        console.log(
+          ok
+            ? `BOTORE_CAPTURE_WEAPON_PIN:saved=${wantedWeapon}`
+            : `BOTORE_CAPTURE_FIGHT_ERROR:weapon save failed wanted=${wantedWeapon}`,
+        );
+      })
+      .finally(() => {
+        weaponSaveInFlight.current = false;
+      });
+  }, [
+    enabled,
+    canProgress,
+    session,
+    route,
+    wantedWeapon,
+    loadout.confirmedLoadout?.weapon,
+    loadout.pendingLoadout?.weapon,
+    loadout.dirty,
+    loadout.saving,
+    selectWeapon,
+    save,
+  ]);
+
   useEffect(() => {
     if (!enabled || !canProgress) return;
     if (route !== 'ConfirmFight' && route !== 'Replay') return;
@@ -106,6 +152,12 @@ export function useDesignCaptureLiveFight(): void {
     if (fightKind !== 'supabase') {
       console.warn(
         'BOTORE_CAPTURE_FIGHT_ERROR:live fight capture requires supabase fight adapter (bake EXPO_PUBLIC_SUPABASE_*)',
+      );
+      return;
+    }
+    if (!loadoutHasCaptureWeapon(loadout.confirmedLoadout?.weapon, wantedWeapon)) {
+      console.log(
+        `BOTORE_CAPTURE_WEAPON_PIN:waiting confirmed=${loadout.confirmedLoadout?.weapon ?? 'none'} wanted=${wantedWeapon ?? 'none'}`,
       );
       return;
     }
@@ -128,6 +180,8 @@ export function useDesignCaptureLiveFight(): void {
     fightInFlight,
     fightKind,
     startFight,
+    wantedWeapon,
+    loadout.confirmedLoadout?.weapon,
   ]);
 
   useEffect(() => {

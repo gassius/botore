@@ -77,6 +77,10 @@ export function fxFamilyFromAnimationCommand(cmd: AnimationCommand): FxCaptureFa
       return 'dodge';
     case 'defeat_anim':
       return 'defeat';
+    case 'motion_beat':
+      return cmd.fxFamily === 'dodge' || cmd.fxFamily === 'defeat' || cmd.fxFamily === 'hit'
+        ? cmd.fxFamily
+        : null;
     default:
       return null;
   }

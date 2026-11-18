@@ -1,7 +1,6 @@
 /**
- * A3 victory pose slot for D2.
- * Until kit-v003.1 MotioPose `victory` lands on this stack, mounts interim
- * `heavy_windup` (ClickUp D2 interim) while keeping VICTORY_POSE_SLOT_ID.
+ * A3 approved overhead victory — player's modular bot via BotAssembler.
+ * Keeps the historical Slot name + VICTORY_POSE_SLOT_ID hook for D2 wiring.
  */
 
 import React from 'react';
@@ -14,7 +13,7 @@ export type ResultVictoryPoseSlotProps = {
   readonly paintId?: string;
   readonly weaponId?: string;
   readonly facing?: BotFacing;
-  /** Display width in pt over the 640 rig. */
+  /** Display width in pt over the 640 rig (victory may overflow above). */
   readonly size?: number;
   readonly reducedMotion?: boolean;
   readonly style?: StyleProp<ViewStyle>;
@@ -32,15 +31,19 @@ export function ResultVictoryPoseSlot({
   testID = 'result-victory-pose-slot',
 }: ResultVictoryPoseSlotProps): React.ReactElement {
   const resolved = resolveResultBotPose('victory');
-  if (resolved.motionPose !== 'heavy_windup' && resolved.motionPose !== 'defeat') {
-    throw new Error('result victory pose must resolve to an available MotionPose');
+  if (resolved.motionPose !== 'victory') {
+    throw new Error('result victory pose must resolve to approved MotionPose victory');
   }
   const paint = paintId ?? loadout.paint;
   const weapon = weaponId ?? loadout.weapon;
 
+  // Kit stage margin above the 640 frame (160 px) — pad so overhead victory
+  // is not clipped by parents that overflow:hidden.
+  const stagePadTop = (160 / 640) * size;
+
   return (
     <View
-      style={[styles.wrap, style]}
+      style={[styles.wrap, { paddingTop: stagePadTop }, style]}
       accessibilityLabel="victory pose"
       testID={testID}
       nativeID={resolved.slotId ?? VICTORY_POSE_SLOT_ID}

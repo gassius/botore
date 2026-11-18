@@ -1,5 +1,5 @@
 /**
- * Shared Workshop Frame kit-v002 → atlas/vN packing recipe (C13).
+ * Shared Workshop Frame kit → atlas/vN packing recipe (C13 / A1).
  *
  * Mirrors apps/game/src/atlas/workshop-frame-paths.ts:
  *   parts/{assetId}-{paint}.png   → parts/{partId}/{paint}.png
@@ -9,10 +9,17 @@
  *
  * Kit filenames keep underscores (`weapon_sword`); atlas/catalogue partIds use
  * hyphens (`weapon-sword`). Do not mix kit-v001 paths.
+ *
+ * Default active pack: kit-v003 → atlas/v3. Pass ATLAS_VERSION=v2 to rebuild
+ * the historical kit-v002 pack (separate fallback).
  */
 
-export const WORKSHOP_FRAME_ATLAS_VERSION = 'v2';
-export const WORKSHOP_FRAME_KIT_VERSION = 'v002';
+export const WORKSHOP_FRAME_ATLAS_VERSION = 'v3';
+export const WORKSHOP_FRAME_KIT_VERSION = 'v003';
+
+/** Historical kit-v002 ↔ atlas/v2 (kept as separate fallback). */
+export const WORKSHOP_FRAME_LEGACY_ATLAS_VERSION = 'v2';
+export const WORKSHOP_FRAME_LEGACY_KIT_VERSION = 'v002';
 
 export const WORKSHOP_FRAME_BODY_ASSET_IDS = [
   'torso',
@@ -32,9 +39,18 @@ export const WORKSHOP_FRAME_BODY_ASSET_IDS = [
   'foot_r',
 ];
 
+/** v003 finger wraps — omitted when packing kit-v002. */
+export const WORKSHOP_FRAME_WRAP_ASSET_IDS = ['hand_l_wrap', 'hand_r_wrap'];
+
 export const WORKSHOP_FRAME_WEAPON_ASSET_IDS = ['weapon_sword', 'weapon_axe', 'weapon_dagger'];
 
 export const WORKSHOP_FRAME_PAINT_TOKENS = ['oxide', 'petrol'];
+
+/** Allowed packer targets: never wipe committed v1. */
+export const WORKSHOP_FRAME_PACK_TARGETS = {
+  v3: { kitVersion: WORKSHOP_FRAME_KIT_VERSION, includeWraps: true },
+  v2: { kitVersion: WORKSHOP_FRAME_LEGACY_KIT_VERSION, includeWraps: false },
+};
 
 /** Kit asset id (may use underscores) → hyphenated atlas partId. */
 export function canonicalAtlasPartId(kitOrCatalogueId) {
@@ -48,10 +64,15 @@ export function canonicalAtlasPartId(kitOrCatalogueId) {
  * Map a kit-local relative path onto an F5 pack-relative Storage path.
  * Rejects accidental v001 prefixes.
  */
-export function atlasPathForWorkshopKitFile(kitRelativePath) {
+export function atlasPathForWorkshopKitFile(
+  kitRelativePath,
+  kitVersion = WORKSHOP_FRAME_KIT_VERSION,
+) {
   const cleaned = String(kitRelativePath).replace(/^\/+/, '');
   if (cleaned.includes('/v001/') || cleaned.startsWith('v001/')) {
-    throw new Error('workshop_frame_v001_forbidden: visible build pins kit-v002 only');
+    throw new Error(
+      'workshop_frame_v001_forbidden: visible build pins kit-v003 (v002 historical only)',
+    );
   }
 
   const partsMatch = /^parts\/([^/]+)-(oxide|petrol)\.png$/i.exec(cleaned);
@@ -74,12 +95,21 @@ export function atlasPathForWorkshopKitFile(kitRelativePath) {
     return `parts/${partId}/mask.png`;
   }
 
-  return `kits/workshop-frame/v002/${cleaned}`;
+  return `kits/workshop-frame/${kitVersion}/${cleaned}`;
 }
 
-/** All kit-relative source → atlas destination pairs for the workshop-frame pack. */
-export function workshopFrameKitPackPairs() {
-  const assetIds = [...WORKSHOP_FRAME_BODY_ASSET_IDS, ...WORKSHOP_FRAME_WEAPON_ASSET_IDS];
+/**
+ * All kit-relative source → atlas destination pairs for a workshop-frame pack.
+ * @param {{ includeWraps?: boolean, kitVersion?: string }} [opts]
+ */
+export function workshopFrameKitPackPairs(opts = {}) {
+  const includeWraps = opts.includeWraps ?? true;
+  const kitVersion = opts.kitVersion ?? WORKSHOP_FRAME_KIT_VERSION;
+  const assetIds = [
+    ...WORKSHOP_FRAME_BODY_ASSET_IDS,
+    ...(includeWraps ? WORKSHOP_FRAME_WRAP_ASSET_IDS : []),
+    ...WORKSHOP_FRAME_WEAPON_ASSET_IDS,
+  ];
   /** @type {{ kitRelative: string, atlasRelative: string, partId: string, role: string, assetKey: string }[]} */
   const pairs = [];
   for (const assetId of assetIds) {
@@ -88,7 +118,7 @@ export function workshopFrameKitPackPairs() {
       const kitRelative = `parts/${assetId}-${paint}.png`;
       pairs.push({
         kitRelative,
-        atlasRelative: atlasPathForWorkshopKitFile(kitRelative),
+        atlasRelative: atlasPathForWorkshopKitFile(kitRelative, kitVersion),
         partId,
         role: paint,
         assetKey: `parts.${partId}.${paint}`,
@@ -98,7 +128,7 @@ export function workshopFrameKitPackPairs() {
       const kitRelative = `materials/${assetId}-${layer}.png`;
       pairs.push({
         kitRelative,
-        atlasRelative: atlasPathForWorkshopKitFile(kitRelative),
+        atlasRelative: atlasPathForWorkshopKitFile(kitRelative, kitVersion),
         partId,
         role: `material_${layer}`,
         assetKey: `parts.${partId}.material_${layer}`,
@@ -108,7 +138,7 @@ export function workshopFrameKitPackPairs() {
       const kitRelative = `masks/${assetId}-paint.png`;
       pairs.push({
         kitRelative,
-        atlasRelative: atlasPathForWorkshopKitFile(kitRelative),
+        atlasRelative: atlasPathForWorkshopKitFile(kitRelative, kitVersion),
         partId,
         role: 'mask',
         assetKey: `parts.${partId}.mask`,

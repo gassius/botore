@@ -13,26 +13,35 @@ import { BotAssembler, assembleBot } from '../assembler';
 Shell / F8 / fight screens must import this module — do not fork a second
 renderer. Pack download/cache remains F6.
 
-## Workshop Frame kit (ACTIVE = v002)
+## Workshop Frame kit (ACTIVE = v003)
 
-Game Art delivered `workshop-frame-v002` (integration prototype, **not** Carlos
+Game Art delivered `workshop-frame-v003` (integration prototype, **not** Carlos
 likeness / native-perf / replay acceptance). Visible build pins a **coherent
-v002** set under `apps/game/assets/workshop-frame-kit-v002/`:
+v003** set under `apps/game/assets/workshop-frame-kit-v003/`:
 
 - `manifest.json` + precomposited `parts/{id}-{paint}.png` (runtime)
-- `masks/` + `materials/` (under→mask→over layers; live composite still future)
+- `masks/` + `materials/` (under→mask→over layers; includes `hand_*_wrap`)
 - `PROVENANCE.md`, `README.md`, integration delta, `SHA256SUMS` (vendored subset)
 - `SHA256SUMS.full-kit` keeps the Game Art full-kit seal (source/validation omitted from the app tree)
 
-`workshop-frame-kit-v001/` is **removed**. **Never mix stale v001 coordinates
-with v002 assets** (`must_not_mix_versions`).
+`workshop-frame-kit-v002/` remains vendored as **history** (not the active pin).
+**Never mix v002/v001 tiles or pose numbers with v003** (`must_not_mix_versions`).
+Atomic swap only.
 
 `workshopFrameAdapter.ts` maps kit media behind existing
 `BotAssemblerProps` — paint aliases `oxide`/`petrol` ↔ catalogue
 `paint-crimson`/`paint-cobalt`; weapons `sword`/`axe`/`dagger` ↔
 `weapon-*` catalogue ids and `weapon_*` kit assets. No catalogue expansion.
 
-- `placeholder={false}` (default): kit-v002 PNGs + measured pivots/sockets.
+v003 renderer rules (see `INTEGRATION-DELTA-v002-to-v003.md`):
+
+- No hardcoded 180° grip — weapons are normal children of `hand_r.grip` with
+  per-weapon `attach_angle` (sword 80, axe 90, dagger −90).
+- Always draw `hand_l_wrap` / `hand_r_wrap`; apply `weapons[w].z_overrides`.
+- Pose lookup: `poses[poseId][weaponId] ?? poses[poseId]["*"]` (nested format;
+  do not port v002 numbers). Attack/dodge/hit are v002 carry-overs pending A2.
+
+- `placeholder={false}` (default): kit-v003 PNGs + measured pivots/sockets.
 - `placeholder={true}`: geometric PLACEHOLDER stand-ins.
 - Paint path: under→mask-tint→over via kit materials/masks (precomposited
   `parts/{id}-{paint}.png` remain as fallback/reference only).
@@ -53,7 +62,8 @@ parallel event-driven `kitPoseKey` prop. Stable / Customise / fight keep one
 Helpers: `motionPoseFromSealedAttack`, `MOTION_POSE_TO_KIT`. Replay compiles one
 sealed weapon attack into windup then strike presentation commands (SFX on
 strike only). No new combat-v1 mechanics; outcomes stay on the recorded stream.
-`heavy_windup.root_y` is **45** in v002 (geometry note only).
+Idle stance is **per weapon** in v003. Kit also ships `victory` / `portrait`
+poses (not yet on the public `MotionPose` set).
 
 ## Caveats
 

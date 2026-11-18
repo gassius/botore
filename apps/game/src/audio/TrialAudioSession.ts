@@ -17,11 +17,12 @@ import { trialAudioClipVolume } from './trialAudioManifest';
 import type { TrialAudioClipId, TrialAudioUiCueId } from './trialAudioPin';
 import {
   ARENA_AMBIENT_VOLUME,
-  resolveOneShotCue,
+  resolveOneShotCues,
   shouldStartAmbientLoop,
   shouldStopAmbientLoop,
   type FighterAudioProfile,
   type PartAudioCueId,
+  type ResolvedOneShotCue,
 } from './partAudioResolve';
 
 export type TrialAudioSources = Readonly<Record<TrialAudioClipId, AudioSource | null>>;
@@ -199,9 +200,7 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     playSource(id, sources[id], volume, rate);
   };
 
-  const playResolved = (cmd: AnimationCommand) => {
-    const cue = resolveOneShotCue(cmd, fighterProfiles);
-    if (!cue) return;
+  const playResolvedCue = (cue: ResolvedOneShotCue) => {
     if (cue.kind === 'part') {
       const partSource = partSources[cue.id];
       if (partSource != null) {
@@ -218,6 +217,13 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
       return;
     }
     playClip(cue.id);
+  };
+
+  /** A2: motion_beat may emit several frame-marker clips; part tags still win for swing/hit. */
+  const playResolved = (cmd: AnimationCommand) => {
+    for (const cue of resolveOneShotCues(cmd, fighterProfiles)) {
+      playResolvedCue(cue);
+    }
   };
 
   const reconcileMusic = async (handle: LoopHandle) => {

@@ -1,0 +1,103 @@
+{
+  "version": "v003.3",
+  "rule": "Per-part angular velocity must be <= 45 deg/frame (angle-unwrapped, short way) on every adjacent clip pair, including the walk loop seam, except (1) the named frames below and (2) any frame whose smear raster overlaps an arm part. Off-hand must stay on the haft within 1 px / 2 deg except after the knockout floor release, and except the named off_hand frames below.",
+  "exceptions": [
+    {
+      "weapon": "axe",
+      "clip": "attack",
+      "frame": 12,
+      "label": "inbetween",
+      "from_label": "breakdown:pendulum",
+      "part": "hand_r",
+      "step_deg": 176.82,
+      "checks": [
+        "av"
+      ],
+      "reason": "pendulum\u2192low arm-basin flip. Joint-space in-betweens sweep the visor; a visor-clear path needs more frames than the 56-frame attack cap."
+    },
+    {
+      "weapon": "axe",
+      "clip": "attack",
+      "frame": 18,
+      "label": "inbetween",
+      "from_label": "breakdown:back",
+      "part": "forearm_l",
+      "step_deg": 68.09,
+      "off_err_px": 5.475,
+      "checks": [
+        "av",
+        "off_hand"
+      ],
+      "reason": "back\u2192rise. A joint-lerp mid puts 35 px of the haft on the visor; in-place off-hand relock jumps the next frame by ~80\u00b0. Hidden under the backswing smear when one is generated."
+    },
+    {
+      "weapon": "axe",
+      "clip": "attack",
+      "frame": 26,
+      "label": "breakdown:whip",
+      "from_label": "breakdown:coil",
+      "part": "upper_arm_r",
+      "step_deg": 162.67,
+      "checks": [
+        "av"
+      ],
+      "reason": "coil\u2192whip basin flip, hidden under the whip strike smear (one-frame flip / smear trick)."
+    },
+    {
+      "weapon": "axe",
+      "clip": "attack",
+      "frame": 54,
+      "label": "inbetween",
+      "from_label": "inbetween",
+      "part": "upper_arm_r",
+      "step_deg": 146.25,
+      "checks": [
+        "av"
+      ],
+      "reason": "overshoot\u2192idle basin return. The visor-clear repair added far more than 6 frames; dropped to keep v003.2 recovery timing."
+    },
+    {
+      "weapon": "axe",
+      "clip": "attack",
+      "frame": 55,
+      "label": "key:idle",
+      "from_label": "inbetween",
+      "part": "forearm_l",
+      "step_deg": 111.04,
+      "checks": [
+        "av"
+      ],
+      "reason": "second frame of the same overshoot\u2192idle basin return (see frame 54)."
+    },
+    {
+      "weapon": "axe",
+      "clip": "hit_react",
+      "frame": 1,
+      "label": "inbetween",
+      "from_label": "key:idle",
+      "part": "forearm_r",
+      "step_deg": 83.28,
+      "off_err_px": 13.66,
+      "checks": [
+        "av",
+        "off_hand"
+      ],
+      "reason": "idle\u2192hit_react forearm snap (the v003.2 f13 spike, now at the start of the clip). A clean path needs 5 in-betweens; this clip may only grow by 2 frames."
+    },
+    {
+      "weapon": "axe",
+      "clip": "hit_react",
+      "frame": 2,
+      "label": "inbetween",
+      "from_label": "inbetween",
+      "part": "forearm_r",
+      "step_deg": 49.97,
+      "off_err_px": 4.76,
+      "checks": [
+        "av",
+        "off_hand"
+      ],
+      "reason": "same idle\u2192hit_react snap, second frame."
+    }
+  ]
+}

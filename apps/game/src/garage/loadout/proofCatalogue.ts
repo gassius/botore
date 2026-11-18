@@ -11,7 +11,7 @@ import { WORKSHOP_FRAME_ATLAS_VERSION } from '../../atlas/workshop-frame-paths';
 /** Seeded proof character — DEV adapter fixture only; live path resolves ownership. */
 export const PROOF_CHARACTER_ID = 'player-hero';
 export const PROOF_DISPLAY_NAME = 'Hero';
-/** First-run / DEV pin — workshop-frame-v002 pack (`v2`). Health proof pack stays `v1`. */
+/** First-run / DEV pin — workshop-frame-v003 pack (`v3`). Health proof pack stays `v1`; v2 is history. */
 export const PROOF_ATLAS_VERSION = WORKSHOP_FRAME_ATLAS_VERSION;
 
 export const PROOF_PAINTS = [

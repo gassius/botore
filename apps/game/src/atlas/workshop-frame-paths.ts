@@ -1,8 +1,9 @@
 /**
- * Workshop Frame kit-v002 → F5 atlas path coordination (F6).
+ * Workshop Frame kit-v003 → F5 atlas path coordination (F6 / A1).
  *
- * Visible-build pin: **v002 only**. Do not mix v001 coordinates or assets.
- * Kit local `manifest.json` (`botore.workshop-frame.provisional.v1`) remains a
+ * Visible-build pin: **v003.3** (family workshop-frame-v003). Do not mix
+ * v002/v001 coordinates or assets.
+ * Kit local `manifest.json` (`botore.workshop-frame.provisional.v2`) remains a
  * media-adapter for F7 — not a competing Storage/wire schema. Pack fetch/cache
  * still uses F5 `get_atlas_manifest` entries.
  *
@@ -18,19 +19,22 @@
 
 export const WORKSHOP_FRAME_KIT = {
   kitId: 'workshop-frame',
-  kitVersion: 'v002',
-  compatibleFamily: 'workshop-frame-v002',
-  /** Local kit tree name F7 mounts under apps/game/assets/ once pushed. */
-  localAssetDir: 'workshop-frame-kit-v002',
+  /** Atlas path namespace stays v003; Metro pin is kit version v003.3. */
+  kitVersion: 'v003',
+  compatibleFamily: 'workshop-frame-v003',
+  /** Local kit tree name F7 mounts under apps/game/assets/. */
+  localAssetDir: 'workshop-frame-kit-v003',
+  pinVersion: 'v003.3',
 } as const;
 
 /**
- * Published atlas pack that carries Workshop Frame kit-v002 media keys (C13).
- * Fight/stable pin this version; `v1` remains the health proof-pack fixture only.
+ * Published atlas pack that carries Workshop Frame kit-v003 media keys (A1).
+ * Fight/stable pin this version; `v1` remains the health proof-pack fixture;
+ * `v2` remains kit-v002 history.
  */
-export const WORKSHOP_FRAME_ATLAS_VERSION = 'v2';
+export const WORKSHOP_FRAME_ATLAS_VERSION = 'v3';
 
-/** Body + limb kit asset ids (15). Weapons are separate. */
+/** Body + limb kit asset ids (15). Wraps and weapons are separate. */
 export const WORKSHOP_FRAME_BODY_ASSET_IDS = [
   'torso',
   'head',
@@ -50,6 +54,11 @@ export const WORKSHOP_FRAME_BODY_ASSET_IDS = [
 ] as const;
 
 export type WorkshopFrameBodyAssetId = (typeof WORKSHOP_FRAME_BODY_ASSET_IDS)[number];
+
+/** Finger wrap layers (v003) — always drawn; children of hand_* at socket wrap. */
+export const WORKSHOP_FRAME_WRAP_ASSET_IDS = ['hand_l_wrap', 'hand_r_wrap'] as const;
+
+export type WorkshopFrameWrapAssetId = (typeof WORKSHOP_FRAME_WRAP_ASSET_IDS)[number];
 
 export const WORKSHOP_FRAME_WEAPON_ASSET_IDS = [
   'weapon_sword',
@@ -101,12 +110,12 @@ export function resolveWeaponCatalogueId(weaponId: string | null | undefined): s
 
 /**
  * Map a kit-local relative path onto an F5 pack-relative Storage path.
- * Rejects accidental v001 prefixes — visible build is v002 only.
+ * Rejects accidental v001 prefixes — visible build is v003 only.
  */
 export function atlasPathForWorkshopKitFile(kitRelativePath: string): string {
   const cleaned = kitRelativePath.replace(/^\/+/, '');
   if (cleaned.includes('/v001/') || cleaned.startsWith('v001/')) {
-    throw new Error('workshop_frame_v001_forbidden: visible build pins kit-v002 only');
+    throw new Error('workshop_frame_v001_forbidden: visible build pins kit-v003 only');
   }
 
   const partsMatch = /^parts\/([^/]+)-(oxide|petrol)\.png$/i.exec(cleaned);
@@ -129,9 +138,9 @@ export function atlasPathForWorkshopKitFile(kitRelativePath: string): string {
     return `parts/${partId}/mask.png`;
   }
 
-  // Fallback: namespace leftover kit paths under kits/workshop-frame/v002/ so they
+  // Fallback: namespace leftover kit paths under kits/workshop-frame/v003/ so they
   // never collide with the F5 proof pack layout.
-  return `kits/workshop-frame/v002/${cleaned}`;
+  return `kits/workshop-frame/v003/${cleaned}`;
 }
 
 /**
@@ -152,7 +161,7 @@ export function workshopFrameAtlasPathsForAsset(
 
 /**
  * partIds for AtlasPackLoader.ensurePacks (hyphenated atlas ids + catalogue).
- * Includes body assets + selected weapon, plus F5 proof-pack paint/weapon ids.
+ * Includes body assets + wraps + selected weapon, plus F5 proof-pack paint/weapon ids.
  */
 export function partIdsForWorkshopFrameLoadout(input: {
   chassis?: string | null;
@@ -166,6 +175,7 @@ export function partIdsForWorkshopFrameLoadout(input: {
   const weaponKit = resolveWorkshopWeaponAssetId(weapon);
   const ids = new Set<string>([
     ...WORKSHOP_FRAME_BODY_ASSET_IDS.map(canonicalAtlasPartId),
+    ...WORKSHOP_FRAME_WRAP_ASSET_IDS.map(canonicalAtlasPartId),
     canonicalAtlasPartId(weaponKit),
     resolveWeaponCatalogueId(weapon),
     resolvePaintCatalogueId(paint),
@@ -175,23 +185,24 @@ export function partIdsForWorkshopFrameLoadout(input: {
 }
 
 /**
- * True when an F5 manifest entry path is a workshop-frame kit-v002 object.
+ * True when an F5 manifest entry path is a workshop-frame kit-v003 object.
  * Matches the packing recipe under parts/<hyphenatedId>/… or the kits/ fallback.
  */
 export function isWorkshopFrameAtlasPath(packRelativePath: string): boolean {
-  if (packRelativePath.startsWith('kits/workshop-frame/v002/')) return true;
+  if (packRelativePath.startsWith('kits/workshop-frame/v003/')) return true;
   if (
     packRelativePath.includes('/v001/') ||
     packRelativePath.startsWith('kits/workshop-frame/v001/')
   ) {
     return false;
   }
-  // Hyphenated body/weapon part folders produced by the packing recipe.
+  // Hyphenated body/wrap/weapon part folders produced by the packing recipe.
   const m = /^parts\/([^/]+)\//.exec(packRelativePath);
   if (!m) return false;
   const partId = m[1]!;
   const known = new Set([
     ...WORKSHOP_FRAME_BODY_ASSET_IDS.map(canonicalAtlasPartId),
+    ...WORKSHOP_FRAME_WRAP_ASSET_IDS.map(canonicalAtlasPartId),
     ...WORKSHOP_FRAME_WEAPON_ASSET_IDS.map(canonicalAtlasPartId),
   ]);
   return known.has(partId);

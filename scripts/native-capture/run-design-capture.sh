@@ -171,5 +171,67 @@ case "${PLATFORM}" in
     ;;
 esac
 
+# A2b: ConfirmFight stills for sword/axe/dagger + axe clip-attack / clip-knockout
+# phone stills (smear + floor) + kit fight preview frames.
+if [[ "${CAPTURE_A2B_WEAPONS:-1}" == "1" || "${CAPTURE_A2B_WEAPONS:-1}" == "true" ]]; then
+  write_manifest_line "${MANIFEST}" a2b_weapons "sword,axe,dagger+knockout"
+  for weapon in sword axe dagger; do
+    case "${PLATFORM}" in
+      android|both)
+        file="$("${SCRIPT_DIR}/android-screencap.sh" \
+          --out "${OUT_DIR}" --route ConfirmFight --name "ConfirmFight-${weapon}" \
+          --paint petrol --weapon "${weapon}")"
+        file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
+        write_manifest_line "${MANIFEST}" "still.android.ConfirmFight-${weapon}" "${file}"
+        ;;
+    esac
+    case "${PLATFORM}" in
+      ios)
+        ios_args=(--out "${OUT_DIR}" --route ConfirmFight --name "ConfirmFight-${weapon}" \
+          --paint petrol --weapon "${weapon}")
+        if [[ -n "${CAPTURE_IOS_UDID:-}" ]]; then ios_args+=(--udid "${CAPTURE_IOS_UDID}"); fi
+        file="$("${SCRIPT_DIR}/ios-screencap.sh" "${ios_args[@]}")"
+        file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
+        write_manifest_line "${MANIFEST}" "still.ios.ConfirmFight-${weapon}" "${file}"
+        ;;
+      both)
+        if command -v xcrun >/dev/null 2>&1; then
+          ios_args=(--out "${OUT_DIR}" --route ConfirmFight --name "ConfirmFight-${weapon}" \
+            --paint petrol --weapon "${weapon}")
+          if [[ -n "${CAPTURE_IOS_UDID:-}" ]]; then ios_args+=(--udid "${CAPTURE_IOS_UDID}"); fi
+          file="$("${SCRIPT_DIR}/ios-screencap.sh" "${ios_args[@]}")"
+          file="$(printf '%s' "${file}" | tr -d '\r' | tail -n 1)"
+          write_manifest_line "${MANIFEST}" "still.ios.ConfirmFight-${weapon}" "${file}"
+        fi
+        ;;
+    esac
+  done
+
+  # Axe Fight View attack/KO evidence comes from ci-live-fight-android-capture
+  # (replay-fx-hit / replay-fx-defeat with attackerWeapon=axe). Do not fake it
+  # from ConfirmFight idle stills.
+
+  # Kit previews are omitted from the repo (EAS weight); optional off-repo sheet dir.
+  PREVIEW_DIR="${BOTORE_A2B_PREVIEW_DIR:-}"
+  if [[ -z "${PREVIEW_DIR}" && -d "${REPO_ROOT}/apps/game/assets/workshop-frame-kit-v003/previews" ]]; then
+    PREVIEW_DIR="${REPO_ROOT}/apps/game/assets/workshop-frame-kit-v003/previews"
+  fi
+  if [[ -n "${PREVIEW_DIR}" && -d "${PREVIEW_DIR}/frames" ]]; then
+    mkdir -p "${OUT_DIR}/a2b-kit-v003.3-fight"
+    cp -f "${PREVIEW_DIR}/frames"/frames-*-{attack,knockout}.png \
+      "${OUT_DIR}/a2b-kit-v003.3-fight/" 2>/dev/null || true
+    cp -f "${PREVIEW_DIR}/frames"/knockout-strip-*.png \
+      "${OUT_DIR}/a2b-kit-v003.3-fight/" 2>/dev/null || true
+    if [[ -d "${PREVIEW_DIR}/fight" ]]; then
+      cp -f "${PREVIEW_DIR}/fight"/*phone*.mp4 \
+        "${OUT_DIR}/a2b-kit-v003.3-fight/" 2>/dev/null || true
+    fi
+    write_manifest_line "${MANIFEST}" a2b_kit_previews "${OUT_DIR}/a2b-kit-v003.3-fight"
+    echo "a2b kit fight previews → ${OUT_DIR}/a2b-kit-v003.3-fight" >&2
+  else
+    echo "note: kit previews omitted from repo; axe clip-attack/knockout phone stills cover design gate" >&2
+  fi
+fi
+
 echo "manifest: ${MANIFEST}" >&2
 printf '%s\n' "${OUT_DIR}"

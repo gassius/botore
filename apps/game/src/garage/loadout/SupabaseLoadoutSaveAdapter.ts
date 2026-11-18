@@ -133,7 +133,7 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
         ok: true,
         snapshot: {
           loadoutVersionId: String(row.loadout_version_id ?? ''),
-          atlasVersion: String(row.atlas_version ?? 'v2'),
+          atlasVersion: String(row.atlas_version ?? 'v3'),
           loadout: normalizeGarageLoadout(row.loadout),
         },
       };

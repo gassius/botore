@@ -63,7 +63,7 @@ describe('C14 part sound-tag resolution', () => {
     );
   });
 
-  it('resolves attack/damage commands to part cues when profiles are known', () => {
+  it('resolves attack / motion_beat markers to part cues when profiles are known', () => {
     const result = loadDevGoldenConfirmedResult(0);
     const attackerId = result.replay.fighters[0]!.characterId;
     const defenderId = result.replay.fighters[1]!.characterId;
@@ -85,9 +85,18 @@ describe('C14 part sound-tag resolution', () => {
     expect(
       resolveOneShotCue({ kind: 'attack_anim', actor: attackerId, attack: 'basic' }, profiles),
     ).toEqual({ kind: 'part', id: 'weaponAxeSwing' });
+    // A2: chassis hit rides the hit-stop frame marker (not coarse damage_pop).
     expect(
       resolveOneShotCue(
-        { kind: 'damage_pop', target: defenderId, amount: 2, hpAfter: 8 },
+        {
+          kind: 'motion_beat',
+          actor: attackerId,
+          poseKey: 'strike',
+          frames: 3,
+          markers: ['hit'],
+          hitStop: true,
+          victimId: defenderId,
+        },
         profiles,
       ),
     ).toEqual({ kind: 'part', id: 'chassisBasicHit' });
@@ -223,10 +232,13 @@ describe('C14 arena ambient loop', () => {
 
     session.notifyCommand({ kind: 'attack_anim', actor: attackerId, attack: 'basic' });
     session.notifyCommand({
-      kind: 'damage_pop',
-      target: defenderId,
-      amount: 3,
-      hpAfter: 7,
+      kind: 'motion_beat',
+      actor: attackerId,
+      poseKey: 'strike',
+      frames: 3,
+      markers: ['hit'],
+      hitStop: true,
+      victimId: defenderId,
     });
     await Promise.resolve();
     await Promise.resolve();

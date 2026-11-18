@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Headless checks for the C13 workshop-frame → atlas packing recipe.
+ * Headless checks for the workshop-frame → atlas packing recipe (C13 / A1).
  * Run: node --test scripts/pack-workshop-frame-atlas.test.mjs
  */
 import assert from 'node:assert/strict';
@@ -16,6 +16,7 @@ import {
   canonicalAtlasPartId,
   workshopFrameKitPackPairs,
   WORKSHOP_FRAME_ATLAS_VERSION,
+  WORKSHOP_FRAME_LEGACY_ATLAS_VERSION,
 } from './workshop-frame-atlas-recipe.mjs';
 import { assertWorkshopFramePackTarget } from './pack-workshop-frame-atlas.mjs';
 
@@ -36,6 +37,10 @@ test('weapon ids: kit underscore → atlas hyphen', () => {
     atlasPathForWorkshopKitFile('masks/upper_arm_l-paint.png'),
     'parts/upper-arm-l/mask.png',
   );
+  assert.equal(
+    atlasPathForWorkshopKitFile('parts/hand_r_wrap-oxide.png'),
+    'parts/hand-r-wrap/oxide.png',
+  );
 });
 
 test('rejects kit-v001 prefixes', () => {
@@ -47,16 +52,24 @@ test('rejects kit-v001 prefixes', () => {
   );
 });
 
-test('pack pairs cover body+weapon oxide/petrol/materials/mask', () => {
-  const pairs = workshopFrameKitPackPairs();
-  assert.ok(pairs.length >= 18 * 5);
+test('pack pairs cover body+wrap+weapon oxide/petrol/materials/mask for v003', () => {
+  const pairs = workshopFrameKitPackPairs({ includeWraps: true, kitVersion: 'v003' });
+  assert.ok(pairs.length >= 20 * 5);
   assert.ok(pairs.some((p) => p.atlasRelative === 'parts/torso/oxide.png'));
   assert.ok(pairs.some((p) => p.atlasRelative === 'parts/weapon-sword/mask.png'));
+  assert.ok(pairs.some((p) => p.atlasRelative === 'parts/hand-l-wrap/oxide.png'));
+  assert.ok(pairs.some((p) => p.atlasRelative === 'parts/hand-r-wrap/material-over.png'));
   assert.ok(!pairs.some((p) => p.atlasRelative.includes('weapon_sword')));
   assert.ok(!pairs.some((p) => p.atlasRelative.includes('/v001/')));
 });
 
-test('pack target guard refuses non-v2 and v1 out dir', () => {
+test('legacy v002 pack pairs omit wraps', () => {
+  const pairs = workshopFrameKitPackPairs({ includeWraps: false, kitVersion: 'v002' });
+  assert.ok(!pairs.some((p) => p.partId.includes('wrap')));
+  assert.ok(pairs.some((p) => p.atlasRelative === 'parts/hand-r/oxide.png'));
+});
+
+test('pack target guard refuses non-v2/v3 and v1 out dir', () => {
   const v1 = join(ROOT, 'supabase/seed/atlas/v1');
   assert.throws(
     () => assertWorkshopFramePackTarget('v1', join(ROOT, 'supabase/seed/atlas/v1'), v1),
@@ -70,6 +83,13 @@ test('pack target guard refuses non-v2 and v1 out dir', () => {
   assert.doesNotThrow(() =>
     assertWorkshopFramePackTarget(
       WORKSHOP_FRAME_ATLAS_VERSION,
+      join(ROOT, 'supabase/seed/atlas/v3'),
+      v1,
+    ),
+  );
+  assert.doesNotThrow(() =>
+    assertWorkshopFramePackTarget(
+      WORKSHOP_FRAME_LEGACY_ATLAS_VERSION,
       join(ROOT, 'supabase/seed/atlas/v2'),
       v1,
     ),
@@ -100,10 +120,11 @@ test('pack script refuses ATLAS_VERSION=v1 before wiping committed v1 seed', () 
   assert.deepEqual(readFileSync(v1Tap), beforeTap);
 });
 
-test('pack script materializes hyphenated atlas tree from kit-v002', () => {
-  const kitDir = join(ROOT, 'apps/game/assets/workshop-frame-kit-v002');
+test('pack script materializes hyphenated atlas tree from kit-v003', () => {
+  const kitDir = join(ROOT, 'apps/game/assets/workshop-frame-kit-v003');
   assert.ok(existsSync(join(kitDir, 'parts/torso-oxide.png')), 'kit asset present');
-  const out = mkdtempSync(join(tmpdir(), 'botore-atlas-v2-'));
+  assert.ok(existsSync(join(kitDir, 'parts/hand_r_wrap-oxide.png')), 'wrap asset present');
+  const out = mkdtempSync(join(tmpdir(), 'botore-atlas-v3-'));
   try {
     const r = spawnSync(process.execPath, [join(ROOT, 'scripts/pack-workshop-frame-atlas.mjs')], {
       cwd: ROOT,
@@ -120,9 +141,34 @@ test('pack script materializes hyphenated atlas tree from kit-v002', () => {
     assert.ok(existsSync(join(out, 'parts/torso/oxide.png')));
     assert.ok(existsSync(join(out, 'parts/weapon-sword/oxide.png')));
     assert.ok(existsSync(join(out, 'parts/upper-arm-l/mask.png')));
+    assert.ok(existsSync(join(out, 'parts/hand-r-wrap/oxide.png')));
     assert.ok(existsSync(join(out, 'fx/hit.png')));
     assert.ok(existsSync(join(out, 'base/audio/hit.m4a')));
     assert.ok(!existsSync(join(out, 'parts/weapon_sword')));
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test('pack script can still materialize historical kit-v002 → v2', () => {
+  const kitDir = join(ROOT, 'apps/game/assets/workshop-frame-kit-v002');
+  assert.ok(existsSync(join(kitDir, 'parts/torso-oxide.png')), 'v002 kit present');
+  const out = mkdtempSync(join(tmpdir(), 'botore-atlas-v2-'));
+  try {
+    const r = spawnSync(process.execPath, [join(ROOT, 'scripts/pack-workshop-frame-atlas.mjs')], {
+      cwd: ROOT,
+      env: {
+        ...process.env,
+        ATLAS_VERSION: WORKSHOP_FRAME_LEGACY_ATLAS_VERSION,
+        ATLAS_SEED_DIR: out,
+        KIT_DIR: kitDir,
+      },
+      encoding: 'utf8',
+    });
+    assert.equal(r.status, 0, r.stderr || r.stdout);
+    assert.match(r.stdout, /ATLAS-PACK-OK/);
+    assert.ok(existsSync(join(out, 'parts/torso/oxide.png')));
+    assert.ok(!existsSync(join(out, 'parts/hand-r-wrap')));
   } finally {
     rmSync(out, { recursive: true, force: true });
   }

@@ -20,9 +20,32 @@ export type BotFacing = 'left' | 'right';
  * - `attack` → kit `quick_attack` (sealed `attack_selected.attack: 'basic'`)
  * - `heavy_windup` / `heavy_attack` → same-named kit keys
  *   (sealed `attack_selected.attack: 'weapon'`, windup then strike)
+ * - `portrait` → kit `portrait` (A5 ranking head-and-shoulders; paint+weapon).
+ * - `victory` → kit `victory` (A3 approved overhead raised-weapon on kit-v003.1).
+ * - `defeat` → kit `defeat` (A3 approved kneeling KO).
+ * - A2 fight keys (kit-v003.1 first pass): `walk_in`, `windup`, `strike`,
+ *   `follow_through`, `recovery`, `hit_react`, `knockout`. Legacy
+ *   `attack` / `heavy_*` / `hit` remain and alias onto strike/windup/hit_react.
+ *   Future in-between / fall pose keys pass through via timing data without
+ *   extending this union (see `motionPoseFromKitKey`).
  */
 export type MotionPose =
-  'idle' | 'attack' | 'heavy_windup' | 'heavy_attack' | 'dodge' | 'hit' | 'defeat';
+  | 'idle'
+  | 'attack'
+  | 'heavy_windup'
+  | 'heavy_attack'
+  | 'dodge'
+  | 'hit'
+  | 'defeat'
+  | 'portrait'
+  | 'victory'
+  | 'walk_in'
+  | 'windup'
+  | 'strike'
+  | 'follow_through'
+  | 'recovery'
+  | 'hit_react'
+  | 'knockout';
 
 /**
  * First-proof sample paints (Art Direction v0.3).
@@ -84,11 +107,23 @@ export interface BotAssemblerProps {
   readonly weaponId?: string;
   /** Default `idle`. Motion is RN Animated; Skia only if measured limits fail. */
   readonly motionPose?: MotionPose;
+  /**
+   * Optional baked clip pose (kit-v003.3 `animation/clips.json` frame).
+   * When set, assembler skips the named pose table for geometry.
+   */
+  readonly poseOverride?: import('./workshopFrameTypes').KitPoseEntry;
+  /** Optional attack smear overlay for the current clip frame. */
+  readonly smearOverlay?: {
+    readonly png: string;
+    readonly offsetRigPx: readonly [number, number];
+    readonly z: number;
+    readonly size1x?: readonly [number, number];
+  };
   /** When true, skip non-essential motion (pose snaps / reduced amplitude). */
   readonly reducedMotion?: boolean;
   /**
    * When true, render geometric PLACEHOLDER stand-ins. When false/omitted,
-   * use Workshop Frame kit-v002 (local integration only — not likeness/native
+   * use Workshop Frame kit-v003 (local integration only — not likeness/native
    * acceptance).
    */
   readonly placeholder?: boolean;
@@ -142,7 +177,7 @@ export interface AssembledLayer {
 }
 
 export interface AssembledBot {
-  /** Fight/stable media pin (`v2` for workshop-frame-v002; `v1` is proof-pack only). */
+  /** Fight/stable media pin (`v3` for workshop-frame-v003; `v2` history; `v1` proof-pack). */
   readonly atlasVersion: string;
   readonly chassisId: string;
   readonly paintId: string;
@@ -157,7 +192,7 @@ export interface AssembledBot {
   readonly canvas: { readonly width: number; readonly height: number; readonly provisional: true };
   readonly grip: ProvisionalPoint;
   readonly layers: readonly AssembledLayer[];
-  /** Set when assembled from Game Art workshop-frame-v002. */
+  /** Set when assembled from Game Art workshop-frame-v003. */
   readonly kitId?: string;
   readonly kitPoseKey?: string;
 }

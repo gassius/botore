@@ -8,7 +8,7 @@ const BUNDLED_PATH_SET = new Set(Object.values(BUNDLED_BASE_AUDIO_PATHS));
  * Decide which manifest entries the loader should materialize for a fight/stable.
  * Bundled base-pack audio is never queued for download — it ships in the app.
  *
- * Workshop Frame kit-v002 rows use F5 `parts/<partId>/…` (or kits/…/v002 fallback)
+ * Workshop Frame kit-v003 rows use F5 `parts/<partId>/…` (or kits/…/v003 fallback)
  * and are selected when their partId is requested — same entry shape as other packs.
  */
 export function selectEntriesToFetch(
@@ -22,7 +22,7 @@ export function selectEntriesToFetch(
   return manifest.entries.filter((entry) => {
     if (entry.kind === 'manifest') return false;
     if (BUNDLED_PATH_SET.has(entry.path)) return false;
-    // Visible build pins kit-v002 — never select workshop-frame v001 objects.
+    // Visible build pins kit-v003 — never select workshop-frame v001 objects.
     if (entry.path.includes('workshop-frame/v001/')) {
       return false;
     }

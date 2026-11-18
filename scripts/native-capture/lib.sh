@@ -37,6 +37,7 @@ capture_url_for_route() {
   local session_failure="${7:-}"
   local fight_view="${8:-}"
   local customise="${9:-}"
+  local pose_compare="${10:-}"
   local query=()
   if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then
     query+=("mute=1")
@@ -61,6 +62,9 @@ capture_url_for_route() {
   fi
   if [[ -n "${customise}" ]]; then
     query+=("customise=${customise}")
+  fi
+  if [[ -n "${pose_compare}" ]]; then
+    query+=("poseCompare=${pose_compare}")
   fi
   if [[ ${#query[@]} -eq 0 ]]; then
     printf '%s/%s' "${SCHEME_CAPTURE_PREFIX}" "${route}"

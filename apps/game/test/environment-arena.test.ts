@@ -13,6 +13,10 @@ import {
   coverSceneToViewport,
   fitSceneToViewport,
 } from '../src/arena/index';
+import {
+  assembleWorkshopFrame,
+  WORKSHOP_FRAME_MANIFEST,
+} from '../src/assembler/workshopFrameAdapter';
 
 const envRoot = join(process.cwd(), 'assets/environment-v001');
 
@@ -100,5 +104,39 @@ describe('scene placement adapter', () => {
     const contain = fitSceneToViewport(viewportW, 515);
     expect(contain.width).toBeLessThan(viewportW);
     expect(coverSceneToViewport(viewportW, 515).width).toBeGreaterThanOrEqual(viewportW);
+  });
+
+  it('idle sole midpoint lands on ground_anchor at placement scale (640 canvas)', () => {
+    const bot = assembleWorkshopFrame({
+      loadout: { chassis: 'chassis-basic', paint: 'paint-crimson', weapon: 'weapon-sword' },
+      facing: 'right',
+      motionPose: 'idle',
+    });
+    expect(bot.canvas.width).toBe(640);
+    expect(bot.canvas.height).toBe(640);
+    expect(bot.canvas.width).toBe(WORKSHOP_FRAME_MANIFEST.canvas[0]);
+
+    const { near, far } = startPlacement();
+    // BotAssembler scale must match scenePlacement size / 640 (not / 800).
+    expect(near.size / bot.canvas.width).toBeCloseTo(near.scale, 10);
+    expect(far.size / bot.canvas.width).toBeCloseTo(far.scale, 10);
+
+    for (const actor of [near, far]) {
+      const sceneSole = {
+        x: actor.origin.x + actor.localGroundAnchor.x * actor.scale,
+        y: actor.origin.y + actor.localGroundAnchor.y * actor.scale,
+      };
+      expect(sceneSole.x).toBeCloseTo(actor.groundAnchor.x, 5);
+      expect(sceneSole.y).toBeCloseTo(actor.groundAnchor.y, 5);
+    }
+
+    // Feet stay in 640 rig space (would be ~+160 with global stage translate).
+    const feet = bot.layers.filter((l) => l.id === 'foot_l' || l.id === 'foot_r');
+    expect(feet).toHaveLength(2);
+    for (const foot of feet) {
+      expect(foot.worldPivotY).toBeGreaterThan(400);
+      expect(foot.worldPivotY).toBeLessThan(560);
+    }
+    expect(WORKSHOP_FRAME_MANIFEST.ground_y).toBe(near.localGroundAnchor.y);
   });
 });

@@ -1,7 +1,7 @@
 /**
  * Shared BotAssembler — one module for stable / preview / fight.
  *
- * RN Animated first (no Skia). Workshop Frame kit-v002 PNGs when
+ * RN Animated first (no Skia). Workshop Frame kit-v003 PNGs when
  * `placeholder={false}` (default); geometric PLACEHOLDER when true.
  * Paint uses kit under→mask→over (tint mask only); never a whole-sprite tint.
  * Shell and F8 import this component; do not fork a second renderer.
@@ -12,9 +12,10 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { assembleBot, provisionalMotionOffset } from './assemble';
-import { kitLayerAnchorLeft } from './kitMath';
+import { kitLayerAnchorLeft, smearOverlayLayout } from './kitMath';
 import type { AssembledLayer, BotAssemblerProps } from './types';
 import { workshopFramePartSource } from './workshopFrameAssets';
+import { workshopFrameSmearSource } from './workshopFrameSmearAssets';
 
 const DEFAULT_SIZE = 280; // PROVISIONAL display width — not an export budget.
 
@@ -164,6 +165,8 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
   paintId,
   weaponId,
   motionPose = 'idle',
+  poseOverride,
+  smearOverlay,
   reducedMotion = false,
   placeholder = false,
   size = DEFAULT_SIZE,
@@ -178,9 +181,11 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
         placeholder,
         ...(paintId !== undefined ? { paintId } : {}),
         ...(weaponId !== undefined ? { weaponId } : {}),
+        ...(poseOverride !== undefined ? { poseOverride } : {}),
       }),
-    [loadout, facing, paintId, weaponId, motionPose, placeholder],
+    [loadout, facing, paintId, weaponId, motionPose, poseOverride, placeholder],
   );
+  const smearSource = smearOverlay ? workshopFrameSmearSource(smearOverlay.png) : undefined;
 
   const scale = size / assembled.canvas.width;
   const height = assembled.canvas.height * scale;
@@ -262,12 +267,45 @@ export const BotAssembler: React.FC<BotAssemblerProps> = ({
             />
           ),
         )}
+        {!assembled.placeholder && smearOverlay && smearSource && smearOverlay.size1x
+          ? (() => {
+              const box = smearOverlayLayout({
+                offsetRigPx: smearOverlay.offsetRigPx,
+                size1x: smearOverlay.size1x,
+                scale,
+                canvasSize: size,
+                mirrored: assembled.mirrored,
+              });
+              return (
+                <View
+                  pointerEvents="none"
+                  testID={`${testID}-smear`}
+                  style={{
+                    position: 'absolute',
+                    left: box.left,
+                    top: box.top,
+                    width: box.width,
+                    height: box.height,
+                    zIndex: smearOverlay.z,
+                    // Mirror content inside the already-mirrored box (far fighter).
+                    transform: assembled.mirrored ? [{ scaleX: -1 }] : [],
+                  }}
+                >
+                  <Image
+                    source={smearSource}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode="stretch"
+                  />
+                </View>
+              );
+            })()
+          : null}
       </Animated.View>
       {__DEV__ ? (
         <Text style={styles.badge} testID={`${testID}-badge`}>
           {assembled.placeholder
             ? `PLACEHOLDER · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()}`
-            : `kit-v002 local · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()} · NOT FINAL`}
+            : `kit-v003.3 local · ${assembled.paintVisual.toUpperCase()} · ${assembled.weaponKind.toUpperCase()} · NOT FINAL`}
         </Text>
       ) : null}
     </View>

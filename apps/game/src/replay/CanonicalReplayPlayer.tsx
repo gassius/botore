@@ -172,23 +172,17 @@ export const CanonicalReplayPlayer = forwardRef<
     [farFighter.hp, nearFighter.hp],
   );
 
-  const queue = useMemo(() => compileAnimationQueue(result.replay), [result.replay]);
   const media = useMemo(() => resolvePlaybackMedia(result), [result]);
 
   const [presentation, setPresentation] = useState<ReplayPresentationState>(() =>
     initialPresentationState(nearFighter.characterId, farFighter.characterId),
   );
   const [fxCues, setFxCues] = useState<ActiveFxCue[]>([]);
-  const [playbackUi, setPlaybackUi] = useState<PlaybackUiState>(() =>
-    initialPlaybackUi(queue.length),
-  );
   const [osReducedMotion, setOsReducedMotion] = useState(false);
   const playbackRef = useRef<PlaybackController | null>(null);
   const waitUntilRef = useRef(0);
   const cueSeqRef = useRef(0);
   const rafRef = useRef<number | null>(null);
-  const playbackUiRef = useRef(playbackUi);
-  playbackUiRef.current = playbackUi;
   const presentationRef = useRef(presentation);
   presentationRef.current = presentation;
   const perfEnabled = isPerfSampleEnabled();
@@ -198,6 +192,15 @@ export const CanonicalReplayPlayer = forwardRef<
   const perfPlayReadyMarkedRef = useRef(false);
 
   const reducedMotion = reducedMotionProp ?? osReducedMotion;
+  const queue = useMemo(
+    () => compileAnimationQueue(result.replay, { reducedMotion }),
+    [reducedMotion, result.replay],
+  );
+  const [playbackUi, setPlaybackUi] = useState<PlaybackUiState>(() =>
+    initialPlaybackUi(queue.length),
+  );
+  const playbackUiRef = useRef(playbackUi);
+  playbackUiRef.current = playbackUi;
 
   useEffect(() => {
     if (!perfEnabled || !perfSamplerRef.current) return;
@@ -571,6 +574,12 @@ export const CanonicalReplayPlayer = forwardRef<
                   facing={placement.far.facing}
                   size={placement.far.size}
                   motionPose={presentation.far.motionPose}
+                  {...(presentation.far.poseOverride
+                    ? { poseOverride: presentation.far.poseOverride }
+                    : {})}
+                  {...(presentation.far.smearOverlay
+                    ? { smearOverlay: presentation.far.smearOverlay }
+                    : {})}
                   reducedMotion={reducedMotion}
                   placeholder={false}
                   testID={`${testID}-far`}
@@ -593,6 +602,12 @@ export const CanonicalReplayPlayer = forwardRef<
                   facing={placement.near.facing}
                   size={placement.near.size}
                   motionPose={presentation.near.motionPose}
+                  {...(presentation.near.poseOverride
+                    ? { poseOverride: presentation.near.poseOverride }
+                    : {})}
+                  {...(presentation.near.smearOverlay
+                    ? { smearOverlay: presentation.near.smearOverlay }
+                    : {})}
                   reducedMotion={reducedMotion}
                   placeholder={false}
                   testID={`${testID}-near`}

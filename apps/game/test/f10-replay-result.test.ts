@@ -214,14 +214,15 @@ describe('F10 event-driven FX binding', () => {
     expect(state.far.motionPose).toBe('defeat');
 
     const queue = compileAnimationQueue(result.replay);
-    const fxKinds = new Set(
-      queue
-        .map((c) => c.kind)
-        .filter((k) => k === 'dodge_anim' || k === 'damage_pop' || k === 'defeat_anim'),
+    const hasDamagePop = queue.some((c) => c.kind === 'damage_pop');
+    const hasDodgeFx = queue.some(
+      (c) => c.kind === 'dodge_anim' || (c.kind === 'motion_beat' && c.fxFamily === 'dodge'),
     );
-    for (const k of fxKinds) {
-      expect(['dodge_anim', 'damage_pop', 'defeat_anim']).toContain(k);
-    }
+    const hasDefeatFx = queue.some(
+      (c) => c.kind === 'defeat_anim' || (c.kind === 'motion_beat' && c.fxFamily === 'defeat'),
+    );
+    // Golden may or may not include each family; when present they stay event-driven.
+    expect(hasDamagePop || hasDodgeFx || hasDefeatFx).toBe(true);
   });
 });
 

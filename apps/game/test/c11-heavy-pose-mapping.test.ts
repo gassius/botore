@@ -28,6 +28,15 @@ describe('C11 heavy-hit pose mapping', () => {
       'dodge',
       'hit',
       'defeat',
+      'portrait',
+      'victory',
+      'walk_in',
+      'windup',
+      'strike',
+      'follow_through',
+      'recovery',
+      'hit_react',
+      'knockout',
     ]);
     expect(isMotionPose('heavy_windup')).toBe(true);
     expect(isMotionPose('heavy_attack')).toBe(true);
@@ -53,12 +62,14 @@ describe('C11 heavy-hit pose mapping', () => {
     expect(windup.kitPoseKey).toBe('heavy_windup');
     expect(heavy.kitPoseKey).toBe('heavy_attack');
     expect(heavy.mirrored).toBe(true);
-    // Distinct root placement / part transforms vs quick (v002 heavy_windup.root_y=45).
+    // Windup stays distinct from quick. On kit-v003.1, heavy_attack aliases →
+    // strike (same baked geometry as quick_attack); MotionPose / kitPoseKey still
+    // differ so A2 can re-art without a parallel API.
     const quickTorso = quick.layers.find((l) => l.id === 'torso')!;
     const windupTorso = windup.layers.find((l) => l.id === 'torso')!;
-    const heavyTorso = heavy.layers.find((l) => l.id === 'torso')!;
     expect(windupTorso.y).not.toBe(quickTorso.y);
-    expect(heavyTorso.rotateCwDeg).not.toBe(quickTorso.rotateCwDeg);
+    expect(windupTorso.rotateCwDeg).not.toBe(quickTorso.rotateCwDeg);
+    expect(heavy.kitPoseKey).not.toBe(quick.kitPoseKey);
   });
 
   it('compiles sealed weapon attacks into windup then strike without inventing outcomes', () => {
@@ -102,17 +113,45 @@ describe('C11 heavy-hit pose mapping', () => {
     });
 
     const queue = compileAnimationQueue(replay);
+    // A2: sealed attacks expand to kit timing motion_beats (not coarse attack_anim).
     const attacks = queue.filter((c) => c.kind === 'attack_anim');
-    expect(attacks).toEqual([
-      { kind: 'attack_anim', actor: 'near', attack: 'basic' },
-      { kind: 'attack_anim', actor: 'far', attack: 'weapon', heavyPhase: 'windup' },
-      { kind: 'attack_anim', actor: 'far', attack: 'weapon', heavyPhase: 'strike' },
-    ]);
-    expect(commandDuration(attacks[1]!)).toBe(280);
-    expect(commandDuration(attacks[2]!)).toBe(420);
-    expect(sfxClipFromCommand(attacks[1]!)).toBeNull();
-    expect(sfxClipFromCommand(attacks[2]!)).toBe('swing');
-    expect(sfxClipFromCommand(attacks[0]!)).toBe('swing');
+    expect(attacks).toEqual([]);
+    const nearBeats = queue.filter(
+      (c) => c.kind === 'motion_beat' && c.actor === 'near' && c.poseKey !== 'walk_in',
+    );
+    const farBeats = queue.filter(
+      (c) => c.kind === 'motion_beat' && c.actor === 'far' && c.poseKey !== 'walk_in',
+    );
+    // basic starts at strike-arc (keeps smear travel; lastKey may still read
+    // windup until key:strike); weapon keeps full anticipation so quick vs
+    // heavy stay readable by frame count + swing markers.
+    expect(nearBeats.some((c) => c.kind === 'motion_beat' && c.markers.includes('swing'))).toBe(
+      true,
+    );
+    expect(farBeats.some((c) => c.kind === 'motion_beat' && c.poseKey === 'windup')).toBe(true);
+    expect(farBeats.some((c) => c.kind === 'motion_beat' && c.markers.includes('swing'))).toBe(
+      true,
+    );
+    const nearAttackSmears = nearBeats.filter(
+      (c) => c.kind === 'motion_beat' && Boolean(c.smear),
+    ).length;
+    expect(nearAttackSmears).toBeGreaterThan(0);
+    const nearFrames = nearBeats.reduce((n, c) => n + (c.kind === 'motion_beat' ? c.frames : 0), 0);
+    const farFrames = farBeats.reduce((n, c) => n + (c.kind === 'motion_beat' ? c.frames : 0), 0);
+    expect(nearFrames).toBeLessThan(farFrames);
+    // Legacy coarse attack_anim mapping still works for SFX helpers.
+    expect(sfxClipFromCommand({ kind: 'attack_anim', actor: 'a', attack: 'basic' })).toBe('swing');
+    expect(
+      sfxClipFromCommand({
+        kind: 'attack_anim',
+        actor: 'a',
+        attack: 'weapon',
+        heavyPhase: 'windup',
+      }),
+    ).toBeNull();
+    expect(
+      commandDuration({ kind: 'attack_anim', actor: 'a', attack: 'weapon', heavyPhase: 'windup' }),
+    ).toBe(280);
   });
 
   it('drives presentation poses from sealed attack_anim commands', () => {
@@ -148,7 +187,8 @@ describe('C11 heavy-hit pose mapping', () => {
     const gaps = listWorkshopFrameGaps();
     expect(gaps.some((g) => /need product mapping for heavy/i.test(g))).toBe(false);
     expect(gaps.some((g) => g.includes('MotionPose heavy_* is mapped'))).toBe(true);
-    expect(gaps.some((g) => g.includes('heavy_windup.root_y'))).toBe(true);
+    // v003: nested per-weapon heavy entries (A2 may re-art); no v002 flat root_y note.
+    expect(gaps.some((g) => g.includes('heavy_windup'))).toBe(true);
   });
 
   it('gives PLACEHOLDER heavy poses non-zero provisional offsets', () => {

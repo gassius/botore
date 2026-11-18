@@ -18,6 +18,8 @@ export type {
   ResolvedResultBotPose,
   ResultBotPoseKind,
 } from './resultPoseSlot';
+/** @deprecated Use ApprovedResultBotPose */
+export type { ApprovedResultBotPose as ApprovedDefeatPose } from './resultPoseSlot';
 export { ResultDefeatPose } from './ResultDefeatPose';
 export type { ResultDefeatPoseProps } from './ResultDefeatPose';
 export { ResultVictoryPose, ResultVictoryPoseSlot } from './ResultVictoryPoseSlot';

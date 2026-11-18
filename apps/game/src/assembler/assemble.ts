@@ -1,7 +1,7 @@
 /**
  * Pure bot assembly: loadout → ordered layers (stable / preview / fight).
  *
- * Dispatches to Workshop Frame kit-v002 when `placeholder` is false; otherwise
+ * Dispatches to Workshop Frame kit-v003 when `placeholder` is false; otherwise
  * geometric PLACEHOLDER stand-ins. Framework-free core stays in
  * `workshopFrameAdapter` / this file for headless tests.
  */
@@ -21,6 +21,7 @@ import type {
   BotFacing,
   MotionPose,
 } from './types';
+import type { KitPoseEntry } from './workshopFrameTypes';
 import { assembleWorkshopFrame } from './workshopFrameAdapter';
 
 export interface AssembleBotInput {
@@ -29,8 +30,10 @@ export interface AssembleBotInput {
   readonly paintId?: string;
   readonly weaponId?: string;
   readonly motionPose?: MotionPose;
+  /** Baked clip pose override (A2b / kit-v003.3). */
+  readonly poseOverride?: KitPoseEntry;
   /**
-   * true → geometric PLACEHOLDER; false/undefined → kit-v002 when available.
+   * true → geometric PLACEHOLDER; false/undefined → kit-v003 when available.
    * Setting false is local integration only — not likeness/native acceptance.
    */
   readonly placeholder?: boolean;
@@ -308,6 +311,7 @@ export function assembleBot(input: AssembleBotInput): AssembledBot {
     ...(input.paintId !== undefined ? { paintId: input.paintId } : {}),
     ...(input.weaponId !== undefined ? { weaponId: input.weaponId } : {}),
     ...(input.motionPose !== undefined ? { motionPose: input.motionPose } : {}),
+    ...(input.poseOverride !== undefined ? { poseOverride: input.poseOverride } : {}),
   });
 }
 
@@ -344,7 +348,7 @@ export function provisionalMotionOffset(
   pose: MotionPose,
   reducedMotion: boolean,
 ): { translateX: number; translateY: number; rotateDeg: number; provisional: true } {
-  if (reducedMotion || pose === 'idle') {
+  if (reducedMotion || pose === 'idle' || pose === 'portrait' || pose === 'victory') {
     return { translateX: 0, translateY: 0, rotateDeg: 0, provisional: true };
   }
   switch (pose) {

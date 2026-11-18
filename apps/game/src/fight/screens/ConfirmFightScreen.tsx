@@ -1,12 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import type { MotionPose } from '../../assembler';
+import type { KitPoseEntry, KitWeaponKind } from '../../assembler/workshopFrameTypes';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import {
   isDesignCaptureEnabled,
   readDesignCapturePoseCompare,
+  type DesignCapturePoseCompare,
 } from '../../design-capture/captureEnv';
 import { peekCaptureIntent } from '../../design-capture/captureIntentState';
+import {
+  designCaptureClipPresentation,
+  type FightTimelineSmear,
+} from '../../fight/a2FightTimeline';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import {
   Nameplate,
@@ -24,13 +30,33 @@ import { useForcedSessionFailure } from '../../session-failure/useForcedSessionF
 import { computeConfirmFightControls, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
 
+function capturePoseMode(): DesignCapturePoseCompare | null {
+  if (!isDesignCaptureEnabled()) return null;
+  return peekCaptureIntent().poseCompare ?? readDesignCapturePoseCompare();
+}
+
 /** Design-capture only: near quick hit + far heavy hit (C11). */
 function capturePosePair(): { near: MotionPose; far: MotionPose } | null {
-  if (!isDesignCaptureEnabled()) return null;
-  const fromIntent = peekCaptureIntent().poseCompare;
-  const fromEnv = readDesignCapturePoseCompare();
-  if (fromIntent !== 'quick-vs-heavy' && fromEnv !== 'quick-vs-heavy') return null;
+  if (capturePoseMode() !== 'quick-vs-heavy') return null;
   return { near: 'attack', far: 'heavy_attack' };
+}
+
+function kitWeaponFromId(weaponId: string): KitWeaponKind {
+  const id = weaponId.toLowerCase();
+  if (id.includes('axe')) return 'axe';
+  if (id.includes('dagger')) return 'dagger';
+  return 'sword';
+}
+
+/** A2b design-capture: clip-attack / clip-knockout stills for the deep-link weapon. */
+function captureClipStill(weaponId: string): {
+  motionPose: MotionPose;
+  poseOverride: KitPoseEntry;
+  smearOverlay?: FightTimelineSmear;
+} | null {
+  const mode = capturePoseMode();
+  if (mode !== 'clip-attack' && mode !== 'clip-knockout') return null;
+  return designCaptureClipPresentation(kitWeaponFromId(weaponId), mode);
 }
 
 /** ConfirmFight domain — mounts into shell ConfirmFight slot; starts combat-v1. */
@@ -70,8 +96,14 @@ export function ConfirmFightScreen(props: {
       ? submit.allowancesRemaining
       : (eligAllowances ?? allowancesFromList);
   const posePair = capturePosePair();
-  const nearPose: MotionPose = posePair?.near ?? 'idle';
+  const captureWeaponId =
+    isDesignCaptureEnabled() && peekCaptureIntent().weaponId
+      ? peekCaptureIntent().weaponId!
+      : confirmed?.weapon;
+  const clipStill = captureWeaponId ? captureClipStill(captureWeaponId) : null;
+  const nearPose: MotionPose = clipStill?.motionPose ?? posePair?.near ?? 'idle';
   const farPose: MotionPose = posePair?.far ?? 'idle';
+  const nearWeaponId = captureWeaponId ?? confirmed?.weapon ?? 'sword';
 
   useEffect(() => {
     let cancelled = false;
@@ -235,14 +267,16 @@ export function ConfirmFightScreen(props: {
               loadout={{
                 chassisId: confirmed.chassis,
                 paintId: confirmed.paint,
-                weaponId: confirmed.weapon,
+                weaponId: nearWeaponId,
               }}
               facing="right"
               paintId={confirmed.paint}
-              weaponId={confirmed.weapon}
+              weaponId={nearWeaponId}
               size={160}
               reducedMotion
               motionPose={nearPose}
+              {...(clipStill?.poseOverride ? { poseOverride: clipStill.poseOverride } : {})}
+              {...(clipStill?.smearOverlay ? { smearOverlay: clipStill.smearOverlay } : {})}
               label="You"
               testID="confirm-you"
             />
