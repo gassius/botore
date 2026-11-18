@@ -9,6 +9,7 @@ import {
   garageTag,
 } from '../../garage-tag';
 import { useFightSession } from '../../fight';
+import { CanonicalReplayPlayer } from '../../replay/CanonicalReplayPlayer';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
 import {
   ResultOverlay,
@@ -21,8 +22,8 @@ import { useFirstRun } from '../FirstRunContext';
 /**
  * Capture / deep-link Result surface (not in ROUTE_FLOW).
  * D2 first-run shows the Result overlay on Replay after KO. This slot stays for
- * design-capture deep links that still land on FightResult, using the same
- * overlay + buttons (no IDs / checksums / Domain chrome).
+ * design-capture deep links that still land on FightResult — same scrim + card
+ * over the **live arena** (never a flat opaque fill).
  */
 export function FightResultSlot(): React.ReactElement {
   const {
@@ -73,18 +74,33 @@ export function FightResultSlot(): React.ReactElement {
         : 'victory',
   );
 
+  const arenaOverlay = (
+    <ResultOverlay
+      confirmed={confirmed}
+      record={captureRecord}
+      opponentBotoreName="Magistra Volta"
+      muted={muted}
+      musicEnabled={musicEnabled}
+      effectsEnabled={effectsEnabled}
+      reducedMotion={reducedMotion}
+      testID="fight-result"
+    />
+  );
+
   return (
     <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']} testID="slot-result">
       <View style={styles.arena}>
-        <ResultOverlay
-          confirmed={confirmed}
-          record={captureRecord}
-          opponentBotoreName="Magistra Volta"
+        <CanonicalReplayPlayer
+          result={confirmed}
           muted={muted}
           musicEnabled={musicEnabled}
           effectsEnabled={effectsEnabled}
           reducedMotion={reducedMotion}
-          testID="fight-result"
+          autoPlay
+          showLocalControls={false}
+          layoutMode="arenaFirst"
+          arenaOverlay={arenaOverlay}
+          testID="slot-result-player"
         />
       </View>
       <ResultOverlayBand

@@ -38,8 +38,11 @@ export type ResultCardModel = {
   readonly vsLine: string;
 };
 
-/** Dim opacity over the frozen arena (mockup ~80–85%). */
-export const RESULT_OVERLAY_DIM_OPACITY = 0.82;
+/**
+ * Ink scrim over the live arena (design review: ~55–65%).
+ * Must stay translucent so floor + both bots remain readable under the card.
+ */
+export const RESULT_OVERLAY_DIM_OPACITY = 0.6;
 
 /** Plate drop-in duration when motion is allowed. */
 export const RESULT_PLATE_DROP_MS = 420;

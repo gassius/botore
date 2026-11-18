@@ -112,9 +112,15 @@ describe('D2 KO hold → overlay (not navigate)', () => {
     expect(shouldReopenResultOverlayOnBack('Replay', 'firstWatch')).toBe(false);
   });
 
-  it('dims arena at ~80–85%', () => {
-    expect(RESULT_OVERLAY_DIM_OPACITY).toBeGreaterThanOrEqual(0.8);
-    expect(RESULT_OVERLAY_DIM_OPACITY).toBeLessThanOrEqual(0.85);
+  it('uses a translucent ~55–65% ink scrim (arena stays readable)', () => {
+    expect(RESULT_OVERLAY_DIM_OPACITY).toBeGreaterThanOrEqual(0.55);
+    expect(RESULT_OVERLAY_DIM_OPACITY).toBeLessThanOrEqual(0.65);
+    const overlay = readSource('src/result-overlay/ResultOverlay.tsx');
+    expect(overlay).toContain('RESULT_OVERLAY_DIM_OPACITY');
+    expect(overlay).not.toMatch(/backgroundColor:\s*'#111'/);
+    const captureSlot = readSource('src/first-run/slots/FightResultSlot.tsx');
+    expect(captureSlot).toContain('CanonicalReplayPlayer');
+    expect(captureSlot).toContain('arenaOverlay={arenaOverlay}');
   });
 });
 

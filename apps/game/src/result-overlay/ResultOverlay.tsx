@@ -264,7 +264,8 @@ const styles = StyleSheet.create({
   },
   dim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#0c0b09',
+    // Semi-transparent ink — never an opaque #111 fill that hides the arena.
+    backgroundColor: '#1e1c18',
   },
   content: {
     ...StyleSheet.absoluteFillObject,
