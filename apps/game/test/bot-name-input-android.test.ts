@@ -18,7 +18,9 @@ describe('bot name TextInput Android controlled-input contract', () => {
       draft = clampBotNameDraft(draft + ch);
     }
     expect(draft).toBe('aBcDe');
-    expect(clampBotNameDraft('MiXeD_Case!!')).toBe('MiXeD_Case!!'.slice(0, BOT_DISPLAY_NAME_MAX_LEN));
+    expect(clampBotNameDraft('MiXeD_Case!!')).toBe(
+      'MiXeD_Case!!'.slice(0, BOT_DISPLAY_NAME_MAX_LEN),
+    );
     expect(clampBotNameDraft('x'.repeat(20))).toHaveLength(BOT_DISPLAY_NAME_MAX_LEN);
   });
 

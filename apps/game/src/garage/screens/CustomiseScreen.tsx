@@ -19,10 +19,7 @@ import { classifySessionFailure, sessionFailureCopy } from '../../session-failur
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
 import { useFirstRun } from '../../first-run/FirstRunContext';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
-import {
-  BOT_NAME_INPUT_IME_PROPS,
-  clampBotNameDraft,
-} from '../customise/botNameInput';
+import { BOT_NAME_INPUT_IME_PROPS, clampBotNameDraft } from '../customise/botNameInput';
 import {
   CUSTOMISE_BOT_SIZE,
   CUSTOMISE_SLOTS,
