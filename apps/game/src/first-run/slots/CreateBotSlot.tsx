@@ -1,24 +1,9 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { ScreenChrome, ScreenHeader } from '../../garage-tag';
+import { CreateBotScreen } from '../../garage/screens/CreateBotScreen';
 import { useFirstRun } from '../FirstRunContext';
 
-/**
- * D5 route shell for Create Bot — D6 replaces body with name / paint / weapon.
- * Keeps Ludus → Create Bot navigation wired without player-facing stub copy.
- */
+/** D6 Create Bot route slot — reached from the Ludus Create Bot carousel card. */
 export function CreateBotSlot(): React.ReactElement {
   const { goTo } = useFirstRun();
-  return (
-    <ScreenChrome testID="slot-create-bot" scroll={false}>
-      <ScreenHeader title="Create Bot" onBack={() => goTo('Stable')} testID="create-bot-header" />
-      <View style={styles.body} testID="create-bot-placeholder" />
-    </ScreenChrome>
-  );
+  return <CreateBotScreen onBack={() => goTo('Stable')} onCreated={() => goTo('Stable')} />;
 }
-
-const styles = StyleSheet.create({
-  body: {
-    flex: 1,
-  },
-});
