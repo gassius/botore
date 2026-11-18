@@ -1256,6 +1256,24 @@ begin
     (select status from public.atlas_versions where version = 'v900010') = 'published',
     'v900010 still published when env marker row absent'
   );
+  -- Trigger guard: reopen GUC alone is not enough when marker is absent.
+  perform set_config('app.atlas_dev_reopen', 'on', true);
+  begin
+    update public.atlas_versions
+       set status = 'draft', published_at = null
+     where version = 'v900010';
+    raise exception 'IMMUTABILITY FAIL: published→draft with GUC but marker absent';
+  exception
+    when others then
+      if sqlstate = '55000' and sqlerrm like 'atlas_version_immutable%' then null;
+      else raise;
+      end if;
+  end;
+  perform tests.assert(
+    (select status from public.atlas_versions where version = 'v900010') = 'published',
+    'v900010 still published after direct reopen attempt with marker absent'
+  );
+  perform set_config('app.atlas_dev_reopen', '', true);
 
   -- Fail closed when marker is production (never reopen).
   insert into private.environment (singleton, env) values (true, 'production')
@@ -1273,6 +1291,24 @@ begin
     (select status from public.atlas_versions where version = 'v900010') = 'published',
     'v900010 still published when env marker is production'
   );
+  -- Trigger guard: reopen GUC alone is not enough when marker is production.
+  perform set_config('app.atlas_dev_reopen', 'on', true);
+  begin
+    update public.atlas_versions
+       set status = 'draft', published_at = null
+     where version = 'v900010';
+    raise exception 'IMMUTABILITY FAIL: published→draft with GUC but marker production';
+  exception
+    when others then
+      if sqlstate = '55000' and sqlerrm like 'atlas_version_immutable%' then null;
+      else raise;
+      end if;
+  end;
+  perform tests.assert(
+    (select status from public.atlas_versions where version = 'v900010') = 'published',
+    'v900010 still published after direct reopen attempt with production marker'
+  );
+  perform set_config('app.atlas_dev_reopen', '', true);
 
   -- Development marker allows reopen (Infra INSERT on Dev DB; never from migrations).
   insert into private.environment (singleton, env) values (true, 'development')
