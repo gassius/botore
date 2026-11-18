@@ -12,6 +12,7 @@ describe('first-run routes', () => {
   it('exposes the shared contract route names; Settings is side-entry only', () => {
     expect(FIRST_RUN_ROUTES).toEqual([
       'Stable',
+      'CreateBot',
       'Customise',
       'Opponents',
       'ConfirmFight',
@@ -20,6 +21,7 @@ describe('first-run routes', () => {
       'Ranking',
       'Settings',
     ]);
+    expect(isFirstRunRoute('CreateBot')).toBe(true);
     expect(ROUTE_FLOW).toEqual([
       'Stable',
       'Customise',

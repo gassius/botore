@@ -14,6 +14,7 @@ export function StableSlot(): React.ReactElement {
       onFindOpponent={() => goTo('Opponents')}
       onSettings={() => goTo('Settings')}
       onRanking={() => goTo('Ranking')}
+      onCreateBot={() => goTo('CreateBot')}
     />
   );
 }

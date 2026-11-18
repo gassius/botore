@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
-import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import { useFirstRun } from '../../first-run/FirstRunContext';
 import {
   BrandWordmark,
-  Nameplate,
   PrimaryButton,
   SecondaryButton,
   ScreenChrome,
@@ -18,30 +16,35 @@ import { PrivacyPolicyScreen } from '../../legal/PrivacyPolicyScreen';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
-import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { useGarageSession } from '../LoadoutSessionContext';
+import { LudusBotCarousel, type LudusCarouselItem } from '../ludus/LudusBotCarousel';
 import { STABLE_HOME_TITLE } from '../stableHomeCopy';
 import { DeleteAccountScreen } from './DeleteAccountScreen';
-
-/** Compact Ludus hero until D5/E4/E6 carousel lands — full kit on 390×844. */
-const STABLE_BOT_SIZE = 200;
 
 /** D5 More sheet Sign out — mockup `#B23A2E`. */
 const MORE_SIGN_OUT = '#B23A2E';
 
 /**
- * Ludus home (route id remains Stable). D5 footer IA:
- * Customise → Find opponent → Settings | More (side by side, More last).
- * Create Bot is the carousel last slot (E4/D5) — not a footer button.
- * Sign out only under More (with Ranking when wired, Privacy, Delete).
+ * Ludus home (route id remains Stable). D5:
+ * BOTORE + — LUDUS — + YOUR BOTS · n / cap, snap bot carousel + Create slot,
+ * Customise → Find opponent → Settings | More. Sign out only under More.
  */
 export function StableScreen(props: {
   onCustomise: () => void;
   onFindOpponent?: () => void;
   onSettings?: () => void;
   onRanking?: () => void;
+  onCreateBot?: () => void;
 }): React.ReactElement {
-  const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
+  const {
+    loadout,
+    canProgress,
+    signOut,
+    retryHydration,
+    ownedBots,
+    botCap,
+    selectActiveBot,
+  } = useGarageSession();
   const { homeCaptureScenario, muted, musicEnabled, effectsEnabled } = useFirstRun();
   const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const insets = useSafeAreaInsets();
@@ -49,12 +52,35 @@ export function StableScreen(props: {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [moreOpen, setMoreOpen] = useState(() => homeCaptureScenario === 'more');
-  const confirmed = loadout.confirmedLoadout;
-  const displayName = playerFacingDisplayName(loadout.displayName);
+  const [onCreateSlide, setOnCreateSlide] = useState(
+    () => homeCaptureScenario === 'create-slot',
+  );
+
+  const ownedCount = ownedBots.length;
+  const cap = botCap > 0 ? botCap : 3;
+  const actionsEnabled = canProgress && !onCreateSlide;
+
+  const captureInitialIndex = useMemo(() => {
+    if (homeCaptureScenario === 'create-slot') {
+      return Math.min(ownedCount, Math.max(0, ownedCount)); // create is last when under cap
+    }
+    if (homeCaptureScenario === 'bot') {
+      const activeIdx = ownedBots.findIndex((b) => b.isActive);
+      return activeIdx >= 0 ? activeIdx : 0;
+    }
+    const activeIdx = ownedBots.findIndex((b) => b.isActive);
+    return activeIdx >= 0 ? activeIdx : 0;
+  }, [homeCaptureScenario, ownedBots, ownedCount]);
 
   useEffect(() => {
     if (homeCaptureScenario === 'more') {
       setMoreOpen(true);
+    } else if (homeCaptureScenario === 'create-slot') {
+      setMoreOpen(false);
+      setOnCreateSlide(true);
+    } else if (homeCaptureScenario === 'bot') {
+      setMoreOpen(false);
+      setOnCreateSlide(false);
     }
   }, [homeCaptureScenario]);
 
@@ -68,6 +94,30 @@ export function StableScreen(props: {
   const failureKind =
     forced ??
     (hydrationKind === 'offline' || hydrationKind === 'auth_expired' ? hydrationKind : null);
+
+  const handleSnap = useCallback(
+    (_index: number, item: LudusCarouselItem) => {
+      uiAudio.playCue('uiSnap');
+      setOnCreateSlide(item.kind === 'create');
+    },
+    [uiAudio],
+  );
+
+  const handleSelectBot = useCallback(
+    (characterId: string) => {
+      void selectActiveBot(characterId);
+    },
+    [selectActiveBot],
+  );
+
+  const handleCreateBot = useCallback(() => {
+    if (ownedCount >= cap) {
+      uiAudio.playCue('uiError');
+      return;
+    }
+    uiAudio.playCue('uiCreate');
+    props.onCreateBot?.();
+  }, [cap, ownedCount, props, uiAudio]);
 
   if (showDeleteAccount) {
     return (
@@ -111,7 +161,7 @@ export function StableScreen(props: {
           uiAudio.playUiTap();
           props.onCustomise();
         }}
-        disabled={!canProgress}
+        disabled={!actionsEnabled}
         onDisabledPress={() => uiAudio.playCue('uiError')}
         testID="stable-customise"
       />
@@ -121,12 +171,11 @@ export function StableScreen(props: {
           uiAudio.playCue('uiConfirm');
           props.onFindOpponent?.();
         }}
-        disabled={!canProgress || !props.onFindOpponent}
+        disabled={!actionsEnabled || !props.onFindOpponent}
         onDisabledPress={() => uiAudio.playCue('uiError')}
         testID="stable-find-opponent"
       />
       {retryFooter}
-      {/* E4/D5: Create Bot lives in the bot carousel last slot (cap-aware), not here. */}
       <View style={styles.row2}>
         {props.onSettings ? (
           <SecondaryButton
@@ -155,10 +204,12 @@ export function StableScreen(props: {
   return (
     <View style={styles.root} testID="stable-root">
       <ScreenChrome testID="slot-stable" scroll={false} footer={footer}>
-        <View style={styles.bodyCompact}>
+        <View style={styles.body}>
           <BrandWordmark width={140} />
           <ScreenHeader title={STABLE_HOME_TITLE} />
-          <Nameplate name={displayName} badge="You" testID="stable-nameplate" />
+          <Text style={styles.counter} allowFontScaling testID="ludus-bots-counter">
+            Your bots · {ownedCount} / {cap}
+          </Text>
 
           {failureKind ? (
             <SessionFailureBanner
@@ -176,32 +227,14 @@ export function StableScreen(props: {
               testID="stable-hydration-error"
             />
           ) : (
-            <Text style={styles.equipped} allowFontScaling>
-              Equipped
-            </Text>
-          )}
-
-          {confirmed ? (
-            <View style={styles.hero}>
-              <BotAssemblerSlot
-                loadout={{
-                  chassisId: confirmed.chassis,
-                  paintId: confirmed.paint,
-                  weaponId: confirmed.weapon,
-                }}
-                facing="right"
-                paintId={confirmed.paint}
-                weaponId={confirmed.weapon}
-                motionPose="idle"
-                size={STABLE_BOT_SIZE}
-                label="Equipped bot"
-                testID="stable-bot"
-              />
-            </View>
-          ) : (
-            <Text style={styles.note} allowFontScaling testID="stable-no-confirmed">
-              No confirmed equipment is shown until hydration succeeds.
-            </Text>
+            <LudusBotCarousel
+              bots={ownedBots}
+              cap={cap}
+              initialIndex={captureInitialIndex}
+              onSelectBot={handleSelectBot}
+              onCreateBot={handleCreateBot}
+              onSnap={handleSnap}
+            />
           )}
         </View>
       </ScreenChrome>
@@ -313,17 +346,20 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  bodyCompact: {
+  body: {
     flex: 1,
     gap: 8,
     minHeight: 0,
-  },
-  hero: {
-    flexGrow: 1,
-    flexShrink: 1,
-    minHeight: 0,
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  counter: {
+    textAlign: 'center',
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: garageTag.steel,
+    marginBottom: 4,
   },
   footerCompact: {
     gap: 10,
@@ -334,19 +370,6 @@ const styles = StyleSheet.create({
   },
   row2Btn: {
     flex: 1,
-  },
-  equipped: {
-    alignSelf: 'center',
-    fontWeight: '800',
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: garageTag.mustard,
-  },
-  note: {
-    marginTop: 4,
-    fontSize: 12,
-    color: garageTag.steel,
   },
   sheetRoot: {
     flex: 1,

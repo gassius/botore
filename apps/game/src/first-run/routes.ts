@@ -8,6 +8,7 @@ import { STABLE_HOME_TITLE } from '../garage/stableHomeCopy';
  */
 export const FIRST_RUN_ROUTES = [
   'Stable',
+  'CreateBot',
   'Customise',
   'Opponents',
   'ConfirmFight',
@@ -21,6 +22,7 @@ export type FirstRunRoute = (typeof FIRST_RUN_ROUTES)[number];
 
 export const ROUTE_TITLES: Record<FirstRunRoute, string> = {
   Stable: STABLE_HOME_TITLE,
+  CreateBot: 'Create Bot',
   Customise: 'Customise',
   Opponents: 'Opponents',
   ConfirmFight: 'Confirm Fight',
