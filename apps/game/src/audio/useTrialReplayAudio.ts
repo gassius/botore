@@ -1,5 +1,6 @@
 /**
  * Hook that binds a TrialAudioSession to CanonicalReplayPlayer lifecycle.
+ * Prefers the app-wide shared session (menu + fight on one stack).
  * Failures never surface to the fight clock.
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -18,6 +19,7 @@ import {
 } from './trialPartAudioMetroAssets';
 import { profilesFromFightBuilds } from './partAudioResolve';
 import type { TrialAudioUiCueId } from './trialAudioPin';
+import { useSharedTrialAudio } from './TrialAudioProvider';
 
 export type TrialReplayAudioApi = {
   onCommand: (cmd: AnimationCommand) => void;
@@ -38,6 +40,7 @@ export function useTrialReplayAudio(opts: {
   /** Sealed builds for part-tagged swing / chassis hit. */
   builds?: SealedFightBuilds;
 }): TrialReplayAudioApi {
+  const shared = useSharedTrialAudio();
   const sessionRef = useRef<TrialAudioSession | null>(null);
   const mutedRef = useRef(opts.muted);
   const musicEnabledRef = useRef(opts.musicEnabled !== false);
@@ -59,12 +62,18 @@ export function useTrialReplayAudio(opts: {
     });
   }, [opts.attackerId, opts.defenderId, opts.builds]);
 
-  // Profiles are baked into the session at create time; recreate when they change.
+  // Profiles are baked into the local session at create time; recreate when they change.
+  // Shared session updates profiles in place so menu music is not torn down.
   const profileKey = fighterProfiles
     .map((p) => `${p.characterId}:${p.weaponSwingCue ?? ''}:${p.chassisHitCue ?? ''}`)
     .join('|');
 
   useEffect(() => {
+    if (shared) {
+      shared.setFighterProfiles(fighterProfiles);
+      sessionRef.current = null;
+      return;
+    }
     if (!enabled) {
       sessionRef.current = null;
       return;
@@ -85,55 +94,84 @@ export function useTrialReplayAudio(opts: {
       session.dispose();
       if (sessionRef.current === session) sessionRef.current = null;
     };
-  }, [enabled, profileKey, fighterProfiles]);
+  }, [enabled, profileKey, fighterProfiles, shared]);
 
   useEffect(() => {
+    if (shared) return;
     sessionRef.current?.setMuted(opts.muted);
-  }, [opts.muted]);
+  }, [opts.muted, shared]);
 
   useEffect(() => {
+    if (shared) return;
     sessionRef.current?.setMusicEnabled(opts.musicEnabled !== false);
-  }, [opts.musicEnabled]);
+  }, [opts.musicEnabled, shared]);
 
   useEffect(() => {
+    if (shared) return;
     sessionRef.current?.setEffectsEnabled(opts.effectsEnabled !== false);
-  }, [opts.effectsEnabled]);
+  }, [opts.effectsEnabled, shared]);
 
   useEffect(() => {
-    sessionRef.current?.setPlaying(opts.playing);
-  }, [opts.playing]);
-
-  const onCommand = useCallback((cmd: AnimationCommand) => {
-    try {
-      sessionRef.current?.notifyCommand(cmd);
-    } catch {
-      // Never desync fight on audio errors.
+    if (shared) {
+      shared.setPlaying(opts.playing);
+      return;
     }
-  }, []);
+    sessionRef.current?.setPlaying(opts.playing);
+  }, [opts.playing, shared]);
+
+  const onCommand = useCallback(
+    (cmd: AnimationCommand) => {
+      try {
+        if (shared) {
+          shared.notifyCommand(cmd);
+          return;
+        }
+        sessionRef.current?.notifyCommand(cmd);
+      } catch {
+        // Never desync fight on audio errors.
+      }
+    },
+    [shared],
+  );
 
   const playUiTap = useCallback(() => {
     try {
+      if (shared) {
+        shared.playUiTap();
+        return;
+      }
       sessionRef.current?.playUiTap();
     } catch {
       // ignore
     }
-  }, []);
+  }, [shared]);
 
-  const playCue = useCallback((id: TrialAudioUiCueId, options?: PlayCueOptions) => {
-    try {
-      sessionRef.current?.playCue(id, options);
-    } catch {
-      // ignore
-    }
-  }, []);
+  const playCue = useCallback(
+    (id: TrialAudioUiCueId, options?: PlayCueOptions) => {
+      try {
+        if (shared) {
+          shared.playCue(id, options);
+          return;
+        }
+        sessionRef.current?.playCue(id, options);
+      } catch {
+        // ignore
+      }
+    },
+    [shared],
+  );
 
   const reset = useCallback(() => {
     try {
+      if (shared) {
+        shared.reset();
+        return;
+      }
       sessionRef.current?.reset();
     } catch {
       // ignore
     }
-  }, []);
+  }, [shared]);
 
   return { onCommand, playUiTap, playCue, reset };
 }

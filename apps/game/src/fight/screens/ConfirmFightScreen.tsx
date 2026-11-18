@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import type { MotionPose } from '../../assembler';
 import type { KitPoseEntry, KitWeaponKind } from '../../assembler/workshopFrameTypes';
+import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import {
   isDesignCaptureEnabled,
@@ -13,6 +14,7 @@ import {
   designCaptureClipPresentation,
   type FightTimelineSmear,
 } from '../../fight/a2FightTimeline';
+import { useFirstRun } from '../../first-run/FirstRunContext';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import {
   GlyphButton,
@@ -69,6 +71,8 @@ export function ConfirmFightScreen(props: {
   onFightStarted: () => void;
 }): React.ReactElement {
   const { loadout, session, canProgress, signOut } = useGarageSession();
+  const { muted, musicEnabled, effectsEnabled } = useFirstRun();
+  const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const forced = useForcedSessionFailure();
   const {
     selected,
@@ -183,7 +187,16 @@ export function ConfirmFightScreen(props: {
     return (
       <ScreenChrome
         testID="slot-confirm"
-        footer={<PrimaryButton label="Back" onPress={props.onBack} testID="confirm-back" />}
+        footer={
+          <PrimaryButton
+            label="Back"
+            onPress={() => {
+              uiAudio.playCue('uiBack');
+              props.onBack();
+            }}
+            testID="confirm-back"
+          />
+        }
       >
         <StatusErrorBanner
           title="No opponent selected"
@@ -252,6 +265,7 @@ export function ConfirmFightScreen(props: {
 
   const onBack = () => {
     if (submitting) return;
+    uiAudio.playCue('uiBack');
     bumpNavigationGeneration();
     props.onBack();
   };
@@ -290,7 +304,11 @@ export function ConfirmFightScreen(props: {
           <PrimaryButton
             label={submitting ? 'Starting…' : recoverable ? 'Recover fight' : 'Start fight'}
             disabled={startDisabled}
-            onPress={runStart}
+            onPress={() => {
+              uiAudio.playCue('uiConfirm');
+              runStart();
+            }}
+            onDisabledPress={() => uiAudio.playCue('uiError')}
             testID="confirm-start"
           />
           {showRetry || failureKind ? (
@@ -298,12 +316,14 @@ export function ConfirmFightScreen(props: {
               label={failureKind ? sessionFailureCopy(failureKind).actionLabel : 'Retry'}
               disabled={retryDisabled && failureKind !== 'auth_expired'}
               onPress={() => {
+                uiAudio.playUiTap();
                 if (failureKind === 'auth_expired') {
                   void signOut();
                   return;
                 }
                 runStart();
               }}
+              onDisabledPress={() => uiAudio.playCue('uiError')}
               testID="confirm-retry"
             />
           ) : null}

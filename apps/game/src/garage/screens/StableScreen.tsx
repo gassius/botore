@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
 import { useFirstRun } from '../../first-run/FirstRunContext';
 import {
@@ -41,7 +42,8 @@ export function StableScreen(props: {
   onRanking?: () => void;
 }): React.ReactElement {
   const { loadout, canProgress, signOut, retryHydration } = useGarageSession();
-  const { homeCaptureScenario } = useFirstRun();
+  const { homeCaptureScenario, muted, musicEnabled, effectsEnabled } = useFirstRun();
+  const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const insets = useSafeAreaInsets();
   const forced = useForcedSessionFailure();
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
@@ -90,6 +92,7 @@ export function StableScreen(props: {
               : 'Retry load'
         }
         onPress={() => {
+          uiAudio.playUiTap();
           if (failureKind === 'auth_expired') {
             void signOut();
             return;
@@ -104,14 +107,22 @@ export function StableScreen(props: {
     <View style={styles.footerCompact}>
       <SecondaryButton
         label="Customise"
-        onPress={props.onCustomise}
+        onPress={() => {
+          uiAudio.playUiTap();
+          props.onCustomise();
+        }}
         disabled={!canProgress}
+        onDisabledPress={() => uiAudio.playCue('uiError')}
         testID="stable-customise"
       />
       <PrimaryButton
         label="Find opponent"
-        onPress={props.onFindOpponent ?? (() => undefined)}
+        onPress={() => {
+          uiAudio.playCue('uiConfirm');
+          props.onFindOpponent?.();
+        }}
         disabled={!canProgress || !props.onFindOpponent}
+        onDisabledPress={() => uiAudio.playCue('uiError')}
         testID="stable-find-opponent"
       />
       {retryFooter}
@@ -120,14 +131,20 @@ export function StableScreen(props: {
         {props.onSettings ? (
           <SecondaryButton
             label="Settings"
-            onPress={props.onSettings}
+            onPress={() => {
+              uiAudio.playUiTap();
+              props.onSettings?.();
+            }}
             style={styles.row2Btn}
             testID="stable-settings"
           />
         ) : null}
         <SecondaryButton
           label="More"
-          onPress={() => setMoreOpen(true)}
+          onPress={() => {
+            uiAudio.playCue('uiTab');
+            setMoreOpen(true);
+          }}
           style={styles.row2Btn}
           testID="stable-more"
         />
@@ -193,12 +210,18 @@ export function StableScreen(props: {
         visible={moreOpen}
         transparent
         animationType="slide"
-        onRequestClose={() => setMoreOpen(false)}
+        onRequestClose={() => {
+          uiAudio.playCue('uiBack');
+          setMoreOpen(false);
+        }}
       >
         <View style={styles.sheetRoot} testID="stable-more-sheet">
           <Pressable
             style={styles.sheetDim}
-            onPress={() => setMoreOpen(false)}
+            onPress={() => {
+              uiAudio.playCue('uiBack');
+              setMoreOpen(false);
+            }}
             accessibilityRole="button"
             accessibilityLabel="Dismiss More"
             testID="stable-more-dismiss"
@@ -213,6 +236,7 @@ export function StableScreen(props: {
                 accessibilityRole="button"
                 accessibilityLabel="Ranking"
                 onPress={() => {
+                  uiAudio.playUiTap();
                   setMoreOpen(false);
                   props.onRanking?.();
                 }}
@@ -231,6 +255,7 @@ export function StableScreen(props: {
               accessibilityRole="button"
               accessibilityLabel="Privacy policy"
               onPress={() => {
+                uiAudio.playUiTap();
                 setMoreOpen(false);
                 setShowPrivacy(true);
               }}
@@ -248,6 +273,7 @@ export function StableScreen(props: {
               accessibilityRole="button"
               accessibilityLabel="Delete account"
               onPress={() => {
+                uiAudio.playUiTap();
                 setMoreOpen(false);
                 setShowDeleteAccount(true);
               }}
@@ -265,6 +291,7 @@ export function StableScreen(props: {
               accessibilityRole="button"
               accessibilityLabel="Sign out"
               onPress={() => {
+                uiAudio.playUiTap();
                 setMoreOpen(false);
                 void signOut();
               }}

@@ -29,6 +29,16 @@ const sources: TrialAudioSources = {
   xpTick: 10,
   equip: 11,
   select: 12,
+  menuLoop: 13,
+  splashSting: 14,
+  faceOffSting: 22,
+  uiConfirm: 15,
+  uiBack: 16,
+  uiTab: 17,
+  uiSnap: 18,
+  uiCreate: 19,
+  uiError: 20,
+  uiToggle: 21,
 };
 
 function deferred<T>() {
