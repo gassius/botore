@@ -19,6 +19,7 @@ vi.mock('react-native', async () => {
     Text: make('Text'),
     TextInput: make('TextInput'),
     Image: make('Image'),
+    ActivityIndicator: make('ActivityIndicator'),
     StyleSheet: { create: (s: object) => s },
     Linking: { openURL: async () => undefined },
     Platform: { OS: 'web' },
@@ -77,6 +78,7 @@ vi.mock('../src/first-run/FirstRunContext', () => ({
     muted: true,
     musicEnabled: false,
     effectsEnabled: false,
+    customiseCaptureScenario: null,
   }),
 }));
 
@@ -157,11 +159,11 @@ describe('E1 Customise Save Loadout (390×844)', () => {
       safePadding: 10,
       panelBorder: 3,
       innerPadding: 16,
-      footerHeight: 120,
-      contentHeight: 900,
-      scrollMode: true,
+      footerHeight: 72,
+      contentHeight: 700,
+      scrollMode: false,
     });
-    // Phone-width 390×844 is the design capture frame; height chain must keep Save visible.
+    // Phone-width 390×844 is the design capture frame; D3 keeps EQUIP visible without vertical scroll.
     expect(layout.frameHeight).toBe(824);
     expect(layout.scrollViewportHeight).toBeGreaterThan(500);
     expect(layout.footerRetained).toBe(true);
@@ -274,8 +276,8 @@ describe('E1 Customise Save Loadout (390×844)', () => {
       join(__dirname, '../src/garage/screens/CustomiseScreen.tsx'),
       'utf8',
     );
-    expect(source).toContain('Save loadout');
-    expect(source).not.toMatch(/\bEQUIP\b/);
+    expect(source).toContain('Equip');
+    expect(source).not.toMatch(/Save loadout/i);
     expect(source).not.toContain('confirmedVersionId');
   });
 

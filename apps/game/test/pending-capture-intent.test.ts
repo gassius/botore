@@ -28,6 +28,8 @@ describe('captureIntentState merge + consume', () => {
       failClosed: null,
       poseCompare: null,
       sessionFailure: null,
+      fightViewMode: null,
+      customiseScenario: null,
     });
   });
 
@@ -49,6 +51,8 @@ describe('captureIntentState merge + consume', () => {
       failClosed: null,
       poseCompare: null,
       sessionFailure: null,
+      fightViewMode: null,
+      customiseScenario: null,
     });
   });
 
@@ -72,6 +76,8 @@ describe('captureIntentState merge + consume', () => {
       failClosed: null,
       poseCompare: null,
       sessionFailure: null,
+      fightViewMode: null,
+      customiseScenario: null,
     });
     expect(consumeCaptureRoute()).toBeNull();
   });
@@ -91,5 +97,12 @@ describe('captureIntentState merge + consume', () => {
     expect(peekCaptureIntent().sessionFailure).toBe('offline');
     mergeCaptureFileIntent({ sessionFailure: 'auth_expired' });
     expect(peekCaptureIntent().sessionFailure).toBe('auth_expired');
+  });
+
+  it('accepts customiseScenario for D3 Customise stills', () => {
+    mergeCaptureFileIntent({ route: 'Customise', customiseScenario: 'paint-dirty' });
+    expect(peekCaptureIntent().customiseScenario).toBe('paint-dirty');
+    mergeCaptureFileIntent({ customise: 'weapon-soon' });
+    expect(peekCaptureIntent().customiseScenario).toBe('weapon-soon');
   });
 });

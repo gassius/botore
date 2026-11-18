@@ -18,6 +18,10 @@ cd "${REPO_ROOT}"
 
 OUT_DIR="${CAPTURE_OUT_DIR:-${REPO_ROOT}/artifacts/native-captures}"
 mkdir -p "${OUT_DIR}"
+# Ensure the iOS capture artifact always has content (not only the sibling
+# tunnel.env upload) even if a later fight step fails after early stills.
+printf 'tip=%s\nplatform=ios\n' "$(git rev-parse HEAD 2>/dev/null || echo unknown)" \
+  >"${OUT_DIR}/capture-tip.txt"
 BUNDLE_ID="${CAPTURE_IOS_BUNDLE:-${BUNDLE_IOS}}"
 DEVICE_CANDIDATES="${CAPTURE_IOS_DEVICE:-iPhone 16,iPhone 16 Plus,iPhone 15,iPhone 15 Pro,iPhone 14}"
 
@@ -376,6 +380,8 @@ capture_named() {
   local settle="${3:-5}"
   local battle_id="${4:-}"
   local mute="${5:-}"
+  local customise="${6:-}"
+  local ranking="${7:-}"
   local screencap_args=(
     --out "${OUT_DIR}"
     --udid "${UDID}"
@@ -387,6 +393,12 @@ capture_named() {
   fi
   if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then
     screencap_args+=(--mute)
+  fi
+  if [[ -n "${customise}" ]]; then
+    screencap_args+=(--customise "${customise}")
+  fi
+  if [[ -n "${ranking}" ]]; then
+    screencap_args+=(--ranking "${ranking}")
   fi
   CAPTURE_SETTLE_SEC="${settle}" \
     CAPTURE_IOS_COLD_SEC="${CAPTURE_IOS_COLD_SEC:-16}" \
@@ -401,6 +413,16 @@ capture_named() {
 }
 
 capture_named Stable garage 5
+# D3 Customise — early so PNG artifacts upload even if the live fight later fails.
+capture_named Customise customise-paint-clean 6 "" "" paint-clean
+capture_named Customise customise-paint-dirty 6 "" "" paint-dirty
+capture_named Customise customise-equipped 8 "" "" equipped
+capture_named Customise customise-weapon-soon 6 "" "" weapon-soon
+# D4 Ranking — early design frames (fixture portraits + W–L / empty / loading).
+capture_named Ranking ranking-bots 6 "" "" "" bots
+capture_named Ranking ranking-botores 6 "" "" "" botores
+capture_named Ranking ranking-empty 5 "" "" "" empty
+capture_named Ranking ranking-loading 4 "" "" "" loading
 # C9 Settings — mute / Music / Effects / reduced motion
 capture_named Settings settings 5
 capture_named ConfirmFight confirm 8
@@ -438,11 +460,44 @@ echo "fight proof: battleId=${BATTLE_ID} xp=${XP}" >&2
 # Pass battle id so FightResult restores the sealed fight after process relaunch.
 capture_named FightResult result 5 "${BATTLE_ID}"
 
+# D1 rewatch Fight View — back + single REPLAY (non-gating; design re-check)
+CAPTURE_SETTLE_SEC=5 \
+  CAPTURE_IOS_COLD_SEC="${CAPTURE_IOS_COLD_SEC:-16}" \
+  "${SCRIPT_DIR}/ios-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --udid "${UDID}" \
+  --route Replay \
+  --name fight-view-rewatch \
+  --battle-id "${BATTLE_ID}" \
+  --fight-view rewatch >/dev/null
+rewatch_matches=( "${OUT_DIR}"/ios-*-fight-view-rewatch.png )
+if [[ -e "${rewatch_matches[0]:-}" ]]; then
+  write_manifest_line "${MANIFEST}" "still.ios.fight-view-rewatch" "${rewatch_matches[0]}"
+  echo "ok: ${rewatch_matches[0]}" >&2
+else
+  echo "warn: missing fight-view-rewatch PNG (non-gating)" >&2
+fi
+
 # C9 muted replay still (same sealed fight; mute=1 intent)
 capture_named Replay replay-muted 5 "${BATTLE_ID}" 1
 
 missing=0
-for label in garage settings confirm replay-impact result replay-muted; do
+for label in \
+  garage \
+  customise-paint-clean \
+  customise-paint-dirty \
+  customise-equipped \
+  customise-weapon-soon \
+  ranking-bots \
+  ranking-botores \
+  ranking-empty \
+  ranking-loading \
+  settings \
+  confirm \
+  replay-impact \
+  result \
+  replay-muted
+do
   matches=( "${OUT_DIR}"/ios-*-"${label}".png )
   if [[ ! -e "${matches[0]:-}" ]]; then
     echo "error: missing capture PNG ${label}" >&2

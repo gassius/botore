@@ -10,6 +10,7 @@ import {
   ENVIRONMENT_SCENE_CANVAS,
   kitOriginFromGround,
   startPlacement,
+  coverSceneToViewport,
   fitSceneToViewport,
 } from '../src/arena/index';
 
@@ -84,5 +85,20 @@ describe('scene placement adapter', () => {
     expect(fit.scale).toBe(0.5);
     expect(fit.width).toBe(360);
     expect(fit.height).toBe(560);
+  });
+
+  it('covers 390×844 Fight View stage so backdrop fills full width', () => {
+    // Arena ~75% of 844 after content-sized band (~148) ≈ 696 tall.
+    const viewportW = 390;
+    const viewportH = 696;
+    const cover = coverSceneToViewport(viewportW, viewportH);
+    expect(cover.width).toBeGreaterThanOrEqual(viewportW);
+    expect(cover.height).toBeGreaterThanOrEqual(viewportH);
+    // No right graphite strip: scaled scene is at least as wide as the stage.
+    expect(cover.width - viewportW).toBeGreaterThanOrEqual(0);
+    // Contain on a short stage letterboxes width — cover must not.
+    const contain = fitSceneToViewport(viewportW, 515);
+    expect(contain.width).toBeLessThan(viewportW);
+    expect(coverSceneToViewport(viewportW, 515).width).toBeGreaterThanOrEqual(viewportW);
   });
 });

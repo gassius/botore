@@ -3,6 +3,7 @@ import { Linking } from 'react-native';
 import { useFirstRun } from '../first-run/FirstRunContext';
 import type { FirstRunRoute } from '../first-run/routes';
 import {
+  type DesignCaptureCustomiseScenario,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
   isDesignCaptureEnabled,
@@ -29,9 +30,15 @@ export function useDesignCaptureDeepLink(): void {
     setDemoWeaponId,
     setRankingCaptureScenario,
     setSessionFailureCapture,
+    setCustomiseCaptureScenario,
+    setFightViewMode,
   } = useFirstRun();
   const lastAppliedRoute = useRef<FirstRunRoute | null>(null);
   const lastSessionFailure = useRef<DesignCaptureSessionFailure | null | undefined>(undefined);
+  const lastCustomiseScenario = useRef<DesignCaptureCustomiseScenario | null | undefined>(
+    undefined,
+  );
+  const lastRankingScenario = useRef<DesignCaptureRankingScenario | null | undefined>(undefined);
   const fileConsumed = useRef(false);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
@@ -47,6 +54,8 @@ export function useDesignCaptureDeepLink(): void {
       route?: FirstRunRoute | string | null;
       rankingScenario?: DesignCaptureRankingScenario | null;
       sessionFailure?: DesignCaptureSessionFailure | null;
+      fightViewMode?: 'firstWatch' | 'rewatch' | null;
+      customiseScenario?: DesignCaptureCustomiseScenario | null;
     }) => {
       // Always replace live sessionFailure (including null clear) so sequential
       // stills never stick auth_expired into a later offline capture.
@@ -54,13 +63,30 @@ export function useDesignCaptureDeepLink(): void {
         lastSessionFailure.current = parsed.sessionFailure ?? null;
         setSessionFailureCapture(parsed.sessionFailure ?? null);
       }
+      // Same-route Customise stills (paint-clean → dirty → equipped) refresh
+      // scenario even when applyRouteIfNew skips goTo.
+      if (parsed.customiseScenario !== lastCustomiseScenario.current) {
+        lastCustomiseScenario.current = parsed.customiseScenario ?? null;
+        setCustomiseCaptureScenario(parsed.customiseScenario ?? null);
+      } else if (parsed.route === 'Customise' && parsed.customiseScenario) {
+        // Re-assert when stills repeat the same scenario after another route.
+        setCustomiseCaptureScenario(parsed.customiseScenario);
+      }
       // Ranking scenario before route so RankingSlot mounts the right port.
-      // C10: sessionFailure offline/auth_expired also drives Ranking fixtures.
-      if (parsed.rankingScenario) {
-        setRankingCaptureScenario(parsed.rankingScenario);
+      // Same-route stills (bots → botores → empty → loading) refresh even when
+      // applyRouteIfNew skips goTo. C10 sessionFailure also drives fixtures.
+      if (parsed.rankingScenario !== undefined && parsed.rankingScenario !== null) {
+        if (parsed.rankingScenario !== lastRankingScenario.current) {
+          lastRankingScenario.current = parsed.rankingScenario;
+          setRankingCaptureScenario(parsed.rankingScenario);
+        } else if (parsed.route === 'Ranking') {
+          setRankingCaptureScenario(parsed.rankingScenario);
+        }
       } else if (parsed.sessionFailure === 'offline' || parsed.sessionFailure === 'auth_expired') {
+        lastRankingScenario.current = parsed.sessionFailure;
         setRankingCaptureScenario(parsed.sessionFailure);
       } else if (parsed.route === 'Ranking') {
+        lastRankingScenario.current = 'live';
         setRankingCaptureScenario('live');
       }
       if (parsed.paintId) setDemoPaintId(parsed.paintId);
@@ -68,6 +94,8 @@ export function useDesignCaptureDeepLink(): void {
       // Idempotent set — safer than toggle when prefs hydrate from disk.
       if (parsed.mute === true) setMuted(true);
       if (parsed.mute === false) setMuted(false);
+      // D1 rewatch capture stills: force Fight View control set before route paint.
+      if (parsed.fightViewMode) setFightViewMode(parsed.fightViewMode);
     };
 
     const applyRouteIfNew = (route: FirstRunRoute | null, fromFile: boolean) => {
@@ -109,6 +137,8 @@ export function useDesignCaptureDeepLink(): void {
         failClosed: parsed.failClosed,
         poseCompare: parsed.poseCompare,
         sessionFailure: parsed.sessionFailure,
+        fightViewMode: parsed.fightViewMode,
+        customiseScenario: parsed.customiseScenario,
       });
       applyRouteIfNew(parsed.route, false);
     };
@@ -146,6 +176,7 @@ export function useDesignCaptureDeepLink(): void {
     setDemoWeaponId,
     setRankingCaptureScenario,
     setSessionFailureCapture,
+    setCustomiseCaptureScenario,
     setMuted,
   ]);
 }

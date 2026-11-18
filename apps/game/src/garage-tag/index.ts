@@ -14,6 +14,7 @@ export { TabBar, type TabBarProps, type TabItem } from './TabBar';
 export { SelectionCheck, type SelectionCheckProps } from './SelectionCheck';
 export { PaintSwatch, type PaintSwatchProps } from './PaintSwatch';
 export { WeaponGlyphSlot, type WeaponGlyphSlotProps } from './WeaponGlyphSlot';
+export { PartPickerStrip, type PartPickerCard, type PartPickerStripProps } from './PartPickerStrip';
 export { Nameplate, type NameplateProps } from './Nameplate';
 export { GlyphButton, type GlyphButtonProps } from './GlyphButton';
 export { ReplayAudioControls, type ReplayAudioControlsProps } from './ReplayAudioControls';

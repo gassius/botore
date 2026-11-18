@@ -25,6 +25,7 @@ import type { PlayCueOptions } from '../audio/TrialAudioSession';
 import type { TrialAudioUiCueId } from '../audio/trialAudioPin';
 import { BotAssembler } from '../assembler';
 import {
+  coverSceneToViewport,
   ENVIRONMENT_LAYER_Z,
   fitSceneToViewport,
   provisionalContactPoint,
@@ -35,7 +36,12 @@ import { EventFxLayer } from '../arena/EventFxLayer';
 import { RepairYardArena } from '../arena/RepairYardArena';
 import type { ArenaFxFamily } from '../arena/environmentPin';
 import { garageTag } from '../garage-tag';
-import { compileAnimationQueue, commandDuration, PlaybackController } from '../replay-playback';
+import {
+  compileAnimationQueue,
+  commandDuration,
+  PlaybackController,
+  type AnimationCommand,
+} from '../replay-playback';
 import type { ConfirmedFightResult } from './confirmedResult';
 import { fighterDisplayName, formatOutcomeLine, resolvePlaybackMedia } from './confirmedResult';
 import { assemblerLoadoutFromBuild } from './fighterLoadout';
@@ -79,8 +85,13 @@ export interface CanonicalReplayPlayerProps {
   readonly effectsEnabled?: boolean;
   /** Effective reduced-motion preference from shell (force ∪ OS). */
   readonly reducedMotion?: boolean;
-  /** When false, hide local Play/Replay buttons (shell ReplayAudioControls owns them). */
+  /** When false, hide local Play/Replay buttons (shell owns transport). */
   readonly showLocalControls?: boolean;
+  /**
+   * `arenaFirst` (D1): full-bleed stage, no below-stage HP/progress/result chrome.
+   * Shell overlays HUD / mute / bottom band. `classic` keeps legacy chrome.
+   */
+  readonly layoutMode?: 'classic' | 'arenaFirst';
   readonly onFinished?: () => void;
   readonly onPlaybackChange?: (state: PlaybackUiState) => void;
   /**
@@ -88,6 +99,13 @@ export interface CanonicalReplayPlayerProps {
    * Design-capture uses this for per-family still holds — never invents FX.
    */
   readonly onFxCue?: (family: ArenaFxFamily) => void;
+  /** Fired after each applied animation command (Fight View call-outs). */
+  readonly onCommandApplied?: (
+    cmd: AnimationCommand,
+    presentation: ReplayPresentationState,
+  ) => void;
+  /** Optional overlay rendered above the arena (HUD / mute / back). */
+  readonly arenaOverlay?: React.ReactNode;
   readonly testID?: string;
 }
 
@@ -116,20 +134,26 @@ export const CanonicalReplayPlayer = forwardRef<
     effectsEnabled = true,
     reducedMotion: reducedMotionProp,
     showLocalControls = true,
+    layoutMode = 'classic',
     onFinished,
     onPlaybackChange,
     onFxCue,
+    onCommandApplied,
+    arenaOverlay,
     testID = 'canonical-replay-player',
   },
   ref,
 ) {
+  const arenaFirst = layoutMode === 'arenaFirst';
   const placement = useMemo(() => startPlacement(), []);
   // Start at 0×0 so Play-ready waits for a real onLayout, not a placeholder box.
   const [stageBox, setStageBox] = useState({ width: 0, height: 0 });
-  const fit = useMemo(
-    () => fitSceneToViewport(Math.max(stageBox.width, 1), Math.max(stageBox.height, 1)),
-    [stageBox.height, stageBox.width],
-  );
+  const fit = useMemo(() => {
+    const w = Math.max(stageBox.width, 1);
+    const h = Math.max(stageBox.height, 1);
+    // D1 Fight View: cover so backdrop/floor fill the stage with no graphite strips.
+    return arenaFirst ? coverSceneToViewport(w, h) : fitSceneToViewport(w, h);
+  }, [arenaFirst, stageBox.height, stageBox.width]);
 
   const nearFighter = result.replay.fighters[0];
   const farFighter = result.replay.fighters[1];
@@ -376,6 +400,11 @@ export const CanonicalReplayPlayer = forwardRef<
       presentationRef.current = nextPresentation;
       setPresentation(nextPresentation);
       pushFxFromState(nextPresentation);
+      try {
+        onCommandApplied?.(cmd, nextPresentation);
+      } catch {
+        // Call-out hooks must never break playback.
+      }
       // Advance first, then FX cue (may pause). Ref must already be synced so
       // pause is not overwritten by a stale playing:true emit.
       emitPlayback(playbackUiAfterAdvance(playbackUiRef.current, pb.position));
@@ -413,6 +442,7 @@ export const CanonicalReplayPlayer = forwardRef<
     finishPerfSample,
     maxHp,
     media.assetsAvailable,
+    onCommandApplied,
     onFinished,
     onFxCue,
     playbackUi.playing,
@@ -485,104 +515,133 @@ export const CanonicalReplayPlayer = forwardRef<
   }
 
   return (
-    <View testID={testID} style={styles.root}>
+    <View testID={testID} style={[styles.root, arenaFirst ? styles.rootArenaFirst : null]}>
       {/* Flexible stage viewport — measured after chrome reservation via flex. */}
-      <View style={styles.stageSlot} onLayout={onStageLayout} testID={`${testID}-stage-slot`}>
-        <View style={[styles.stageFrame, { width: fit.width, height: fit.height }]}>
-          <RepairYardArena
-            near={placement.near}
-            far={placement.far}
-            sceneScale={sceneScale}
-            testID={`${testID}-arena`}
+      <View
+        style={[styles.stageSlot, arenaFirst ? styles.stageSlotArenaFirst : null]}
+        onLayout={onStageLayout}
+        testID={`${testID}-stage-slot`}
+      >
+        <View
+          style={[
+            styles.stageFrame,
+            arenaFirst ? styles.stageFrameArenaFirst : null,
+            arenaFirst
+              ? { width: '100%', height: '100%' }
+              : { width: fit.width, height: fit.height },
+          ]}
+        >
+          <View
+            style={
+              arenaFirst
+                ? {
+                    position: 'absolute',
+                    left: fit.offsetX,
+                    top: fit.offsetY,
+                    width: fit.width,
+                    height: fit.height,
+                  }
+                : undefined
+            }
           >
-            {/*
+            <RepairYardArena
+              near={placement.near}
+              far={placement.far}
+              sceneScale={sceneScale}
+              testID={`${testID}-arena`}
+            >
+              {/*
               overflow visible: whole-hierarchy scaleX:-1 clipped far kit Images on Expo web.
               Facing:'left' uses BotAssembler per-layer mirror (absorbed from F9 1f25ea0).
             */}
-            <View
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                left: placement.far.origin.x,
-                top: placement.far.origin.y,
-                width: placement.far.size,
-                height: placement.far.size,
-                overflow: 'visible',
-                zIndex: ENVIRONMENT_LAYER_Z.farActor,
-              }}
-            >
-              <BotAssembler
-                loadout={farLoadout}
-                facing={placement.far.facing}
-                size={placement.far.size}
-                motionPose={presentation.far.motionPose}
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: placement.far.origin.x,
+                  top: placement.far.origin.y,
+                  width: placement.far.size,
+                  height: placement.far.size,
+                  overflow: 'visible',
+                  zIndex: ENVIRONMENT_LAYER_Z.farActor,
+                }}
+              >
+                <BotAssembler
+                  loadout={farLoadout}
+                  facing={placement.far.facing}
+                  size={placement.far.size}
+                  motionPose={presentation.far.motionPose}
+                  reducedMotion={reducedMotion}
+                  placeholder={false}
+                  testID={`${testID}-far`}
+                />
+              </View>
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: placement.near.origin.x,
+                  top: placement.near.origin.y,
+                  width: placement.near.size,
+                  height: placement.near.size,
+                  overflow: 'visible',
+                  zIndex: ENVIRONMENT_LAYER_Z.nearActor,
+                }}
+              >
+                <BotAssembler
+                  loadout={nearLoadout}
+                  facing={placement.near.facing}
+                  size={placement.near.size}
+                  motionPose={presentation.near.motionPose}
+                  reducedMotion={reducedMotion}
+                  placeholder={false}
+                  testID={`${testID}-near`}
+                />
+              </View>
+              <EventFxLayer
+                cues={fxCues}
                 reducedMotion={reducedMotion}
-                placeholder={false}
-                testID={`${testID}-far`}
+                // Freeze peak FX frame for the whole pause / C4 capture hold so
+                // stills are not taken after the ~270ms strip has already hidden.
+                paused={!playbackUi.playing}
               />
-            </View>
-            <View
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                left: placement.near.origin.x,
-                top: placement.near.origin.y,
-                width: placement.near.size,
-                height: placement.near.size,
-                overflow: 'visible',
-                zIndex: ENVIRONMENT_LAYER_Z.nearActor,
-              }}
-            >
-              <BotAssembler
-                loadout={nearLoadout}
-                facing={placement.near.facing}
-                size={placement.near.size}
-                motionPose={presentation.near.motionPose}
-                reducedMotion={reducedMotion}
-                placeholder={false}
-                testID={`${testID}-near`}
-              />
-            </View>
-            <EventFxLayer
-              cues={fxCues}
-              reducedMotion={reducedMotion}
-              // Freeze peak FX frame for the whole pause / C4 capture hold so
-              // stills are not taken after the ~270ms strip has already hidden.
-              paused={!playbackUi.playing}
-            />
-            {presentation.banner ? (
-              <Text style={styles.banner} testID={`${testID}-banner`}>
-                {presentation.banner === nearFighter.characterId
-                  ? fighterDisplayName(nearFighter.characterId, result.replay.fighters)
-                  : presentation.banner === farFighter.characterId
-                    ? fighterDisplayName(farFighter.characterId, result.replay.fighters)
-                    : fighterDisplayName(presentation.banner, result.replay.fighters)}
-              </Text>
-            ) : null}
-          </RepairYardArena>
+              {!arenaFirst && presentation.banner ? (
+                <Text style={styles.banner} testID={`${testID}-banner`}>
+                  {presentation.banner === nearFighter.characterId
+                    ? fighterDisplayName(nearFighter.characterId, result.replay.fighters)
+                    : presentation.banner === farFighter.characterId
+                      ? fighterDisplayName(farFighter.characterId, result.replay.fighters)
+                      : fighterDisplayName(presentation.banner, result.replay.fighters)}
+                </Text>
+              ) : null}
+            </RepairYardArena>
+          </View>
+          {arenaOverlay}
         </View>
       </View>
 
-      <View style={styles.hpRow} testID={`${testID}-hp`}>
-        <View style={styles.hpBlock}>
-          <Text style={styles.hpLabel}>
-            {fighterDisplayName(nearFighter.characterId, result.replay.fighters)}
-          </Text>
-          <View style={styles.hpTrack}>
-            <View style={[styles.hpFillNear, { width: `${presentation.hp.near * 100}%` }]} />
+      {!arenaFirst ? (
+        <View style={styles.hpRow} testID={`${testID}-hp`}>
+          <View style={styles.hpBlock}>
+            <Text style={styles.hpLabel}>
+              {fighterDisplayName(nearFighter.characterId, result.replay.fighters)}
+            </Text>
+            <View style={styles.hpTrack}>
+              <View style={[styles.hpFillNear, { width: `${presentation.hp.near * 100}%` }]} />
+            </View>
+          </View>
+          <View style={styles.hpBlock}>
+            <Text style={styles.hpLabel}>
+              {fighterDisplayName(farFighter.characterId, result.replay.fighters)}
+            </Text>
+            <View style={styles.hpTrack}>
+              <View style={[styles.hpFillFar, { width: `${presentation.hp.far * 100}%` }]} />
+            </View>
           </View>
         </View>
-        <View style={styles.hpBlock}>
-          <Text style={styles.hpLabel}>
-            {fighterDisplayName(farFighter.characterId, result.replay.fighters)}
-          </Text>
-          <View style={styles.hpTrack}>
-            <View style={[styles.hpFillFar, { width: `${presentation.hp.far * 100}%` }]} />
-          </View>
-        </View>
-      </View>
+      ) : null}
 
-      {showLocalControls ? (
+      {!arenaFirst && showLocalControls ? (
         <View style={styles.controls} testID={`${testID}-controls`}>
           <Pressable
             testID={`${testID}-replay`}
@@ -606,7 +665,9 @@ export const CanonicalReplayPlayer = forwardRef<
             <Text style={styles.btnText}>{playing ? 'Pause' : 'Play'}</Text>
           </Pressable>
         </View>
-      ) : (
+      ) : null}
+
+      {!arenaFirst && !showLocalControls ? (
         <View
           style={styles.progressOnly}
           testID={`${testID}-progress`}
@@ -620,9 +681,9 @@ export const CanonicalReplayPlayer = forwardRef<
             <View style={[styles.progressFill, { width: `${playbackUi.progress * 100}%` }]} />
           </View>
         </View>
-      )}
+      ) : null}
 
-      {presentation.showResult ? (
+      {!arenaFirst && presentation.showResult ? (
         <View style={styles.resultStrip} testID={`${testID}-inline-result`}>
           <Text style={styles.resultText}>
             {formatOutcomeLine(result.outcome, result.replay.fighters)}
@@ -647,6 +708,11 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     minHeight: 0,
   },
+  rootArenaFirst: {
+    paddingHorizontal: 0,
+    paddingBottom: 0,
+    alignItems: 'stretch',
+  },
   metaMuted: {
     color: garageTag.steel,
     fontSize: 11,
@@ -658,10 +724,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  stageSlotArenaFirst: {
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
+  },
   stageFrame: {
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: garageTag.graphite,
+  },
+  stageFrameArenaFirst: {
+    borderWidth: 0,
+    flex: 1,
   },
   banner: {
     position: 'absolute',

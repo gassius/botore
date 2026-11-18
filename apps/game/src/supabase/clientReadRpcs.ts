@@ -13,8 +13,12 @@
 export const OWNED_CHARACTER_RPC = 'get_owned_character' as const;
 export const OPPONENT_ROSTER_RPC = 'list_opponent_roster' as const;
 export const FIGHT_ALLOWANCE_SUMMARY_RPC = 'get_fight_allowance_summary' as const;
-/** C5 — player ranking by progression_ledger XP totals. */
+/** C5 — player ranking by progression_ledger XP totals (legacy board). */
 export const LIST_RANKING_RPC = 'list_ranking' as const;
+/** E2 — bot board with W–L, XP, portrait parts, botore name. */
+export const LIST_BOT_RANKING_RPC = 'list_bot_ranking' as const;
+/** E2 — botore board with emblem, aggregate W–L, bots owned. */
+export const LIST_BOTORE_RANKING_RPC = 'list_botore_ranking' as const;
 
 export type OwnedCharacterRpcOk = {
   readonly ok: true;
@@ -55,4 +59,49 @@ export type RankingRpcRow = {
 export type ListRankingRpcOk = {
   readonly ok: true;
   readonly rows: readonly RankingRpcRow[];
+};
+
+export type BotRankingPortraitRpc = {
+  readonly chassis: string | null;
+  readonly paint: string | null;
+  readonly weapon: string | null;
+  readonly atlasVersion: string | null;
+};
+
+export type BotRankingRpcRow = {
+  readonly rank: number;
+  readonly botId: string;
+  readonly botName: string;
+  readonly botoreId: string;
+  readonly botoreName: string;
+  readonly wins: number;
+  readonly losses: number;
+  readonly totalXp: number;
+  readonly portrait: BotRankingPortraitRpc | null;
+  readonly isCurrentBot: boolean;
+  readonly isNpc?: boolean;
+};
+
+export type ListBotRankingRpcOk = {
+  readonly ok: true;
+  readonly tab: 'bots';
+  readonly rows: readonly BotRankingRpcRow[];
+};
+
+export type BotoreRankingRpcRow = {
+  readonly rank: number;
+  readonly botoreId: string;
+  readonly name: string;
+  readonly emblemId: string;
+  readonly wins: number;
+  readonly losses: number;
+  readonly botsOwned: number;
+  readonly isCurrentBotore: boolean;
+  readonly isNpc?: boolean;
+};
+
+export type ListBotoreRankingRpcOk = {
+  readonly ok: true;
+  readonly tab: 'botores';
+  readonly rows: readonly BotoreRankingRpcRow[];
 };

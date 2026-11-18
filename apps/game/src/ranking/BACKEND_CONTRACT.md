@@ -1,42 +1,35 @@
-# Ranking live-read contract — `list_ranking`
+# Ranking live-read contract — E2 boards
 
-Ticket: [C5 Ranking screen: real data + design captures](https://app.clickup.com/t/1amjtrey13p)
+Tickets: [E2 Ranking backend](https://app.clickup.com/t/1amjtrezaj2) · [D4 Ranking UI](https://app.clickup.com/t/1amjtrezaj9)
 
-## Authoritative surface
+## Authoritative surfaces
 
-| RPC              | Args                | Success body                                                                      |
-| ---------------- | ------------------- | --------------------------------------------------------------------------------- |
-| `list_ranking()` | none (`auth.uid()`) | `{ ok: true, rows: [{ rank, characterId, displayName, isCurrentBot, totalXp }] }` |
+| RPC                     | Args                | Success body                                                                                                                              |
+| ----------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_bot_ranking()`    | none (`auth.uid()`) | `{ ok: true, tab: "bots", rows: [{ rank, botId, botName, botoreId, botoreName, wins, losses, totalXp, portrait, isCurrentBot, isNpc }] }` |
+| `list_botore_ranking()` | none (`auth.uid()`) | `{ ok: true, tab: "botores", rows: [{ rank, botoreId, name, emblemId, wins, losses, botsOwned, isCurrentBotore, isNpc }] }`               |
 
-- Migration: `supabase/migrations/0022_list_ranking.sql`
-- Seed peers (local/CI board density): `supabase/seed.sql` (not hosted `db push`)
-- `SECURITY DEFINER`, `set search_path = public, extensions`
-- `EXECUTE` to **`authenticated` only** (revoked from `public`, `anon`, `service_role`)
-- No table `GRANT SELECT` on `characters` / `progression_ledger` / `profiles`
+- Migration: `supabase/migrations/0029_ranking_win_loss.sql` (E2 / #71)
+- Docs: `docs/backend/ranking.md`
+- `SECURITY DEFINER`, `EXECUTE` to **`authenticated` only**
+- No account UUIDs in player-facing fields
 
-## Ordering semantics (server-owned)
+## Merge order
 
-1. Player characters only (`is_opponent = false`).
-2. Order by `sum(progression_ledger.delta_xp)` descending, then `character_id` ascending.
-3. `rank` is `row_number()` in that order (1-based). Characters with no ledger rows have `totalXp = 0`.
-4. Window: top 50 rows. First-run seed + live XP keep the board small.
-5. **Outside the top 50:** the caller’s bot is **not** injected as a “YOU” row. If the authenticated player’s character ranks below 50, `isCurrentBot` will not appear in the payload.
-6. XP awards remain the existing combat rules (win = 2, loss = 1). This RPC does **not** invent Elo, REF-03 sample ranks, or client-side reordering.
+**#71 (0029) must merge before #80.** D4 only calls the E2 RPC names; it does not
+carry the migration. Until 0029 is applied, live authed clients get transport
+errors and the factory falls back to capture/DEV fixtures when scaffolds allow
+(or fail closed on playable builds). Do **not** restack #71 onto stack 70 —
+merge #71 independently first.
 
-Index: `progression_ledger_character_id_idx` on `progression_ledger(character_id)` (same migration).
+## Legacy
+
+`list_ranking()` (C5 / `0022_list_ranking.sql`) remains for older adapters. D4 uses the E2 tab RPCs.
 
 ## Client
 
-- `SupabaseRankingReadAdapter` maps `characterId` → `RankingRow.botId`, `source: 'live'`.
-- UI preserves adapter order; fixtures stay labelled **DEV** when used for empty/error capture states.
+- `SupabaseRankingReadAdapter` maps E2 rows → `RankingRow` / `BotoreRankingRow`.
+- UI preserves adapter order; fixtures stay labelled DEV only in data provenance (`source`), never as on-screen “LIVE / DEV” chrome.
 - Factory: `createRankingReadClient({ accessToken, captureScenario })`.
-
-## Verify
-
-```bash
-pnpm db:reset
-# SQL suite includes TEST-OK C5 list_ranking…
-psql "$DATABASE_URL" -c "select public.list_ranking()
-  from (select set_config('request.jwt.claim.role','authenticated',true),
-               set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true)) s;"
-```
+- Mini head paints on the botore tab join from the bot board when paints are not on the botore payload.
+- Load controller resolves tab **outside** the React `setState` updater and refresh/retry always pass `session.tab`.

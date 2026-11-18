@@ -26,7 +26,6 @@ describe('first-run routes', () => {
       'Opponents',
       'ConfirmFight',
       'Replay',
-      'FightResult',
       'Ranking',
     ]);
   });
@@ -35,9 +34,11 @@ describe('first-run routes', () => {
     expect(nextRoute('Stable')).toBe('Customise');
     expect(nextRoute('Ranking')).toBeNull();
     expect(prevRoute('Stable')).toBeNull();
-    expect(prevRoute('Ranking')).toBe('FightResult');
+    expect(prevRoute('Ranking')).toBe('Replay');
+    expect(nextRoute('Replay')).toBe('Ranking');
     expect(isFirstRunRoute('Stable')).toBe(true);
     expect(isFirstRunRoute('Settings')).toBe(true);
+    expect(isFirstRunRoute('FightResult')).toBe(true);
     expect(isFirstRunRoute('Shop')).toBe(false);
   });
 });

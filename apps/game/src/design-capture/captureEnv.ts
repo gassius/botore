@@ -21,11 +21,27 @@ export const DESIGN_CAPTURE_DEV_PASSWORD = 'design-capture';
 export const LIVE_FIGHT_CAPTURE_EMAIL = 'dev-player@example.com';
 export const LIVE_FIGHT_CAPTURE_PASSWORD = 'local-only-password';
 
-/** Ranking capture override for empty/error/offline/auth-expired stills (C5/C10). */
-export type DesignCaptureRankingScenario = 'live' | 'empty' | 'error' | 'offline' | 'auth_expired';
+/**
+ * Ranking capture override (C5/C10/D4).
+ * - live: prefer E2 RPCs when authed
+ * - bots / botores: DEV fixtures with portraits/emblems + W–L on that tab
+ * - empty / loading / error / offline / auth_expired: forced UI states
+ */
+export type DesignCaptureRankingScenario =
+  'live' | 'bots' | 'botores' | 'empty' | 'loading' | 'error' | 'offline' | 'auth_expired';
 
 /** C10: force shared offline / auth-expired banners under design-capture. */
 export type DesignCaptureSessionFailure = 'offline' | 'auth_expired';
+
+/**
+ * D3 Customise capture stills (native design review).
+ * - paint-clean: Paint tab, confirmed loadout, DISCARD+EQUIP (no Oxide dot)
+ * - paint-dirty: Paint tab, non-current paint selected, Oxide unsaved dot on EQUIP
+ * - equipped: Paint tab right after successful EQUIP (button reads Equipped)
+ * - weapon-soon: Weapon tab with a locked Coming soon card visible
+ */
+export type DesignCaptureCustomiseScenario =
+  'paint-clean' | 'paint-dirty' | 'equipped' | 'weapon-soon';
 
 /** C11: dual-fighter quick vs heavy pose stills under design-capture only. */
 export type DesignCapturePoseCompare = 'quick-vs-heavy';
@@ -65,10 +81,37 @@ export function parseDesignCaptureRankingScenario(
   raw: string | null | undefined,
 ): DesignCaptureRankingScenario | null {
   const v = trimPublic(raw ?? undefined)?.toLowerCase();
-  if (v === 'live' || v === 'empty' || v === 'error' || v === 'offline' || v === 'auth_expired') {
-    return v;
-  }
+  if (v === 'live') return 'live';
+  if (v === 'bots' || v === 'bot') return 'bots';
+  if (v === 'botores' || v === 'botore') return 'botores';
+  if (v === 'empty') return 'empty';
+  if (v === 'loading' || v === 'load') return 'loading';
+  if (v === 'error') return 'error';
+  if (v === 'offline') return 'offline';
+  if (v === 'auth_expired') return 'auth_expired';
   return null;
+}
+
+/** Initial Ranking tab for a design-capture scenario (default bots). */
+export function rankingTabForCaptureScenario(
+  scenario: DesignCaptureRankingScenario | null | undefined,
+): 'bots' | 'botores' {
+  return scenario === 'botores' ? 'botores' : 'bots';
+}
+
+/** True when capture must force DEV ranking fixtures (not live RPCs). */
+export function isFixtureRankingCaptureScenario(
+  scenario: DesignCaptureRankingScenario | null | undefined,
+): boolean {
+  return (
+    scenario === 'bots' ||
+    scenario === 'botores' ||
+    scenario === 'empty' ||
+    scenario === 'loading' ||
+    scenario === 'error' ||
+    scenario === 'offline' ||
+    scenario === 'auth_expired'
+  );
 }
 
 export function parseDesignCaptureSessionFailure(
@@ -76,6 +119,17 @@ export function parseDesignCaptureSessionFailure(
 ): DesignCaptureSessionFailure | null {
   const v = trimPublic(raw ?? undefined)?.toLowerCase();
   if (v === 'offline' || v === 'auth_expired') return v;
+  return null;
+}
+
+export function parseDesignCaptureCustomiseScenario(
+  raw: string | null | undefined,
+): DesignCaptureCustomiseScenario | null {
+  const v = trimPublic(raw ?? undefined)?.toLowerCase();
+  if (v === 'paint-clean' || v === 'paint_clean' || v === 'clean') return 'paint-clean';
+  if (v === 'paint-dirty' || v === 'paint_dirty' || v === 'dirty') return 'paint-dirty';
+  if (v === 'equipped' || v === 'equip') return 'equipped';
+  if (v === 'weapon-soon' || v === 'weapon_soon' || v === 'weapon') return 'weapon-soon';
   return null;
 }
 
@@ -180,6 +234,31 @@ export function readDesignCaptureConfig(opts?: {
  *
  * Custom-scheme URL parsing differs across RN / JS engines; normalize first.
  */
+export type DesignCaptureFightViewMode = 'firstWatch' | 'rewatch';
+
+export function parseDesignCaptureFightView(
+  raw: string | null | undefined,
+): DesignCaptureFightViewMode | null {
+  if (raw == null) return null;
+  const v = raw.trim().toLowerCase();
+  if (v === 'rewatch' || v === 're-watch') return 'rewatch';
+  if (v === 'firstwatch' || v === 'first_watch' || v === 'first-watch') return 'firstWatch';
+  return null;
+}
+
+const EMPTY_CAPTURE_URL = {
+  route: null,
+  mute: null,
+  paintId: null,
+  weaponId: null,
+  rankingScenario: null,
+  failClosed: null,
+  poseCompare: null,
+  sessionFailure: null,
+  fightViewMode: null,
+  customiseScenario: null,
+} as const;
+
 export function parseDesignCaptureUrl(url: string): {
   route: FirstRunRoute | null;
   mute: boolean | null;
@@ -189,19 +268,12 @@ export function parseDesignCaptureUrl(url: string): {
   failClosed: boolean | null;
   poseCompare: DesignCapturePoseCompare | null;
   sessionFailure: DesignCaptureSessionFailure | null;
+  fightViewMode: DesignCaptureFightViewMode | null;
+  customiseScenario: DesignCaptureCustomiseScenario | null;
 } {
   const trimmed = url.trim();
   if (!trimmed.toLowerCase().startsWith(`${DESIGN_CAPTURE_SCHEME}:`)) {
-    return {
-      route: null,
-      mute: null,
-      paintId: null,
-      weaponId: null,
-      rankingScenario: null,
-      failClosed: null,
-      poseCompare: null,
-      sessionFailure: null,
-    };
+    return { ...EMPTY_CAPTURE_URL };
   }
 
   // Normalize `botore://capture/Replay?mute=1` → path + query without scheme.
@@ -216,16 +288,7 @@ export function parseDesignCaptureUrl(url: string): {
     .filter(Boolean);
 
   if (segments[0] !== DESIGN_CAPTURE_HOST) {
-    return {
-      route: null,
-      mute: null,
-      paintId: null,
-      weaponId: null,
-      rankingScenario: null,
-      failClosed: null,
-      poseCompare: null,
-      sessionFailure: null,
-    };
+    return { ...EMPTY_CAPTURE_URL };
   }
 
   const params = new URLSearchParams(queryPart);
@@ -259,6 +322,12 @@ export function parseDesignCaptureUrl(url: string): {
   const sessionFailure = parseDesignCaptureSessionFailure(
     params.get('sessionFailure') ?? params.get('session_failure'),
   );
+  const fightViewMode = parseDesignCaptureFightView(
+    params.get('fightView') ?? params.get('fight_view') ?? params.get('fightViewMode'),
+  );
+  const customiseScenario = parseDesignCaptureCustomiseScenario(
+    params.get('customise') ?? params.get('customiseScenario') ?? params.get('customise_scenario'),
+  );
 
   return {
     route,
@@ -269,6 +338,8 @@ export function parseDesignCaptureUrl(url: string): {
     failClosed,
     poseCompare,
     sessionFailure,
+    fightViewMode,
+    customiseScenario,
   };
 }
 
@@ -282,6 +353,8 @@ export function buildDesignCaptureUrl(
     failClosed?: boolean;
     poseCompare?: DesignCapturePoseCompare;
     sessionFailure?: DesignCaptureSessionFailure;
+    fightViewMode?: DesignCaptureFightViewMode;
+    customiseScenario?: DesignCaptureCustomiseScenario;
   },
 ): string {
   const query: string[] = [];
@@ -295,6 +368,12 @@ export function buildDesignCaptureUrl(
   if (opts?.poseCompare) query.push(`poseCompare=${encodeURIComponent(opts.poseCompare)}`);
   if (opts?.sessionFailure) {
     query.push(`sessionFailure=${encodeURIComponent(opts.sessionFailure)}`);
+  }
+  if (opts?.fightViewMode) {
+    query.push(`fightView=${encodeURIComponent(opts.fightViewMode)}`);
+  }
+  if (opts?.customiseScenario) {
+    query.push(`customise=${encodeURIComponent(opts.customiseScenario)}`);
   }
   const q = query.length > 0 ? `?${query.join('&')}` : '';
   return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${q}`;

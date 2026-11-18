@@ -85,7 +85,7 @@ describe('C10 ranking never looks empty on transport failure', () => {
       code: 'network_error',
     });
     expect(offline.phase).toBe('error');
-    expect(offline.rows).toHaveLength(0);
+    expect(offline.botRows).toHaveLength(0);
     expect(offline.errorCode).toBe('network_error');
     expect(classifySessionFailure({ code: offline.errorCode })).toBe('offline');
 

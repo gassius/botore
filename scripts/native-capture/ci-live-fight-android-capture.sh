@@ -234,6 +234,7 @@ capture_named() {
   local settle="${3:-4}"
   local ranking="${4:-}"
   local mute="${5:-}"
+  local customise="${6:-}"
   local args=(
     --out "${OUT_DIR}"
     --route "${route}"
@@ -244,6 +245,9 @@ capture_named() {
   fi
   if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then
     args+=(--mute)
+  fi
+  if [[ -n "${customise}" ]]; then
+    args+=(--customise "${customise}")
   fi
   CAPTURE_SETTLE_SEC="${settle}" \
     "${SCRIPT_DIR}/android-screencap.sh" \
@@ -290,6 +294,20 @@ wait_logcat_marker() {
 
 # 1) Garage (Stable equipped loadout)
 capture_named Stable garage 5
+
+# 1a) D3 Customise — Paint clean / dirty+dot / Equipped / Weapon Coming soon
+# Capture early so design evidence lands even if later fight frames fail.
+capture_named Customise customise-paint-clean 5 "" "" paint-clean
+capture_named Customise customise-paint-dirty 5 "" "" paint-dirty
+capture_named Customise customise-equipped 6 "" "" equipped
+capture_named Customise customise-weapon-soon 5 "" "" weapon-soon
+
+# 1a′) D4 Ranking — Bots / Botores (fixture portraits + W–L), empty, loading
+# Early so design review frames land even if later fight frames fail.
+capture_named Ranking ranking-bots 5 bots
+capture_named Ranking ranking-botores 5 botores
+capture_named Ranking ranking-empty 4 empty
+capture_named Ranking ranking-loading 3 loading
 
 # 1b) C9 Settings — mute / Music / Effects / reduced motion
 capture_named Settings settings 4
@@ -470,12 +488,27 @@ fi
 # 4) Result — backend XP / allowances (after server confirm so UI can show XP)
 capture_named FightResult result 5
 
+# 4a) D1 rewatch Fight View — back + single REPLAY (non-gating; design re-check)
+CAPTURE_SETTLE_SEC=4 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Replay \
+  --name fight-view-rewatch \
+  --fight-view rewatch >/dev/null
+rewatch_matches=( "${OUT_DIR}"/android-*-fight-view-rewatch.png )
+if [[ -e "${rewatch_matches[0]:-}" ]]; then
+  write_manifest_line "${MANIFEST}" "still.android.fight-view-rewatch" "${rewatch_matches[0]}"
+  echo "ok: ${rewatch_matches[0]}" >&2
+else
+  echo "warn: missing fight-view-rewatch PNG (non-gating)" >&2
+fi
+
 # 4b) C9 muted replay still (same sealed fight; mute=1 deep link)
 capture_named Replay replay-muted 3 "" 1
 
-# 5) C5 Ranking — live board (list_ranking + seed peers + fight XP), empty, error
+# 5) C5 Ranking — live board (list_bot_ranking + seed peers + fight XP) + error
+# (bots/botores/empty/loading already captured early for D4 design review)
 capture_named Ranking ranking-live 6 live
-capture_named Ranking ranking-empty 4 empty
 capture_named Ranking ranking-error 4 error
 
 # 6) C8 fail-closed blocked UI evidence (design-capture failClosed deep link).
@@ -536,6 +569,14 @@ write_manifest_line "${MANIFEST}" "c10_session_failure" "design-capture-sessionF
 missing="${missing:-0}"
 required_labels=(
   garage
+  customise-paint-clean
+  customise-paint-dirty
+  customise-equipped
+  customise-weapon-soon
+  ranking-bots
+  ranking-botores
+  ranking-empty
+  ranking-loading
   settings
   confirm
   arena-layers
@@ -544,7 +585,6 @@ required_labels=(
   result
   replay-muted
   ranking-live
-  ranking-empty
   ranking-error
   playable-misconfigured
   session-offline-opponents

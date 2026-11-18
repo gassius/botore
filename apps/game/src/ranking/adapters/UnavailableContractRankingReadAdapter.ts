@@ -1,19 +1,19 @@
 import { RankingContractUnavailableError, type RankingReadPort } from '../RankingReadPort';
-import type { RankingRow } from '../types';
+import type { BotoreRankingRow, RankingRow } from '../types';
 
 /**
- * Stand-in for a future live RankingReadPort.
- *
- * Live/production integration is BLOCKED until a verified authoritative
- * ranking read contract exists. This adapter makes that failure explicit
- * instead of inventing an API.
+ * Stand-in when live Ranking RPCs cannot be reached (missing env / auth).
  */
 export class UnavailableContractRankingReadAdapter implements RankingReadPort {
-  constructor(
-    private readonly message = 'Live ranking read is blocked: no verified authoritative ranking endpoint/RPC, auth/RLS, ordering, or pagination contract exists yet. See apps/game/src/ranking/BACKEND_CONTRACT.md.',
-  ) {}
+  readonly kind = 'unavailable' as const;
+
+  constructor(private readonly message = 'Ranking contract is not available.') {}
 
   async list(): Promise<readonly RankingRow[]> {
+    throw new RankingContractUnavailableError(this.message);
+  }
+
+  async listBotores(): Promise<readonly BotoreRankingRow[]> {
     throw new RankingContractUnavailableError(this.message);
   }
 }

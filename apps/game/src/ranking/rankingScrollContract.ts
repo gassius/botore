@@ -10,8 +10,8 @@ export const RANKING_SCREEN_CHROME_SCROLL = true as const;
 /** Short phone body estimate used by regression evidence (not a locked token). */
 export const RANKING_SHORT_VIEWPORT_HEIGHT = 480;
 
-/** Matches Garage Tag touchMin row floor used in RankingScreen styles. */
-export const RANKING_ROW_MIN_HEIGHT = 48;
+/** Matches D4 ~60 pt ranking row height used in RankingScreen styles. */
+export const RANKING_ROW_MIN_HEIGHT = 60;
 
 export function rankingContentExceedsShortViewport(
   rowCount: number,

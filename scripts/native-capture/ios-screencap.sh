@@ -12,6 +12,9 @@ MUTE=""
 PAINT=""
 WEAPON=""
 BATTLE_ID=""
+FIGHT_VIEW=""
+CUSTOMISE=""
+RANKING=""
 UDID="booted"
 
 while [[ $# -gt 0 ]]; do
@@ -44,6 +47,18 @@ while [[ $# -gt 0 ]]; do
       BATTLE_ID="$2"
       shift 2
       ;;
+    --fight-view)
+      FIGHT_VIEW="$2"
+      shift 2
+      ;;
+    --customise)
+      CUSTOMISE="$2"
+      shift 2
+      ;;
+    --ranking)
+      RANKING="$2"
+      shift 2
+      ;;
     --udid)
       UDID="$2"
       shift 2
@@ -69,6 +84,9 @@ write_capture_intent_file() {
   local weapon="$3"
   local mute="$4"
   local battle_id="$5"
+  local fight_view="${6:-}"
+  local customise="${7:-}"
+  local ranking="${8:-}"
   local data_dir
   data_dir="$(xcrun simctl get_app_container "${UDID}" "${BUNDLE_ID}" data 2>/dev/null || true)"
   if [[ -z "${data_dir}" || ! -d "${data_dir}" ]]; then
@@ -85,6 +103,9 @@ write_capture_intent_file() {
     CAPTURE_INTENT_WEAPON="${weapon}" \
     CAPTURE_INTENT_MUTE="${mute_flag}" \
     CAPTURE_INTENT_BATTLE_ID="${battle_id}" \
+    CAPTURE_INTENT_FIGHT_VIEW="${fight_view}" \
+    CAPTURE_INTENT_CUSTOMISE="${customise}" \
+    CAPTURE_INTENT_RANKING="${ranking}" \
     node -e '
       const o = {
         route: process.env.CAPTURE_INTENT_ROUTE || null,
@@ -92,11 +113,17 @@ write_capture_intent_file() {
         weaponId: process.env.CAPTURE_INTENT_WEAPON || null,
         mute: process.env.CAPTURE_INTENT_MUTE === "true",
         battleId: process.env.CAPTURE_INTENT_BATTLE_ID || null,
+        fightViewMode: process.env.CAPTURE_INTENT_FIGHT_VIEW || null,
+        customiseScenario: process.env.CAPTURE_INTENT_CUSTOMISE || null,
+        rankingScenario: process.env.CAPTURE_INTENT_RANKING || null,
       };
       if (!o.paintId) o.paintId = null;
       if (!o.weaponId) o.weaponId = null;
       if (!o.mute) o.mute = null;
       if (!o.battleId) o.battleId = null;
+      if (!o.fightViewMode) o.fightViewMode = null;
+      if (!o.customiseScenario) o.customiseScenario = null;
+      if (!o.rankingScenario) o.rankingScenario = null;
       process.stdout.write(JSON.stringify(o) + "\n");
     ' >"${data_dir}/Documents/botore-design-capture-intent.json"
   echo "wrote capture intent → ${data_dir}/Documents/botore-design-capture-intent.json" >&2
@@ -145,7 +172,7 @@ if [[ -n "${ROUTE}" ]]; then
   xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
   dismiss_open_in_alert_if_any
   ensure_app_data_container
-  if ! write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" "${BATTLE_ID}"; then
+  if ! write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" "${BATTLE_ID}" "${FIGHT_VIEW}" "${CUSTOMISE}" "${RANKING}"; then
     echo "error: could not write capture intent file for ${ROUTE}" >&2
     exit 1
   fi
@@ -159,7 +186,7 @@ if [[ -n "${ROUTE}" ]]; then
   # Auth auto-sign-in + intent file poll + FirstRunShell route paint.
   sleep "${CAPTURE_IOS_COLD_SEC:-${CAPTURE_SETTLE_SEC:-16}}"
   # Re-write intent in case Documents was recreated, then bring app forward.
-  write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" "${BATTLE_ID}" || true
+  write_capture_intent_file "${ROUTE}" "${PAINT}" "${WEAPON}" "${MUTE}" "${BATTLE_ID}" "${FIGHT_VIEW}" "${CUSTOMISE}" "${RANKING}" || true
   xcrun simctl launch "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
   sleep "${CAPTURE_SETTLE_SEC:-5}"
   dismiss_open_in_alert_if_any

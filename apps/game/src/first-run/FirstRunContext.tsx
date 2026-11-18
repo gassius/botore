@@ -1,11 +1,17 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import {
+  type DesignCaptureCustomiseScenario,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
   readDesignCaptureConfig,
   readDesignCaptureSessionFailure,
 } from '../design-capture';
 import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
+import {
+  resolveFirstRunGoBackTarget,
+  shouldReopenResultOverlayOnBack,
+  type FightViewMode,
+} from '../fight-view';
 import { usePlayerSettings } from '../settings';
 import { nextRoute, prevRoute, type FirstRunRoute } from './routes';
 
@@ -46,6 +52,24 @@ export type FirstRunContextValue = {
    */
   sessionFailureCapture: DesignCaptureSessionFailure | null;
   setSessionFailureCapture: (failure: DesignCaptureSessionFailure | null) => void;
+  /**
+   * D3 design-capture: Customise paint-clean / paint-dirty / equipped / weapon-soon.
+   * Replaced on every capture deep link — never sticky across stills.
+   */
+  customiseCaptureScenario: DesignCaptureCustomiseScenario | null;
+  setCustomiseCaptureScenario: (scenario: DesignCaptureCustomiseScenario | null) => void;
+  /**
+   * D1 Fight View mode — firstWatch hides transport/back; rewatch shows back + Replay only.
+   * Set by ConfirmFight (firstWatch) / Result Watch again (rewatch).
+   */
+  fightViewMode: FightViewMode;
+  setFightViewMode: (mode: FightViewMode) => void;
+  /**
+   * D2 — Result overlay over the dimmed arena (first-watch after KO hold;
+   * rewatch Back re-opens it). Not a separate route in ROUTE_FLOW.
+   */
+  showResultOverlay: boolean;
+  setShowResultOverlay: (visible: boolean) => void;
 };
 
 /** Exported so design-capture session-failure can read live overrides without a hard throw. */
@@ -69,28 +93,42 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
   );
   const [demoOpponentId, setDemoOpponentId] = useState<string | null>(null);
   const [rankingCaptureScenario, setRankingCaptureScenario] =
-    useState<DesignCaptureRankingScenario | null>(null);
+    useState<DesignCaptureRankingScenario | null>(() => pending.rankingScenario ?? null);
   const [sessionFailureCapture, setSessionFailureCapture] =
     useState<DesignCaptureSessionFailure | null>(
       () => pending.sessionFailure ?? readDesignCaptureSessionFailure(),
     );
+  const [customiseCaptureScenario, setCustomiseCaptureScenario] =
+    useState<DesignCaptureCustomiseScenario | null>(() => pending.customiseScenario ?? null);
+  const [fightViewMode, setFightViewMode] = useState<FightViewMode>('firstWatch');
+  const [showResultOverlay, setShowResultOverlay] = useState(false);
 
   const value = useMemo<FirstRunContextValue>(
     () => ({
       route,
-      goTo: setRoute,
+      goTo: (next) => {
+        setRoute(next);
+        if (next !== 'Replay' && next !== 'FightResult') {
+          setShowResultOverlay(false);
+        }
+      },
       goNext: () => {
         const n = nextRoute(route);
-        if (n) setRoute(n);
+        if (n) {
+          setRoute(n);
+          setShowResultOverlay(false);
+        }
       },
       goBack: () => {
-        // Settings is side-entry — Back always returns to Stable chrome.
-        if (route === 'Settings') {
-          setRoute('Stable');
+        if (shouldReopenResultOverlayOnBack(route, fightViewMode)) {
+          setShowResultOverlay(true);
           return;
         }
-        const p = prevRoute(route);
-        if (p) setRoute(p);
+        const target = resolveFirstRunGoBackTarget(route, fightViewMode, prevRoute(route));
+        if (target) {
+          setRoute(target);
+          setShowResultOverlay(false);
+        }
       },
       muted: settings.muted,
       setMuted: settings.setMuted,
@@ -114,9 +152,17 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       setRankingCaptureScenario,
       sessionFailureCapture,
       setSessionFailureCapture,
+      customiseCaptureScenario,
+      setCustomiseCaptureScenario,
+      fightViewMode,
+      setFightViewMode,
+      showResultOverlay,
+      setShowResultOverlay,
     }),
     [
       route,
+      fightViewMode,
+      showResultOverlay,
       settings.muted,
       settings.setMuted,
       settings.toggleMute,
@@ -134,6 +180,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       demoOpponentId,
       rankingCaptureScenario,
       sessionFailureCapture,
+      customiseCaptureScenario,
     ],
   );
 

@@ -103,6 +103,12 @@ describe('C16 platform player id UI guards', () => {
       rank: 1,
       botId: 'bot-gc',
       displayName: 'T:hero',
+      botoreName: 'Cassia Gear',
+      botoreId: 'botore-gc',
+      wins: 1,
+      losses: 0,
+      totalXp: 2,
+      portrait: null,
       isCurrentBot: true,
       source: 'dev-fixture',
     };

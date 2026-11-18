@@ -373,6 +373,9 @@ jobs:
           set +a
           bash scripts/native-capture/ci-live-fight-ios-capture.sh
 
+      # Always publish native-captures (PNG stills), never only the tunnel.env
+      # artifact from the sibling Ubuntu job. Customise frames are captured early
+      # so this directory has PNGs even when the live-fight tail fails.
       - name: Upload capture artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -381,6 +384,28 @@ jobs:
           path: artifacts/native-captures/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Assert Customise + Ranking frames in iOS artifact dir
+        if: always()
+        run: |
+          set -euo pipefail
+          missing=0
+          for label in \
+            customise-paint-clean customise-paint-dirty customise-equipped customise-weapon-soon \
+            ranking-bots ranking-botores ranking-empty ranking-loading
+          do
+            matches=( artifacts/native-captures/ios-*-"${label}".png )
+            if [[ ! -e "${matches[0]:-}" ]]; then
+              echo "error: missing iOS design frame ${label}" >&2
+              missing=1
+            else
+              echo "ok: ${matches[0]}"
+            fi
+          done
+          if [[ "${missing}" != "0" ]]; then
+            ls -la artifacts/native-captures/ >&2 || true
+            exit 1
+          fi
 
       - name: Signal backend keepalive to stop
         if: always()
