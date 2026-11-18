@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -12,6 +11,8 @@ import {
 import { garageTag } from './tokens';
 import { weaponGlyphSource, type WeaponGlyphId } from './assets';
 import { SelectionCheck } from './SelectionCheck';
+import { SnapCarousel } from './snap/SnapCarousel';
+import { CUSTOMISE_CAROUSEL } from './snap/snapMetrics';
 
 export type PartPickerCard = {
   readonly id: string;
@@ -26,35 +27,45 @@ export type PartPickerStripProps = {
   readonly cards: readonly PartPickerCard[];
   readonly onSelect: (id: string) => void;
   readonly disabled?: boolean;
+  readonly initialIndex?: number;
+  readonly onSnapIndexChange?: ((index: number) => void) | undefined;
   readonly style?: StyleProp<ViewStyle>;
-  readonly testID?: string;
+  readonly testID?: string | undefined;
 };
 
+const CARD_W = CUSTOMISE_CAROUSEL.tileWidth;
+const CARD_H = CUSTOMISE_CAROUSEL.tileHeight;
+
 /**
- * D3 horizontal part/weapon card strip (~104×134).
- * Next card peeks at the trailing edge; locked cards are dashed + Coming soon.
+ * D7 horizontal part/weapon snap strip (E6 shared carousel).
+ * At rest: exactly whole tiles — never a cut option (first / middle / last).
  */
 export function PartPickerStrip({
   cards,
   onSelect,
   disabled = false,
+  initialIndex = 0,
+  onSnapIndexChange,
   style,
   testID,
 }: PartPickerStripProps): React.ReactElement {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
+    <SnapCarousel
+      data={cards}
+      itemSize={CARD_W}
+      gap={CUSTOMISE_CAROUSEL.gap}
+      designVisibleCount={CUSTOMISE_CAROUSEL.visibleCount}
+      initialIndex={initialIndex}
+      onSnapIndexChange={onSnapIndexChange}
+      keyExtractor={(card) => card.id}
       style={[styles.strip, style]}
       contentContainerStyle={styles.stripContent}
       testID={testID}
-    >
-      {cards.map((card) => {
+      renderItem={({ item: card }) => {
         const locked = card.locked === true;
         const selected = card.selected && !locked;
         return (
           <Pressable
-            key={card.id}
             accessibilityRole="button"
             accessibilityState={{ selected, disabled: locked || disabled }}
             accessibilityLabel={[
@@ -115,25 +126,19 @@ export function PartPickerStrip({
             <SelectionCheck selected={selected} style={styles.check} />
           </Pressable>
         );
-      })}
-    </ScrollView>
+      }}
+    />
   );
 }
-
-const CARD_W = 104;
-const CARD_H = 134;
 
 const styles = StyleSheet.create({
   strip: {
     flexGrow: 0,
     flexShrink: 0,
+    height: CARD_H + 12,
   },
   stripContent: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 2,
     paddingVertical: 6,
-    paddingRight: 24,
   },
   card: {
     width: CARD_W,
@@ -146,7 +151,6 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 8,
     paddingHorizontal: 6,
-    // Soft ink shelf like the mockup card shadow.
     shadowColor: garageTag.graphite,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 1,
