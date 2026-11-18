@@ -28,11 +28,10 @@ export const WORKSHOP_FRAME_KIT = {
 } as const;
 
 /**
- * Published atlas pack that carries Workshop Frame kit-v003 media keys (A1).
- * Fight/stable pin this version; `v1` remains the health proof-pack fixture;
- * `v2` remains kit-v002 history.
+ * Single Development atlas pack: proof catalogue + Workshop Frame kit-v003
+ * media keys (BT-171). Fight/stable pin `v1`; former v2/v3 packs are retired.
  */
-export const WORKSHOP_FRAME_ATLAS_VERSION = 'v3';
+export const WORKSHOP_FRAME_ATLAS_VERSION = 'v1';
 
 /** Body + limb kit asset ids (15). Wraps and weapons are separate. */
 export const WORKSHOP_FRAME_BODY_ASSET_IDS = [

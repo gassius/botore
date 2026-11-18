@@ -167,13 +167,10 @@ jobs:
           sudo apt-get install -y postgresql-client
           # Bound the Node seed/race so a wedged Storage call cannot hang the job
           # even if the step timer is slow to fire.
-          timeout 8m node scripts/seed-atlas-storage.mjs
-          # C13 history: kit-v002 → atlas/v2
-          timeout 3m env ATLAS_VERSION=v2 node scripts/pack-workshop-frame-atlas.mjs
-          timeout 8m env ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
-          # A1: kit-v003 → atlas/v3 (default pack target)
+          # BT-171: single Development atlas = v1 (proof + kit-v003 overlays).
+          # Pack before seed — workshop-frame PNGs are generated (gitignored).
           timeout 3m node scripts/pack-workshop-frame-atlas.mjs
-          timeout 8m env ATLAS_VERSION=v3 node scripts/seed-atlas-storage.mjs
+          timeout 8m env ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs
           timeout 2m node scripts/atlas-publish-race.mjs
 
       - name: Database tests (RLS, idempotency, append-only, bots-as-data)

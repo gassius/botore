@@ -77,21 +77,21 @@ are treated like a failed fetch when `allowOffline: false`.
 | `apps/game/src/atlas/expo-bundled-base-pack.ts` | Metro + `expo-asset` base wiring  |
 | `apps/game/test/atlas-pack-loader.test.ts`      | Headless acceptance for contracts |
 
-## Workshop Frame kit-v002 (C13 / F7 coordination)
+## Workshop Frame kit-v003 (F7 coordination)
 
-Visible build pins **kit-v002 only** — do not mix v001 coords/assets.
+Visible build pins **kit-v003(.3)** — do not mix v001/v002 coords/assets.
 
-Published pack: **`atlas/v2/`** (immutable). Kit local `manifest.json`
-(`atlas: null`) is still a **media-adapter** for assembly geometry — not a
-second Storage schema. Metro `apps/game/assets/workshop-frame-kit-v002/`
+Published pack: **`atlas/v1/`** (immutable; proof + kit-v003). Kit local
+`manifest.json` is still a **media-adapter** for assembly geometry — not a
+second Storage schema. Metro `apps/game/assets/workshop-frame-kit-v003/`
 remains a render fallback; `ensurePacks` is the long-term download/cache path
 for stable + current fight bots (not the future catalogue).
 
 | Concern                          | Source of truth                                         |
 | -------------------------------- | ------------------------------------------------------- |
-| Wire / Storage / cache           | F5 `get_atlas_manifest('v2')` + this loader             |
+| Wire / Storage / cache           | F5 `get_atlas_manifest('v1')` + this loader             |
 | Fight pin                        | `battle_participants.atlas_version` from sealed loadout |
-| Geometry / pivots / paint layers | Kit-v002 media-adapter (F7 consumes)                    |
+| Geometry / pivots / paint layers | Kit-v003 media-adapter (F7 consumes)                    |
 | Paint aliases Oxide/Petrol       | Client map → `paint-crimson` / `paint-cobalt`           |
 | Weapon aliases                   | Kit `weapon_sword` ↔ catalogue/atlas `weapon-sword`     |
 
@@ -111,8 +111,8 @@ Helpers: `partIdsForWorkshopFrameLoadout`, `atlasPathForWorkshopKitFile`,
 `ensureRuntimePacksBestEffort` (best-effort; never blocks a fight).
 
 Pack bytes: `node scripts/pack-workshop-frame-atlas.mjs` then
-`ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs`. Hosted upload needs
-Carlos credentials — see `supabase/seed/atlas/v2/README.md`.
+`ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs`. Hosted Development
+re-publish: `docs/backend/verify.md` § Hosted Development atlas v1 reset.
 
 ## Native verification (open in CI/cloud VMs without device)
 

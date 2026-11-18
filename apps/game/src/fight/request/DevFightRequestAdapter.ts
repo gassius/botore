@@ -95,7 +95,7 @@ export class DevFightRequestAdapter implements FightRequestPort {
       repeated: false,
       persistence: 'persisted',
       loadoutVersionIds: { attacker: 'dev-attacker', defender: 'dev-defender' },
-      atlasVersions: { attacker: 'v3', defender: 'v3' },
+      atlasVersions: { attacker: 'v1', defender: 'v1' },
       opponentId: input.opponentId,
       idempotencyKey: input.idempotencyKey,
     };
