@@ -22,6 +22,7 @@ export {
   formatCalloutHeadlineBase,
   initialCalloutQueueState,
   isMajorCallout,
+  isTerminalKoCallout,
   msUntilCalloutAdvance,
   resetCalloutQueue,
   sameCallout,

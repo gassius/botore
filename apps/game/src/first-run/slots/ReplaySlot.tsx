@@ -223,22 +223,25 @@ export function ReplaySlot(): React.ReactElement {
   const onCommandApplied = useCallback(
     (cmd: AnimationCommand, presentation: ReplayPresentationState) => {
       attackCtxRef.current = updateCalloutAttackContext(cmd, attackCtxRef.current);
-      const fighters =
-        resolution.status === 'confirmed' ? resolution.confirmed.replay.fighters : [];
-      // Queue non-null plates with min dwell; null / victory_screen keep the current plate.
-      const mapped = calloutFromCommand(cmd, fighters, {
-        lastAttackerId: attackCtxRef.current.lastAttackerId,
-        wasHeavy: attackCtxRef.current.wasHeavy,
-      });
-      if (mapped) {
-        const next = enqueueCallout(calloutQueueRef.current, mapped, Date.now());
-        calloutQueueRef.current = next;
-        publishCalloutQueue();
-        scheduleCalloutAdvance();
+      // Rewatch band discards callouts — skip enqueue / dwell timers / re-renders.
+      if (!isRewatch) {
+        const fighters =
+          resolution.status === 'confirmed' ? resolution.confirmed.replay.fighters : [];
+        // Queue non-null plates with min dwell; KO preempts; null keeps the plate.
+        const mapped = calloutFromCommand(cmd, fighters, {
+          lastAttackerId: attackCtxRef.current.lastAttackerId,
+          wasHeavy: attackCtxRef.current.wasHeavy,
+        });
+        if (mapped) {
+          const next = enqueueCallout(calloutQueueRef.current, mapped, Date.now());
+          calloutQueueRef.current = next;
+          publishCalloutQueue();
+          scheduleCalloutAdvance();
+        }
       }
       setHp({ near: presentation.hp.near, far: presentation.hp.far });
     },
-    [resolution, publishCalloutQueue, scheduleCalloutAdvance],
+    [isRewatch, resolution, publishCalloutQueue, scheduleCalloutAdvance],
   );
 
   // E2: when the Result overlay opens, refresh W–L from list_bot_ranking (no invent).

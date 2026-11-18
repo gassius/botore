@@ -44,6 +44,11 @@ export function isMajorCallout(callout: FightViewCallout): boolean {
   return h.includes('ko') || h.includes('heavy');
 }
 
+/** Terminal KO plate — must preempt dwell and clear pending so it shows before Result overlay. */
+export function isTerminalKoCallout(callout: FightViewCallout): boolean {
+  return callout.headline.toLowerCase().includes('ko');
+}
+
 /** Headline without trailing bangs — used with a separate oxide `×n` (D10 mockup). */
 export function formatCalloutHeadlineBase(callout: FightViewCallout): string {
   return callout.headline.replace(/!+\s*$/u, '').trim();
@@ -89,6 +94,8 @@ export function trimCalloutPending(
  * Null is ignored (does not clear the plate — keeps KO through quiet commands).
  * Identical current / last-pending plates collapse with an incremented count
  * (no re-flash / dwell reset on the current plate).
+ * Terminal KO preempts: drops pending and becomes `current` immediately so the
+ * plate is visible before the ~1.8 s Result overlay handoff.
  */
 export function enqueueCallout(
   state: CalloutQueueState,
@@ -97,6 +104,21 @@ export function enqueueCallout(
   minDwellMs: number = FIGHT_VIEW_CALLOUT_MIN_DWELL_MS,
 ): CalloutQueueState {
   if (!callout) return state;
+
+  if (isTerminalKoCallout(callout)) {
+    if (state.current && sameCallout(state.current.callout, callout)) {
+      return {
+        current: { callout: state.current.callout, count: state.current.count + 1 },
+        shownAtMs: state.shownAtMs,
+        pending: [],
+      };
+    }
+    return {
+      current: { callout, count: 1 },
+      shownAtMs: nowMs,
+      pending: [],
+    };
+  }
 
   if (state.current === null) {
     return {

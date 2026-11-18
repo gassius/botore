@@ -12,6 +12,7 @@ import {
   formatCalloutHeadline,
   initialCalloutQueueState,
   isMajorCallout,
+  isTerminalKoCallout,
   msUntilCalloutAdvance,
   resetCalloutQueue,
   trimCalloutPending,
@@ -22,6 +23,7 @@ import {
   FIGHT_VIEW_ARENA_TAG_LEFT_BESIDE_BACK,
   FIGHT_VIEW_BAND_CONTENT_HEIGHT,
   FIGHT_VIEW_CALLOUT_PLATE_HEIGHT,
+  FIGHT_VIEW_KO_HOLD_MS,
   arenaLocationTagLeft,
   formatArenaLocationLabel,
   fightViewShellHeights,
@@ -133,6 +135,32 @@ describe('E2 call-out dwell + queue (D10)', () => {
     expect(state.current).toBeNull();
     expect(state.pending).toHaveLength(0);
   });
+
+  it('KO preempts pending minors so it is current before Result overlay handoff', () => {
+    expect(isTerminalKoCallout(ko)).toBe(true);
+    // Realistic exchange cadence (~350 ms) while dwell is 1.2 s — backlog builds.
+    let state = initialCalloutQueueState();
+    state = enqueueCallout(state, strike, 0);
+    state = enqueueCallout(state, hit, 350);
+    state = enqueueCallout(state, strike, 700);
+    state = enqueueCallout(state, hit, 1050);
+    expect(state.current?.callout.headline).toBe('Strike!');
+    expect(state.pending.length).toBeGreaterThan(0);
+
+    const defeatAt = 1400;
+    state = enqueueCallout(state, ko, defeatAt);
+    expect(state.current?.callout).toEqual(ko);
+    expect(state.pending).toHaveLength(0);
+    expect(state.shownAtMs).toBe(defeatAt);
+
+    // victory_screen (~800 ms) + FIGHT_VIEW_KO_HOLD_MS (1000) ≈ overlay at defeat+1800.
+    const overlayAt = defeatAt + 800 + FIGHT_VIEW_KO_HOLD_MS;
+    expect(overlayAt - defeatAt).toBe(1800);
+    expect(state.current?.callout.headline).toBe('KO!');
+    // Still current at handoff (no auto-clear; pending empty so advance is a no-op).
+    state = advanceCalloutQueue(state, overlayAt);
+    expect(state.current?.callout.headline).toBe('KO!');
+  });
 });
 
 describe('E2 fixed band + arena location tag (D10)', () => {
@@ -168,6 +196,7 @@ describe('E2 fixed band + arena location tag (D10)', () => {
     expect(slot).toContain('ArenaLocationTag');
     expect(slot).toContain('FIGHT_VIEW_HUD_BELOW_INSET');
     expect(slot).toContain('arenaLocationTagLeft(isRewatch)');
+    expect(slot).toContain('if (!isRewatch)');
     expect(slot).not.toContain('arenaName=');
   });
 
