@@ -28,6 +28,7 @@ describe('captureIntentState merge + consume', () => {
       failClosed: null,
       poseCompare: null,
       sessionFailure: null,
+      fightViewMode: null,
     });
   });
 
@@ -49,6 +50,7 @@ describe('captureIntentState merge + consume', () => {
       failClosed: null,
       poseCompare: null,
       sessionFailure: null,
+      fightViewMode: null,
     });
   });
 
@@ -72,6 +74,7 @@ describe('captureIntentState merge + consume', () => {
       failClosed: null,
       poseCompare: null,
       sessionFailure: null,
+      fightViewMode: null,
     });
     expect(consumeCaptureRoute()).toBeNull();
   });

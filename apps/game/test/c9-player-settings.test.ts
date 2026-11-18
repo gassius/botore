@@ -105,6 +105,7 @@ describe('C9 Settings route', () => {
       failClosed: null,
       poseCompare: null,
       sessionFailure: null,
+      fightViewMode: null,
     });
   });
 });
