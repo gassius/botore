@@ -97,7 +97,7 @@ export const CUSTOMISE_STAGE_HEIGHT = 410;
 export const CUSTOMISE_STAGE_MIN_HEIGHT = 300;
 
 /** Horizontal picker card size — E6 / D7 snap carousel (pt). */
-export const PART_PICKER_CARD = { width: 105, height: 134 } as const;
+export const PART_PICKER_CARD = { width: 105, height: 128 } as const;
 
 /** Bot display width inside the ~410pt stage (scales with flex stage). */
 export const CUSTOMISE_BOT_SIZE = 360;

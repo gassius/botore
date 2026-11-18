@@ -1,5 +1,5 @@
 /**
- * E6 shared snap metrics — D5 / D7 / D8 SoT for A6 tile authorship.
+ * E6 shared snap metrics — A6 TILES-SPEC / D5 / D7 / D8.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -11,34 +11,51 @@ import {
   maxSnapIndex,
   offsetForSnapIndex,
   opponentsListSnapInterval,
-  sidePaddingForExactFit,
   snapContentLength,
   snapInterval,
   viewportFitsWholeItems,
   visibleWholeCount,
 } from '../src/garage-tag/snap/snapMetrics';
 
-describe('E6 snap metrics (D5 / D7 / D8)', () => {
-  it('documents Customise carousel tile + snap interval for A6', () => {
+describe('E6 snap metrics (A6 TILES-SPEC / D5 / D7 / D8)', () => {
+  it('documents Customise 105×128 tiles, snap 116, clip 337', () => {
     expect(CUSTOMISE_CAROUSEL.tileWidth).toBe(105);
-    expect(CUSTOMISE_CAROUSEL.tileHeight).toBe(134);
+    expect(CUSTOMISE_CAROUSEL.tileHeight).toBe(128);
     expect(CUSTOMISE_CAROUSEL.gap).toBe(11);
     expect(customiseCarouselSnapInterval()).toBe(116);
+    expect(CUSTOMISE_CAROUSEL.viewportClip).toBe(337);
+    expect(CUSTOMISE_CAROUSEL.visibleCount).toBe(3);
 
-    const used =
-      CUSTOMISE_CAROUSEL.visibleCount * CUSTOMISE_CAROUSEL.tileWidth +
-      (CUSTOMISE_CAROUSEL.visibleCount - 1) * CUSTOMISE_CAROUSEL.gap +
-      CUSTOMISE_CAROUSEL.sidePadding * 2;
-    expect(used).toBe(CUSTOMISE_CAROUSEL.trackWidth);
+    expect(3 * 105 + 2 * 11).toBe(337);
     expect(
       viewportFitsWholeItems(
-        CUSTOMISE_CAROUSEL.trackWidth,
+        CUSTOMISE_CAROUSEL.viewportClip,
         CUSTOMISE_CAROUSEL.tileWidth,
         CUSTOMISE_CAROUSEL.gap,
-        CUSTOMISE_CAROUSEL.sidePadding,
+        0,
         CUSTOMISE_CAROUSEL.visibleCount,
       ),
     ).toBe(true);
+    expect(
+      visibleWholeCount(
+        CUSTOMISE_CAROUSEL.viewportClip,
+        CUSTOMISE_CAROUSEL.tileWidth,
+        CUSTOMISE_CAROUSEL.gap,
+        0,
+      ),
+    ).toBe(3);
+  });
+
+  it('paint/weapon last-stop math matches TILES-SPEC', () => {
+    const paintContent = 10 * 105 + 9 * 11;
+    expect(paintContent).toBe(1149);
+    expect(paintContent - 337).toBe(812);
+    expect(812 / 116).toBe(7);
+
+    const weaponContent = 7 * 105 + 6 * 11;
+    expect(weaponContent).toBe(801);
+    expect(weaponContent - 337).toBe(464);
+    expect(464 / 116).toBe(4);
   });
 
   it('documents Ludus one-card carousel interval', () => {
@@ -48,25 +65,13 @@ describe('E6 snap metrics (D5 / D7 / D8)', () => {
     expect(LUDUS_BOT_CAROUSEL.visibleCount).toBe(1);
   });
 
-  it('documents Opponents 175pt snap interval (3 cards)', () => {
+  it('documents Opponents 175pt cards + 185pt snap (3 cards)', () => {
     expect(OPPONENTS_LIST.cardHeight).toBe(175);
-    expect(OPPONENTS_LIST.gap).toBe(0);
-    expect(opponentsListSnapInterval()).toBe(175);
+    expect(OPPONENTS_LIST.gap).toBe(10);
+    expect(opponentsListSnapInterval()).toBe(185);
     expect(OPPONENTS_LIST.visibleCount).toBe(3);
-    expect(3 * OPPONENTS_LIST.cardHeight).toBe(525);
-  });
-
-  it('never leaves a fractional tile in the design track', () => {
-    const count = visibleWholeCount(
-      CUSTOMISE_CAROUSEL.trackWidth,
-      CUSTOMISE_CAROUSEL.tileWidth,
-      CUSTOMISE_CAROUSEL.gap,
-      CUSTOMISE_CAROUSEL.sidePadding,
-    );
-    expect(count).toBe(3);
-
-    const pad = sidePaddingForExactFit(358, 105, 11, 3);
-    expect(pad).toBe(10.5);
+    expect(OPPONENTS_LIST.robotBodyHeight).toBe(150);
+    expect(3 * 175 + 2 * 10).toBe(OPPONENTS_LIST.trackHeight);
   });
 
   it('clamps first / middle / last snap offsets to whole-item stops', () => {
@@ -80,9 +85,8 @@ describe('E6 snap metrics (D5 / D7 / D8)', () => {
     expect(maxSnapIndex(itemCount, visible)).toBe(7);
     expect(offsetForSnapIndex(99, itemCount, itemSize, gap, visible)).toBe(7 * 116);
 
-    const content = snapContentLength(itemCount, itemSize, gap, 10.5);
-    // Last page: offset + track = content end.
-    expect(7 * 116 + 358).toBe(content);
+    const content = snapContentLength(itemCount, itemSize, gap, 0);
+    expect(7 * 116 + 337).toBe(content);
   });
 
   it('rejects non-positive item sizes', () => {

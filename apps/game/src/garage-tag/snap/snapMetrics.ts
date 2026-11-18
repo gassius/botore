@@ -1,28 +1,32 @@
 /**
- * Shared snap-list metrics for E6 (SoT: D5 Ludus, D7 Customise, D8 Opponents).
- * A6 carousel tiles must match CUSTOMISE_CAROUSEL.tileWidth / snapInterval.
+ * Shared snap-list metrics for E6 — SoT A6 TILES-SPEC + D5/D7/D8 mockups.
+ * Author A6 carousel tiles to CUSTOMISE_CAROUSEL.tileWidth / snapInterval.
  *
- * Phone reference frame: 390×844. Track / list widths below are the content
- * gutters inside ScreenChrome on that frame — not the full device width.
+ * Phone reference frame: 390×844.
  */
 
-/** D7 Customise paints + weapons carousel (and future pattern tiles). */
+/** D7 Customise paints + weapons carousel (A6 TILES-SPEC). */
 export const CUSTOMISE_CAROUSEL = {
-  /** Fixed tile width (pt). Exactly 3 tiles + gaps fit the 358pt track. */
+  /** Fixed tile width (pt). */
   tileWidth: 105,
-  /** Tile height from D3/D7 card art (pt). */
-  tileHeight: 134,
+  /** Tile height (pt). */
+  tileHeight: 128,
   /** Gap between tiles (pt). */
   gap: 11,
   /**
-   * Horizontal inset on the strip (pt). Exact-fit for 3×105 + 2×11 in 358:
-   * `(358 - 315 - 22) / 2 = 10.5`. D7's "16 px" is panel chrome, not strip inset.
+   * Clipped carousel viewport width (pt): `3×105 + 2×11 = 337`.
+   * No content padding inside the clip — otherwise a 4th tile peeks.
    */
-  sidePadding: 10.5,
-  /** Design track width on 390×844 (pt). */
-  trackWidth: 358,
-  /** Whole tiles visible at rest on the design track. */
+  viewportClip: 337,
+  /** Snap pitch (= tileWidth + gap). */
+  snapInterval: 116,
+  /** Whole tiles visible at rest. */
   visibleCount: 3,
+  /** Full-tile canvas including check overhang (A6 tile-paint / tile-weapon). */
+  tileCanvasWidth: 114,
+  tileCanvasHeight: 140,
+  /** Check badge overhang above / right of the 105×128 tile. */
+  tileOverhang: 9,
 } as const;
 
 /** D5 Ludus bot carousel — one full-width card at a time. */
@@ -34,14 +38,23 @@ export const LUDUS_BOT_CAROUSEL = {
   visibleCount: 1,
 } as const;
 
-/** D8 Opponents snapped vertical list. */
+/** D8 Opponents snapped vertical list (A6 SCREENS-SPEC). */
 export const OPPONENTS_LIST = {
-  /** Card height including its own border box (pt). */
+  /** Card height including border box (pt). */
   cardHeight: 175,
-  /** Gap between cards (pt). Zero so 3×175 fits the list viewport cleanly. */
-  gap: 0,
-  /** Whole cards visible at rest on 390×844 between quota panel and Continue. */
+  /** Gap between cards (pt). */
+  gap: 10,
+  /** Snap pitch (= cardHeight + gap). */
+  snapInterval: 185,
+  /** Design list viewport height: `3×175 + 2×10 = 545`. */
+  trackHeight: 545,
+  /** Whole cards visible at rest. */
   visibleCount: 3,
+  /** Left art panel inside the card (pt). */
+  artPanelWidth: 170,
+  artPanelHeight: 169,
+  /** Robot body height inside the panel (pt). */
+  robotBodyHeight: 150,
 } as const;
 
 export type SnapAxisMetrics = {
@@ -59,7 +72,7 @@ export function snapInterval(itemSize: number, gap: number): number {
 }
 
 export function customiseCarouselSnapInterval(): number {
-  return snapInterval(CUSTOMISE_CAROUSEL.tileWidth, CUSTOMISE_CAROUSEL.gap);
+  return CUSTOMISE_CAROUSEL.snapInterval;
 }
 
 export function ludusBotCarouselSnapInterval(): number {
@@ -67,7 +80,7 @@ export function ludusBotCarouselSnapInterval(): number {
 }
 
 export function opponentsListSnapInterval(): number {
-  return snapInterval(OPPONENTS_LIST.cardHeight, OPPONENTS_LIST.gap);
+  return OPPONENTS_LIST.snapInterval;
 }
 
 /**

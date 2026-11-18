@@ -54,6 +54,8 @@ export function PartPickerStrip({
       data={cards}
       itemSize={CARD_W}
       gap={CUSTOMISE_CAROUSEL.gap}
+      clipWidth={CUSTOMISE_CAROUSEL.viewportClip}
+      sidePadding={0}
       designVisibleCount={CUSTOMISE_CAROUSEL.visibleCount}
       initialIndex={initialIndex}
       onSnapIndexChange={onSnapIndexChange}

@@ -17,10 +17,9 @@ import {
   SnapVerticalList,
   StatusErrorBanner,
   garageTag,
-  weaponGlyphSource,
 } from '../../garage-tag';
+import { a6OpponentPanelSource, resolveOpponentNpcId } from '../../garage-tag/a6Tiles';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
-import { paintUiAlias, weaponUiAlias } from '../../garage/loadout/proofCatalogue';
 import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
@@ -206,14 +205,14 @@ export function OpponentsScreen(props: {
               testID="opponents-snap-list"
               renderItem={({ item: c }) => {
                 const isSelected = selected?.characterId === c.characterId;
-                const weapon = weaponUiAlias(c.loadout.weapon);
-                const paint = paintUiAlias(c.loadout.paint);
                 const name = playerFacingDisplayName(c.displayName);
+                const npcId = resolveOpponentNpcId(c.displayName);
+                const panel = npcId ? a6OpponentPanelSource(npcId) : null;
                 return (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityState={{ selected: isSelected }}
-                    accessibilityLabel={`${name}, ${weapon}${isSelected ? ', selected' : ''}`}
+                    accessibilityLabel={`${name}${isSelected ? ', selected' : ''}`}
                     onPress={() => {
                       selectOpponent(c);
                     }}
@@ -221,39 +220,43 @@ export function OpponentsScreen(props: {
                     testID={`opponent-${c.characterId}`}
                   >
                     <View style={styles.preview} testID={`opponent-preview-wrap-${c.characterId}`}>
-                      <BotAssemblerSlot
-                        loadout={{
-                          chassisId: c.loadout.chassis,
-                          paintId: c.loadout.paint,
-                          weaponId: c.loadout.weapon,
-                        }}
-                        facing="left"
-                        paintId={c.loadout.paint}
-                        weaponId={c.loadout.weapon}
-                        size={112}
-                        reducedMotion
-                        motionPose="idle"
-                        testID={`opponent-preview-${c.characterId}`}
-                      />
+                      {panel ? (
+                        <Image
+                          source={panel}
+                          style={styles.panelArt}
+                          resizeMode="contain"
+                          accessibilityIgnoresInvertColors
+                          testID={`opponent-preview-${c.characterId}`}
+                        />
+                      ) : (
+                        <BotAssemblerSlot
+                          loadout={{
+                            chassisId: c.loadout.chassis,
+                            paintId: c.loadout.paint,
+                            weaponId: c.loadout.weapon,
+                          }}
+                          facing="left"
+                          paintId={c.loadout.paint}
+                          weaponId={c.loadout.weapon}
+                          size={OPPONENTS_LIST.robotBodyHeight}
+                          reducedMotion
+                          motionPose="idle"
+                          testID={`opponent-preview-${c.characterId}`}
+                        />
+                      )}
                     </View>
                     <View style={styles.metaCol}>
                       <Text style={styles.name} numberOfLines={2} allowFontScaling>
                         {name}
                       </Text>
-                      <Text style={styles.paint} allowFontScaling>
-                        Paint · {paint}
+                      {/* D8: Botore name + W–L land with UI/data tickets; no weapon/paint chrome. */}
+                      <Text style={styles.botore} numberOfLines={1} allowFontScaling>
+                        Opponent
                       </Text>
-                      <View style={styles.weaponChip} testID={`opponent-weapon-${c.characterId}`}>
-                        <Image
-                          source={weaponGlyphSource(weapon)}
-                          style={styles.weaponGlyph}
-                          resizeMode="contain"
-                          accessibilityIgnoresInvertColors
-                        />
-                        <Text style={styles.weaponLabel} allowFontScaling>
-                          {weapon}
-                        </Text>
-                      </View>
+                      <View style={styles.recordRule} />
+                      <Text style={styles.record} allowFontScaling>
+                        — W – — L
+                      </Text>
                     </View>
                     <SelectionCheck selected={isSelected} />
                   </Pressable>
@@ -306,67 +309,63 @@ const styles = StyleSheet.create({
   card: {
     height: OPPONENTS_LIST.cardHeight,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    padding: 12,
-    backgroundColor: garageTag.cream,
+    alignItems: 'stretch',
+    backgroundColor: garageTag.white,
     borderWidth: garageTag.outline,
     borderColor: garageTag.graphite,
     borderRadius: garageTag.cutCorner,
     overflow: 'hidden',
   },
   cardSelected: {
-    borderWidth: 4,
-    borderColor: garageTag.mustard,
+    backgroundColor: garageTag.mustard,
   },
   preview: {
-    width: 120,
-    paddingTop: 4,
+    width: OPPONENTS_LIST.artPanelWidth,
+    height: OPPONENTS_LIST.artPanelHeight,
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     flexShrink: 0,
+    borderRightWidth: garageTag.outline,
+    borderRightColor: garageTag.graphite,
+    backgroundColor: '#E9D6B3',
+    overflow: 'hidden',
+  },
+  panelArt: {
+    width: OPPONENTS_LIST.artPanelWidth,
+    height: OPPONENTS_LIST.artPanelHeight,
   },
   metaCol: {
     flex: 1,
-    gap: 8,
+    gap: 4,
     minWidth: 0,
-    paddingTop: 8,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: 14,
     paddingRight: 28,
+    justifyContent: 'center',
   },
   name: {
-    fontWeight: '800',
-    fontSize: 16,
-    letterSpacing: 1,
+    fontWeight: '900',
+    fontSize: 22,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
     color: garageTag.graphite,
   },
-  paint: {
+  botore: {
     fontWeight: '700',
-    fontSize: 11,
+    fontSize: 13,
     color: garageTag.steel,
-    textTransform: 'uppercase',
   },
-  weaponChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderWidth: garageTag.outline,
-    borderColor: garageTag.graphite,
-    borderRadius: garageTag.cutCorner,
-    backgroundColor: garageTag.paper,
+  recordRule: {
+    marginTop: 10,
+    borderTopWidth: 2,
+    borderStyle: 'dashed',
+    borderTopColor: 'rgba(48,45,39,0.3)',
+    paddingTop: 10,
   },
-  weaponGlyph: {
-    width: 28,
-    height: 28,
-  },
-  weaponLabel: {
-    fontWeight: '800',
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
+  record: {
+    fontWeight: '700',
+    fontSize: 14,
     color: garageTag.graphite,
   },
 });

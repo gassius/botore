@@ -30,8 +30,17 @@ export type SnapCarouselProps<T> = {
   readonly data: readonly T[];
   readonly itemSize: number;
   readonly gap?: number;
-  /** Fixed side inset. When omitted, leftover viewport space is split so tiles never cut. */
+  /**
+   * Fixed side inset. When omitted and `clipWidth` is unset, leftover viewport
+   * space is split so tiles never cut. A6/D7 clipped carousels pass `clipWidth`
+   * with **no** content padding (TILES-SPEC).
+   */
   readonly sidePadding?: number;
+  /**
+   * Fixed clipped viewport width (pt). A6 Customise = 337 so exactly 3 tiles
+   * show; overflow hidden; no inner content padding.
+   */
+  readonly clipWidth?: number;
   /** Design visible count; used when viewport has not been measured yet. */
   readonly designVisibleCount?: number;
   readonly keyExtractor: (item: T, index: number) => string;
@@ -64,6 +73,7 @@ function SnapCarouselInner(
     itemSize,
     gap = 0,
     sidePadding: sidePaddingProp,
+    clipWidth,
     designVisibleCount = 1,
     keyExtractor,
     renderItem,
@@ -75,18 +85,22 @@ function SnapCarouselInner(
   } = props;
 
   const listRef = useRef<FlatList<unknown>>(null);
-  const [viewport, setViewport] = useState(0);
+  const [viewport, setViewport] = useState(clipWidth ?? 0);
   const [reduceMotion, setReduceMotion] = useState(false);
   const snapIndexRef = useRef(0);
   const interval = snapInterval(itemSize, gap);
 
-  const visibleCount =
-    viewport > 0
+  // A6 clipped carousel: fixed width, zero content padding, exact visibleCount.
+  const clipped = clipWidth !== undefined && clipWidth > 0;
+  const visibleCount = clipped
+    ? Math.max(1, designVisibleCount)
+    : viewport > 0
       ? visibleWholeCount(viewport, itemSize, gap, sidePaddingProp ?? 0)
       : Math.max(1, designVisibleCount);
 
-  const sidePadding =
-    sidePaddingProp !== undefined
+  const sidePadding = clipped
+    ? (sidePaddingProp ?? 0)
+    : sidePaddingProp !== undefined
       ? sidePaddingProp
       : viewport > 0
         ? sidePaddingForExactFit(viewport, itemSize, gap, visibleCount)
@@ -207,7 +221,13 @@ function SnapCarouselInner(
       data={listData}
       keyExtractor={keyExtractor as (item: unknown, index: number) => string}
       renderItem={wrappedRenderItem}
-      style={[styles.list, style]}
+      style={[
+        styles.list,
+        clipped
+          ? { width: clipWidth, overflow: 'hidden', alignSelf: 'center' }
+          : null,
+        style,
+      ]}
       contentContainerStyle={[
         {
           paddingHorizontal: sidePadding,
@@ -222,6 +242,7 @@ function SnapCarouselInner(
       bounces
       overScrollMode="never"
       onLayout={(e) => {
+        if (clipped) return;
         const w = e.nativeEvent.layout.width;
         if (w > 0 && Math.abs(w - viewport) > 0.5) setViewport(w);
       }}
