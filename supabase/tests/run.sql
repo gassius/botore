@@ -1230,7 +1230,7 @@ begin
   );
   raise notice 'TEST-OK atlas v1 workshop-frame-v003 pack + wraps + hyphen weapon ids';
 
-  -- Dev-only reopen: env marker + confirm gate + published→draft fixture ----
+  -- Dev-only reopen: private.environment marker + confirm gate + published→draft ----
   perform set_config('request.jwt.claim.role', 'service_role', true);
   insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
   values ('v900010', 'draft', null, '{"version":"v900010"}'::jsonb, false, 'reopen fixture');
@@ -1241,23 +1241,42 @@ begin
   values ('atlas', 'v900010/manifest.json', '{"fixture":true}'::jsonb);
   perform public.publish_atlas_version('v900010');
 
-  -- Fail closed without Dev env marker (Production never sets it).
+  -- Fail closed when private.environment row is absent (Production never inserts).
+  delete from private.environment;
   begin
     perform public.dev_reopen_atlas_version('v900010', 'DEVELOPMENT_ONLY_REOPEN');
     raise exception 'REOPEN FAIL: env marker missing should reject';
   exception
     when others then
-      if sqlstate = '42501' and sqlerrm like '%app.environment=development%' then null;
+      if sqlstate = '42501' and sqlerrm like '%private.environment=development%' then null;
       else raise;
       end if;
   end;
   perform tests.assert(
     (select status from public.atlas_versions where version = 'v900010') = 'published',
-    'v900010 still published when env marker unset'
+    'v900010 still published when env marker row absent'
   );
 
-  -- Marker is transaction-local only (never alter database from migrations/tests).
-  perform set_config('app.environment', 'development', true);
+  -- Fail closed when marker is production (never reopen).
+  insert into private.environment (singleton, env) values (true, 'production')
+  on conflict (singleton) do update set env = excluded.env;
+  begin
+    perform public.dev_reopen_atlas_version('v900010', 'DEVELOPMENT_ONLY_REOPEN');
+    raise exception 'REOPEN FAIL: production marker should reject';
+  exception
+    when others then
+      if sqlstate = '42501' and sqlerrm like '%private.environment=development%' then null;
+      else raise;
+      end if;
+  end;
+  perform tests.assert(
+    (select status from public.atlas_versions where version = 'v900010') = 'published',
+    'v900010 still published when env marker is production'
+  );
+
+  -- Development marker allows reopen (Infra INSERT on Dev DB; never from migrations).
+  insert into private.environment (singleton, env) values (true, 'development')
+  on conflict (singleton) do update set env = excluded.env;
 
   begin
     perform public.dev_reopen_atlas_version('v900010', 'wrong');
@@ -1297,6 +1316,8 @@ begin
     (select status from public.atlas_versions where version = 'v900010') = 'draft',
     'v900010 left draft after reopen coverage'
   );
+  -- Leave no marker so later suites stay fail-closed by default.
+  delete from private.environment;
   raise notice 'TEST-OK atlas dev_reopen_atlas_version gated reopen';
 
   -- Publish rejects missing Storage objects --------------------------------

@@ -39,7 +39,8 @@ Published packs are **immutable**: triggers reject insert/update/delete of manif
 | `atlas_lock_versions(text[])`                | Sorted per-version row locks for publish + mutations                                                    |
 | `get_atlas_manifest(version)`                | Published manifest + entry list for clients                                                             |
 | `publish_atlas_version(version)`             | `service_role` draft → published after object check                                                     |
-| `dev_reopen_atlas_version(v, confirm)`       | Dev-only published → draft; requires `app.environment=development` + confirm; fail closed on Production |
+| `dev_reopen_atlas_version(v, confirm)`       | Dev-only published → draft; requires `private.environment.env=development` (via `private.app_environment()`) + confirm; fail closed when row absent / Production |
+| `private.environment`                        | Singleton env marker (`development` / `staging` / `production`); RLS on, no client grants; Infra INSERT on Dev only — never from migrations |
 | `register_atlas_v1_workshop_frame_entries()` | Idempotent kit-v003 manifest rows onto draft `v1`                                                       |
 | `battle_participants.atlas_version`          | Fight-time media version pin (from loadout)                                                             |
 | `admin_atlas_overview`                       | Ops/readiness for a future B2 dashboard                                                                 |
@@ -84,10 +85,10 @@ registrations). Hosted Development leftovers that were already published stay
 as historical Storage prefixes; clients pin **`v1`** only.
 
 **Hosted Development** already-published old `v1` placeholders: use the
-Dev-only reopen path (`dev_reopen_atlas_version` +
-`register_atlas_v1_workshop_frame_entries` + Storage upload). Production
-immutability stays intact. Runbook: `docs/backend/verify.md` § Hosted
-Development atlas v1 reset.
+Dev-only reopen path (INSERT `private.environment` →
+`dev_reopen_atlas_version` + `register_atlas_v1_workshop_frame_entries` +
+Storage upload). Production immutability stays intact. Runbook:
+`docs/backend/verify.md` § Hosted Development atlas v1 reset.
 
 First-run loadouts pin **`v1`**. Fight records
 `battle_participants.atlas_version` from the sealed loadout.
