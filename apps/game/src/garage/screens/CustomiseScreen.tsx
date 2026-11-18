@@ -23,6 +23,7 @@ import {
   CUSTOMISE_BOT_SIZE,
   CUSTOMISE_SLOTS,
   CUSTOMISE_STAGE_HEIGHT,
+  CUSTOMISE_STAGE_MIN_HEIGHT,
   EQUIPPED_CONFIRM_MS,
   buildPaintPickerCards,
   buildWeaponPickerCards,
@@ -64,11 +65,24 @@ export function CustomiseScreen(props: {
   const previewPaint = preview ? paintUiAlias(preview.paint) : 'oxide';
   const displayName = playerFacingDisplayName(loadout.displayName ?? 'Bot');
 
+  const clearEquipFlash = () => {
+    if (equipFlashTimer.current) {
+      clearTimeout(equipFlashTimer.current);
+      equipFlashTimer.current = null;
+    }
+    setEquipFlash(false);
+  };
+
   useEffect(() => {
     return () => {
       if (equipFlashTimer.current) clearTimeout(equipFlashTimer.current);
     };
   }, []);
+
+  // End Equipped flash as soon as the player dirties again (show Oxide dot).
+  useEffect(() => {
+    if (loadout.dirty && equipFlash) clearEquipFlash();
+  }, [loadout.dirty, equipFlash]);
 
   const errorKind = loadout.lastError
     ? classifySessionFailure({
@@ -208,25 +222,35 @@ export function CustomiseScreen(props: {
       testID="slot-customise"
       scroll={false}
       footer={
-        <View style={styles.actions} testID="customise-actions">
-          <SecondaryButton
-            label="Discard"
-            onPress={discard}
-            disabled={!loadout.dirty || editingLocked}
-            style={styles.discard}
-            testID="customise-discard"
-          />
-          <PrimaryButton
-            label={equipLabel}
-            onPress={() => {
-              void onEquip();
-            }}
-            disabled={equipDisabled && !equipFlash}
-            busy={loadout.saving}
-            showUnsavedDot={loadout.dirty && !loadout.saving && !equipFlash}
-            style={styles.equip}
-            testID="customise-save"
-          />
+        <View style={styles.footerCol} testID="customise-footer">
+          <View style={styles.actions} testID="customise-actions">
+            <SecondaryButton
+              label="Discard"
+              onPress={discard}
+              disabled={!loadout.dirty || editingLocked}
+              style={styles.discard}
+              testID="customise-discard"
+            />
+            <PrimaryButton
+              label={equipLabel}
+              onPress={() => {
+                void onEquip();
+              }}
+              disabled={equipDisabled}
+              busy={loadout.saving}
+              showUnsavedDot={loadout.dirty && !loadout.saving}
+              style={styles.equip}
+              testID="customise-save"
+            />
+          </View>
+          {failureKind ? (
+            <SecondaryButton
+              label={sessionFailureCopy(failureKind).actionLabel}
+              onPress={onFailureAction}
+              disabled={loadout.saving}
+              testID="customise-session-action"
+            />
+          ) : null}
         </View>
       }
     >
@@ -256,6 +280,7 @@ export function CustomiseScreen(props: {
         <TabBar
           tabs={tabs}
           selectedId={tab}
+          compact
           onSelect={(id) => {
             if (!editingLocked) setTab(id as CustomiseSlotId);
           }}
@@ -303,7 +328,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   stage: {
-    height: CUSTOMISE_STAGE_HEIGHT,
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: CUSTOMISE_STAGE_MIN_HEIGHT,
+    maxHeight: CUSTOMISE_STAGE_HEIGHT,
     borderWidth: garageTag.outline,
     borderColor: garageTag.graphite,
     borderRadius: garageTag.cutCorner,
@@ -343,6 +371,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 4,
+    flexShrink: 0,
   },
   pickerTitle: {
     color: garageTag.graphite,
@@ -355,6 +384,9 @@ const styles = StyleSheet.create({
     color: '#6B6356',
     fontSize: 11,
     fontWeight: '600',
+  },
+  footerCol: {
+    gap: 10,
   },
   actions: {
     flexDirection: 'row',

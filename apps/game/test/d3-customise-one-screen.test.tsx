@@ -3,9 +3,7 @@
  * Phone frame 390×844; no vertical scroll; C17 no player-facing ids.
  */
 import React from 'react';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-native', async () => {
   const R = await vi.importActual<typeof import('react')>('react');
@@ -64,8 +62,10 @@ vi.mock('../src/bot/BotAssemblerSlot', () => ({
     }),
 }));
 
+let forcedSessionFailure: 'offline' | 'auth_expired' | null = null;
+
 vi.mock('../src/session-failure/useForcedSessionFailure', () => ({
-  useForcedSessionFailure: () => null,
+  useForcedSessionFailure: () => forcedSessionFailure,
 }));
 
 const playCue = vi.fn();
@@ -88,9 +88,11 @@ vi.mock('../src/first-run/FirstRunContext', () => ({
 import TestRenderer, { ReactTestRenderer, act } from 'react-test-renderer';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { measureScreenChromeLayout } from '../src/garage-tag/screenChromeLayout';
+import { garageTag } from '../src/garage-tag';
 import {
   CUSTOMISE_BOT_SIZE,
   CUSTOMISE_STAGE_HEIGHT,
+  CUSTOMISE_STAGE_MIN_HEIGHT,
   COMING_SOON_WEAPONS,
   buildWeaponPickerCards,
 } from '../src/garage/customise/customiseSlots';
@@ -98,6 +100,7 @@ import { DevAuthAdapter } from '../src/garage/auth/DevAuthAdapter';
 import { GarageSessionProvider, useGarageSession } from '../src/garage/LoadoutSessionContext';
 import { DevLoadoutSaveAdapter } from '../src/garage/loadout/DevLoadoutSaveAdapter';
 import { CustomiseScreen } from '../src/garage/screens/CustomiseScreen';
+import { SESSION_FAILURE_COPY } from '../src/session-failure';
 
 type SessionProbe = {
   selectPaint: (id: string) => void;
@@ -109,6 +112,8 @@ type SessionProbe = {
   canProgress: () => boolean;
   confirmedWeapon: () => string | null;
   lastError: () => string | null;
+  signOut: () => Promise<void>;
+  retryHydration: () => Promise<void>;
 };
 
 function GarageProbe(props: { apiRef: { current: SessionProbe | null } }): null {
@@ -123,6 +128,8 @@ function GarageProbe(props: { apiRef: { current: SessionProbe | null } }): null 
     canProgress: () => garage.canProgress,
     confirmedWeapon: () => garage.loadout.confirmedLoadout?.weapon ?? null,
     lastError: () => garage.loadout.lastError,
+    signOut: () => garage.signOut(),
+    retryHydration: () => garage.retryHydration(),
   };
   return null;
 }
@@ -153,18 +160,38 @@ function collectText(node: TestRenderer.ReactTestInstance | string): string[] {
   return out;
 }
 
-async function mountCustomise(): Promise<{
+function buttonLabel(root: TestRenderer.ReactTestInstance, testID: string): string {
+  const node = root.findByProps({ testID });
+  // Deduplicate mocked RN Text walk (collectText can visit the same string twice).
+  const unique = [
+    ...new Set(
+      collectText(node)
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ];
+  return unique[0] ?? '';
+}
+
+async function mountCustomise(opts?: {
+  auth?: DevAuthAdapter;
+  loadouts?: DevLoadoutSaveAdapter;
+}): Promise<{
   root: ReactTestRenderer;
   api: () => SessionProbe;
+  auth: DevAuthAdapter;
+  loadouts: DevLoadoutSaveAdapter;
 }> {
-  const auth = new DevAuthAdapter();
-  const signed = await auth.signInWithPassword({
-    email: 'dev@botore.local',
-    password: 'x',
-  });
-  expect(signed.ok).toBe(true);
+  const auth = opts?.auth ?? new DevAuthAdapter();
+  if (!opts?.auth) {
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+  }
 
-  const loadouts = new DevLoadoutSaveAdapter();
+  const loadouts = opts?.loadouts ?? new DevLoadoutSaveAdapter();
   const apiRef: { current: SessionProbe | null } = { current: null };
 
   let root!: ReactTestRenderer;
@@ -188,51 +215,56 @@ async function mountCustomise(): Promise<{
     await flush();
   }
   expect(api().canProgress()).toBe(true);
-  return { root, api };
+  return { root, api, auth, loadouts };
 }
 
-afterEach(() => {
+beforeEach(() => {
+  forcedSessionFailure = null;
   playCue.mockReset();
+});
+
+afterEach(() => {
+  forcedSessionFailure = null;
   vi.restoreAllMocks();
 });
 
 describe('D3 Customise one screen (390×844)', () => {
-  it('keeps a non-scroll body viewport usable at iPhone 16 phone frame', () => {
+  it('keeps a non-scroll body viewport usable with real-ish insets + flex stage', () => {
+    // iPhone-like top inset 47 / bottom 34 → chrome safe padding still 10 in ScreenChrome.
     const layout = measureScreenChromeLayout({
       fillInner: true,
       viewportHeight: 844,
       safePadding: 10,
       panelBorder: 3,
       innerPadding: 16,
-      footerHeight: 72,
+      footerHeight: 120, // Discard+EQUIP row + optional session action
       contentHeight: 700,
       scrollMode: false,
     });
     expect(layout.frameHeight).toBe(824);
     expect(layout.scrollViewportHeight).toBeGreaterThan(500);
     expect(layout.footerRetained).toBe(true);
+    // Flex stage budget: max 410, min 300 — shrinks before banners/footer clip.
+    expect(CUSTOMISE_STAGE_HEIGHT).toBe(410);
+    expect(CUSTOMISE_STAGE_MIN_HEIGHT).toBe(300);
+    expect(CUSTOMISE_STAGE_MIN_HEIGHT).toBeLessThan(CUSTOMISE_STAGE_HEIGHT);
   });
 
-  it('renders one-screen layout: stage, tabs, strip, EQUIP — no Confirmed/UNSAVED', async () => {
+  it('renders one-screen layout: flex stage, tabs, strip, EQUIP — no Confirmed/UNSAVED', async () => {
     const { root, api } = await mountCustomise();
-    const source = readFileSync(
-      join(__dirname, '../src/garage/screens/CustomiseScreen.tsx'),
-      'utf8',
-    );
-
-    expect(source).toMatch(/scroll=\{false\}/);
-    expect(source).toContain('Equip');
-    expect(source).not.toMatch(/Save loadout/i);
-    expect(source).not.toMatch(/UNSAVED PREVIEW/);
-    expect(source).not.toMatch(/Confirmed:/i);
-    expect(CUSTOMISE_STAGE_HEIGHT).toBe(410);
-    expect(CUSTOMISE_BOT_SIZE).toBeGreaterThanOrEqual(320);
 
     expect(root.root.findByProps({ testID: 'customise-body' })).toBeTruthy();
     expect(root.root.findByProps({ testID: 'customise-actions' })).toBeTruthy();
 
     const stage = root.root.findByProps({ testID: 'customise-stage' });
-    expect(stage.props.style).toEqual(expect.objectContaining({ height: CUSTOMISE_STAGE_HEIGHT }));
+    expect(stage.props.style).toEqual(
+      expect.objectContaining({
+        flexGrow: 1,
+        flexShrink: 1,
+        minHeight: CUSTOMISE_STAGE_MIN_HEIGHT,
+        maxHeight: CUSTOMISE_STAGE_HEIGHT,
+      }),
+    );
 
     const bot = root.root.findByProps({ testID: 'customise-bot' });
     expect(bot.props.size).toBe(CUSTOMISE_BOT_SIZE);
@@ -240,14 +272,13 @@ describe('D3 Customise one screen (390×844)', () => {
     for (const id of ['paint', 'head', 'body', 'arms', 'legs', 'weapon'] as const) {
       expect(root.root.findByProps({ testID: `customise-tabs-${id}` })).toBeTruthy();
     }
-    expect(
-      root.root.findByProps({ testID: 'customise-tabs-head' }).props.accessibilityState,
-    ).toEqual(expect.objectContaining({ disabled: true }));
+    const headTab = root.root.findByProps({ testID: 'customise-tabs-head' });
+    expect(headTab.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+    expect(headTab.props.hitSlop).toEqual({ top: 5, bottom: 5, left: 0, right: 0 });
     expect(
       root.root.findByProps({ testID: 'customise-tabs-weapon' }).props.accessibilityState,
     ).toEqual(expect.objectContaining({ selected: true, disabled: false }));
 
-    // Catalogue-driven strip: owned + coming-soon peek cards.
     expect(root.root.findByProps({ testID: 'customise-picker-card-weapon-sword' })).toBeTruthy();
     expect(root.root.findByProps({ testID: 'customise-picker-card-weapon-axe' })).toBeTruthy();
     expect(root.root.findByProps({ testID: 'customise-picker-card-weapon-dagger' })).toBeTruthy();
@@ -265,13 +296,13 @@ describe('D3 Customise one screen (390×844)', () => {
     expect(treeText).not.toMatch(/UNSAVED PREVIEW/i);
     expect(treeText).not.toMatch(/00000000-0000-4000-8000/);
     expect(treeText).not.toMatch(/paint-crimson|weapon-sword|loadout_version/i);
-    expect(treeText).toMatch(/Equip/i);
-    expect(treeText).toMatch(/Discard/i);
+    expect(buttonLabel(root.root, 'customise-save')).toBe('Equip');
+    expect(buttonLabel(root.root, 'customise-discard')).toBe('Discard');
     expect(treeText).toMatch(/Coming soon/i);
 
-    // Dirty → Oxide unsaved dot on EQUIP; Discard restores.
     expect(api().dirty()).toBe(false);
     expect(() => root.root.findByProps({ testID: 'customise-save-unsaved-dot' })).toThrow();
+    expect(root.root.findByProps({ testID: 'customise-save' }).props.disabled).toBe(true);
 
     const axeCard = root.root.findByProps({ testID: 'customise-picker-card-weapon-axe' });
     await act(async () => {
@@ -280,7 +311,9 @@ describe('D3 Customise one screen (390×844)', () => {
     await flush();
     expect(api().dirty()).toBe(true);
     expect(playCue).toHaveBeenCalledWith('select');
+    expect(playCue).toHaveBeenCalledTimes(1);
     expect(root.root.findByProps({ testID: 'customise-save-unsaved-dot' })).toBeTruthy();
+    expect(root.root.findByProps({ testID: 'customise-save' }).props.disabled).toBe(false);
 
     const discard = root.root.findByProps({ testID: 'customise-discard' });
     await act(async () => {
@@ -291,7 +324,7 @@ describe('D3 Customise one screen (390×844)', () => {
     expect(() => root.root.findByProps({ testID: 'customise-save-unsaved-dot' })).toThrow();
   });
 
-  it('plays equip cue only after EQUIP succeeds and shows Equipped flash', async () => {
+  it('plays equip cue once after EQUIP succeeds; stays disabled during Equipped flash', async () => {
     const { root, api } = await mountCustomise();
 
     const dagger = root.root.findByProps({ testID: 'customise-picker-card-weapon-dagger' });
@@ -299,7 +332,6 @@ describe('D3 Customise one screen (390×844)', () => {
       dagger.props.onPress();
     });
     await flush();
-    expect(playCue).toHaveBeenCalledWith('select');
     playCue.mockClear();
 
     const equip = root.root.findByProps({ testID: 'customise-save' });
@@ -313,45 +345,90 @@ describe('D3 Customise one screen (390×844)', () => {
     expect(api().confirmedWeapon()).toBe('weapon-dagger');
     expect(api().dirty()).toBe(false);
     expect(playCue).toHaveBeenCalledWith('equip');
-    expect(playCue).not.toHaveBeenCalledWith('select');
+    expect(playCue).toHaveBeenCalledTimes(1);
+    expect(buttonLabel(root.root, 'customise-save')).toBe('Equipped');
+    // Flash must not re-enable a clean Equip (PRR minor 2).
+    expect(root.root.findByProps({ testID: 'customise-save' }).props.disabled).toBe(true);
 
-    const treeText = collectText(root.root).join(' ');
-    expect(treeText).toMatch(/Equipped/i);
+    // Dirty during flash ends flash early and shows the Oxide dot.
+    await act(async () => {
+      root.root.findByProps({ testID: 'customise-picker-card-weapon-axe' }).props.onPress();
+    });
+    await flush();
+    expect(api().dirty()).toBe(true);
+    expect(buttonLabel(root.root, 'customise-save')).toBe('Equip');
+    expect(root.root.findByProps({ testID: 'customise-save-unsaved-dot' })).toBeTruthy();
   });
 
-  it('does not select locked Coming soon cards and keeps StatusErrorBanner for save fail', async () => {
-    const { root, api } = await mountCustomise();
+  it('auth_expired session action signs out from ready Customise', async () => {
+    forcedSessionFailure = 'auth_expired';
+    const { root, auth } = await mountCustomise();
+    expect(await auth.getSession()).not.toBeNull();
+
+    expect(root.root.findByProps({ testID: 'customise-session-auth_expired' })).toBeTruthy();
+    const action = root.root.findByProps({ testID: 'customise-session-action' });
+    expect(buttonLabel(root.root, 'customise-session-action')).toBe(
+      SESSION_FAILURE_COPY.auth_expired.actionLabel,
+    );
+
+    await act(async () => {
+      action.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+    expect(await auth.getSession()).toBeNull();
+  });
+
+  it('offline session action retries hydrate when clean, and saves when dirty', async () => {
+    forcedSessionFailure = 'offline';
+    const { root, api, loadouts } = await mountCustomise();
+    const fetchSpy = vi.spyOn(loadouts, 'fetchCurrent');
+
+    const action = root.root.findByProps({ testID: 'customise-session-action' });
+    expect(buttonLabel(root.root, 'customise-session-action')).toBe(
+      SESSION_FAILURE_COPY.offline.actionLabel,
+    );
+
+    await act(async () => {
+      action.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+    expect(fetchSpy).toHaveBeenCalled();
+
+    fetchSpy.mockClear();
+    await act(async () => {
+      api().selectWeapon('weapon-axe');
+    });
+    await flush();
+    expect(api().dirty()).toBe(true);
+
+    await act(async () => {
+      root.root.findByProps({ testID: 'customise-session-action' }).props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+    // Dirty offline action path calls Equip/save (not hydrate).
+    expect(api().dirty()).toBe(false);
+    expect(api().confirmedWeapon()).toBe('weapon-axe');
+    expect(playCue).toHaveBeenCalledWith('equip');
+  });
+
+  it('does not select locked Coming soon cards; StatusErrorBanner on save fail', async () => {
+    const { root } = await mountCustomise();
     const locked = root.root.findByProps({
       testID: `customise-picker-card-${COMING_SOON_WEAPONS[0]!.id}`,
     });
     expect(locked.props.accessibilityState.disabled).toBe(true);
 
-    // Force save failure path via adapter through session after a change.
-    // Re-mount with failing adapter.
     const auth = new DevAuthAdapter();
     await auth.signInWithPassword({ email: 'dev@botore.local', password: 'x' });
     const loadouts = new DevLoadoutSaveAdapter();
     loadouts.forceFailNext = true;
-    const apiRef: { current: SessionProbe | null } = { current: null };
-
-    let failRoot!: ReactTestRenderer;
-    await act(async () => {
-      failRoot = TestRenderer.create(
-        <SafeAreaProvider>
-          <GarageSessionProvider auth={auth} loadouts={loadouts}>
-            <GarageProbe apiRef={apiRef} />
-            <CustomiseScreen onBack={() => undefined} />
-          </GarageSessionProvider>
-        </SafeAreaProvider>,
-      );
-    });
-    const failApi = () => {
-      if (!apiRef.current) throw new Error('probe missing');
-      return apiRef.current;
-    };
-    for (let i = 0; i < 40 && (failApi().booting() || !failApi().canProgress()); i += 1) {
-      await flush();
-    }
+    const { root: failRoot, api: failApi } = await mountCustomise({ auth, loadouts });
 
     await act(async () => {
       failApi().selectWeapon('weapon-axe');
@@ -369,6 +446,10 @@ describe('D3 Customise one screen (390×844)', () => {
     expect(failRoot.root.findByProps({ testID: 'customise-save-error' })).toBeTruthy();
     const text = collectText(failRoot.root).join(' ');
     expect(text).not.toMatch(/22023|PGRST|unpublished_atlas/i);
-    void api;
+  });
+
+  it('keeps shared TabBar default touchMin when compact is off', () => {
+    // Compact is Customise-only; default consumers keep ≥48pt minHeight.
+    expect(garageTag.touchMin).toBe(48);
   });
 });

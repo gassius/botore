@@ -90,13 +90,16 @@ export function pickerMetaLabel(_slot: CustomiseSlotId, ownedCount: number): str
   return `${ownedCount} owned · swipe for more →`;
 }
 
-/** Stage height target from D3 mockup (pt). */
+/** Stage height target from D3 mockup (pt) — prefer as max; flex down for insets. */
 export const CUSTOMISE_STAGE_HEIGHT = 410;
+
+/** Floor so the robot stage stays visibly larger than pre-D3 on short phones. */
+export const CUSTOMISE_STAGE_MIN_HEIGHT = 300;
 
 /** Horizontal picker card size from D3 mockup (pt). */
 export const PART_PICKER_CARD = { width: 104, height: 134 } as const;
 
-/** Bot display width inside the ~410pt stage. */
+/** Bot display width inside the ~410pt stage (scales with flex stage). */
 export const CUSTOMISE_BOT_SIZE = 360;
 
 /** Brief "Equipped" confirmation after a successful save (ms). */

@@ -13,11 +13,23 @@ export type TabBarProps = {
   tabs: TabItem[];
   selectedId: string;
   onSelect: (id: string) => void;
+  /**
+   * D3 Customise: 38pt visual tabs with hitSlop so the press target stays ≥48pt.
+   * Default keeps full touchMin height for other screens.
+   */
+  compact?: boolean;
   testID?: string;
 };
 
 /** Tab selection uses mustard fill + selected a11y state — not colour alone. */
-export function TabBar({ tabs, selectedId, onSelect, testID }: TabBarProps): React.ReactElement {
+export function TabBar({
+  tabs,
+  selectedId,
+  onSelect,
+  compact = false,
+  testID,
+}: TabBarProps): React.ReactElement {
+  const hitSlop = compact ? { top: 5, bottom: 5, left: 0, right: 0 } : undefined;
   return (
     <View style={styles.row} accessibilityRole="tablist" testID={testID}>
       {tabs.map((tab) => {
@@ -32,11 +44,13 @@ export function TabBar({ tabs, selectedId, onSelect, testID }: TabBarProps): Rea
               disabled ? ', unavailable' : ''
             }`}
             disabled={disabled}
+            hitSlop={hitSlop}
             onPress={() => {
               if (!disabled) onSelect(tab.id);
             }}
             style={[
               styles.tab,
+              compact ? styles.tabCompact : styles.tabDefault,
               selected ? styles.tabSelected : styles.tabIdle,
               disabled ? styles.tabDisabled : null,
             ]}
@@ -44,7 +58,7 @@ export function TabBar({ tabs, selectedId, onSelect, testID }: TabBarProps): Rea
           >
             <Text
               style={[
-                styles.label,
+                compact ? styles.labelCompact : styles.label,
                 selected ? styles.labelSelected : null,
                 disabled ? styles.labelDisabled : null,
               ]}
@@ -67,14 +81,19 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    height: 38,
-    minHeight: 38,
     borderWidth: 2.5,
     borderColor: garageTag.graphite,
     borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 2,
+  },
+  tabDefault: {
+    minHeight: garageTag.touchMin,
+  },
+  tabCompact: {
+    height: 38,
+    minHeight: 38,
   },
   tabSelected: {
     backgroundColor: garageTag.mustard,
@@ -88,6 +107,13 @@ const styles = StyleSheet.create({
     backgroundColor: garageTag.cream,
   },
   label: {
+    fontWeight: '800',
+    fontSize: 14,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: garageTag.steel,
+  },
+  labelCompact: {
     fontWeight: '800',
     fontSize: 10.5,
     letterSpacing: 0.3,
