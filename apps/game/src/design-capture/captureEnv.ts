@@ -28,14 +28,7 @@ export const LIVE_FIGHT_CAPTURE_PASSWORD = 'local-only-password';
  * - empty / loading / error / offline / auth_expired: forced UI states
  */
 export type DesignCaptureRankingScenario =
-  | 'live'
-  | 'bots'
-  | 'botores'
-  | 'empty'
-  | 'loading'
-  | 'error'
-  | 'offline'
-  | 'auth_expired';
+  'live' | 'bots' | 'botores' | 'empty' | 'loading' | 'error' | 'offline' | 'auth_expired';
 
 /** C10: force shared offline / auth-expired banners under design-capture. */
 export type DesignCaptureSessionFailure = 'offline' | 'auth_expired';
