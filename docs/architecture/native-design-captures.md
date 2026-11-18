@@ -90,18 +90,24 @@ Artifacts land in `artifacts/native-captures/` (gitignored) with a
 
 Deep links used by the scripts:
 
-| URL                                                | Effect                |
-| -------------------------------------------------- | --------------------- |
-| `botore://capture/Stable`                          | Jump to Stable        |
-| `botore://capture/Settings`                        | Jump to Settings (C9) |
-| `botore://capture/Replay?mute=1`                   | Jump to Replay muted  |
-| `botore://capture/Customise?customise=paint-clean` | D3 Paint clean        |
-| `botore://capture/Customise?customise=paint-dirty` | D3 dirty + Oxide dot  |
-| `botore://capture/Customise?customise=equipped`    | D3 Equipped flash     |
-| `botore://capture/Customise?customise=weapon-soon` | D3 Weapon Coming soon |
+| URL                                                | Effect                                     |
+| -------------------------------------------------- | ------------------------------------------ |
+| `botore://capture/Stable`                          | Jump to Stable                             |
+| `botore://capture/Settings`                        | Jump to Settings (C9)                      |
+| `botore://capture/Replay?mute=1`                   | Jump to Replay muted                       |
+| `botore://capture/Customise?customise=paint-clean` | D3 Paint clean                             |
+| `botore://capture/Customise?customise=paint-dirty` | D3 dirty + Oxide dot                       |
+| `botore://capture/Customise?customise=equipped`    | D3 Equipped flash                          |
+| `botore://capture/Customise?customise=weapon-soon` | D3 Weapon Coming soon                      |
+| `botore://capture/Opponents`                       | E6/D8 snapped list at rest (seeded online) |
 
 Live-fight CI also captures **Settings** and a **muted Replay** still
 (`settings`, `replay-muted`) for audio/settings design review.
+
+**E6 Opponents evidence:** Android live-fight produces `opponents-snap-rest`
+(no `sessionFailure`) against the seeded roster (Sir/Dex/Tank → three whole
+175 pt cards, 185 snap, 150 pt robots). C10 offline / auth-expired Opponents
+stills are separate and must not substitute for the snapped list.
 
 ## EAS path (optional cloud binary)
 

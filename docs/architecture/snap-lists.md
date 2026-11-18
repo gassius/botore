@@ -56,6 +56,10 @@ Map: `apps/game/src/garage-tag/a6Tiles.ts`. Catalogue unlock of all 10+7 is **E7
 
 Panel art: `apps/game/assets/a6-patterns-tott-v1/opponents/` (12 NPCs).
 
+Android design evidence: live-fight still `opponents-snap-rest` (seeded online
+roster, not C10 `sessionFailure`). Seed ships three system opponents so the
+first rest stop shows three whole cards.
+
 ## Primitives
 
 - `SnapCarousel` — horizontal; pass `clipWidth={337}` for Customise.
