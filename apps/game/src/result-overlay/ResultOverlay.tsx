@@ -164,10 +164,7 @@ export function ResultOverlay({
         testID={`${testID}-dim`}
         pointerEvents="none"
       />
-      <View
-        style={[styles.content, { paddingTop: contentPadTop }]}
-        testID={`${testID}-content`}
-      >
+      <View style={[styles.content, { paddingTop: contentPadTop }]} testID={`${testID}-content`}>
         <Animated.View
           style={[
             styles.plateWrap,

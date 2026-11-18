@@ -19,7 +19,4 @@ export {
   fetchCurrentBotFightRecord,
 } from './fetchCurrentBotFightRecord';
 export { reduceResultOverlayShell } from './resultOverlayShell';
-export type {
-  ResultOverlayShellAction,
-  ResultOverlayShellState,
-} from './resultOverlayShell';
+export type { ResultOverlayShellAction, ResultOverlayShellState } from './resultOverlayShell';

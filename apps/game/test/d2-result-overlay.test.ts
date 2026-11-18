@@ -250,7 +250,7 @@ describe('D2 result card model (player POV)', () => {
     expect(card.showNewRecord).toBe(false);
     const overlay = readSource('src/result-overlay/ResultOverlay.tsx');
     expect(overlay).toContain('DRAW');
-    expect(overlay).toContain("accessibilityLabel=\"Draw\"");
+    expect(overlay).toContain('accessibilityLabel="Draw"');
     expect(overlay).toContain('isDraw');
   });
 
