@@ -82,29 +82,36 @@ describe('E3 fight quota parse + countdown', () => {
     expect(quota?.nextRefillAt).toBe('2026-11-19T00:00:00Z');
   });
 
-  it('resolves opponent panel slug from loadout, not character id', () => {
+  it('resolves opponent panel slug from A6 NPC identity (shared Opponents/ToTT)', () => {
     expect(
       resolveA6OpponentPanelSlug({
+        characterId: 'slab-mick',
+        displayName: 'Slab Mick',
+        paintId: 'paint-cinder',
+        weaponId: 'weapon-mace',
+      }),
+    ).toBe('slab-mick');
+    // Display-name identity wins over mismatched seed loadout (Can Hook bake).
+    expect(
+      resolveA6OpponentPanelSlug({
+        characterId: 'opp-dex-bot',
+        displayName: 'Can Hook',
         paintId: 'paint-crimson',
         weaponId: 'weapon-dagger',
-        displayName: 'Someone Else',
       }),
     ).toBe('can-hook');
+    // Sir Bot is not an A6 NPC — no panel alias onto slab-mick / cobalt-brute
     expect(
       resolveA6OpponentPanelSlug({
-        paintId: 'paint-cobalt',
-        weaponId: 'weapon-axe',
-      }),
-    ).toBe('cobalt-brute');
-    expect(
-      resolveA6OpponentPanelSlug({
+        characterId: 'opp-sir-bot',
+        displayName: 'Sir Bot',
         paintId: 'paint-cobalt',
         weaponId: 'weapon-sword',
       }),
-    ).toBe('slab-mick');
+    ).toBeNull();
     expect(
       resolveA6OpponentPanelSlug({
-        paintId: 'paint-unknown',
+        paintId: 'paint-cobalt',
         weaponId: 'weapon-sword',
       }),
     ).toBeNull();

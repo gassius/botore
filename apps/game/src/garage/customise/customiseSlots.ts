@@ -1,8 +1,8 @@
 /**
- * D3 Customise slot + picker catalogue helpers.
- * Tabs and cards are data-driven from proof catalogue (+ locked placeholders).
- * Adding a 4th owned weapon to PROOF_WEAPONS needs no layout change.
+ * D3/D7 Customise slot + picker catalogue helpers.
+ * Tabs and cards are data-driven from proof catalogue (10 paints / 7 weapons).
  */
+import { resolvePaintVisual } from '../../assembler/paints';
 import { garageTag, type WeaponGlyphId } from '../../garage-tag';
 import { PROOF_PAINTS, PROOF_WEAPONS } from '../loadout/proofCatalogue';
 
@@ -27,6 +27,10 @@ export type PartPickerCardModel = {
   readonly paintColor?: string;
   /** Weapon glyph — only for owned weapon cards. */
   readonly weaponGlyph?: WeaponGlyphId;
+  /** True for hazard/racing pattern liveries (PATTERN tag). */
+  readonly patternTag?: boolean;
+  /** Paint visual alias for A6 tile lookup. */
+  readonly paintAlias?: string;
 };
 
 /** Fixed slot order from the D3 mockup. Empty slots stay dashed until A4. */
@@ -39,34 +43,28 @@ export const CUSTOMISE_SLOTS: readonly CustomiseSlotDef[] = [
   { id: 'weapon', label: 'Weapon', hasContent: PROOF_WEAPONS.length > 0 },
 ] as const;
 
-/** Future weapons shown as locked "Coming soon" cards (mockup placeholders). */
-export const COMING_SOON_WEAPONS = [
-  { id: 'weapon-mace-soon', label: 'Mace' },
-  { id: 'weapon-spear-soon', label: 'Spear' },
-] as const;
-
-const PAINT_COLORS: Record<string, string> = {
-  oxide: garageTag.oxide,
-  petrol: garageTag.petrol,
-};
-
 export function paintColorForAlias(alias: string): string {
-  return PAINT_COLORS[alias] ?? garageTag.steel;
+  return resolvePaintVisual(alias).armourColor || garageTag.steel;
 }
 
 export function buildPaintPickerCards(selectedPaintAlias: string): PartPickerCardModel[] {
-  return PROOF_PAINTS.map((paint) => ({
-    id: paint.partId,
-    label: paint.label,
-    kind: 'paint' as const,
-    selected: selectedPaintAlias === paint.uiAlias,
-    locked: false,
-    paintColor: paintColorForAlias(paint.uiAlias),
-  }));
+  return PROOF_PAINTS.map((paint) => {
+    const visual = resolvePaintVisual(paint.uiAlias);
+    return {
+      id: paint.partId,
+      label: paint.label,
+      kind: 'paint' as const,
+      selected: selectedPaintAlias === paint.uiAlias,
+      locked: false,
+      paintColor: paintColorForAlias(paint.uiAlias),
+      paintAlias: paint.uiAlias,
+      ...(visual.kind === 'pattern' ? { patternTag: true } : {}),
+    };
+  });
 }
 
 export function buildWeaponPickerCards(selectedWeaponAlias: string): PartPickerCardModel[] {
-  const owned: PartPickerCardModel[] = PROOF_WEAPONS.map((weapon) => ({
+  return PROOF_WEAPONS.map((weapon) => ({
     id: weapon.partId,
     label: weapon.label,
     kind: 'weapon' as const,
@@ -74,14 +72,6 @@ export function buildWeaponPickerCards(selectedWeaponAlias: string): PartPickerC
     locked: false,
     weaponGlyph: weapon.uiAlias,
   }));
-  const locked: PartPickerCardModel[] = COMING_SOON_WEAPONS.map((weapon) => ({
-    id: weapon.id,
-    label: weapon.label,
-    kind: 'locked' as const,
-    selected: false,
-    locked: true,
-  }));
-  return [...owned, ...locked];
 }
 
 export function pickerMetaLabel(_slot: CustomiseSlotId, ownedCount: number): string {
@@ -96,8 +86,8 @@ export const CUSTOMISE_STAGE_HEIGHT = 410;
 /** Floor so the robot stage stays visibly larger than pre-D3 on short phones. */
 export const CUSTOMISE_STAGE_MIN_HEIGHT = 300;
 
-/** Horizontal picker card size from D3 mockup (pt). */
-export const PART_PICKER_CARD = { width: 104, height: 134 } as const;
+/** Horizontal picker card size — E6 / D7 snap carousel (pt). */
+export const PART_PICKER_CARD = { width: 105, height: 128 } as const;
 
 /** Bot display width inside the ~410pt stage (scales with flex stage). */
 export const CUSTOMISE_BOT_SIZE = 360;

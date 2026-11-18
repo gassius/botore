@@ -3,6 +3,7 @@
  *
  * Includes precomposited parts/ (fallback/reference) plus materials/ + masks/
  * for under → mask-tint → over paint compositing. hand_*_wrap required.
+ * E7: new weapons (mace/hammer/spear/shield) + A6 pattern fills.
  */
 /* eslint-disable @typescript-eslint/no-require-imports */
 import type { ImageSourcePropType } from 'react-native';
@@ -91,6 +92,22 @@ export const WORKSHOP_FRAME_PART_SOURCES: Record<string, ImageSourcePropType> = 
     require('../../assets/workshop-frame-kit-v003/parts/weapon_sword-oxide.png') as ImageSourcePropType,
   'parts/weapon_sword-petrol.png':
     require('../../assets/workshop-frame-kit-v003/parts/weapon_sword-petrol.png') as ImageSourcePropType,
+  'parts/weapon_mace-oxide.png':
+    require('../../assets/workshop-frame-kit-v003/parts/weapon_mace-oxide.png') as ImageSourcePropType,
+  'parts/weapon_mace-petrol.png':
+    require('../../assets/workshop-frame-kit-v003/parts/weapon_mace-petrol.png') as ImageSourcePropType,
+  'parts/weapon_hammer-oxide.png':
+    require('../../assets/workshop-frame-kit-v003/parts/weapon_hammer-oxide.png') as ImageSourcePropType,
+  'parts/weapon_hammer-petrol.png':
+    require('../../assets/workshop-frame-kit-v003/parts/weapon_hammer-petrol.png') as ImageSourcePropType,
+  'parts/weapon_spear-oxide.png':
+    require('../../assets/workshop-frame-kit-v003/parts/weapon_spear-oxide.png') as ImageSourcePropType,
+  'parts/weapon_spear-petrol.png':
+    require('../../assets/workshop-frame-kit-v003/parts/weapon_spear-petrol.png') as ImageSourcePropType,
+  'parts/weapon_shield-oxide.png':
+    require('../../assets/workshop-frame-kit-v003/parts/weapon_shield-oxide.png') as ImageSourcePropType,
+  'parts/weapon_shield-petrol.png':
+    require('../../assets/workshop-frame-kit-v003/parts/weapon_shield-petrol.png') as ImageSourcePropType,
   'masks/foot_l-paint.png':
     require('../../assets/workshop-frame-kit-v003/masks/foot_l-paint.png') as ImageSourcePropType,
   'masks/foot_r-paint.png':
@@ -129,6 +146,14 @@ export const WORKSHOP_FRAME_PART_SOURCES: Record<string, ImageSourcePropType> = 
     require('../../assets/workshop-frame-kit-v003/masks/weapon_axe-paint.png') as ImageSourcePropType,
   'masks/weapon_dagger-paint.png':
     require('../../assets/workshop-frame-kit-v003/masks/weapon_dagger-paint.png') as ImageSourcePropType,
+  'masks/weapon_hammer-paint.png':
+    require('../../assets/workshop-frame-kit-v003/masks/weapon_hammer-paint.png') as ImageSourcePropType,
+  'masks/weapon_mace-paint.png':
+    require('../../assets/workshop-frame-kit-v003/masks/weapon_mace-paint.png') as ImageSourcePropType,
+  'masks/weapon_shield-paint.png':
+    require('../../assets/workshop-frame-kit-v003/masks/weapon_shield-paint.png') as ImageSourcePropType,
+  'masks/weapon_spear-paint.png':
+    require('../../assets/workshop-frame-kit-v003/masks/weapon_spear-paint.png') as ImageSourcePropType,
   'masks/weapon_sword-paint.png':
     require('../../assets/workshop-frame-kit-v003/masks/weapon_sword-paint.png') as ImageSourcePropType,
   'materials/foot_l-over.png':
@@ -207,10 +232,46 @@ export const WORKSHOP_FRAME_PART_SOURCES: Record<string, ImageSourcePropType> = 
     require('../../assets/workshop-frame-kit-v003/materials/weapon_dagger-over.png') as ImageSourcePropType,
   'materials/weapon_dagger-under.png':
     require('../../assets/workshop-frame-kit-v003/materials/weapon_dagger-under.png') as ImageSourcePropType,
+  'materials/weapon_hammer-over.png':
+    require('../../assets/workshop-frame-kit-v003/materials/weapon_hammer-over.png') as ImageSourcePropType,
+  'materials/weapon_hammer-under.png':
+    require('../../assets/workshop-frame-kit-v003/materials/weapon_hammer-under.png') as ImageSourcePropType,
+  'materials/weapon_mace-over.png':
+    require('../../assets/workshop-frame-kit-v003/materials/weapon_mace-over.png') as ImageSourcePropType,
+  'materials/weapon_mace-under.png':
+    require('../../assets/workshop-frame-kit-v003/materials/weapon_mace-under.png') as ImageSourcePropType,
+  'materials/weapon_shield-over.png':
+    require('../../assets/workshop-frame-kit-v003/materials/weapon_shield-over.png') as ImageSourcePropType,
+  'materials/weapon_shield-under.png':
+    require('../../assets/workshop-frame-kit-v003/materials/weapon_shield-under.png') as ImageSourcePropType,
+  'materials/weapon_spear-over.png':
+    require('../../assets/workshop-frame-kit-v003/materials/weapon_spear-over.png') as ImageSourcePropType,
+  'materials/weapon_spear-under.png':
+    require('../../assets/workshop-frame-kit-v003/materials/weapon_spear-under.png') as ImageSourcePropType,
   'materials/weapon_sword-over.png':
     require('../../assets/workshop-frame-kit-v003/materials/weapon_sword-over.png') as ImageSourcePropType,
   'materials/weapon_sword-under.png':
     require('../../assets/workshop-frame-kit-v003/materials/weapon_sword-under.png') as ImageSourcePropType,
+  'a6-paints-v4/pattern-fills/hazard/head.png':
+    require('../../assets/a6-paints-v4/pattern-fills/hazard/head.png') as ImageSourcePropType,
+  'a6-paints-v4/pattern-fills/hazard/torso.png':
+    require('../../assets/a6-paints-v4/pattern-fills/hazard/torso.png') as ImageSourcePropType,
+  'a6-paints-v4/pattern-fills/hazard/thigh_l.png':
+    require('../../assets/a6-paints-v4/pattern-fills/hazard/thigh_l.png') as ImageSourcePropType,
+  'a6-paints-v4/pattern-fills/hazard/thigh_r.png':
+    require('../../assets/a6-paints-v4/pattern-fills/hazard/thigh_r.png') as ImageSourcePropType,
+  'a6-paints-v4/pattern-fills/hazard/weapon_shield.png':
+    require('../../assets/a6-paints-v4/pattern-fills/hazard/weapon_shield.png') as ImageSourcePropType,
+  'a6-paints-v4/pattern-fills/racing/head.png':
+    require('../../assets/a6-paints-v4/pattern-fills/racing/head.png') as ImageSourcePropType,
+  'a6-paints-v4/pattern-fills/racing/torso.png':
+    require('../../assets/a6-paints-v4/pattern-fills/racing/torso.png') as ImageSourcePropType,
+  'a6-paints-v4/pattern-fills/racing/thigh_l.png':
+    require('../../assets/a6-paints-v4/pattern-fills/racing/thigh_l.png') as ImageSourcePropType,
+  'a6-paints-v4/pattern-fills/racing/thigh_r.png':
+    require('../../assets/a6-paints-v4/pattern-fills/racing/thigh_r.png') as ImageSourcePropType,
+  'a6-paints-v4/pattern-fills/racing/weapon_shield.png':
+    require('../../assets/a6-paints-v4/pattern-fills/racing/weapon_shield.png') as ImageSourcePropType,
 };
 
 export function workshopFramePartSource(relPath: string): ImageSourcePropType | undefined {

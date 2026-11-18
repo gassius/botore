@@ -1,14 +1,17 @@
 import type {
   FetchCurrentLoadoutResult,
   OwnedCharacterResult,
+  RenameCharacterInput,
+  RenameCharacterResult,
   SaveLoadoutInput,
   SaveLoadoutResult,
 } from './loadoutTypes';
 
 /**
- * Server-confirmed loadout persistence.
- * Writes go through save_bot_loadout RPC only — never direct table inserts.
- * Character ids come from the authenticated ownership boundary, not fixtures.
+ * Server-confirmed loadout + nameplate persistence.
+ * Writes go through save_bot_loadout / rename_owned_character RPCs only —
+ * never direct table inserts. Character ids come from the authenticated
+ * ownership boundary, not fixtures.
  */
 export interface LoadoutSavePort {
   readonly kind: 'dev' | 'supabase' | 'unavailable';
@@ -19,4 +22,6 @@ export interface LoadoutSavePort {
     accessToken: string;
   }): Promise<FetchCurrentLoadoutResult>;
   save(input: SaveLoadoutInput): Promise<SaveLoadoutResult>;
+  /** D7 nameplate — persist display_name via rename_owned_character. */
+  renameCharacter(input: RenameCharacterInput): Promise<RenameCharacterResult>;
 }

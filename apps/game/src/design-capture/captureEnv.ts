@@ -38,14 +38,16 @@ export type DesignCaptureRankingScenario =
 export type DesignCaptureSessionFailure = 'offline' | 'auth_expired';
 
 /**
- * D3 Customise capture stills (native design review).
+ * D3 / E7 Customise capture stills (native design review).
  * - paint-clean: Paint tab, confirmed loadout, DISCARD+EQUIP (no Oxide dot)
  * - paint-dirty: Paint tab, non-current paint selected, Oxide unsaved dot on EQUIP
  * - equipped: Paint tab right after successful EQUIP (button reads Equipped)
- * - weapon-soon: Weapon tab with a locked Coming soon card visible
+ * - weapon-soon: Weapon tab (legacy name; first stop — sword/axe/dagger)
+ * - paint-hazard: Paint tab with hazard selected — PATTERN tile + robot pattern fill
+ * - weapon-unlocked: Weapon tab last snap stop — mace/hammer/spear/shield unlocked
  */
 export type DesignCaptureCustomiseScenario =
-  'paint-clean' | 'paint-dirty' | 'equipped' | 'weapon-soon';
+  'paint-clean' | 'paint-dirty' | 'equipped' | 'weapon-soon' | 'paint-hazard' | 'weapon-unlocked';
 
 /** E5/D5: Ludus home capture stills (More sheet open). */
 export type DesignCaptureHomeScenario = 'more';
@@ -150,6 +152,15 @@ export function parseDesignCaptureCustomiseScenario(
   if (v === 'paint-dirty' || v === 'paint_dirty' || v === 'dirty') return 'paint-dirty';
   if (v === 'equipped' || v === 'equip') return 'equipped';
   if (v === 'weapon-soon' || v === 'weapon_soon' || v === 'weapon') return 'weapon-soon';
+  if (v === 'paint-hazard' || v === 'paint_hazard' || v === 'hazard') return 'paint-hazard';
+  if (
+    v === 'weapon-unlocked' ||
+    v === 'weapon_unlocked' ||
+    v === 'weapons-unlocked' ||
+    v === 'weapon-last'
+  ) {
+    return 'weapon-unlocked';
+  }
   return null;
 }
 

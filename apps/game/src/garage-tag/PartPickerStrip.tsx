@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -10,8 +9,10 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { garageTag } from './tokens';
-import { weaponGlyphSource, type WeaponGlyphId } from './assets';
+import { paintSwatchSource, weaponGlyphSource, type WeaponGlyphId } from './assets';
 import { SelectionCheck } from './SelectionCheck';
+import { SnapCarousel } from './snap/SnapCarousel';
+import { CUSTOMISE_CAROUSEL } from './snap/snapMetrics';
 
 export type PartPickerCard = {
   readonly id: string;
@@ -20,47 +21,66 @@ export type PartPickerCard = {
   readonly locked?: boolean;
   readonly paintColor?: string;
   readonly weaponGlyph?: WeaponGlyphId;
+  /** Show PATTERN tag on hazard/racing cards. */
+  readonly patternTag?: boolean;
+  /** Paint visual alias for A6 tile / swatch lookup (oxide, hazard, …). */
+  readonly paintAlias?: string;
 };
 
 export type PartPickerStripProps = {
   readonly cards: readonly PartPickerCard[];
   readonly onSelect: (id: string) => void;
   readonly disabled?: boolean;
+  readonly initialIndex?: number;
+  readonly onSnapIndexChange?: ((index: number) => void) | undefined;
   readonly style?: StyleProp<ViewStyle>;
-  readonly testID?: string;
+  readonly testID?: string | undefined;
 };
 
+const CARD_W = CUSTOMISE_CAROUSEL.tileWidth;
+const CARD_H = CUSTOMISE_CAROUSEL.tileHeight;
+
 /**
- * D3 horizontal part/weapon card strip (~104×134).
- * Next card peeks at the trailing edge; locked cards are dashed + Coming soon.
+ * D7 horizontal part/weapon snap strip (E6 shared carousel).
+ * At rest: exactly whole tiles — never a cut option (first / middle / last).
  */
 export function PartPickerStrip({
   cards,
   onSelect,
   disabled = false,
+  initialIndex = 0,
+  onSnapIndexChange,
   style,
   testID,
 }: PartPickerStripProps): React.ReactElement {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
+    <SnapCarousel
+      data={cards}
+      itemSize={CARD_W}
+      gap={CUSTOMISE_CAROUSEL.gap}
+      clipWidth={CUSTOMISE_CAROUSEL.viewportClip}
+      sidePadding={0}
+      designVisibleCount={CUSTOMISE_CAROUSEL.visibleCount}
+      initialIndex={initialIndex}
+      onSnapIndexChange={onSnapIndexChange}
+      keyExtractor={(card) => card.id}
       style={[styles.strip, style]}
       contentContainerStyle={styles.stripContent}
       testID={testID}
-    >
-      {cards.map((card) => {
+      renderItem={({ item: card }) => {
         const locked = card.locked === true;
         const selected = card.selected && !locked;
+        const paintAlias = card.paintAlias;
+        const paintTile = paintAlias && !card.weaponGlyph ? paintSwatchSource(paintAlias) : null;
         return (
           <Pressable
-            key={card.id}
             accessibilityRole="button"
             accessibilityState={{ selected, disabled: locked || disabled }}
             accessibilityLabel={[
               card.label,
               selected ? 'selected' : null,
               locked ? 'coming soon' : null,
+              card.patternTag ? 'pattern' : null,
             ]
               .filter(Boolean)
               .join(', ')}
@@ -82,6 +102,13 @@ export function PartPickerStrip({
                 </Text>
               </View>
             ) : null}
+            {card.patternTag && !locked ? (
+              <View style={styles.patternBadge} testID={`part-card-pattern-${card.id}`}>
+                <Text style={styles.patternText} allowFontScaling>
+                  Pattern
+                </Text>
+              </View>
+            ) : null}
             <View style={styles.art}>
               {locked ? (
                 <View style={styles.ghost}>
@@ -93,6 +120,13 @@ export function PartPickerStrip({
                 <Image
                   source={weaponGlyphSource(card.weaponGlyph)}
                   style={styles.glyph}
+                  resizeMode="contain"
+                  accessibilityIgnoresInvertColors
+                />
+              ) : paintTile ? (
+                <Image
+                  source={paintTile}
+                  style={styles.swatchImage}
                   resizeMode="contain"
                   accessibilityIgnoresInvertColors
                 />
@@ -115,25 +149,19 @@ export function PartPickerStrip({
             <SelectionCheck selected={selected} style={styles.check} />
           </Pressable>
         );
-      })}
-    </ScrollView>
+      }}
+    />
   );
 }
-
-const CARD_W = 104;
-const CARD_H = 134;
 
 const styles = StyleSheet.create({
   strip: {
     flexGrow: 0,
     flexShrink: 0,
+    height: CARD_H + 12,
   },
   stripContent: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 2,
     paddingVertical: 6,
-    paddingRight: 24,
   },
   card: {
     width: CARD_W,
@@ -146,7 +174,6 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 8,
     paddingHorizontal: 6,
-    // Soft ink shelf like the mockup card shadow.
     shadowColor: garageTag.graphite,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 1,
@@ -174,6 +201,10 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     transform: [{ rotate: '35deg' }],
+  },
+  swatchImage: {
+    width: 72,
+    height: 72,
   },
   paintChip: {
     width: 56,
@@ -222,6 +253,23 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   soonText: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: garageTag.cream,
+  },
+  patternBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 6,
+    zIndex: 1,
+    backgroundColor: garageTag.graphite,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  patternText: {
     fontSize: 8.5,
     fontWeight: '800',
     letterSpacing: 0.8,

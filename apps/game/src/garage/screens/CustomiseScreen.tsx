@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { shouldPlayEquipCue, shouldPlaySelectCue } from '../../audio';
 import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
@@ -52,6 +52,7 @@ export function CustomiseScreen(props: {
     selectWeapon,
     discard,
     save,
+    renameDisplayName,
     retryHydration,
     signOut,
   } = useGarageSession();
@@ -60,15 +61,34 @@ export function CustomiseScreen(props: {
   const forced = useForcedSessionFailure();
   const [tab, setTab] = useState<CustomiseSlotId>('weapon');
   const [equipFlash, setEquipFlash] = useState(false);
+  /** D7 nameplate pencil — pending until Equip calls rename_owned_character. */
+  const [nameEditing, setNameEditing] = useState(false);
+  const [pendingName, setPendingName] = useState(() =>
+    playerFacingDisplayName(loadout.displayName ?? 'Bot'),
+  );
+  const [nameBaseline, setNameBaseline] = useState(() =>
+    playerFacingDisplayName(loadout.displayName ?? 'Bot'),
+  );
   const equipFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastCaptureScenario = useRef<string | null>(null);
   const captureEquipArmed = useRef(false);
   const captureEquipHold = useRef(false);
+  /** Design-capture: remount strip at a whole snap stop (hazard / unlocked weapons). */
+  const [capturePickerIndex, setCapturePickerIndex] = useState(0);
   const preview = loadout.pendingLoadout;
   const editingLocked = loadout.saving || loadout.hydration !== 'ready';
   const previewWeapon = preview ? weaponUiAlias(preview.weapon) : 'sword';
   const previewPaint = preview ? paintUiAlias(preview.paint) : 'oxide';
-  const displayName = playerFacingDisplayName(loadout.displayName ?? 'Bot');
+  const displayName = playerFacingDisplayName(pendingName || 'Bot');
+  const nameDirty = pendingName.trim() !== nameBaseline.trim();
+
+  useEffect(() => {
+    // Hydration / remote name refresh resets baseline when not dirty-editing.
+    if (nameEditing || nameDirty) return;
+    const next = playerFacingDisplayName(loadout.displayName ?? 'Bot');
+    setPendingName(next);
+    setNameBaseline(next);
+  }, [loadout.displayName, nameEditing, nameDirty]);
 
   const clearEquipFlash = () => {
     if (equipFlashTimer.current) {
@@ -134,6 +154,7 @@ export function CustomiseScreen(props: {
       lastCaptureScenario.current = customiseCaptureScenario;
       if (loadout.dirty) discard();
       setTab('paint');
+      setCapturePickerIndex(0);
       clearEquipFlash();
       console.log('BOTORE_CAPTURE_CUSTOMISE:paint-clean');
       return;
@@ -142,6 +163,7 @@ export function CustomiseScreen(props: {
       lastCaptureScenario.current = customiseCaptureScenario;
       if (loadout.dirty) discard();
       setTab('paint');
+      setCapturePickerIndex(0);
       clearEquipFlash();
       selectPaint(alternatePaint());
       console.log('BOTORE_CAPTURE_CUSTOMISE:paint-dirty');
@@ -150,6 +172,7 @@ export function CustomiseScreen(props: {
     if (customiseCaptureScenario === 'equipped') {
       if (loadout.dirty) discard();
       setTab('paint');
+      setCapturePickerIndex(0);
       clearEquipFlash();
       selectPaint(alternatePaint());
       captureEquipArmed.current = true;
@@ -160,7 +183,33 @@ export function CustomiseScreen(props: {
       if (loadout.dirty) discard();
       clearEquipFlash();
       setTab('weapon');
+      setCapturePickerIndex(0);
       console.log('BOTORE_CAPTURE_CUSTOMISE:weapon-soon');
+      return;
+    }
+    if (customiseCaptureScenario === 'paint-hazard') {
+      lastCaptureScenario.current = customiseCaptureScenario;
+      if (loadout.dirty) discard();
+      clearEquipFlash();
+      setTab('paint');
+      const hazardIdx = PROOF_PAINTS.findIndex((p) => p.partId === 'paint-hazard');
+      setCapturePickerIndex(Math.max(0, hazardIdx));
+      selectPaint(paintCatalogueId('hazard'));
+      console.log('BOTORE_CAPTURE_CUSTOMISE:paint-hazard');
+      return;
+    }
+    if (customiseCaptureScenario === 'weapon-unlocked') {
+      lastCaptureScenario.current = customiseCaptureScenario;
+      if (loadout.dirty) discard();
+      clearEquipFlash();
+      setTab('weapon');
+      // Last whole stop: 7 weapons, 3 visible → max index 4 (hammer/spear/shield).
+      // Select mace so an unlocked A4 weapon is equipped on the robot too.
+      const maceIdx = PROOF_WEAPONS.findIndex((w) => w.partId === 'weapon-mace');
+      const lastStop = Math.max(0, PROOF_WEAPONS.length - 3);
+      setCapturePickerIndex(lastStop);
+      selectWeapon(PROOF_WEAPONS[Math.max(0, maceIdx)]!.partId);
+      console.log('BOTORE_CAPTURE_CUSTOMISE:weapon-unlocked');
     }
   }, [
     customiseCaptureScenario,
@@ -171,6 +220,7 @@ export function CustomiseScreen(props: {
     loadout.saving,
     discard,
     selectPaint,
+    selectWeapon,
     save,
   ]);
 
@@ -202,7 +252,7 @@ export function CustomiseScreen(props: {
   const onBack = () => {
     if (loadout.saving) return;
     uiAudio.playCue('uiBack');
-    if (loadout.dirty) discard();
+    if (loadout.dirty || nameDirty) onDiscard();
     props.onBack();
   };
 
@@ -235,10 +285,27 @@ export function CustomiseScreen(props: {
     }, EQUIPPED_CONFIRM_MS);
   };
 
+  const onDiscard = () => {
+    discard();
+    setPendingName(nameBaseline);
+    setNameEditing(false);
+  };
+
   const onEquip = async () => {
-    const ok = await save();
+    // Nameplate → rename_owned_character; paint/weapon → save_bot_loadout.
+    let ok = true;
+    const nextName = playerFacingDisplayName(pendingName.slice(0, 12) || 'Bot');
+    if (nameDirty) {
+      ok = await renameDisplayName(nextName);
+    }
+    if (ok && loadout.dirty) {
+      ok = await save();
+    }
     if (shouldPlayEquipCue(ok)) uiAudio.playCue('equip');
     if (ok) {
+      setPendingName(nextName);
+      setNameBaseline(nextName);
+      setNameEditing(false);
       flashEquipped();
       props.onSaved?.();
     }
@@ -318,8 +385,9 @@ export function CustomiseScreen(props: {
     );
   }
 
-  const equipDisabled = !loadout.dirty || editingLocked;
+  const equipDisabled = (!loadout.dirty && !nameDirty) || editingLocked;
   const equipLabel = equipFlash ? 'Equipped' : 'Equip';
+  const discardDisabled = (!loadout.dirty && !nameDirty) || editingLocked;
 
   return (
     <ScreenChrome
@@ -332,9 +400,9 @@ export function CustomiseScreen(props: {
               label="Discard"
               onPress={() => {
                 uiAudio.playCue('uiBack');
-                discard();
+                onDiscard();
               }}
-              disabled={!loadout.dirty || editingLocked}
+              disabled={discardDisabled}
               onDisabledPress={() => uiAudio.playCue('uiError')}
               style={styles.discard}
               testID="customise-discard"
@@ -347,7 +415,7 @@ export function CustomiseScreen(props: {
               disabled={equipDisabled}
               onDisabledPress={() => uiAudio.playCue('uiError')}
               busy={loadout.saving}
-              showUnsavedDot={loadout.dirty && !loadout.saving}
+              showUnsavedDot={(loadout.dirty || nameDirty) && !loadout.saving}
               style={styles.equip}
               testID="customise-save"
             />
@@ -383,7 +451,35 @@ export function CustomiseScreen(props: {
             style={styles.hero}
             testID="customise-bot"
           />
-          <Nameplate name={displayName} style={styles.nameplate} testID="customise-nameplate" />
+          <View style={styles.nameplateRow} testID="customise-nameplate-row">
+            {nameEditing ? (
+              <TextInput
+                value={pendingName}
+                onChangeText={(text) => setPendingName(text.slice(0, 12))}
+                maxLength={12}
+                autoFocus
+                editable={!editingLocked}
+                onBlur={() => setNameEditing(false)}
+                style={styles.nameInput}
+                testID="customise-nameplate-input"
+                accessibilityLabel="Bot name"
+              />
+            ) : (
+              <Nameplate name={displayName} style={styles.nameplate} testID="customise-nameplate" />
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Edit name"
+              disabled={editingLocked}
+              onPress={() => setNameEditing(true)}
+              style={styles.nameEdit}
+              testID="customise-nameplate-edit"
+            >
+              <Text style={styles.nameEditMark} allowFontScaling>
+                ✎
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         <TabBar
@@ -411,9 +507,11 @@ export function CustomiseScreen(props: {
         </View>
 
         <PartPickerStrip
+          key={`customise-picker-${tab}-${capturePickerIndex}-${customiseCaptureScenario ?? 'live'}`}
           cards={activeCards}
           onSelect={onSelectCard}
           disabled={editingLocked}
+          initialIndex={capturePickerIndex}
           testID="customise-picker"
         />
 
@@ -472,13 +570,46 @@ const styles = StyleSheet.create({
     bottom: 48,
     justifyContent: 'center',
   },
-  nameplate: {
+  nameplateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
+    zIndex: 2,
+    gap: 6,
+  },
+  nameplate: {
+    marginBottom: 0,
     paddingHorizontal: 22,
     paddingVertical: 5,
     minHeight: 0,
     backgroundColor: garageTag.white,
-    zIndex: 2,
+  },
+  nameInput: {
+    minWidth: 140,
+    maxWidth: 200,
+    borderWidth: garageTag.outline,
+    borderColor: garageTag.graphite,
+    borderRadius: garageTag.cutCorner,
+    backgroundColor: garageTag.white,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: garageTag.graphite,
+    textAlign: 'center',
+  },
+  nameEdit: {
+    minWidth: garageTag.touchFloor,
+    minHeight: garageTag.touchFloor,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nameEditMark: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: garageTag.graphite,
   },
   pickerMeta: {
     flexDirection: 'row',

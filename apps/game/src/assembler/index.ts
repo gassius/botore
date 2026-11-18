@@ -15,7 +15,16 @@ export {
   withWeapon,
 } from './assemble';
 export type { AssembleBotInput } from './assemble';
-export { isKnownAssemblerPaintId, OXIDE_PAINT, PETROL_PAINT, resolvePaintVisual } from './paints';
+export {
+  channelColorForPart,
+  isKnownAssemblerPaintId,
+  isPatternPaint,
+  listPaintVisuals,
+  OXIDE_PAINT,
+  patternFillRelPath,
+  PETROL_PAINT,
+  resolvePaintVisual,
+} from './paints';
 export type { PaintVisualSpec } from './paints';
 export {
   isKnownAssemblerWeaponId,

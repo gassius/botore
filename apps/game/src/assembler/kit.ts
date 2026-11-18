@@ -15,14 +15,14 @@ export const PLACEHOLDER_CANVAS = {
   provisional: true as const,
 };
 
-/** Shared grip socket for sword / axe / dagger (PROVISIONAL). */
+/** Shared grip socket for weapons (PROVISIONAL). */
 export const PLACEHOLDER_GRIP: ProvisionalPoint = {
   x: 86,
   y: 78,
   provisional: true,
 };
 
-export type WeaponKind = 'sword' | 'axe' | 'dagger';
+export type WeaponKind = 'sword' | 'axe' | 'dagger' | 'mace' | 'hammer' | 'spear' | 'shield';
 
 export interface WeaponKitSpec {
   readonly kind: WeaponKind;
@@ -63,6 +63,42 @@ export const PLACEHOLDER_WEAPONS: Readonly<Record<WeaponKind, WeaponKitSpec>> = 
     color: '#D0D6DE',
     label: 'DAGGER',
   },
+  mace: {
+    kind: 'mace',
+    catalogueId: 'weapon-mace',
+    width: 28,
+    height: 48,
+    gripOffset: { x: -10, y: -36, provisional: true },
+    color: '#B8B0A4',
+    label: 'MACE',
+  },
+  hammer: {
+    kind: 'hammer',
+    catalogueId: 'weapon-hammer',
+    width: 32,
+    height: 46,
+    gripOffset: { x: -12, y: -34, provisional: true },
+    color: '#A8A098',
+    label: 'HAMMER',
+  },
+  spear: {
+    kind: 'spear',
+    catalogueId: 'weapon-spear',
+    width: 16,
+    height: 64,
+    gripOffset: { x: -5, y: -48, provisional: true },
+    color: '#C0B8AC',
+    label: 'SPEAR',
+  },
+  shield: {
+    kind: 'shield',
+    catalogueId: 'weapon-shield',
+    width: 36,
+    height: 42,
+    gripOffset: { x: -16, y: -28, provisional: true },
+    color: '#9A9288',
+    label: 'SHIELD',
+  },
 };
 
 const WEAPON_BY_ID: ReadonlyMap<string, WeaponKitSpec> = new Map(
@@ -70,6 +106,7 @@ const WEAPON_BY_ID: ReadonlyMap<string, WeaponKitSpec> = new Map(
     [w.catalogueId, w],
     [w.kind, w],
     [`weapon-${w.kind}`, w],
+    [`weapon_${w.kind}`, w],
   ]),
 );
 

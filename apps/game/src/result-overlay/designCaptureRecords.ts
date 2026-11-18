@@ -57,6 +57,8 @@ export function resultCaptureRecord(scenario: ResultCaptureScenario): BotFightRe
       wins: 11,
       losses: 7,
       level: 4,
+      // Design-capture ToTT / Result stills — same streak figure as D10 review pack.
+      streakEndedAt: 3,
       xpBarOldRatio: 0.56,
       xpBarNewRatio: 0.64,
     };
@@ -66,15 +68,17 @@ export function resultCaptureRecord(scenario: ResultCaptureScenario): BotFightRe
       wins: 13,
       losses: 6,
       level: 4,
+      bestWinStreak: 3,
       xpBarOldRatio: 0.56,
       xpBarNewRatio: 0.78,
     };
   }
-  // d10-fight-end-result.png — Record 13W – 6L
+  // d10-fight-end-result.png — Record 13W – 6L · Best win streak 3 · Level 4
   return {
     wins: 13,
     losses: 6,
     level: 4,
+    bestWinStreak: 3,
     xpBarOldRatio: 0.56,
     xpBarNewRatio: 0.78,
   };

@@ -1,8 +1,11 @@
+import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import type { LoadoutSavePort } from './LoadoutSavePort';
 import type {
   FetchCurrentLoadoutResult,
   GarageLoadout,
   OwnedCharacterResult,
+  RenameCharacterInput,
+  RenameCharacterResult,
   SaveLoadoutInput,
   SaveLoadoutResult,
 } from './loadoutTypes';
@@ -33,7 +36,10 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
       },
     ],
   ]);
+  /** Persisted display names (D7 rename remount survival). */
+  private names = new Map<string, string>([[PROOF_CHARACTER_ID, PROOF_DISPLAY_NAME]]);
   forceFailNext = false;
+  forceFailNextRename = false;
   /** Optional second owned character for dual-account tests. */
   extraOwned: { characterId: string; displayName: string; loadout: GarageLoadout } | null = null;
 
@@ -44,17 +50,21 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
     // DEV maps any signed-in session to the seeded proof character unless a
     // second fixture is registered for multi-owner tests.
     if (this.extraOwned && accessToken.includes(this.extraOwned.characterId)) {
+      const id = this.extraOwned.characterId;
       return {
         ok: true,
         character: {
-          characterId: this.extraOwned.characterId,
-          displayName: this.extraOwned.displayName,
+          characterId: id,
+          displayName: this.names.get(id) ?? this.extraOwned.displayName,
         },
       };
     }
     return {
       ok: true,
-      character: { characterId: PROOF_CHARACTER_ID, displayName: PROOF_DISPLAY_NAME },
+      character: {
+        characterId: PROOF_CHARACTER_ID,
+        displayName: this.names.get(PROOF_CHARACTER_ID) ?? PROOF_DISPLAY_NAME,
+      },
     };
   }
 
@@ -123,5 +133,33 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
       atlasVersion: input.atlasVersion,
       loadout: input.loadout,
     };
+  }
+
+  async renameCharacter(input: RenameCharacterInput): Promise<RenameCharacterResult> {
+    if (!input.accessToken) {
+      return { ok: false, code: 'unauthenticated', message: 'Missing access token' };
+    }
+    if (this.forceFailNextRename) {
+      this.forceFailNextRename = false;
+      return {
+        ok: false,
+        code: 'dev_forced_failure',
+        message: 'Could not rename. Your bot name is unchanged.',
+      };
+    }
+    const next = playerFacingDisplayName(input.displayName.slice(0, 12));
+    if (!next.trim()) {
+      return {
+        ok: false,
+        code: 'invalid_display_name',
+        message: 'Could not rename. Pick a different name.',
+      };
+    }
+    this.names.set(PROOF_CHARACTER_ID, next);
+    if (this.extraOwned) {
+      this.names.set(this.extraOwned.characterId, next);
+      this.extraOwned = { ...this.extraOwned, displayName: next };
+    }
+    return { ok: true, characterId: PROOF_CHARACTER_ID, displayName: next };
   }
 }

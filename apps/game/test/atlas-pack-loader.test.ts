@@ -284,8 +284,12 @@ describe('atlas pack loader (F6)', () => {
     expect(WORKSHOP_FRAME_KIT.compatibleFamily).toBe('workshop-frame-v003');
     expect(resolvePaintToken('oxide')).toBe('oxide');
     expect(resolvePaintToken('paint-cobalt')).toBe('petrol');
+    expect(resolvePaintToken('paint-navy')).toBe('cobalt');
+    expect(resolvePaintToken('hazard')).toBe('hazard');
     expect(resolvePaintCatalogueId('petrol')).toBe('paint-cobalt');
     expect(resolvePaintCatalogueId('paint-crimson')).toBe('paint-crimson');
+    expect(resolvePaintCatalogueId('cobalt')).toBe('paint-navy');
+    expect(resolvePaintCatalogueId('racing')).toBe('paint-racing');
     expect(resolveWorkshopWeaponAssetId('axe')).toBe('weapon_axe');
     expect(resolveWeaponCatalogueId('dagger')).toBe('weapon-dagger');
 

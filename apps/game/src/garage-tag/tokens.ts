@@ -10,10 +10,19 @@ export const garageTag = {
   mustard: '#F4B820',
   mustardPressed: '#D69812',
   steel: '#938A7C',
-  /** Brand FINAL Oxide — matches kit-v002 paint_tokens.oxide. */
+  /** Brand FINAL Oxide — matches A6 / kit paint_tokens.oxide. */
   oxide: '#E8771C',
-  /** Kit-v002 Petrol sample token. */
-  petrol: '#27877b',
+  /** Kit Petrol sample token. */
+  petrol: '#27877B',
+  /** A6 v4 solids (token / chip colours). */
+  primer: '#F4EFE0',
+  ink: '#C8A4B0',
+  drab: '#5A6438',
+  cobalt: '#305070',
+  frost: '#5C96C8',
+  cinder: '#4A1C10',
+  hazard: '#D89418',
+  racing: '#F4EFE0',
   error: '#8C372C',
   white: '#FFF8E8',
   /** Candidate geometry — preserve proportions; do not stretch-to-fill. */

@@ -423,6 +423,8 @@ capture_named Customise customise-paint-clean 6 "" "" paint-clean
 capture_named Customise customise-paint-dirty 6 "" "" paint-dirty
 capture_named Customise customise-equipped 8 "" "" equipped
 capture_named Customise customise-weapon-soon 6 "" "" weapon-soon
+capture_named Customise customise-paint-hazard 6 "" "" paint-hazard
+capture_named Customise customise-weapon-unlocked 6 "" "" weapon-unlocked
 # D4 Ranking — early design frames (fixture portraits + W–L / empty / loading).
 capture_named Ranking ranking-bots 6 "" "" "" bots
 capture_named Ranking ranking-botores 6 "" "" "" botores
@@ -504,6 +506,8 @@ for label in \
   customise-paint-clean \  customise-paint-dirty \
   customise-equipped \
   customise-weapon-soon \
+  customise-paint-hazard \
+  customise-weapon-unlocked \
   ranking-bots \
   ranking-botores \
   ranking-empty \

@@ -5,7 +5,7 @@
   "family": "workshop-frame-v003",
   "immutable": true,
   "status": "integration-prototype-not-accepted",
-  "supersedes": "v003.2 (same parts, sockets, pivots, root, stage, plates, portraits; pose numbers identical except poses.knockout and poses.follow_through.axe; A2 clips re-baked \u2014 see INTEGRATION-DELTA-v003.2-to-v003.3.md). v003.2 superseded v003.1; v002 coordinates remain NOT interchangeable.",
+  "supersedes": "v003.2 (same parts, sockets, pivots, root, stage, plates, portraits; pose numbers identical except poses.knockout and poses.follow_through.axe; A2 clips re-baked — see INTEGRATION-DELTA-v003.2-to-v003.3.md). v003.2 superseded v003.1; v002 coordinates remain NOT interchangeable.",
   "stage": {
     "size": [
       800,
@@ -63,11 +63,27 @@
   "ground_y": 495,
   "paint_tokens": {
     "oxide": "#e8771c",
-    "petrol": "#27877b"
+    "petrol": "#27877b",
+    "primer": "#f4efe0",
+    "ink": "#c8a4b0",
+    "drab": "#5a6438",
+    "cobalt": "#305070",
+    "frost": "#5c96c8",
+    "cinder": "#4a1c10",
+    "hazard": "#d89418",
+    "racing": "#f4efe0"
   },
   "paint_ids": [
     "oxide",
-    "petrol"
+    "petrol",
+    "primer",
+    "ink",
+    "drab",
+    "cobalt",
+    "frost",
+    "cinder",
+    "hazard",
+    "racing"
   ],
   "paint_composite_order": [
     "material_under",
@@ -178,6 +194,172 @@
           182
         ]
       }
+    },
+    "mace": {
+      "asset": "weapon_mace",
+      "hands": "one",
+      "grips": {
+        "main": {
+          "weapon_socket": "grip_main",
+          "hand": "hand_r",
+          "hand_socket": "grip",
+          "attach_angle": 80,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      },
+      "layering": {
+        "hand_r": 80,
+        "weapon": 85,
+        "hand_r_wrap": 92
+      },
+      "z_overrides": {},
+      "draw_order_note": "hand back layer < weapon < hand *_wrap layer for every gripping hand",
+      "grip_style": "forward",
+      "measure": {
+        "tile": [
+          150,
+          230
+        ]
+      }
+    },
+    "hammer": {
+      "asset": "weapon_hammer",
+      "hands": "two",
+      "grips": {
+        "main": {
+          "weapon_socket": "grip_main",
+          "hand": "hand_r",
+          "hand_socket": "grip",
+          "attach_angle": 90,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "off": {
+          "weapon_socket": "grip_off",
+          "hand": "hand_l",
+          "hand_socket": "grip",
+          "attach_angle": 90,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      },
+      "layering": {
+        "hand_l": 65,
+        "hand_r": 80,
+        "weapon": 85,
+        "hand_l_wrap": 91,
+        "hand_r_wrap": 92
+      },
+      "z_overrides": {
+        "hand_l_wrap": 91
+      },
+      "draw_order_note": "hand back layer < weapon < hand *_wrap layer for every gripping hand",
+      "grip_style": "two-handed",
+      "measure": {
+        "tile": [
+          180,
+          338
+        ],
+        "hand_spacing_px": 78
+      },
+      "off_grip_released_in": [
+        "victory",
+        "defeat",
+        "portrait"
+      ],
+      "off_grip_released_reason": "Same contract as the axe: victory is one-handed, defeat lets go with the rear hand.",
+      "off_hand_rule": "hand_l is NOT parented to the weapon. Every pose ships baked hand_l rotations that land hand_l.grip on the weapon grip_off (validated ≤ 1.5 px / 2 deg). Defeat, victory and portrait release it."
+    },
+    "spear": {
+      "asset": "weapon_spear",
+      "hands": "two",
+      "grips": {
+        "main": {
+          "weapon_socket": "grip_main",
+          "hand": "hand_r",
+          "hand_socket": "grip",
+          "attach_angle": 90,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "off": {
+          "weapon_socket": "grip_off",
+          "hand": "hand_l",
+          "hand_socket": "grip",
+          "attach_angle": 90,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      },
+      "layering": {
+        "hand_l": 65,
+        "hand_r": 80,
+        "weapon": 85,
+        "hand_l_wrap": 91,
+        "hand_r_wrap": 92
+      },
+      "z_overrides": {
+        "hand_l_wrap": 91
+      },
+      "draw_order_note": "hand back layer < weapon < hand *_wrap layer for every gripping hand",
+      "grip_style": "two-handed",
+      "measure": {
+        "tile": [
+          140,
+          420
+        ],
+        "hand_spacing_px": 78
+      },
+      "off_grip_released_in": [
+        "victory",
+        "defeat",
+        "portrait"
+      ],
+      "off_grip_released_reason": "Same contract as the axe: victory is one-handed, defeat lets go with the rear hand.",
+      "off_hand_rule": "hand_l is NOT parented to the weapon. Every pose ships baked hand_l rotations that land hand_l.grip on the weapon grip_off (validated ≤ 1.5 px / 2 deg). Defeat, victory and portrait release it."
+    },
+    "shield": {
+      "asset": "weapon_shield",
+      "hands": "one",
+      "grips": {
+        "main": {
+          "weapon_socket": "grip_main",
+          "hand": "hand_l",
+          "hand_socket": "grip",
+          "attach_angle": 0,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      },
+      "layering": {
+        "hand_l": 65,
+        "weapon": 66,
+        "hand_l_wrap": 68
+      },
+      "z_overrides": {
+        "hand_l_wrap": 68
+      },
+      "draw_order_note": "hand back layer < weapon < hand *_wrap layer for every gripping hand",
+      "grip_style": "off-hand",
+      "measure": {
+        "tile": [
+          180,
+          200
+        ]
+      }
     }
   },
   "assets": [
@@ -186,24 +368,24 @@
       "width": 228,
       "height": 196,
       "pivot": [
-        118.0,
-        146.0
+        118,
+        146
       ],
       "sockets": {
         "neck": [
-          118.0,
+          118,
           51.39999999999999
         ],
         "shoulder_l": [
           31.200000000000003,
-          65.0
+          65
         ],
         "shoulder_r": [
           194.88,
           75.8
         ],
         "waist": [
-          118.0,
+          118,
           167.6
         ]
       },
@@ -221,11 +403,27 @@
       "source_file": "source/torso.svg",
       "files": {
         "oxide": "parts/torso-oxide.png",
-        "petrol": "parts/torso-petrol.png"
+        "petrol": "parts/torso-petrol.png",
+        "primer": "parts/torso-oxide.png",
+        "ink": "parts/torso-oxide.png",
+        "drab": "parts/torso-oxide.png",
+        "cobalt": "parts/torso-oxide.png",
+        "frost": "parts/torso-oxide.png",
+        "cinder": "parts/torso-oxide.png",
+        "hazard": "parts/torso-oxide.png",
+        "racing": "parts/torso-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/torso-oxide.png",
-        "petrol": "parts@2x/torso-petrol.png"
+        "petrol": "parts@2x/torso-petrol.png",
+        "primer": "parts@2x/torso-oxide.png",
+        "ink": "parts@2x/torso-oxide.png",
+        "drab": "parts@2x/torso-oxide.png",
+        "cobalt": "parts@2x/torso-oxide.png",
+        "frost": "parts@2x/torso-oxide.png",
+        "cinder": "parts@2x/torso-oxide.png",
+        "hazard": "parts@2x/torso-oxide.png",
+        "racing": "parts@2x/torso-oxide.png"
       },
       "material_under": "materials/torso-under.png",
       "material_over": "materials/torso-over.png",
@@ -240,8 +438,8 @@
       "width": 210,
       "height": 180,
       "pivot": [
-        99.0,
-        154.0
+        99,
+        154
       ],
       "sockets": {},
       "slot": "head",
@@ -258,11 +456,27 @@
       "source_file": "source/head.svg",
       "files": {
         "oxide": "parts/head-oxide.png",
-        "petrol": "parts/head-petrol.png"
+        "petrol": "parts/head-petrol.png",
+        "primer": "parts/head-oxide.png",
+        "ink": "parts/head-oxide.png",
+        "drab": "parts/head-oxide.png",
+        "cobalt": "parts/head-oxide.png",
+        "frost": "parts/head-oxide.png",
+        "cinder": "parts/head-oxide.png",
+        "hazard": "parts/head-oxide.png",
+        "racing": "parts/head-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/head-oxide.png",
-        "petrol": "parts@2x/head-petrol.png"
+        "petrol": "parts@2x/head-petrol.png",
+        "primer": "parts@2x/head-oxide.png",
+        "ink": "parts@2x/head-oxide.png",
+        "drab": "parts@2x/head-oxide.png",
+        "cobalt": "parts@2x/head-oxide.png",
+        "frost": "parts@2x/head-oxide.png",
+        "cinder": "parts@2x/head-oxide.png",
+        "hazard": "parts@2x/head-oxide.png",
+        "racing": "parts@2x/head-oxide.png"
       },
       "material_under": "materials/head-under.png",
       "material_over": "materials/head-over.png",
@@ -277,17 +491,17 @@
       "width": 160,
       "height": 90,
       "pivot": [
-        80.0,
-        35.0
+        80,
+        35
       ],
       "sockets": {
         "hip_l": [
           37.44,
-          48.0
+          48
         ],
         "hip_r": [
           119.2,
-          48.0
+          48
         ]
       },
       "slot": "pelvis",
@@ -304,11 +518,27 @@
       "source_file": "source/pelvis.svg",
       "files": {
         "oxide": "parts/pelvis-oxide.png",
-        "petrol": "parts/pelvis-petrol.png"
+        "petrol": "parts/pelvis-petrol.png",
+        "primer": "parts/pelvis-oxide.png",
+        "ink": "parts/pelvis-oxide.png",
+        "drab": "parts/pelvis-oxide.png",
+        "cobalt": "parts/pelvis-oxide.png",
+        "frost": "parts/pelvis-oxide.png",
+        "cinder": "parts/pelvis-oxide.png",
+        "hazard": "parts/pelvis-oxide.png",
+        "racing": "parts/pelvis-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/pelvis-oxide.png",
-        "petrol": "parts@2x/pelvis-petrol.png"
+        "petrol": "parts@2x/pelvis-petrol.png",
+        "primer": "parts@2x/pelvis-oxide.png",
+        "ink": "parts@2x/pelvis-oxide.png",
+        "drab": "parts@2x/pelvis-oxide.png",
+        "cobalt": "parts@2x/pelvis-oxide.png",
+        "frost": "parts@2x/pelvis-oxide.png",
+        "cinder": "parts@2x/pelvis-oxide.png",
+        "hazard": "parts@2x/pelvis-oxide.png",
+        "racing": "parts@2x/pelvis-oxide.png"
       },
       "material_under": "materials/pelvis-under.png",
       "material_over": "materials/pelvis-over.png",
@@ -323,12 +553,12 @@
       "width": 155,
       "height": 150,
       "pivot": [
-        80.0,
-        38.0
+        80,
+        38
       ],
       "sockets": {
         "elbow": [
-          80.0,
+          80,
           100.48
         ]
       },
@@ -346,11 +576,27 @@
       "source_file": "source/upper_arm_l.svg",
       "files": {
         "oxide": "parts/upper_arm_l-oxide.png",
-        "petrol": "parts/upper_arm_l-petrol.png"
+        "petrol": "parts/upper_arm_l-petrol.png",
+        "primer": "parts/upper_arm_l-oxide.png",
+        "ink": "parts/upper_arm_l-oxide.png",
+        "drab": "parts/upper_arm_l-oxide.png",
+        "cobalt": "parts/upper_arm_l-oxide.png",
+        "frost": "parts/upper_arm_l-oxide.png",
+        "cinder": "parts/upper_arm_l-oxide.png",
+        "hazard": "parts/upper_arm_l-oxide.png",
+        "racing": "parts/upper_arm_l-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/upper_arm_l-oxide.png",
-        "petrol": "parts@2x/upper_arm_l-petrol.png"
+        "petrol": "parts@2x/upper_arm_l-petrol.png",
+        "primer": "parts@2x/upper_arm_l-oxide.png",
+        "ink": "parts@2x/upper_arm_l-oxide.png",
+        "drab": "parts@2x/upper_arm_l-oxide.png",
+        "cobalt": "parts@2x/upper_arm_l-oxide.png",
+        "frost": "parts@2x/upper_arm_l-oxide.png",
+        "cinder": "parts@2x/upper_arm_l-oxide.png",
+        "hazard": "parts@2x/upper_arm_l-oxide.png",
+        "racing": "parts@2x/upper_arm_l-oxide.png"
       },
       "material_under": "materials/upper_arm_l-under.png",
       "material_over": "materials/upper_arm_l-over.png",
@@ -365,13 +611,13 @@
       "width": 145,
       "height": 140,
       "pivot": [
-        80.0,
-        35.0
+        80,
+        35
       ],
       "sockets": {
         "wrist": [
-          80.0,
-          98.0
+          80,
+          98
         ]
       },
       "slot": "forearm_l",
@@ -388,11 +634,27 @@
       "source_file": "source/forearm_l.svg",
       "files": {
         "oxide": "parts/forearm_l-oxide.png",
-        "petrol": "parts/forearm_l-petrol.png"
+        "petrol": "parts/forearm_l-petrol.png",
+        "primer": "parts/forearm_l-oxide.png",
+        "ink": "parts/forearm_l-oxide.png",
+        "drab": "parts/forearm_l-oxide.png",
+        "cobalt": "parts/forearm_l-oxide.png",
+        "frost": "parts/forearm_l-oxide.png",
+        "cinder": "parts/forearm_l-oxide.png",
+        "hazard": "parts/forearm_l-oxide.png",
+        "racing": "parts/forearm_l-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/forearm_l-oxide.png",
-        "petrol": "parts@2x/forearm_l-petrol.png"
+        "petrol": "parts@2x/forearm_l-petrol.png",
+        "primer": "parts@2x/forearm_l-oxide.png",
+        "ink": "parts@2x/forearm_l-oxide.png",
+        "drab": "parts@2x/forearm_l-oxide.png",
+        "cobalt": "parts@2x/forearm_l-oxide.png",
+        "frost": "parts@2x/forearm_l-oxide.png",
+        "cinder": "parts@2x/forearm_l-oxide.png",
+        "hazard": "parts@2x/forearm_l-oxide.png",
+        "racing": "parts@2x/forearm_l-oxide.png"
       },
       "material_under": "materials/forearm_l-under.png",
       "material_over": "materials/forearm_l-over.png",
@@ -407,12 +669,12 @@
       "width": 120,
       "height": 150,
       "pivot": [
-        60.0,
-        30.0
+        60,
+        30
       ],
       "sockets": {
         "knee": [
-          60.0,
+          60,
           92.32
         ]
       },
@@ -430,11 +692,27 @@
       "source_file": "source/thigh_l.svg",
       "files": {
         "oxide": "parts/thigh_l-oxide.png",
-        "petrol": "parts/thigh_l-petrol.png"
+        "petrol": "parts/thigh_l-petrol.png",
+        "primer": "parts/thigh_l-oxide.png",
+        "ink": "parts/thigh_l-oxide.png",
+        "drab": "parts/thigh_l-oxide.png",
+        "cobalt": "parts/thigh_l-oxide.png",
+        "frost": "parts/thigh_l-oxide.png",
+        "cinder": "parts/thigh_l-oxide.png",
+        "hazard": "parts/thigh_l-oxide.png",
+        "racing": "parts/thigh_l-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/thigh_l-oxide.png",
-        "petrol": "parts@2x/thigh_l-petrol.png"
+        "petrol": "parts@2x/thigh_l-petrol.png",
+        "primer": "parts@2x/thigh_l-oxide.png",
+        "ink": "parts@2x/thigh_l-oxide.png",
+        "drab": "parts@2x/thigh_l-oxide.png",
+        "cobalt": "parts@2x/thigh_l-oxide.png",
+        "frost": "parts@2x/thigh_l-oxide.png",
+        "cinder": "parts@2x/thigh_l-oxide.png",
+        "hazard": "parts@2x/thigh_l-oxide.png",
+        "racing": "parts@2x/thigh_l-oxide.png"
       },
       "material_under": "materials/thigh_l-under.png",
       "material_over": "materials/thigh_l-over.png",
@@ -449,12 +727,12 @@
       "width": 120,
       "height": 150,
       "pivot": [
-        60.0,
-        30.0
+        60,
+        30
       ],
       "sockets": {
         "ankle": [
-          60.0,
+          60,
           104.10000000000001
         ]
       },
@@ -472,11 +750,27 @@
       "source_file": "source/shin_l.svg",
       "files": {
         "oxide": "parts/shin_l-oxide.png",
-        "petrol": "parts/shin_l-petrol.png"
+        "petrol": "parts/shin_l-petrol.png",
+        "primer": "parts/shin_l-oxide.png",
+        "ink": "parts/shin_l-oxide.png",
+        "drab": "parts/shin_l-oxide.png",
+        "cobalt": "parts/shin_l-oxide.png",
+        "frost": "parts/shin_l-oxide.png",
+        "cinder": "parts/shin_l-oxide.png",
+        "hazard": "parts/shin_l-oxide.png",
+        "racing": "parts/shin_l-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/shin_l-oxide.png",
-        "petrol": "parts@2x/shin_l-petrol.png"
+        "petrol": "parts@2x/shin_l-petrol.png",
+        "primer": "parts@2x/shin_l-oxide.png",
+        "ink": "parts@2x/shin_l-oxide.png",
+        "drab": "parts@2x/shin_l-oxide.png",
+        "cobalt": "parts@2x/shin_l-oxide.png",
+        "frost": "parts@2x/shin_l-oxide.png",
+        "cinder": "parts@2x/shin_l-oxide.png",
+        "hazard": "parts@2x/shin_l-oxide.png",
+        "racing": "parts@2x/shin_l-oxide.png"
       },
       "material_under": "materials/shin_l-under.png",
       "material_over": "materials/shin_l-over.png",
@@ -491,8 +785,8 @@
       "width": 150,
       "height": 100,
       "pivot": [
-        60.0,
-        30.0
+        60,
+        30
       ],
       "sockets": {},
       "slot": "foot_l",
@@ -509,11 +803,27 @@
       "source_file": "source/foot_l.svg",
       "files": {
         "oxide": "parts/foot_l-oxide.png",
-        "petrol": "parts/foot_l-petrol.png"
+        "petrol": "parts/foot_l-petrol.png",
+        "primer": "parts/foot_l-oxide.png",
+        "ink": "parts/foot_l-oxide.png",
+        "drab": "parts/foot_l-oxide.png",
+        "cobalt": "parts/foot_l-oxide.png",
+        "frost": "parts/foot_l-oxide.png",
+        "cinder": "parts/foot_l-oxide.png",
+        "hazard": "parts/foot_l-oxide.png",
+        "racing": "parts/foot_l-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/foot_l-oxide.png",
-        "petrol": "parts@2x/foot_l-petrol.png"
+        "petrol": "parts@2x/foot_l-petrol.png",
+        "primer": "parts@2x/foot_l-oxide.png",
+        "ink": "parts@2x/foot_l-oxide.png",
+        "drab": "parts@2x/foot_l-oxide.png",
+        "cobalt": "parts@2x/foot_l-oxide.png",
+        "frost": "parts@2x/foot_l-oxide.png",
+        "cinder": "parts@2x/foot_l-oxide.png",
+        "hazard": "parts@2x/foot_l-oxide.png",
+        "racing": "parts@2x/foot_l-oxide.png"
       },
       "material_under": "materials/foot_l-under.png",
       "material_over": "materials/foot_l-over.png",
@@ -528,12 +838,12 @@
       "width": 155,
       "height": 150,
       "pivot": [
-        80.0,
-        38.0
+        80,
+        38
       ],
       "sockets": {
         "elbow": [
-          80.0,
+          80,
           100.48
         ]
       },
@@ -551,11 +861,27 @@
       "source_file": "source/upper_arm_r.svg",
       "files": {
         "oxide": "parts/upper_arm_r-oxide.png",
-        "petrol": "parts/upper_arm_r-petrol.png"
+        "petrol": "parts/upper_arm_r-petrol.png",
+        "primer": "parts/upper_arm_r-oxide.png",
+        "ink": "parts/upper_arm_r-oxide.png",
+        "drab": "parts/upper_arm_r-oxide.png",
+        "cobalt": "parts/upper_arm_r-oxide.png",
+        "frost": "parts/upper_arm_r-oxide.png",
+        "cinder": "parts/upper_arm_r-oxide.png",
+        "hazard": "parts/upper_arm_r-oxide.png",
+        "racing": "parts/upper_arm_r-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/upper_arm_r-oxide.png",
-        "petrol": "parts@2x/upper_arm_r-petrol.png"
+        "petrol": "parts@2x/upper_arm_r-petrol.png",
+        "primer": "parts@2x/upper_arm_r-oxide.png",
+        "ink": "parts@2x/upper_arm_r-oxide.png",
+        "drab": "parts@2x/upper_arm_r-oxide.png",
+        "cobalt": "parts@2x/upper_arm_r-oxide.png",
+        "frost": "parts@2x/upper_arm_r-oxide.png",
+        "cinder": "parts@2x/upper_arm_r-oxide.png",
+        "hazard": "parts@2x/upper_arm_r-oxide.png",
+        "racing": "parts@2x/upper_arm_r-oxide.png"
       },
       "material_under": "materials/upper_arm_r-under.png",
       "material_over": "materials/upper_arm_r-over.png",
@@ -570,13 +896,13 @@
       "width": 145,
       "height": 140,
       "pivot": [
-        80.0,
-        35.0
+        80,
+        35
       ],
       "sockets": {
         "wrist": [
-          80.0,
-          98.0
+          80,
+          98
         ]
       },
       "slot": "forearm_r",
@@ -593,11 +919,27 @@
       "source_file": "source/forearm_r.svg",
       "files": {
         "oxide": "parts/forearm_r-oxide.png",
-        "petrol": "parts/forearm_r-petrol.png"
+        "petrol": "parts/forearm_r-petrol.png",
+        "primer": "parts/forearm_r-oxide.png",
+        "ink": "parts/forearm_r-oxide.png",
+        "drab": "parts/forearm_r-oxide.png",
+        "cobalt": "parts/forearm_r-oxide.png",
+        "frost": "parts/forearm_r-oxide.png",
+        "cinder": "parts/forearm_r-oxide.png",
+        "hazard": "parts/forearm_r-oxide.png",
+        "racing": "parts/forearm_r-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/forearm_r-oxide.png",
-        "petrol": "parts@2x/forearm_r-petrol.png"
+        "petrol": "parts@2x/forearm_r-petrol.png",
+        "primer": "parts@2x/forearm_r-oxide.png",
+        "ink": "parts@2x/forearm_r-oxide.png",
+        "drab": "parts@2x/forearm_r-oxide.png",
+        "cobalt": "parts@2x/forearm_r-oxide.png",
+        "frost": "parts@2x/forearm_r-oxide.png",
+        "cinder": "parts@2x/forearm_r-oxide.png",
+        "hazard": "parts@2x/forearm_r-oxide.png",
+        "racing": "parts@2x/forearm_r-oxide.png"
       },
       "material_under": "materials/forearm_r-under.png",
       "material_over": "materials/forearm_r-over.png",
@@ -612,12 +954,12 @@
       "width": 120,
       "height": 150,
       "pivot": [
-        60.0,
-        30.0
+        60,
+        30
       ],
       "sockets": {
         "knee": [
-          60.0,
+          60,
           92.32
         ]
       },
@@ -635,11 +977,27 @@
       "source_file": "source/thigh_r.svg",
       "files": {
         "oxide": "parts/thigh_r-oxide.png",
-        "petrol": "parts/thigh_r-petrol.png"
+        "petrol": "parts/thigh_r-petrol.png",
+        "primer": "parts/thigh_r-oxide.png",
+        "ink": "parts/thigh_r-oxide.png",
+        "drab": "parts/thigh_r-oxide.png",
+        "cobalt": "parts/thigh_r-oxide.png",
+        "frost": "parts/thigh_r-oxide.png",
+        "cinder": "parts/thigh_r-oxide.png",
+        "hazard": "parts/thigh_r-oxide.png",
+        "racing": "parts/thigh_r-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/thigh_r-oxide.png",
-        "petrol": "parts@2x/thigh_r-petrol.png"
+        "petrol": "parts@2x/thigh_r-petrol.png",
+        "primer": "parts@2x/thigh_r-oxide.png",
+        "ink": "parts@2x/thigh_r-oxide.png",
+        "drab": "parts@2x/thigh_r-oxide.png",
+        "cobalt": "parts@2x/thigh_r-oxide.png",
+        "frost": "parts@2x/thigh_r-oxide.png",
+        "cinder": "parts@2x/thigh_r-oxide.png",
+        "hazard": "parts@2x/thigh_r-oxide.png",
+        "racing": "parts@2x/thigh_r-oxide.png"
       },
       "material_under": "materials/thigh_r-under.png",
       "material_over": "materials/thigh_r-over.png",
@@ -654,12 +1012,12 @@
       "width": 120,
       "height": 150,
       "pivot": [
-        60.0,
-        30.0
+        60,
+        30
       ],
       "sockets": {
         "ankle": [
-          60.0,
+          60,
           104.10000000000001
         ]
       },
@@ -677,11 +1035,27 @@
       "source_file": "source/shin_r.svg",
       "files": {
         "oxide": "parts/shin_r-oxide.png",
-        "petrol": "parts/shin_r-petrol.png"
+        "petrol": "parts/shin_r-petrol.png",
+        "primer": "parts/shin_r-oxide.png",
+        "ink": "parts/shin_r-oxide.png",
+        "drab": "parts/shin_r-oxide.png",
+        "cobalt": "parts/shin_r-oxide.png",
+        "frost": "parts/shin_r-oxide.png",
+        "cinder": "parts/shin_r-oxide.png",
+        "hazard": "parts/shin_r-oxide.png",
+        "racing": "parts/shin_r-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/shin_r-oxide.png",
-        "petrol": "parts@2x/shin_r-petrol.png"
+        "petrol": "parts@2x/shin_r-petrol.png",
+        "primer": "parts@2x/shin_r-oxide.png",
+        "ink": "parts@2x/shin_r-oxide.png",
+        "drab": "parts@2x/shin_r-oxide.png",
+        "cobalt": "parts@2x/shin_r-oxide.png",
+        "frost": "parts@2x/shin_r-oxide.png",
+        "cinder": "parts@2x/shin_r-oxide.png",
+        "hazard": "parts@2x/shin_r-oxide.png",
+        "racing": "parts@2x/shin_r-oxide.png"
       },
       "material_under": "materials/shin_r-under.png",
       "material_over": "materials/shin_r-over.png",
@@ -696,8 +1070,8 @@
       "width": 150,
       "height": 100,
       "pivot": [
-        60.0,
-        30.0
+        60,
+        30
       ],
       "sockets": {},
       "slot": "foot_r",
@@ -714,11 +1088,27 @@
       "source_file": "source/foot_r.svg",
       "files": {
         "oxide": "parts/foot_r-oxide.png",
-        "petrol": "parts/foot_r-petrol.png"
+        "petrol": "parts/foot_r-petrol.png",
+        "primer": "parts/foot_r-oxide.png",
+        "ink": "parts/foot_r-oxide.png",
+        "drab": "parts/foot_r-oxide.png",
+        "cobalt": "parts/foot_r-oxide.png",
+        "frost": "parts/foot_r-oxide.png",
+        "cinder": "parts/foot_r-oxide.png",
+        "hazard": "parts/foot_r-oxide.png",
+        "racing": "parts/foot_r-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/foot_r-oxide.png",
-        "petrol": "parts@2x/foot_r-petrol.png"
+        "petrol": "parts@2x/foot_r-petrol.png",
+        "primer": "parts@2x/foot_r-oxide.png",
+        "ink": "parts@2x/foot_r-oxide.png",
+        "drab": "parts@2x/foot_r-oxide.png",
+        "cobalt": "parts@2x/foot_r-oxide.png",
+        "frost": "parts@2x/foot_r-oxide.png",
+        "cinder": "parts@2x/foot_r-oxide.png",
+        "hazard": "parts@2x/foot_r-oxide.png",
+        "racing": "parts@2x/foot_r-oxide.png"
       },
       "material_under": "materials/foot_r-under.png",
       "material_over": "materials/foot_r-over.png",
@@ -733,17 +1123,17 @@
       "width": 120,
       "height": 112,
       "pivot": [
-        60.0,
-        24.0
+        60,
+        24
       ],
       "sockets": {
         "grip": [
-          60.0,
-          62.0
+          60,
+          62
         ],
         "wrap": [
-          60.0,
-          24.0
+          60,
+          24
         ]
       },
       "slot": "hand_l",
@@ -760,11 +1150,27 @@
       "source_file": "source/hand_l.svg",
       "files": {
         "oxide": "parts/hand_l-oxide.png",
-        "petrol": "parts/hand_l-petrol.png"
+        "petrol": "parts/hand_l-petrol.png",
+        "primer": "parts/hand_l-oxide.png",
+        "ink": "parts/hand_l-oxide.png",
+        "drab": "parts/hand_l-oxide.png",
+        "cobalt": "parts/hand_l-oxide.png",
+        "frost": "parts/hand_l-oxide.png",
+        "cinder": "parts/hand_l-oxide.png",
+        "hazard": "parts/hand_l-oxide.png",
+        "racing": "parts/hand_l-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/hand_l-oxide.png",
-        "petrol": "parts@2x/hand_l-petrol.png"
+        "petrol": "parts@2x/hand_l-petrol.png",
+        "primer": "parts@2x/hand_l-oxide.png",
+        "ink": "parts@2x/hand_l-oxide.png",
+        "drab": "parts@2x/hand_l-oxide.png",
+        "cobalt": "parts@2x/hand_l-oxide.png",
+        "frost": "parts@2x/hand_l-oxide.png",
+        "cinder": "parts@2x/hand_l-oxide.png",
+        "hazard": "parts@2x/hand_l-oxide.png",
+        "racing": "parts@2x/hand_l-oxide.png"
       },
       "material_under": "materials/hand_l-under.png",
       "material_over": "materials/hand_l-over.png",
@@ -779,8 +1185,8 @@
       "width": 120,
       "height": 112,
       "pivot": [
-        60.0,
-        24.0
+        60,
+        24
       ],
       "sockets": {},
       "slot": "hand_l_wrap",
@@ -798,11 +1204,27 @@
       "source_file": "source/hand_l_wrap.svg",
       "files": {
         "oxide": "parts/hand_l_wrap-oxide.png",
-        "petrol": "parts/hand_l_wrap-petrol.png"
+        "petrol": "parts/hand_l_wrap-petrol.png",
+        "primer": "parts/hand_l_wrap-oxide.png",
+        "ink": "parts/hand_l_wrap-oxide.png",
+        "drab": "parts/hand_l_wrap-oxide.png",
+        "cobalt": "parts/hand_l_wrap-oxide.png",
+        "frost": "parts/hand_l_wrap-oxide.png",
+        "cinder": "parts/hand_l_wrap-oxide.png",
+        "hazard": "parts/hand_l_wrap-oxide.png",
+        "racing": "parts/hand_l_wrap-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/hand_l_wrap-oxide.png",
-        "petrol": "parts@2x/hand_l_wrap-petrol.png"
+        "petrol": "parts@2x/hand_l_wrap-petrol.png",
+        "primer": "parts@2x/hand_l_wrap-oxide.png",
+        "ink": "parts@2x/hand_l_wrap-oxide.png",
+        "drab": "parts@2x/hand_l_wrap-oxide.png",
+        "cobalt": "parts@2x/hand_l_wrap-oxide.png",
+        "frost": "parts@2x/hand_l_wrap-oxide.png",
+        "cinder": "parts@2x/hand_l_wrap-oxide.png",
+        "hazard": "parts@2x/hand_l_wrap-oxide.png",
+        "racing": "parts@2x/hand_l_wrap-oxide.png"
       },
       "material_under": "materials/hand_l_wrap-under.png",
       "material_over": "materials/hand_l_wrap-over.png",
@@ -817,17 +1239,17 @@
       "width": 120,
       "height": 112,
       "pivot": [
-        60.0,
-        24.0
+        60,
+        24
       ],
       "sockets": {
         "grip": [
-          60.0,
-          62.0
+          60,
+          62
         ],
         "wrap": [
-          60.0,
-          24.0
+          60,
+          24
         ]
       },
       "slot": "hand_r",
@@ -844,11 +1266,27 @@
       "source_file": "source/hand_r.svg",
       "files": {
         "oxide": "parts/hand_r-oxide.png",
-        "petrol": "parts/hand_r-petrol.png"
+        "petrol": "parts/hand_r-petrol.png",
+        "primer": "parts/hand_r-oxide.png",
+        "ink": "parts/hand_r-oxide.png",
+        "drab": "parts/hand_r-oxide.png",
+        "cobalt": "parts/hand_r-oxide.png",
+        "frost": "parts/hand_r-oxide.png",
+        "cinder": "parts/hand_r-oxide.png",
+        "hazard": "parts/hand_r-oxide.png",
+        "racing": "parts/hand_r-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/hand_r-oxide.png",
-        "petrol": "parts@2x/hand_r-petrol.png"
+        "petrol": "parts@2x/hand_r-petrol.png",
+        "primer": "parts@2x/hand_r-oxide.png",
+        "ink": "parts@2x/hand_r-oxide.png",
+        "drab": "parts@2x/hand_r-oxide.png",
+        "cobalt": "parts@2x/hand_r-oxide.png",
+        "frost": "parts@2x/hand_r-oxide.png",
+        "cinder": "parts@2x/hand_r-oxide.png",
+        "hazard": "parts@2x/hand_r-oxide.png",
+        "racing": "parts@2x/hand_r-oxide.png"
       },
       "material_under": "materials/hand_r-under.png",
       "material_over": "materials/hand_r-over.png",
@@ -863,8 +1301,8 @@
       "width": 120,
       "height": 112,
       "pivot": [
-        60.0,
-        24.0
+        60,
+        24
       ],
       "sockets": {},
       "slot": "hand_r_wrap",
@@ -882,11 +1320,27 @@
       "source_file": "source/hand_r_wrap.svg",
       "files": {
         "oxide": "parts/hand_r_wrap-oxide.png",
-        "petrol": "parts/hand_r_wrap-petrol.png"
+        "petrol": "parts/hand_r_wrap-petrol.png",
+        "primer": "parts/hand_r_wrap-oxide.png",
+        "ink": "parts/hand_r_wrap-oxide.png",
+        "drab": "parts/hand_r_wrap-oxide.png",
+        "cobalt": "parts/hand_r_wrap-oxide.png",
+        "frost": "parts/hand_r_wrap-oxide.png",
+        "cinder": "parts/hand_r_wrap-oxide.png",
+        "hazard": "parts/hand_r_wrap-oxide.png",
+        "racing": "parts/hand_r_wrap-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/hand_r_wrap-oxide.png",
-        "petrol": "parts@2x/hand_r_wrap-petrol.png"
+        "petrol": "parts@2x/hand_r_wrap-petrol.png",
+        "primer": "parts@2x/hand_r_wrap-oxide.png",
+        "ink": "parts@2x/hand_r_wrap-oxide.png",
+        "drab": "parts@2x/hand_r_wrap-oxide.png",
+        "cobalt": "parts@2x/hand_r_wrap-oxide.png",
+        "frost": "parts@2x/hand_r_wrap-oxide.png",
+        "cinder": "parts@2x/hand_r_wrap-oxide.png",
+        "hazard": "parts@2x/hand_r_wrap-oxide.png",
+        "racing": "parts@2x/hand_r_wrap-oxide.png"
       },
       "material_under": "materials/hand_r_wrap-under.png",
       "material_over": "materials/hand_r_wrap-over.png",
@@ -901,13 +1355,13 @@
       "width": 140,
       "height": 244,
       "pivot": [
-        60.0,
-        184.0
+        60,
+        184
       ],
       "sockets": {
         "grip_main": [
-          60.0,
-          184.0
+          60,
+          184
         ]
       },
       "slot": "sword",
@@ -925,11 +1379,27 @@
       "source_file": "source/weapon_sword.svg",
       "files": {
         "oxide": "parts/weapon_sword-oxide.png",
-        "petrol": "parts/weapon_sword-petrol.png"
+        "petrol": "parts/weapon_sword-petrol.png",
+        "primer": "parts/weapon_sword-oxide.png",
+        "ink": "parts/weapon_sword-oxide.png",
+        "drab": "parts/weapon_sword-oxide.png",
+        "cobalt": "parts/weapon_sword-oxide.png",
+        "frost": "parts/weapon_sword-oxide.png",
+        "cinder": "parts/weapon_sword-oxide.png",
+        "hazard": "parts/weapon_sword-oxide.png",
+        "racing": "parts/weapon_sword-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/weapon_sword-oxide.png",
-        "petrol": "parts@2x/weapon_sword-petrol.png"
+        "petrol": "parts@2x/weapon_sword-petrol.png",
+        "primer": "parts@2x/weapon_sword-oxide.png",
+        "ink": "parts@2x/weapon_sword-oxide.png",
+        "drab": "parts@2x/weapon_sword-oxide.png",
+        "cobalt": "parts@2x/weapon_sword-oxide.png",
+        "frost": "parts@2x/weapon_sword-oxide.png",
+        "cinder": "parts@2x/weapon_sword-oxide.png",
+        "hazard": "parts@2x/weapon_sword-oxide.png",
+        "racing": "parts@2x/weapon_sword-oxide.png"
       },
       "material_under": "materials/weapon_sword-under.png",
       "material_over": "materials/weapon_sword-over.png",
@@ -944,17 +1414,17 @@
       "width": 176,
       "height": 338,
       "pivot": [
-        64.0,
-        214.0
+        64,
+        214
       ],
       "sockets": {
         "grip_main": [
-          64.0,
-          214.0
+          64,
+          214
         ],
         "grip_off": [
-          64.0,
-          292.0
+          64,
+          292
         ]
       },
       "slot": "axe",
@@ -972,11 +1442,27 @@
       "source_file": "source/weapon_axe.svg",
       "files": {
         "oxide": "parts/weapon_axe-oxide.png",
-        "petrol": "parts/weapon_axe-petrol.png"
+        "petrol": "parts/weapon_axe-petrol.png",
+        "primer": "parts/weapon_axe-oxide.png",
+        "ink": "parts/weapon_axe-oxide.png",
+        "drab": "parts/weapon_axe-oxide.png",
+        "cobalt": "parts/weapon_axe-oxide.png",
+        "frost": "parts/weapon_axe-oxide.png",
+        "cinder": "parts/weapon_axe-oxide.png",
+        "hazard": "parts/weapon_axe-oxide.png",
+        "racing": "parts/weapon_axe-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/weapon_axe-oxide.png",
-        "petrol": "parts@2x/weapon_axe-petrol.png"
+        "petrol": "parts@2x/weapon_axe-petrol.png",
+        "primer": "parts@2x/weapon_axe-oxide.png",
+        "ink": "parts@2x/weapon_axe-oxide.png",
+        "drab": "parts@2x/weapon_axe-oxide.png",
+        "cobalt": "parts@2x/weapon_axe-oxide.png",
+        "frost": "parts@2x/weapon_axe-oxide.png",
+        "cinder": "parts@2x/weapon_axe-oxide.png",
+        "hazard": "parts@2x/weapon_axe-oxide.png",
+        "racing": "parts@2x/weapon_axe-oxide.png"
       },
       "material_under": "materials/weapon_axe-under.png",
       "material_over": "materials/weapon_axe-over.png",
@@ -991,13 +1477,13 @@
       "width": 100,
       "height": 182,
       "pivot": [
-        50.0,
-        127.0
+        50,
+        127
       ],
       "sockets": {
         "grip_main": [
-          50.0,
-          127.0
+          50,
+          127
         ]
       },
       "slot": "dagger",
@@ -1015,11 +1501,27 @@
       "source_file": "source/weapon_dagger.svg",
       "files": {
         "oxide": "parts/weapon_dagger-oxide.png",
-        "petrol": "parts/weapon_dagger-petrol.png"
+        "petrol": "parts/weapon_dagger-petrol.png",
+        "primer": "parts/weapon_dagger-oxide.png",
+        "ink": "parts/weapon_dagger-oxide.png",
+        "drab": "parts/weapon_dagger-oxide.png",
+        "cobalt": "parts/weapon_dagger-oxide.png",
+        "frost": "parts/weapon_dagger-oxide.png",
+        "cinder": "parts/weapon_dagger-oxide.png",
+        "hazard": "parts/weapon_dagger-oxide.png",
+        "racing": "parts/weapon_dagger-oxide.png"
       },
       "files@2x": {
         "oxide": "parts@2x/weapon_dagger-oxide.png",
-        "petrol": "parts@2x/weapon_dagger-petrol.png"
+        "petrol": "parts@2x/weapon_dagger-petrol.png",
+        "primer": "parts@2x/weapon_dagger-oxide.png",
+        "ink": "parts@2x/weapon_dagger-oxide.png",
+        "drab": "parts@2x/weapon_dagger-oxide.png",
+        "cobalt": "parts@2x/weapon_dagger-oxide.png",
+        "frost": "parts@2x/weapon_dagger-oxide.png",
+        "cinder": "parts@2x/weapon_dagger-oxide.png",
+        "hazard": "parts@2x/weapon_dagger-oxide.png",
+        "racing": "parts@2x/weapon_dagger-oxide.png"
       },
       "material_under": "materials/weapon_dagger-under.png",
       "material_over": "materials/weapon_dagger-over.png",
@@ -1028,6 +1530,246 @@
       "material_over@2x": "materials@2x/weapon_dagger-over.png",
       "paint_mask@2x": "masks@2x/weapon_dagger-paint.png",
       "has_paint": false
+    },
+    {
+      "id": "weapon_mace",
+      "width": 150,
+      "height": 230,
+      "pivot": [
+        75,
+        170
+      ],
+      "sockets": {
+        "grip_main": [
+          75,
+          170
+        ]
+      },
+      "slot": "mace",
+      "parent": "hand_r",
+      "parent_socket": "grip",
+      "angle": 80,
+      "z": 85,
+      "motion_bounds": [
+        -180,
+        180
+      ],
+      "role": "weapon",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "a4-weapons-v1/weapon_mace",
+      "files": {
+        "oxide": "parts/weapon_mace-oxide.png",
+        "petrol": "parts/weapon_mace-petrol.png",
+        "primer": "parts/weapon_mace-primer.png",
+        "ink": "parts/weapon_mace-ink.png",
+        "drab": "parts/weapon_mace-drab.png",
+        "cobalt": "parts/weapon_mace-cobalt.png",
+        "frost": "parts/weapon_mace-frost.png",
+        "cinder": "parts/weapon_mace-cinder.png",
+        "hazard": "parts/weapon_mace-hazard.png",
+        "racing": "parts/weapon_mace-racing.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/weapon_mace-oxide.png",
+        "petrol": "parts@2x/weapon_mace-petrol.png",
+        "primer": "parts@2x/weapon_mace-primer.png",
+        "ink": "parts@2x/weapon_mace-ink.png",
+        "drab": "parts@2x/weapon_mace-drab.png",
+        "cobalt": "parts@2x/weapon_mace-cobalt.png",
+        "frost": "parts@2x/weapon_mace-frost.png",
+        "cinder": "parts@2x/weapon_mace-cinder.png",
+        "hazard": "parts@2x/weapon_mace-hazard.png",
+        "racing": "parts@2x/weapon_mace-racing.png"
+      },
+      "material_under": "materials/weapon_mace-under.png",
+      "material_over": "materials/weapon_mace-over.png",
+      "paint_mask": "masks/weapon_mace-paint.png",
+      "material_under@2x": "materials@2x/weapon_mace-under.png",
+      "material_over@2x": "materials@2x/weapon_mace-over.png",
+      "paint_mask@2x": "masks@2x/weapon_mace-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "weapon_hammer",
+      "width": 180,
+      "height": 338,
+      "pivot": [
+        90,
+        214
+      ],
+      "sockets": {
+        "grip_main": [
+          90,
+          214
+        ],
+        "grip_off": [
+          90,
+          292
+        ]
+      },
+      "slot": "hammer",
+      "parent": "hand_r",
+      "parent_socket": "grip",
+      "angle": 90,
+      "z": 85,
+      "motion_bounds": [
+        -180,
+        180
+      ],
+      "role": "weapon",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "a4-weapons-v1/weapon_hammer",
+      "files": {
+        "oxide": "parts/weapon_hammer-oxide.png",
+        "petrol": "parts/weapon_hammer-petrol.png",
+        "primer": "parts/weapon_hammer-primer.png",
+        "ink": "parts/weapon_hammer-ink.png",
+        "drab": "parts/weapon_hammer-drab.png",
+        "cobalt": "parts/weapon_hammer-cobalt.png",
+        "frost": "parts/weapon_hammer-frost.png",
+        "cinder": "parts/weapon_hammer-cinder.png",
+        "hazard": "parts/weapon_hammer-hazard.png",
+        "racing": "parts/weapon_hammer-racing.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/weapon_hammer-oxide.png",
+        "petrol": "parts@2x/weapon_hammer-petrol.png",
+        "primer": "parts@2x/weapon_hammer-primer.png",
+        "ink": "parts@2x/weapon_hammer-ink.png",
+        "drab": "parts@2x/weapon_hammer-drab.png",
+        "cobalt": "parts@2x/weapon_hammer-cobalt.png",
+        "frost": "parts@2x/weapon_hammer-frost.png",
+        "cinder": "parts@2x/weapon_hammer-cinder.png",
+        "hazard": "parts@2x/weapon_hammer-hazard.png",
+        "racing": "parts@2x/weapon_hammer-racing.png"
+      },
+      "material_under": "materials/weapon_hammer-under.png",
+      "material_over": "materials/weapon_hammer-over.png",
+      "paint_mask": "masks/weapon_hammer-paint.png",
+      "material_under@2x": "materials@2x/weapon_hammer-under.png",
+      "material_over@2x": "materials@2x/weapon_hammer-over.png",
+      "paint_mask@2x": "masks@2x/weapon_hammer-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "weapon_spear",
+      "width": 140,
+      "height": 420,
+      "pivot": [
+        70,
+        300
+      ],
+      "sockets": {
+        "grip_main": [
+          70,
+          300
+        ],
+        "grip_off": [
+          70,
+          378
+        ]
+      },
+      "slot": "spear",
+      "parent": "hand_r",
+      "parent_socket": "grip",
+      "angle": 90,
+      "z": 85,
+      "motion_bounds": [
+        -180,
+        180
+      ],
+      "role": "weapon",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "a4-weapons-v1/weapon_spear",
+      "files": {
+        "oxide": "parts/weapon_spear-oxide.png",
+        "petrol": "parts/weapon_spear-petrol.png",
+        "primer": "parts/weapon_spear-primer.png",
+        "ink": "parts/weapon_spear-ink.png",
+        "drab": "parts/weapon_spear-drab.png",
+        "cobalt": "parts/weapon_spear-cobalt.png",
+        "frost": "parts/weapon_spear-frost.png",
+        "cinder": "parts/weapon_spear-cinder.png",
+        "hazard": "parts/weapon_spear-hazard.png",
+        "racing": "parts/weapon_spear-racing.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/weapon_spear-oxide.png",
+        "petrol": "parts@2x/weapon_spear-petrol.png",
+        "primer": "parts@2x/weapon_spear-primer.png",
+        "ink": "parts@2x/weapon_spear-ink.png",
+        "drab": "parts@2x/weapon_spear-drab.png",
+        "cobalt": "parts@2x/weapon_spear-cobalt.png",
+        "frost": "parts@2x/weapon_spear-frost.png",
+        "cinder": "parts@2x/weapon_spear-cinder.png",
+        "hazard": "parts@2x/weapon_spear-hazard.png",
+        "racing": "parts@2x/weapon_spear-racing.png"
+      },
+      "material_under": "materials/weapon_spear-under.png",
+      "material_over": "materials/weapon_spear-over.png",
+      "paint_mask": "masks/weapon_spear-paint.png",
+      "material_under@2x": "materials@2x/weapon_spear-under.png",
+      "material_over@2x": "materials@2x/weapon_spear-over.png",
+      "paint_mask@2x": "masks@2x/weapon_spear-paint.png",
+      "has_paint": true
+    },
+    {
+      "id": "weapon_shield",
+      "width": 180,
+      "height": 200,
+      "pivot": [
+        90,
+        100
+      ],
+      "sockets": {
+        "grip_main": [
+          90,
+          100
+        ]
+      },
+      "slot": "shield",
+      "parent": "hand_l",
+      "parent_socket": "grip",
+      "angle": 0,
+      "z": 66,
+      "motion_bounds": [
+        -180,
+        180
+      ],
+      "role": "weapon",
+      "compatible_family": "workshop-frame-v003",
+      "source_file": "a4-weapons-v1/weapon_shield",
+      "files": {
+        "oxide": "parts/weapon_shield-oxide.png",
+        "petrol": "parts/weapon_shield-petrol.png",
+        "primer": "parts/weapon_shield-primer.png",
+        "ink": "parts/weapon_shield-ink.png",
+        "drab": "parts/weapon_shield-drab.png",
+        "cobalt": "parts/weapon_shield-cobalt.png",
+        "frost": "parts/weapon_shield-frost.png",
+        "cinder": "parts/weapon_shield-cinder.png",
+        "hazard": "parts/weapon_shield-hazard.png",
+        "racing": "parts/weapon_shield-racing.png"
+      },
+      "files@2x": {
+        "oxide": "parts@2x/weapon_shield-oxide.png",
+        "petrol": "parts@2x/weapon_shield-petrol.png",
+        "primer": "parts@2x/weapon_shield-primer.png",
+        "ink": "parts@2x/weapon_shield-ink.png",
+        "drab": "parts@2x/weapon_shield-drab.png",
+        "cobalt": "parts@2x/weapon_shield-cobalt.png",
+        "frost": "parts@2x/weapon_shield-frost.png",
+        "cinder": "parts@2x/weapon_shield-cinder.png",
+        "hazard": "parts@2x/weapon_shield-hazard.png",
+        "racing": "parts@2x/weapon_shield-racing.png"
+      },
+      "material_under": "materials/weapon_shield-under.png",
+      "material_over": "materials/weapon_shield-over.png",
+      "paint_mask": "masks/weapon_shield-paint.png",
+      "material_under@2x": "materials@2x/weapon_shield-under.png",
+      "material_over@2x": "materials@2x/weapon_shield-over.png",
+      "paint_mask@2x": "masks@2x/weapon_shield-paint.png",
+      "has_paint": true
     }
   ],
   "poses": {
@@ -1181,6 +1923,206 @@
             "rot": 52.38
           }
         }
+      },
+      "mace": {
+        "root": {
+          "x": 0,
+          "y": 10
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -61.71
+          },
+          "forearm_r": {
+            "rot": -35.59
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 81.43
+          },
+          "head": {
+            "rot": -5
+          },
+          "shin_l": {
+            "rot": 44.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -23.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": 4
+          },
+          "upper_arm_l": {
+            "rot": 51.21
+          },
+          "upper_arm_r": {
+            "rot": 34.16
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": -2,
+          "y": 18
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 43.58
+          },
+          "forearm_r": {
+            "rot": -78.76
+          },
+          "hand_l": {
+            "rot": 12.84
+          },
+          "hand_r": {
+            "rot": 102.18
+          },
+          "head": {
+            "rot": -10
+          },
+          "shin_l": {
+            "rot": -22.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": 4.35
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "torso": {
+            "rot": 12
+          },
+          "upper_arm_l": {
+            "rot": -81.42
+          },
+          "upper_arm_r": {
+            "rot": 60.57
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": -2,
+          "y": 18
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 43.58
+          },
+          "forearm_r": {
+            "rot": -78.76
+          },
+          "hand_l": {
+            "rot": 12.84
+          },
+          "hand_r": {
+            "rot": 102.18
+          },
+          "head": {
+            "rot": -10
+          },
+          "shin_l": {
+            "rot": -22.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": 4.35
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "torso": {
+            "rot": 12
+          },
+          "upper_arm_l": {
+            "rot": -81.42
+          },
+          "upper_arm_r": {
+            "rot": 60.57
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": 0,
+          "y": 10
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -61.71
+          },
+          "forearm_r": {
+            "rot": -35.59
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 18
+          },
+          "head": {
+            "rot": -5
+          },
+          "shin_l": {
+            "rot": 44.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -23.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": 4
+          },
+          "upper_arm_l": {
+            "rot": 51.21
+          },
+          "upper_arm_r": {
+            "rot": 34.16
+          }
+        }
       }
     },
     "victory": {
@@ -1200,7 +2142,7 @@
             "rot": -303.01
           },
           "forearm_r": {
-            "rot": 112.0
+            "rot": 112
           },
           "hand_l": {
             "rot": 46.87
@@ -1253,7 +2195,7 @@
             "rot": 56.99
           },
           "forearm_r": {
-            "rot": -248.0
+            "rot": -248
           },
           "hand_l": {
             "rot": 46.87
@@ -1306,7 +2248,7 @@
             "rot": -303.01
           },
           "forearm_r": {
-            "rot": 112.0
+            "rot": 112
           },
           "hand_l": {
             "rot": 46.87
@@ -1342,6 +2284,218 @@
             "rot": -92.07
           }
         }
+      },
+      "mace": {
+        "root": {
+          "x": 0,
+          "y": 8
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -29.21
+          },
+          "foot_r": {
+            "rot": 10.78
+          },
+          "forearm_l": {
+            "rot": -303.01
+          },
+          "forearm_r": {
+            "rot": 112
+          },
+          "hand_l": {
+            "rot": 46.87
+          },
+          "hand_r": {
+            "rot": 94.19
+          },
+          "head": {
+            "rot": -22
+          },
+          "pelvis": {
+            "rot": 6
+          },
+          "shin_l": {
+            "rot": 37.29
+          },
+          "shin_r": {
+            "rot": -14.97
+          },
+          "thigh_l": {
+            "rot": -0.08
+          },
+          "thigh_r": {
+            "rot": 12.19
+          },
+          "torso": {
+            "rot": -14
+          },
+          "upper_arm_l": {
+            "rot": 143.05
+          },
+          "upper_arm_r": {
+            "rot": -124.63
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": 0,
+          "y": 8
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -29.21
+          },
+          "foot_r": {
+            "rot": 10.78
+          },
+          "forearm_l": {
+            "rot": 56.99
+          },
+          "forearm_r": {
+            "rot": -248
+          },
+          "hand_l": {
+            "rot": 46.87
+          },
+          "hand_r": {
+            "rot": 93.39
+          },
+          "head": {
+            "rot": -22
+          },
+          "pelvis": {
+            "rot": 6
+          },
+          "shin_l": {
+            "rot": 37.29
+          },
+          "shin_r": {
+            "rot": -14.97
+          },
+          "thigh_l": {
+            "rot": -0.08
+          },
+          "thigh_r": {
+            "rot": 12.19
+          },
+          "torso": {
+            "rot": -14
+          },
+          "upper_arm_l": {
+            "rot": -216.95
+          },
+          "upper_arm_r": {
+            "rot": 235.3
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": 0,
+          "y": 8
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -29.21
+          },
+          "foot_r": {
+            "rot": 10.78
+          },
+          "forearm_l": {
+            "rot": 56.99
+          },
+          "forearm_r": {
+            "rot": -248
+          },
+          "hand_l": {
+            "rot": 46.87
+          },
+          "hand_r": {
+            "rot": 93.39
+          },
+          "head": {
+            "rot": -22
+          },
+          "pelvis": {
+            "rot": 6
+          },
+          "shin_l": {
+            "rot": 37.29
+          },
+          "shin_r": {
+            "rot": -14.97
+          },
+          "thigh_l": {
+            "rot": -0.08
+          },
+          "thigh_r": {
+            "rot": 12.19
+          },
+          "torso": {
+            "rot": -14
+          },
+          "upper_arm_l": {
+            "rot": -216.95
+          },
+          "upper_arm_r": {
+            "rot": 235.3
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": 0,
+          "y": 8
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -29.21
+          },
+          "foot_r": {
+            "rot": 10.78
+          },
+          "forearm_l": {
+            "rot": -61.71
+          },
+          "forearm_r": {
+            "rot": 112
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 94.19
+          },
+          "head": {
+            "rot": -22
+          },
+          "pelvis": {
+            "rot": 6
+          },
+          "shin_l": {
+            "rot": 37.29
+          },
+          "shin_r": {
+            "rot": -14.97
+          },
+          "thigh_l": {
+            "rot": -0.08
+          },
+          "thigh_r": {
+            "rot": 12.19
+          },
+          "torso": {
+            "rot": -14
+          },
+          "upper_arm_l": {
+            "rot": 51.21
+          },
+          "upper_arm_r": {
+            "rot": -124.63
+          }
+        }
       }
     },
     "defeat": {
@@ -1352,10 +2506,10 @@
         },
         "parts": {
           "foot_l": {
-            "rot": 25.0
+            "rot": 25
           },
           "foot_r": {
-            "rot": 2.0
+            "rot": 2
           },
           "forearm_l": {
             "rot": 0.14
@@ -1405,10 +2559,10 @@
         },
         "parts": {
           "foot_l": {
-            "rot": 25.0
+            "rot": 25
           },
           "foot_r": {
-            "rot": 2.0
+            "rot": 2
           },
           "forearm_l": {
             "rot": 0.14
@@ -1458,10 +2612,10 @@
         },
         "parts": {
           "foot_l": {
-            "rot": 25.0
+            "rot": 25
           },
           "foot_r": {
-            "rot": 2.0
+            "rot": 2
           },
           "forearm_l": {
             "rot": 0.14
@@ -1503,6 +2657,218 @@
             "rot": 35.92
           }
         }
+      },
+      "mace": {
+        "root": {
+          "x": -14,
+          "y": 99
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 25
+          },
+          "foot_r": {
+            "rot": 2
+          },
+          "forearm_l": {
+            "rot": 0.14
+          },
+          "forearm_r": {
+            "rot": 32.1
+          },
+          "hand_l": {
+            "rot": 42.59
+          },
+          "hand_r": {
+            "rot": 98.86
+          },
+          "head": {
+            "rot": 26
+          },
+          "pelvis": {
+            "rot": -24
+          },
+          "shin_l": {
+            "rot": 104.82
+          },
+          "shin_r": {
+            "rot": 102.65
+          },
+          "thigh_l": {
+            "rot": -11.82
+          },
+          "thigh_r": {
+            "rot": 13.35
+          },
+          "torso": {
+            "rot": 24
+          },
+          "upper_arm_l": {
+            "rot": -49.74
+          },
+          "upper_arm_r": {
+            "rot": -6.96
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": -14,
+          "y": 99
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 25
+          },
+          "foot_r": {
+            "rot": 2
+          },
+          "forearm_l": {
+            "rot": 0.14
+          },
+          "forearm_r": {
+            "rot": -34.44
+          },
+          "hand_l": {
+            "rot": 42.59
+          },
+          "hand_r": {
+            "rot": 178.62
+          },
+          "head": {
+            "rot": 26
+          },
+          "pelvis": {
+            "rot": -24
+          },
+          "shin_l": {
+            "rot": 104.82
+          },
+          "shin_r": {
+            "rot": 102.65
+          },
+          "thigh_l": {
+            "rot": -11.82
+          },
+          "thigh_r": {
+            "rot": 13.35
+          },
+          "torso": {
+            "rot": 24
+          },
+          "upper_arm_l": {
+            "rot": -49.74
+          },
+          "upper_arm_r": {
+            "rot": -23.18
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": -14,
+          "y": 99
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 25
+          },
+          "foot_r": {
+            "rot": 2
+          },
+          "forearm_l": {
+            "rot": 0.14
+          },
+          "forearm_r": {
+            "rot": -34.44
+          },
+          "hand_l": {
+            "rot": 42.59
+          },
+          "hand_r": {
+            "rot": 178.62
+          },
+          "head": {
+            "rot": 26
+          },
+          "pelvis": {
+            "rot": -24
+          },
+          "shin_l": {
+            "rot": 104.82
+          },
+          "shin_r": {
+            "rot": 102.65
+          },
+          "thigh_l": {
+            "rot": -11.82
+          },
+          "thigh_r": {
+            "rot": 13.35
+          },
+          "torso": {
+            "rot": 24
+          },
+          "upper_arm_l": {
+            "rot": -49.74
+          },
+          "upper_arm_r": {
+            "rot": -23.18
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": -14,
+          "y": 99
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 25
+          },
+          "foot_r": {
+            "rot": 362
+          },
+          "forearm_l": {
+            "rot": -61.71
+          },
+          "forearm_r": {
+            "rot": 32.1
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 102.86
+          },
+          "head": {
+            "rot": 26
+          },
+          "pelvis": {
+            "rot": -24
+          },
+          "shin_l": {
+            "rot": 104.82
+          },
+          "shin_r": {
+            "rot": -257.35
+          },
+          "thigh_l": {
+            "rot": -11.82
+          },
+          "thigh_r": {
+            "rot": 13.35
+          },
+          "torso": {
+            "rot": 24
+          },
+          "upper_arm_l": {
+            "rot": 51.21
+          },
+          "upper_arm_r": {
+            "rot": -6.96
+          }
+        }
       }
     },
     "walk_in": {
@@ -1519,7 +2885,7 @@
             "rot": -10.17
           },
           "forearm_l": {
-            "rot": -38.0
+            "rot": -38
           },
           "forearm_r": {
             "rot": -8.38
@@ -1534,7 +2900,7 @@
             "rot": -4
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 32.95
@@ -1584,7 +2950,7 @@
             "rot": -4
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 32.95
@@ -1634,7 +3000,7 @@
             "rot": -4
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 32.95
@@ -1653,6 +3019,206 @@
           },
           "upper_arm_r": {
             "rot": 56.76
+          }
+        }
+      },
+      "mace": {
+        "root": {
+          "x": 2,
+          "y": 2
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -8.24
+          },
+          "foot_r": {
+            "rot": -10.17
+          },
+          "forearm_l": {
+            "rot": -38
+          },
+          "forearm_r": {
+            "rot": -8.38
+          },
+          "hand_l": {
+            "rot": -9.41
+          },
+          "hand_r": {
+            "rot": 98.93
+          },
+          "head": {
+            "rot": -4
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 32.95
+          },
+          "thigh_l": {
+            "rot": -2.76
+          },
+          "thigh_r": {
+            "rot": -44.79
+          },
+          "torso": {
+            "rot": 6
+          },
+          "upper_arm_l": {
+            "rot": 8.41
+          },
+          "upper_arm_r": {
+            "rot": 33.45
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": 2,
+          "y": 2
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -8.24
+          },
+          "foot_r": {
+            "rot": -10.17
+          },
+          "forearm_l": {
+            "rot": 27.78
+          },
+          "forearm_r": {
+            "rot": -17.7
+          },
+          "hand_l": {
+            "rot": 23.97
+          },
+          "hand_r": {
+            "rot": 13.13
+          },
+          "head": {
+            "rot": -4
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 32.95
+          },
+          "thigh_l": {
+            "rot": -2.76
+          },
+          "thigh_r": {
+            "rot": -44.79
+          },
+          "torso": {
+            "rot": 6
+          },
+          "upper_arm_l": {
+            "rot": -52.75
+          },
+          "upper_arm_r": {
+            "rot": 112.57
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": 2,
+          "y": 2
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -8.24
+          },
+          "foot_r": {
+            "rot": -10.17
+          },
+          "forearm_l": {
+            "rot": 27.78
+          },
+          "forearm_r": {
+            "rot": -17.7
+          },
+          "hand_l": {
+            "rot": 23.97
+          },
+          "hand_r": {
+            "rot": 13.13
+          },
+          "head": {
+            "rot": -4
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 32.95
+          },
+          "thigh_l": {
+            "rot": -2.76
+          },
+          "thigh_r": {
+            "rot": -44.79
+          },
+          "torso": {
+            "rot": 6
+          },
+          "upper_arm_l": {
+            "rot": -52.75
+          },
+          "upper_arm_r": {
+            "rot": 112.57
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": 2,
+          "y": 2
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -8.24
+          },
+          "foot_r": {
+            "rot": -10.17
+          },
+          "forearm_l": {
+            "rot": -38
+          },
+          "forearm_r": {
+            "rot": -8.38
+          },
+          "hand_l": {
+            "rot": -9.41
+          },
+          "hand_r": {
+            "rot": 35.5
+          },
+          "head": {
+            "rot": -4
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 32.95
+          },
+          "thigh_l": {
+            "rot": -2.76
+          },
+          "thigh_r": {
+            "rot": -44.79
+          },
+          "torso": {
+            "rot": 6
+          },
+          "upper_arm_l": {
+            "rot": 8.41
+          },
+          "upper_arm_r": {
+            "rot": 33.45
           }
         }
       }
@@ -1677,7 +3243,7 @@
             "rot": 53.39
           },
           "hand_l": {
-            "rot": 91.0
+            "rot": 91
           },
           "hand_r": {
             "rot": 24.2
@@ -1816,6 +3382,212 @@
             "rot": 98.43
           }
         }
+      },
+      "mace": {
+        "root": {
+          "x": -20,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -37.72
+          },
+          "foot_r": {
+            "rot": 22.9
+          },
+          "forearm_l": {
+            "rot": -14.28
+          },
+          "forearm_r": {
+            "rot": 53.39
+          },
+          "hand_l": {
+            "rot": 91
+          },
+          "hand_r": {
+            "rot": 24.2
+          },
+          "head": {
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.36
+          },
+          "shin_r": {
+            "rot": -14.99
+          },
+          "thigh_l": {
+            "rot": -20.64
+          },
+          "thigh_r": {
+            "rot": -3.9
+          },
+          "torso": {
+            "rot": -12
+          },
+          "upper_arm_l": {
+            "rot": -57.73
+          },
+          "upper_arm_r": {
+            "rot": -81.59
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": -20,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -37.72
+          },
+          "foot_r": {
+            "rot": 22.9
+          },
+          "forearm_l": {
+            "rot": 36.8
+          },
+          "forearm_r": {
+            "rot": -273.71
+          },
+          "hand_l": {
+            "rot": -69.42
+          },
+          "hand_r": {
+            "rot": 167.41
+          },
+          "head": {
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.36
+          },
+          "shin_r": {
+            "rot": -14.99
+          },
+          "thigh_l": {
+            "rot": -20.64
+          },
+          "thigh_r": {
+            "rot": -3.9
+          },
+          "torso": {
+            "rot": -12
+          },
+          "upper_arm_l": {
+            "rot": -62.38
+          },
+          "upper_arm_r": {
+            "rot": 120.29
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": -10,
+          "y": 9
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": -0.16
+          },
+          "forearm_r": {
+            "rot": -102.08
+          },
+          "hand_l": {
+            "rot": 24.28
+          },
+          "hand_r": {
+            "rot": 166.73
+          },
+          "head": {
+            "rot": -10
+          },
+          "shin_l": {
+            "rot": -22.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": 4.35
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "torso": {
+            "rot": 8
+          },
+          "upper_arm_l": {
+            "rot": -45.13
+          },
+          "upper_arm_r": {
+            "rot": 23.34
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": -8,
+          "y": 1
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -44.04
+          },
+          "forearm_r": {
+            "rot": -35.59
+          },
+          "hand_l": {
+            "rot": -32.49
+          },
+          "hand_r": {
+            "rot": 10
+          },
+          "head": {
+            "rot": -5
+          },
+          "shin_l": {
+            "rot": 44.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -23.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": 0
+          },
+          "upper_arm_l": {
+            "rot": 55.53
+          },
+          "upper_arm_r": {
+            "rot": 34.16
+          }
+        }
       }
     },
     "strike": {
@@ -1832,7 +3604,7 @@
             "rot": 11.74
           },
           "forearm_l": {
-            "rot": 57.0
+            "rot": 57
           },
           "forearm_r": {
             "rot": 103.77
@@ -1850,7 +3622,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 26.99
@@ -1903,7 +3675,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 26.99
@@ -1938,7 +3710,7 @@
             "rot": 11.74
           },
           "forearm_l": {
-            "rot": 57.0
+            "rot": 57
           },
           "forearm_r": {
             "rot": 111.89
@@ -1956,7 +3728,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 26.99
@@ -1977,6 +3749,212 @@
             "rot": -73.41
           }
         }
+      },
+      "mace": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 57
+          },
+          "forearm_r": {
+            "rot": 103.77
+          },
+          "hand_l": {
+            "rot": -142.18
+          },
+          "hand_r": {
+            "rot": 133.14
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": 6.62
+          },
+          "upper_arm_r": {
+            "rot": -82.91
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 43.46
+          },
+          "forearm_r": {
+            "rot": -25.87
+          },
+          "hand_l": {
+            "rot": 96.07
+          },
+          "hand_r": {
+            "rot": 185.65
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": -116.52
+          },
+          "upper_arm_r": {
+            "rot": -27.77
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": 30,
+          "y": -1
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 23.78
+          },
+          "forearm_r": {
+            "rot": -95.72
+          },
+          "hand_l": {
+            "rot": 53.08
+          },
+          "hand_r": {
+            "rot": 39.76
+          },
+          "head": {
+            "rot": -12
+          },
+          "shin_l": {
+            "rot": -22.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": 4.35
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": -87.86
+          },
+          "upper_arm_r": {
+            "rot": 153.96
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": 16,
+          "y": -8
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -40.35
+          },
+          "forearm_r": {
+            "rot": -35.59
+          },
+          "hand_l": {
+            "rot": 12.21
+          },
+          "hand_r": {
+            "rot": 22
+          },
+          "head": {
+            "rot": -5
+          },
+          "shin_l": {
+            "rot": 44.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -23.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": 12
+          },
+          "upper_arm_l": {
+            "rot": 13.14
+          },
+          "upper_arm_r": {
+            "rot": 34.16
+          }
+        }
       }
     },
     "follow_through": {
@@ -1993,7 +3971,7 @@
             "rot": 9.18
           },
           "forearm_l": {
-            "rot": 57.0
+            "rot": 57
           },
           "forearm_r": {
             "rot": 11.82
@@ -2011,7 +3989,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 39.3
@@ -2064,7 +4042,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 39.3
@@ -2099,7 +4077,7 @@
             "rot": 9.18
           },
           "forearm_l": {
-            "rot": 57.0
+            "rot": 57
           },
           "forearm_r": {
             "rot": 40.98
@@ -2117,7 +4095,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 39.3
@@ -2136,6 +4114,212 @@
           },
           "upper_arm_r": {
             "rot": -16.87
+          }
+        }
+      },
+      "mace": {
+        "root": {
+          "x": 38,
+          "y": 34
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -29.72
+          },
+          "foot_r": {
+            "rot": 9.18
+          },
+          "forearm_l": {
+            "rot": 57
+          },
+          "forearm_r": {
+            "rot": 11.82
+          },
+          "hand_l": {
+            "rot": -129.7
+          },
+          "hand_r": {
+            "rot": 197.08
+          },
+          "head": {
+            "rot": -2
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 39.3
+          },
+          "thigh_l": {
+            "rot": -1.28
+          },
+          "thigh_r": {
+            "rot": -66.48
+          },
+          "torso": {
+            "rot": 26
+          },
+          "upper_arm_l": {
+            "rot": 4.24
+          },
+          "upper_arm_r": {
+            "rot": -20.9
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": 38,
+          "y": 34
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -29.72
+          },
+          "foot_r": {
+            "rot": 9.18
+          },
+          "forearm_l": {
+            "rot": -20.41
+          },
+          "forearm_r": {
+            "rot": -39.62
+          },
+          "hand_l": {
+            "rot": 179.74
+          },
+          "hand_r": {
+            "rot": 287.82
+          },
+          "head": {
+            "rot": -2.45
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 39.3
+          },
+          "thigh_l": {
+            "rot": -1.28
+          },
+          "thigh_r": {
+            "rot": -66.48
+          },
+          "torso": {
+            "rot": 26
+          },
+          "upper_arm_l": {
+            "rot": -110.61
+          },
+          "upper_arm_r": {
+            "rot": -90.49
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": 34,
+          "y": 4
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 19.08
+          },
+          "forearm_r": {
+            "rot": -91.81
+          },
+          "hand_l": {
+            "rot": 58.61
+          },
+          "hand_r": {
+            "rot": 33.88
+          },
+          "head": {
+            "rot": -13
+          },
+          "shin_l": {
+            "rot": -22.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": 4.35
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "torso": {
+            "rot": 18
+          },
+          "upper_arm_l": {
+            "rot": -84.69
+          },
+          "upper_arm_r": {
+            "rot": 159.93
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": 12,
+          "y": -3
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -35.26
+          },
+          "forearm_r": {
+            "rot": -35.59
+          },
+          "hand_l": {
+            "rot": 29.79
+          },
+          "hand_r": {
+            "rot": 20
+          },
+          "head": {
+            "rot": -5
+          },
+          "shin_l": {
+            "rot": 44.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -23.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": 10
+          },
+          "upper_arm_l": {
+            "rot": -1.52
+          },
+          "upper_arm_r": {
+            "rot": 34.16
           }
         }
       }
@@ -2299,6 +4483,212 @@
             "rot": 47.83
           }
         }
+      },
+      "mace": {
+        "root": {
+          "x": 10,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -27.48
+          },
+          "foot_r": {
+            "rot": -1.26
+          },
+          "forearm_l": {
+            "rot": -63.62
+          },
+          "forearm_r": {
+            "rot": -21.65
+          },
+          "hand_l": {
+            "rot": -6.36
+          },
+          "hand_r": {
+            "rot": 143.3
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -2
+          },
+          "shin_l": {
+            "rot": 33.3
+          },
+          "shin_r": {
+            "rot": 24.45
+          },
+          "thigh_l": {
+            "rot": -7.82
+          },
+          "thigh_r": {
+            "rot": -25.19
+          },
+          "torso": {
+            "rot": 4
+          },
+          "upper_arm_l": {
+            "rot": 52.97
+          },
+          "upper_arm_r": {
+            "rot": -29.65
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": 10,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -27.48
+          },
+          "foot_r": {
+            "rot": -1.26
+          },
+          "forearm_l": {
+            "rot": 22.32
+          },
+          "forearm_r": {
+            "rot": -32.61
+          },
+          "hand_l": {
+            "rot": 48.19
+          },
+          "hand_r": {
+            "rot": 55.47
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -2
+          },
+          "shin_l": {
+            "rot": 33.3
+          },
+          "shin_r": {
+            "rot": 24.45
+          },
+          "thigh_l": {
+            "rot": -7.82
+          },
+          "thigh_r": {
+            "rot": -25.19
+          },
+          "torso": {
+            "rot": 4
+          },
+          "upper_arm_l": {
+            "rot": -63.5
+          },
+          "upper_arm_r": {
+            "rot": 93.15
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": 0,
+          "y": 17
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 5.68
+          },
+          "foot_r": {
+            "rot": 1.63
+          },
+          "forearm_l": {
+            "rot": 43.21
+          },
+          "forearm_r": {
+            "rot": -78.59
+          },
+          "hand_l": {
+            "rot": 16.12
+          },
+          "hand_r": {
+            "rot": 80.54
+          },
+          "head": {
+            "rot": -10
+          },
+          "shin_l": {
+            "rot": -22.02
+          },
+          "shin_r": {
+            "rot": 31.96
+          },
+          "thigh_l": {
+            "rot": 4.35
+          },
+          "thigh_r": {
+            "rot": -45.59
+          },
+          "torso": {
+            "rot": 13
+          },
+          "upper_arm_l": {
+            "rot": -83.34
+          },
+          "upper_arm_r": {
+            "rot": 83.04
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": 4,
+          "y": 7
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -24.18
+          },
+          "foot_r": {
+            "rot": -2.32
+          },
+          "forearm_l": {
+            "rot": -58.68
+          },
+          "forearm_r": {
+            "rot": -35.59
+          },
+          "hand_l": {
+            "rot": 1.8
+          },
+          "hand_r": {
+            "rot": 18
+          },
+          "head": {
+            "rot": -5
+          },
+          "shin_l": {
+            "rot": 44.05
+          },
+          "shin_r": {
+            "rot": 22.56
+          },
+          "thigh_l": {
+            "rot": -23.87
+          },
+          "thigh_r": {
+            "rot": -24.24
+          },
+          "torso": {
+            "rot": 6
+          },
+          "upper_arm_l": {
+            "rot": 41.89
+          },
+          "upper_arm_r": {
+            "rot": 34.16
+          }
+        }
       }
     },
     "dodge": {
@@ -2460,6 +4850,218 @@
             "rot": 71.64
           }
         }
+      },
+      "mace": {
+        "root": {
+          "x": -72,
+          "y": 50
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -71.47
+          },
+          "foot_r": {
+            "rot": -8.76
+          },
+          "forearm_l": {
+            "rot": -140.4
+          },
+          "forearm_r": {
+            "rot": 3.45
+          },
+          "hand_l": {
+            "rot": 56.27
+          },
+          "hand_r": {
+            "rot": 104.68
+          },
+          "head": {
+            "rot": -4
+          },
+          "pelvis": {
+            "rot": 10
+          },
+          "shin_l": {
+            "rot": 76.9
+          },
+          "shin_r": {
+            "rot": 51.96
+          },
+          "thigh_l": {
+            "rot": 14.56
+          },
+          "thigh_r": {
+            "rot": -23.2
+          },
+          "torso": {
+            "rot": -30
+          },
+          "upper_arm_l": {
+            "rot": 81.13
+          },
+          "upper_arm_r": {
+            "rot": 47.86
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": -72,
+          "y": 50
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -71.47
+          },
+          "foot_r": {
+            "rot": -8.76
+          },
+          "forearm_l": {
+            "rot": 25.49
+          },
+          "forearm_r": {
+            "rot": -1.28
+          },
+          "hand_l": {
+            "rot": 22.16
+          },
+          "hand_r": {
+            "rot": 5.42
+          },
+          "head": {
+            "rot": -4
+          },
+          "pelvis": {
+            "rot": 10
+          },
+          "shin_l": {
+            "rot": 76.9
+          },
+          "shin_r": {
+            "rot": 51.96
+          },
+          "thigh_l": {
+            "rot": 14.56
+          },
+          "thigh_r": {
+            "rot": -23.2
+          },
+          "torso": {
+            "rot": -30
+          },
+          "upper_arm_l": {
+            "rot": -44.65
+          },
+          "upper_arm_r": {
+            "rot": 107.86
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": -72,
+          "y": 50
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -71.47
+          },
+          "foot_r": {
+            "rot": -8.76
+          },
+          "forearm_l": {
+            "rot": 25.49
+          },
+          "forearm_r": {
+            "rot": -1.28
+          },
+          "hand_l": {
+            "rot": 22.16
+          },
+          "hand_r": {
+            "rot": 5.42
+          },
+          "head": {
+            "rot": -4
+          },
+          "pelvis": {
+            "rot": 10
+          },
+          "shin_l": {
+            "rot": 76.9
+          },
+          "shin_r": {
+            "rot": 51.96
+          },
+          "thigh_l": {
+            "rot": 14.56
+          },
+          "thigh_r": {
+            "rot": -23.2
+          },
+          "torso": {
+            "rot": -30
+          },
+          "upper_arm_l": {
+            "rot": -44.65
+          },
+          "upper_arm_r": {
+            "rot": 107.86
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": -72,
+          "y": 50
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -71.47
+          },
+          "foot_r": {
+            "rot": -8.76
+          },
+          "forearm_l": {
+            "rot": -140.4
+          },
+          "forearm_r": {
+            "rot": 3.45
+          },
+          "hand_l": {
+            "rot": 56.27
+          },
+          "hand_r": {
+            "rot": 41.25
+          },
+          "head": {
+            "rot": -4
+          },
+          "pelvis": {
+            "rot": 10
+          },
+          "shin_l": {
+            "rot": 76.9
+          },
+          "shin_r": {
+            "rot": 51.96
+          },
+          "thigh_l": {
+            "rot": 14.56
+          },
+          "thigh_r": {
+            "rot": -23.2
+          },
+          "torso": {
+            "rot": -30
+          },
+          "upper_arm_l": {
+            "rot": 81.13
+          },
+          "upper_arm_r": {
+            "rot": 47.86
+          }
+        }
       }
     },
     "hit_react": {
@@ -2479,7 +5081,7 @@
             "rot": -98.43
           },
           "forearm_r": {
-            "rot": 112.0
+            "rot": 112
           },
           "hand_l": {
             "rot": -122.44
@@ -2497,7 +5099,7 @@
             "rot": 62.58
           },
           "shin_r": {
-            "rot": -15.0
+            "rot": -15
           },
           "thigh_l": {
             "rot": -7.07
@@ -2550,7 +5152,7 @@
             "rot": 62.58
           },
           "shin_r": {
-            "rot": -15.0
+            "rot": -15
           },
           "thigh_l": {
             "rot": -7.07
@@ -2585,7 +5187,7 @@
             "rot": -98.43
           },
           "forearm_r": {
-            "rot": 112.0
+            "rot": 112
           },
           "hand_l": {
             "rot": -122.44
@@ -2603,7 +5205,7 @@
             "rot": 62.58
           },
           "shin_r": {
-            "rot": -15.0
+            "rot": -15
           },
           "thigh_l": {
             "rot": -7.07
@@ -2621,13 +5223,225 @@
             "rot": 21.82
           }
         }
+      },
+      "mace": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": -98.43
+          },
+          "forearm_r": {
+            "rot": 112
+          },
+          "hand_l": {
+            "rot": -122.44
+          },
+          "hand_r": {
+            "rot": 64.02
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": 119.87
+          },
+          "upper_arm_r": {
+            "rot": -0.34
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": 21.91
+          },
+          "forearm_r": {
+            "rot": 64.61
+          },
+          "hand_l": {
+            "rot": 95.05
+          },
+          "hand_r": {
+            "rot": 49.56
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": -57.97
+          },
+          "upper_arm_r": {
+            "rot": 53.83
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": 21.91
+          },
+          "forearm_r": {
+            "rot": 64.61
+          },
+          "hand_l": {
+            "rot": 95.05
+          },
+          "hand_r": {
+            "rot": 49.56
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": -57.97
+          },
+          "upper_arm_r": {
+            "rot": 53.83
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": -98.43
+          },
+          "forearm_r": {
+            "rot": 112
+          },
+          "hand_l": {
+            "rot": -122.44
+          },
+          "hand_r": {
+            "rot": 0.59
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": 119.87
+          },
+          "upper_arm_r": {
+            "rot": -0.34
+          }
+        }
       }
     },
     "knockout": {
       "sword": {
         "root": {
-          "x": -36.0,
-          "y": 22.0
+          "x": -36,
+          "y": 22
         },
         "parts": {
           "foot_l": {
@@ -2652,7 +5466,7 @@
             "rot": -42.5
           },
           "pelvis": {
-            "rot": 10.0
+            "rot": 10
           },
           "shin_l": {
             "rot": 53.33
@@ -2667,7 +5481,7 @@
             "rot": 26.46
           },
           "torso": {
-            "rot": -32.0
+            "rot": -32
           },
           "upper_arm_l": {
             "rot": 31.24
@@ -2679,8 +5493,8 @@
       },
       "axe": {
         "root": {
-          "x": -36.0,
-          "y": 22.0
+          "x": -36,
+          "y": 22
         },
         "parts": {
           "foot_l": {
@@ -2702,10 +5516,10 @@
             "rot": 44.53
           },
           "head": {
-            "rot": -30.0
+            "rot": -30
           },
           "pelvis": {
-            "rot": 10.0
+            "rot": 10
           },
           "shin_l": {
             "rot": -27.34
@@ -2720,7 +5534,7 @@
             "rot": 26.26
           },
           "torso": {
-            "rot": -32.0
+            "rot": -32
           },
           "upper_arm_l": {
             "rot": -28.15
@@ -2732,8 +5546,8 @@
       },
       "dagger": {
         "root": {
-          "x": -36.0,
-          "y": 22.0
+          "x": -36,
+          "y": 22
         },
         "parts": {
           "foot_l": {
@@ -2755,10 +5569,10 @@
             "rot": 2.74
           },
           "head": {
-            "rot": -30.0
+            "rot": -30
           },
           "pelvis": {
-            "rot": 10.0
+            "rot": 10
           },
           "shin_l": {
             "rot": 53.33
@@ -2773,13 +5587,225 @@
             "rot": 26.46
           },
           "torso": {
-            "rot": -32.0
+            "rot": -32
           },
           "upper_arm_l": {
             "rot": 31.24
           },
           "upper_arm_r": {
             "rot": 74.93
+          }
+        }
+      },
+      "mace": {
+        "root": {
+          "x": -36,
+          "y": 22
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -48.85
+          },
+          "foot_r": {
+            "rot": 14.77
+          },
+          "forearm_l": {
+            "rot": -142.96
+          },
+          "forearm_r": {
+            "rot": 67.57
+          },
+          "hand_l": {
+            "rot": 10.63
+          },
+          "hand_r": {
+            "rot": 158.39
+          },
+          "head": {
+            "rot": -42.5
+          },
+          "pelvis": {
+            "rot": 10
+          },
+          "shin_l": {
+            "rot": 53.33
+          },
+          "shin_r": {
+            "rot": -29.23
+          },
+          "thigh_l": {
+            "rot": 17.52
+          },
+          "thigh_r": {
+            "rot": 26.46
+          },
+          "torso": {
+            "rot": -32
+          },
+          "upper_arm_l": {
+            "rot": 31.24
+          },
+          "upper_arm_r": {
+            "rot": 11.68
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": -36,
+          "y": 22
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -12.14
+          },
+          "foot_r": {
+            "rot": 14.6
+          },
+          "forearm_l": {
+            "rot": -29.87
+          },
+          "forearm_r": {
+            "rot": 15.79
+          },
+          "hand_l": {
+            "rot": 101.28
+          },
+          "hand_r": {
+            "rot": 44.53
+          },
+          "head": {
+            "rot": -30
+          },
+          "pelvis": {
+            "rot": 10
+          },
+          "shin_l": {
+            "rot": -27.34
+          },
+          "shin_r": {
+            "rot": -28.86
+          },
+          "thigh_l": {
+            "rot": 61.49
+          },
+          "thigh_r": {
+            "rot": 26.26
+          },
+          "torso": {
+            "rot": -32
+          },
+          "upper_arm_l": {
+            "rot": -28.15
+          },
+          "upper_arm_r": {
+            "rot": 91.93
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": -36,
+          "y": 22
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -12.14
+          },
+          "foot_r": {
+            "rot": 14.6
+          },
+          "forearm_l": {
+            "rot": -29.87
+          },
+          "forearm_r": {
+            "rot": 15.79
+          },
+          "hand_l": {
+            "rot": 101.28
+          },
+          "hand_r": {
+            "rot": 44.53
+          },
+          "head": {
+            "rot": -30
+          },
+          "pelvis": {
+            "rot": 10
+          },
+          "shin_l": {
+            "rot": -27.34
+          },
+          "shin_r": {
+            "rot": -28.86
+          },
+          "thigh_l": {
+            "rot": 61.49
+          },
+          "thigh_r": {
+            "rot": 26.26
+          },
+          "torso": {
+            "rot": -32
+          },
+          "upper_arm_l": {
+            "rot": -28.15
+          },
+          "upper_arm_r": {
+            "rot": 91.93
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": -14,
+          "y": 99
+        },
+        "parts": {
+          "foot_l": {
+            "rot": 25
+          },
+          "foot_r": {
+            "rot": 362
+          },
+          "forearm_l": {
+            "rot": -61.71
+          },
+          "forearm_r": {
+            "rot": 32.1
+          },
+          "hand_l": {
+            "rot": -6.5
+          },
+          "hand_r": {
+            "rot": 102.86
+          },
+          "head": {
+            "rot": 26
+          },
+          "pelvis": {
+            "rot": -24
+          },
+          "shin_l": {
+            "rot": 104.82
+          },
+          "shin_r": {
+            "rot": -257.35
+          },
+          "thigh_l": {
+            "rot": -11.82
+          },
+          "thigh_r": {
+            "rot": 13.35
+          },
+          "torso": {
+            "rot": 24
+          },
+          "upper_arm_l": {
+            "rot": 51.21
+          },
+          "upper_arm_r": {
+            "rot": -6.96
           }
         }
       }
@@ -2798,7 +5824,7 @@
             "rot": 11.74
           },
           "forearm_l": {
-            "rot": 57.0
+            "rot": 57
           },
           "forearm_r": {
             "rot": 103.77
@@ -2816,7 +5842,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 26.99
@@ -2869,7 +5895,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 26.99
@@ -2904,7 +5930,7 @@
             "rot": 11.74
           },
           "forearm_l": {
-            "rot": 57.0
+            "rot": 57
           },
           "forearm_r": {
             "rot": 111.89
@@ -2922,7 +5948,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 26.99
@@ -2941,6 +5967,218 @@
           },
           "upper_arm_r": {
             "rot": -73.41
+          }
+        }
+      },
+      "mace": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 57
+          },
+          "forearm_r": {
+            "rot": 103.77
+          },
+          "hand_l": {
+            "rot": -142.18
+          },
+          "hand_r": {
+            "rot": 133.14
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": 6.62
+          },
+          "upper_arm_r": {
+            "rot": -82.91
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 43.46
+          },
+          "forearm_r": {
+            "rot": -25.87
+          },
+          "hand_l": {
+            "rot": 96.07
+          },
+          "hand_r": {
+            "rot": 185.65
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": -116.52
+          },
+          "upper_arm_r": {
+            "rot": -27.77
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 43.46
+          },
+          "forearm_r": {
+            "rot": -25.87
+          },
+          "hand_l": {
+            "rot": 96.07
+          },
+          "hand_r": {
+            "rot": 185.65
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": -116.52
+          },
+          "upper_arm_r": {
+            "rot": -27.77
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 57
+          },
+          "forearm_r": {
+            "rot": 103.77
+          },
+          "hand_l": {
+            "rot": -142.18
+          },
+          "hand_r": {
+            "rot": 133.14
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": 6.62
+          },
+          "upper_arm_r": {
+            "rot": -82.91
           }
         }
       }
@@ -2965,7 +6203,7 @@
             "rot": 53.39
           },
           "hand_l": {
-            "rot": 91.0
+            "rot": 91
           },
           "hand_r": {
             "rot": 24.2
@@ -3104,6 +6342,218 @@
             "rot": 98.43
           }
         }
+      },
+      "mace": {
+        "root": {
+          "x": -20,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -37.72
+          },
+          "foot_r": {
+            "rot": 22.9
+          },
+          "forearm_l": {
+            "rot": -14.28
+          },
+          "forearm_r": {
+            "rot": 53.39
+          },
+          "hand_l": {
+            "rot": 91
+          },
+          "hand_r": {
+            "rot": 24.2
+          },
+          "head": {
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.36
+          },
+          "shin_r": {
+            "rot": -14.99
+          },
+          "thigh_l": {
+            "rot": -20.64
+          },
+          "thigh_r": {
+            "rot": -3.9
+          },
+          "torso": {
+            "rot": -12
+          },
+          "upper_arm_l": {
+            "rot": -57.73
+          },
+          "upper_arm_r": {
+            "rot": -81.59
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": -20,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -37.72
+          },
+          "foot_r": {
+            "rot": 22.9
+          },
+          "forearm_l": {
+            "rot": 36.8
+          },
+          "forearm_r": {
+            "rot": -273.71
+          },
+          "hand_l": {
+            "rot": -69.42
+          },
+          "hand_r": {
+            "rot": 167.41
+          },
+          "head": {
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.36
+          },
+          "shin_r": {
+            "rot": -14.99
+          },
+          "thigh_l": {
+            "rot": -20.64
+          },
+          "thigh_r": {
+            "rot": -3.9
+          },
+          "torso": {
+            "rot": -12
+          },
+          "upper_arm_l": {
+            "rot": -62.38
+          },
+          "upper_arm_r": {
+            "rot": 120.29
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": -20,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -37.72
+          },
+          "foot_r": {
+            "rot": 22.9
+          },
+          "forearm_l": {
+            "rot": 36.8
+          },
+          "forearm_r": {
+            "rot": -273.71
+          },
+          "hand_l": {
+            "rot": -69.42
+          },
+          "hand_r": {
+            "rot": 167.41
+          },
+          "head": {
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.36
+          },
+          "shin_r": {
+            "rot": -14.99
+          },
+          "thigh_l": {
+            "rot": -20.64
+          },
+          "thigh_r": {
+            "rot": -3.9
+          },
+          "torso": {
+            "rot": -12
+          },
+          "upper_arm_l": {
+            "rot": -62.38
+          },
+          "upper_arm_r": {
+            "rot": 120.29
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": -20,
+          "y": 16
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -37.72
+          },
+          "foot_r": {
+            "rot": 22.9
+          },
+          "forearm_l": {
+            "rot": -14.28
+          },
+          "forearm_r": {
+            "rot": 53.39
+          },
+          "hand_l": {
+            "rot": 91
+          },
+          "hand_r": {
+            "rot": 24.2
+          },
+          "head": {
+            "rot": 2
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.36
+          },
+          "shin_r": {
+            "rot": -14.99
+          },
+          "thigh_l": {
+            "rot": -20.64
+          },
+          "thigh_r": {
+            "rot": -3.9
+          },
+          "torso": {
+            "rot": -12
+          },
+          "upper_arm_l": {
+            "rot": -57.73
+          },
+          "upper_arm_r": {
+            "rot": -81.59
+          }
+        }
       }
     },
     "heavy_attack": {
@@ -3120,7 +6570,7 @@
             "rot": 11.74
           },
           "forearm_l": {
-            "rot": 57.0
+            "rot": 57
           },
           "forearm_r": {
             "rot": 103.77
@@ -3138,7 +6588,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 26.99
@@ -3191,7 +6641,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 26.99
@@ -3226,7 +6676,7 @@
             "rot": 11.74
           },
           "forearm_l": {
-            "rot": 57.0
+            "rot": 57
           },
           "forearm_r": {
             "rot": 111.89
@@ -3244,7 +6694,7 @@
             "rot": -8
           },
           "shin_l": {
-            "rot": 13.0
+            "rot": 13
           },
           "shin_r": {
             "rot": 26.99
@@ -3263,6 +6713,218 @@
           },
           "upper_arm_r": {
             "rot": -73.41
+          }
+        }
+      },
+      "mace": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 57
+          },
+          "forearm_r": {
+            "rot": 103.77
+          },
+          "hand_l": {
+            "rot": -142.18
+          },
+          "hand_r": {
+            "rot": 133.14
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": 6.62
+          },
+          "upper_arm_r": {
+            "rot": -82.91
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 43.46
+          },
+          "forearm_r": {
+            "rot": -25.87
+          },
+          "hand_l": {
+            "rot": 96.07
+          },
+          "hand_r": {
+            "rot": 185.65
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": -116.52
+          },
+          "upper_arm_r": {
+            "rot": -27.77
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 43.46
+          },
+          "forearm_r": {
+            "rot": -25.87
+          },
+          "hand_l": {
+            "rot": 96.07
+          },
+          "hand_r": {
+            "rot": 185.65
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": -116.52
+          },
+          "upper_arm_r": {
+            "rot": -27.77
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": 32,
+          "y": 28
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -30.25
+          },
+          "foot_r": {
+            "rot": 11.74
+          },
+          "forearm_l": {
+            "rot": 57
+          },
+          "forearm_r": {
+            "rot": 103.77
+          },
+          "hand_l": {
+            "rot": -142.18
+          },
+          "hand_r": {
+            "rot": 133.14
+          },
+          "head": {
+            "rot": -6
+          },
+          "pelvis": {
+            "rot": -8
+          },
+          "shin_l": {
+            "rot": 13
+          },
+          "shin_r": {
+            "rot": 26.99
+          },
+          "thigh_l": {
+            "rot": 5.25
+          },
+          "thigh_r": {
+            "rot": -50.73
+          },
+          "torso": {
+            "rot": 20
+          },
+          "upper_arm_l": {
+            "rot": 6.62
+          },
+          "upper_arm_r": {
+            "rot": -82.91
           }
         }
       }
@@ -3284,7 +6946,7 @@
             "rot": -98.43
           },
           "forearm_r": {
-            "rot": 112.0
+            "rot": 112
           },
           "hand_l": {
             "rot": -122.44
@@ -3302,7 +6964,7 @@
             "rot": 62.58
           },
           "shin_r": {
-            "rot": -15.0
+            "rot": -15
           },
           "thigh_l": {
             "rot": -7.07
@@ -3355,7 +7017,7 @@
             "rot": 62.58
           },
           "shin_r": {
-            "rot": -15.0
+            "rot": -15
           },
           "thigh_l": {
             "rot": -7.07
@@ -3390,7 +7052,7 @@
             "rot": -98.43
           },
           "forearm_r": {
-            "rot": 112.0
+            "rot": 112
           },
           "hand_l": {
             "rot": -122.44
@@ -3408,7 +7070,7 @@
             "rot": 62.58
           },
           "shin_r": {
-            "rot": -15.0
+            "rot": -15
           },
           "thigh_l": {
             "rot": -7.07
@@ -3424,6 +7086,218 @@
           },
           "upper_arm_r": {
             "rot": 21.82
+          }
+        }
+      },
+      "mace": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": -98.43
+          },
+          "forearm_r": {
+            "rot": 112
+          },
+          "hand_l": {
+            "rot": -122.44
+          },
+          "hand_r": {
+            "rot": 64.02
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": 119.87
+          },
+          "upper_arm_r": {
+            "rot": -0.34
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": 21.91
+          },
+          "forearm_r": {
+            "rot": 64.61
+          },
+          "hand_l": {
+            "rot": 95.05
+          },
+          "hand_r": {
+            "rot": 49.56
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": -57.97
+          },
+          "upper_arm_r": {
+            "rot": 53.83
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": 21.91
+          },
+          "forearm_r": {
+            "rot": 64.61
+          },
+          "hand_l": {
+            "rot": 95.05
+          },
+          "hand_r": {
+            "rot": 49.56
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": -57.97
+          },
+          "upper_arm_r": {
+            "rot": 53.83
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": -30,
+          "y": 14
+        },
+        "parts": {
+          "foot_l": {
+            "rot": -41.51
+          },
+          "foot_r": {
+            "rot": 16.33
+          },
+          "forearm_l": {
+            "rot": -98.43
+          },
+          "forearm_r": {
+            "rot": 112
+          },
+          "hand_l": {
+            "rot": -122.44
+          },
+          "hand_r": {
+            "rot": 64.02
+          },
+          "head": {
+            "rot": -24
+          },
+          "pelvis": {
+            "rot": 8
+          },
+          "shin_l": {
+            "rot": 62.58
+          },
+          "shin_r": {
+            "rot": -15
+          },
+          "thigh_l": {
+            "rot": -7.07
+          },
+          "thigh_r": {
+            "rot": 12.67
+          },
+          "torso": {
+            "rot": -22
+          },
+          "upper_arm_l": {
+            "rot": 119.87
+          },
+          "upper_arm_r": {
+            "rot": -0.34
           }
         }
       }
@@ -3495,6 +7369,98 @@
           },
           "upper_arm_r": {
             "rot": 74.09
+          }
+        }
+      },
+      "mace": {
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "parts": {
+          "forearm_r": {
+            "rot": 11.03
+          },
+          "hand_r": {
+            "rot": -27.6
+          },
+          "head": {
+            "rot": -4
+          },
+          "upper_arm_l": {
+            "rot": -10
+          },
+          "upper_arm_r": {
+            "rot": 88.56
+          }
+        }
+      },
+      "hammer": {
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "parts": {
+          "forearm_r": {
+            "rot": 64.62
+          },
+          "hand_r": {
+            "rot": -72.81
+          },
+          "head": {
+            "rot": -4
+          },
+          "upper_arm_l": {
+            "rot": -10
+          },
+          "upper_arm_r": {
+            "rot": 60.19
+          }
+        }
+      },
+      "spear": {
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "parts": {
+          "forearm_r": {
+            "rot": 64.62
+          },
+          "hand_r": {
+            "rot": -72.81
+          },
+          "head": {
+            "rot": -4
+          },
+          "upper_arm_l": {
+            "rot": -10
+          },
+          "upper_arm_r": {
+            "rot": 60.19
+          }
+        }
+      },
+      "shield": {
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "parts": {
+          "forearm_r": {
+            "rot": 11.03
+          },
+          "hand_r": {
+            "rot": -91.03
+          },
+          "head": {
+            "rot": -4
+          },
+          "upper_arm_l": {
+            "rot": -10
+          },
+          "upper_arm_r": {
+            "rot": 88.56
           }
         }
       }
@@ -4310,42 +8276,42 @@
     "filter": "render the full 640 assembly at >= 2x parts, then crop and Lanczos-downsample",
     "note": "crop is anchored to the world position of torso.neck in the portrait pose, so any future head/torso part or paint keeps the framing",
     "crop_rect_canvas_px": [
-      190.0,
+      190,
       41.4,
       272,
       272
     ],
     "samples": {
       "oxide-sword": {
+        "96": "portraits/oxide-sword-96.png",
+        "192": "portraits/oxide-sword-192.png",
+        "288": "portraits/oxide-sword-288.png",
         "loadout": {
           "paint": "oxide",
           "paint_hex": "#e8771c",
           "weapon": "sword"
-        },
-        "96": "portraits/oxide-sword-96.png",
-        "192": "portraits/oxide-sword-192.png",
-        "288": "portraits/oxide-sword-288.png"
+        }
       },
       "petrol-axe": {
+        "96": "portraits/petrol-axe-96.png",
+        "192": "portraits/petrol-axe-192.png",
+        "288": "portraits/petrol-axe-288.png",
         "loadout": {
           "paint": "petrol",
           "paint_hex": "#27877b",
           "weapon": "axe"
-        },
-        "96": "portraits/petrol-axe-96.png",
-        "192": "portraits/petrol-axe-192.png",
-        "288": "portraits/petrol-axe-288.png"
+        }
       },
       "scrapgreen-dagger": {
+        "96": "portraits/scrapgreen-dagger-96.png",
+        "192": "portraits/scrapgreen-dagger-192.png",
+        "288": "portraits/scrapgreen-dagger-288.png",
         "loadout": {
           "paint": null,
           "paint_hex": "#6E8B3D",
           "paint_label": "Scrap Green: TEST paint, not in the catalog; proves the render is driven by the loadout, not by the two sample paints",
           "weapon": "dagger"
-        },
-        "96": "portraits/scrapgreen-dagger-96.png",
-        "192": "portraits/scrapgreen-dagger-192.png",
-        "288": "portraits/scrapgreen-dagger-288.png"
+        }
       }
     }
   },
@@ -4426,7 +8392,7 @@
     "min_joint_overlap_px": 195,
     "max_offhand_error_px": 0.019,
     "max_offhand_angle_err_deg": 0.01,
-    "min_finger_cover_of_handle": 1.0,
+    "min_finger_cover_of_handle": 1,
     "clips": {
       "sword.walk": {
         "frames": 24,
@@ -4526,7 +8492,7 @@
         "frames": 46,
         "weapon_px_on_face_max": 0,
         "smear_px_on_face_max": 0,
-        "max_world_angle_step_deg": 43.0,
+        "max_world_angle_step_deg": 43,
         "at_frame": 5,
         "max_tip_speed_px_per_frame": 87.3,
         "tip_speed_top3": [
@@ -4539,11 +8505,11 @@
             1
           ],
           [
-            65.0,
+            65,
             2
           ]
         ],
-        "max_abs_wrist_rot_deg": 159.0,
+        "max_abs_wrist_rot_deg": 159,
         "root_dx_range": [
           -36.2,
           0
@@ -4571,7 +8537,7 @@
             4
           ]
         ],
-        "max_abs_wrist_rot_deg": 109.0,
+        "max_abs_wrist_rot_deg": 109,
         "off_hand_max_err_px": 0.003,
         "off_hand_max_ang_err_deg": 0.003,
         "planted_foot_dx_mean": -2.65,
@@ -4583,10 +8549,10 @@
         "smear_px_on_face_max": 0,
         "max_world_angle_step_deg": 171.9,
         "at_frame": 26,
-        "max_tip_speed_px_per_frame": 576.0,
+        "max_tip_speed_px_per_frame": 576,
         "tip_speed_top3": [
           [
-            576.0,
+            576,
             26
           ],
           [
@@ -4619,7 +8585,7 @@
             5
           ],
           [
-            39.0,
+            39,
             15
           ]
         ],
@@ -4802,7 +8768,7 @@
           -40.2,
           0
         ],
-        "weapon_hand_dx_max": 8.0
+        "weapon_hand_dx_max": 8
       }
     },
     "av_exceptions": {
@@ -4819,7 +8785,7 @@
           "checks": [
             "av"
           ],
-          "reason": "pendulum\u2192low arm-basin flip. Joint-space in-betweens sweep the visor; a visor-clear path needs more frames than the 56-frame attack cap."
+          "reason": "pendulum→low arm-basin flip. Joint-space in-betweens sweep the visor; a visor-clear path needs more frames than the 56-frame attack cap."
         },
         {
           "weapon": "axe",
@@ -4834,7 +8800,7 @@
             "av",
             "off_hand"
           ],
-          "reason": "back\u2192rise. A joint-lerp mid puts 35 px of the haft on the visor; in-place off-hand relock jumps the next frame by ~80\u00b0. Hidden under the backswing smear when one is generated."
+          "reason": "back→rise. A joint-lerp mid puts 35 px of the haft on the visor; in-place off-hand relock jumps the next frame by ~80°. Hidden under the backswing smear when one is generated."
         },
         {
           "weapon": "axe",
@@ -4847,7 +8813,7 @@
           "checks": [
             "av"
           ],
-          "reason": "coil\u2192whip basin flip, hidden under the whip strike smear (one-frame flip / smear trick)."
+          "reason": "coil→whip basin flip, hidden under the whip strike smear (one-frame flip / smear trick)."
         },
         {
           "weapon": "axe",
@@ -4860,7 +8826,7 @@
           "checks": [
             "av"
           ],
-          "reason": "overshoot\u2192idle basin return. The visor-clear repair added far more than 6 frames; dropped to keep v003.2 recovery timing."
+          "reason": "overshoot→idle basin return. The visor-clear repair added far more than 6 frames; dropped to keep v003.2 recovery timing."
         },
         {
           "weapon": "axe",
@@ -4873,7 +8839,7 @@
           "checks": [
             "av"
           ],
-          "reason": "second frame of the same overshoot\u2192idle basin return (see frame 54)."
+          "reason": "second frame of the same overshoot→idle basin return (see frame 54)."
         },
         {
           "weapon": "axe",
@@ -4888,7 +8854,7 @@
             "av",
             "off_hand"
           ],
-          "reason": "idle\u2192hit_react forearm snap (the v003.2 f13 spike, now at the start of the clip). A clean path needs 5 in-betweens; this clip may only grow by 2 frames."
+          "reason": "idle→hit_react forearm snap (the v003.2 f13 spike, now at the start of the clip). A clean path needs 5 in-betweens; this clip may only grow by 2 frames."
         },
         {
           "weapon": "axe",
@@ -4903,7 +8869,7 @@
             "av",
             "off_hand"
           ],
-          "reason": "same idle\u2192hit_react snap, second frame."
+          "reason": "same idle→hit_react snap, second frame."
         }
       ],
       "used": [
@@ -4913,7 +8879,7 @@
           "frame": 12,
           "label": "inbetween",
           "step_deg": 176.82,
-          "reason": "pendulum\u2192low arm-basin flip. Joint-space in-betweens sweep the visor; a visor-clear path needs more frames than the 56-frame attack cap.",
+          "reason": "pendulum→low arm-basin flip. Joint-space in-betweens sweep the visor; a visor-clear path needs more frames than the 56-frame attack cap.",
           "via": "named"
         },
         {
@@ -4922,7 +8888,7 @@
           "frame": 18,
           "label": "inbetween",
           "off_err_px": 5.475,
-          "reason": "back\u2192rise. A joint-lerp mid puts 35 px of the haft on the visor; in-place off-hand relock jumps the next frame by ~80\u00b0. Hidden under the backswing smear when one is generated.",
+          "reason": "back→rise. A joint-lerp mid puts 35 px of the haft on the visor; in-place off-hand relock jumps the next frame by ~80°. Hidden under the backswing smear when one is generated.",
           "via": "named-off_hand"
         },
         {
@@ -4931,7 +8897,7 @@
           "frame": 18,
           "label": "inbetween",
           "step_deg": 68.09,
-          "reason": "back\u2192rise. A joint-lerp mid puts 35 px of the haft on the visor; in-place off-hand relock jumps the next frame by ~80\u00b0. Hidden under the backswing smear when one is generated.",
+          "reason": "back→rise. A joint-lerp mid puts 35 px of the haft on the visor; in-place off-hand relock jumps the next frame by ~80°. Hidden under the backswing smear when one is generated.",
           "via": "named"
         },
         {
@@ -4940,7 +8906,7 @@
           "frame": 26,
           "label": "breakdown:whip",
           "step_deg": 162.67,
-          "reason": "coil\u2192whip basin flip, hidden under the whip strike smear (one-frame flip / smear trick).",
+          "reason": "coil→whip basin flip, hidden under the whip strike smear (one-frame flip / smear trick).",
           "via": "named"
         },
         {
@@ -4949,7 +8915,7 @@
           "frame": 54,
           "label": "inbetween",
           "step_deg": 146.25,
-          "reason": "overshoot\u2192idle basin return. The visor-clear repair added far more than 6 frames; dropped to keep v003.2 recovery timing.",
+          "reason": "overshoot→idle basin return. The visor-clear repair added far more than 6 frames; dropped to keep v003.2 recovery timing.",
           "via": "named"
         },
         {
@@ -4958,7 +8924,7 @@
           "frame": 55,
           "label": "key:idle",
           "step_deg": 111.04,
-          "reason": "second frame of the same overshoot\u2192idle basin return (see frame 54).",
+          "reason": "second frame of the same overshoot→idle basin return (see frame 54).",
           "via": "named"
         },
         {
@@ -4967,7 +8933,7 @@
           "frame": 1,
           "label": "inbetween",
           "off_err_px": 13.66,
-          "reason": "idle\u2192hit_react forearm snap (the v003.2 f13 spike, now at the start of the clip). A clean path needs 5 in-betweens; this clip may only grow by 2 frames.",
+          "reason": "idle→hit_react forearm snap (the v003.2 f13 spike, now at the start of the clip). A clean path needs 5 in-betweens; this clip may only grow by 2 frames.",
           "via": "named-off_hand"
         },
         {
@@ -4976,7 +8942,7 @@
           "frame": 1,
           "label": "inbetween",
           "step_deg": 83.28,
-          "reason": "idle\u2192hit_react forearm snap (the v003.2 f13 spike, now at the start of the clip). A clean path needs 5 in-betweens; this clip may only grow by 2 frames.",
+          "reason": "idle→hit_react forearm snap (the v003.2 f13 spike, now at the start of the clip). A clean path needs 5 in-betweens; this clip may only grow by 2 frames.",
           "via": "named"
         },
         {
@@ -4985,7 +8951,7 @@
           "frame": 2,
           "label": "inbetween",
           "off_err_px": 4.76,
-          "reason": "same idle\u2192hit_react snap, second frame.",
+          "reason": "same idle→hit_react snap, second frame.",
           "via": "named-off_hand"
         },
         {
@@ -4994,7 +8960,7 @@
           "frame": 2,
           "label": "inbetween",
           "step_deg": 49.97,
-          "reason": "same idle\u2192hit_react snap, second frame.",
+          "reason": "same idle→hit_react snap, second frame.",
           "via": "named"
         }
       ]

@@ -47,6 +47,15 @@ export type SaveLoadoutResult =
       readonly message: string;
     };
 
+export type RenameCharacterInput = {
+  readonly displayName: string;
+  readonly accessToken: string;
+};
+
+export type RenameCharacterResult =
+  | { readonly ok: true; readonly characterId: string; readonly displayName: string }
+  | { readonly ok: false; readonly code: string; readonly message: string };
+
 export type FetchCurrentLoadoutResult =
   | { readonly ok: true; readonly snapshot: ConfirmedLoadoutSnapshot }
   | { readonly ok: false; readonly code: string; readonly message: string };

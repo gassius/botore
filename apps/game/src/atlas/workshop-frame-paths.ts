@@ -63,11 +63,67 @@ export const WORKSHOP_FRAME_WEAPON_ASSET_IDS = [
   'weapon_sword',
   'weapon_axe',
   'weapon_dagger',
+  'weapon_mace',
+  'weapon_hammer',
+  'weapon_spear',
+  'weapon_shield',
 ] as const;
 
 export type WorkshopFrameWeaponAssetId = (typeof WORKSHOP_FRAME_WEAPON_ASSET_IDS)[number];
 
-export type WorkshopFramePaintToken = 'oxide' | 'petrol';
+export type WorkshopFramePaintToken =
+  | 'oxide'
+  | 'petrol'
+  | 'primer'
+  | 'ink'
+  | 'drab'
+  | 'cobalt'
+  | 'frost'
+  | 'cinder'
+  | 'hazard'
+  | 'racing';
+
+const PAINT_TOKEN_SET = new Set<string>([
+  'oxide',
+  'petrol',
+  'primer',
+  'ink',
+  'drab',
+  'cobalt',
+  'frost',
+  'cinder',
+  'hazard',
+  'racing',
+]);
+
+/** Catalogue id → A6 paint token (cobalt visual uses paint-navy). */
+const CATALOGUE_TO_TOKEN: Readonly<Record<string, WorkshopFramePaintToken>> = {
+  'paint-crimson': 'oxide',
+  'paint-cobalt': 'petrol',
+  'paint-oxide': 'oxide',
+  'paint-petrol': 'petrol',
+  'paint-primer': 'primer',
+  'paint-ink': 'ink',
+  'paint-drab': 'drab',
+  'paint-navy': 'cobalt',
+  'paint-frost': 'frost',
+  'paint-cinder': 'cinder',
+  'paint-hazard': 'hazard',
+  'paint-racing': 'racing',
+};
+
+const TOKEN_TO_CATALOGUE: Readonly<Record<WorkshopFramePaintToken, string>> = {
+  oxide: 'paint-crimson',
+  petrol: 'paint-cobalt',
+  primer: 'paint-primer',
+  ink: 'paint-ink',
+  drab: 'paint-drab',
+  cobalt: 'paint-navy',
+  frost: 'paint-frost',
+  cinder: 'paint-cinder',
+  hazard: 'paint-hazard',
+  racing: 'paint-racing',
+};
 
 /**
  * Canonical atlas / catalogue partId (hyphenated).
@@ -78,27 +134,33 @@ export function canonicalAtlasPartId(kitOrCatalogueId: string): string {
 }
 
 /**
- * Shared UI/rig contract aliases (client-only — no catalogue expansion).
- * Oxide ↔ paint-crimson, Petrol ↔ paint-cobalt (matches F7 paints.ts).
+ * Shared UI/rig contract aliases (client-only).
+ * Legacy: Oxide ↔ paint-crimson, Petrol ↔ paint-cobalt.
+ * A6 v4: primer…racing; cobalt visual ↔ paint-navy.
  */
 export function resolvePaintToken(paintId: string | null | undefined): WorkshopFramePaintToken {
   const id = (paintId ?? '').trim().toLowerCase();
-  if (id === 'petrol' || id === 'paint-cobalt' || id === 'paint-petrol') return 'petrol';
-  // oxide, paint-crimson, paint-oxide, empty → oxide sample
+  if (!id) return 'oxide';
+  if (CATALOGUE_TO_TOKEN[id]) return CATALOGUE_TO_TOKEN[id]!;
+  if (PAINT_TOKEN_SET.has(id)) return id as WorkshopFramePaintToken;
   return 'oxide';
 }
 
 export function resolvePaintCatalogueId(paintId: string | null | undefined): string {
-  return resolvePaintToken(paintId) === 'petrol' ? 'paint-cobalt' : 'paint-crimson';
+  return TOKEN_TO_CATALOGUE[resolvePaintToken(paintId)];
 }
 
 /** Map F7/catalogue weapon id → kit asset id (underscore form in kit files). */
 export function resolveWorkshopWeaponAssetId(
   weaponId: string | null | undefined,
 ): WorkshopFrameWeaponAssetId {
-  const id = (weaponId ?? '').trim().toLowerCase();
-  if (id === 'axe' || id === 'weapon-axe' || id === 'weapon_axe') return 'weapon_axe';
-  if (id === 'dagger' || id === 'weapon-dagger' || id === 'weapon_dagger') return 'weapon_dagger';
+  const id = (weaponId ?? '').trim().toLowerCase().replace(/-/g, '_');
+  if (id === 'axe' || id === 'weapon_axe') return 'weapon_axe';
+  if (id === 'dagger' || id === 'weapon_dagger') return 'weapon_dagger';
+  if (id === 'mace' || id === 'weapon_mace') return 'weapon_mace';
+  if (id === 'hammer' || id === 'weapon_hammer') return 'weapon_hammer';
+  if (id === 'spear' || id === 'weapon_spear') return 'weapon_spear';
+  if (id === 'shield' || id === 'weapon_shield') return 'weapon_shield';
   return 'weapon_sword';
 }
 
@@ -117,7 +179,10 @@ export function atlasPathForWorkshopKitFile(kitRelativePath: string): string {
     throw new Error('workshop_frame_v001_forbidden: visible build pins kit-v003 only');
   }
 
-  const partsMatch = /^parts\/([^/]+)-(oxide|petrol)\.png$/i.exec(cleaned);
+  const partsMatch =
+    /^parts\/([^/]+)-(oxide|petrol|primer|ink|drab|cobalt|frost|cinder|hazard|racing)\.png$/i.exec(
+      cleaned,
+    );
   if (partsMatch) {
     const partId = canonicalAtlasPartId(partsMatch[1]!);
     const paint = partsMatch[2]!.toLowerCase();

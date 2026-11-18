@@ -144,11 +144,13 @@ begin
 
   select count(*) into v_count from public.parts_catalogue
    where slot_kind = 'paint' and is_active;
-  perform tests.assert(v_count = 2, 'expected 2 active paints');
+  -- A6/E7: 8 solids + hazard/racing (+ legacy crimson/cobalt aliases) = 10
+  perform tests.assert(v_count = 10, 'expected 10 active paints');
 
   select count(*) into v_count from public.parts_catalogue
    where slot_kind = 'weapon' and is_active;
-  perform tests.assert(v_count = 3, 'expected 3 active weapons (sword/axe/dagger)');
+  -- A4 weapons v1 unlock: sword/axe/dagger + mace/hammer/spear/shield = 7
+  perform tests.assert(v_count = 7, 'expected 7 active weapons');
 
   select count(*) into v_count from public.current_bot_loadouts;
   -- E2 NPC seed (seed.sql) adds more confirmed loadouts; still require the four
@@ -164,7 +166,8 @@ begin
 
   select count(*) into v_count from public.inventory_balances
    where account_id = v_account;
-  perform tests.assert(v_count = 6, 'expected player to own 6 proof parts');
+  -- chassis + 10 paints + 7 weapons
+  perform tests.assert(v_count = 18, 'expected player to own 18 catalogue parts');
   raise notice 'TEST-OK bots-as-data seed fixtures';
 
   -- RLS: clients cannot write catalogue / inventory / loadouts --------------
@@ -3682,4 +3685,93 @@ begin
   reset role;
 
   raise notice 'TEST-OK E3 fight quota summary';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- D7 / E7: rename_owned_character (0034)
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_res jsonb;
+  v_name text;
+begin
+  perform tests.assert(
+    has_function_privilege(
+      'authenticated',
+      'public.rename_owned_character(text)',
+      'EXECUTE'
+    ),
+    'authenticated EXECUTE rename_owned_character'
+  );
+  perform tests.assert(
+    not has_function_privilege(
+      'anon',
+      'public.rename_owned_character(text)',
+      'EXECUTE'
+    ),
+    'anon must not EXECUTE rename_owned_character'
+  );
+  perform tests.assert(
+    not has_function_privilege(
+      'service_role',
+      'public.rename_owned_character(text)',
+      'EXECUTE'
+    ),
+    'service_role must not EXECUTE rename_owned_character'
+  );
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  v_res := public.rename_owned_character('Rivet');
+  perform tests.assert((v_res->>'ok')::boolean, 'rename_owned_character ok');
+  perform tests.assert(v_res->>'displayName' = 'Rivet', 'rename returns Rivet');
+
+  v_res := public.get_owned_character();
+  perform tests.assert(v_res->>'displayName' = 'Rivet', 'get_owned_character sees rename');
+  reset role;
+
+  -- Table assert as owner (no authenticated SELECT grant on characters).
+  select c.display_name into v_name
+    from public.characters c
+   where c.account_id = v_account
+     and c.is_opponent = false
+   limit 1;
+  perform tests.assert(v_name = 'Rivet', 'characters.display_name persisted');
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  v_res := public.rename_owned_character('');
+  perform tests.assert(v_res->>'ok' = 'false', 'empty name rejected');
+  perform tests.assert(v_res->>'code' = 'invalid_display_name', 'empty name code');
+
+  v_res := public.rename_owned_character('this-name-is-way-too-long');
+  perform tests.assert(v_res->>'ok' = 'false', 'overlong name rejected');
+
+  v_res := public.rename_owned_character('player-hero');
+  perform tests.assert(v_res->>'ok' = 'false', 'internal id rejected');
+
+  -- Restore seed display name so later API integration asserts still see "Hero".
+  v_res := public.rename_owned_character('Hero');
+  perform tests.assert((v_res->>'ok')::boolean, 'restore seed display name');
+  perform tests.assert(v_res->>'displayName' = 'Hero', 'seed Hero restored');
+
+  reset role;
+
+  set local role anon;
+  begin
+    perform public.rename_owned_character('Anon');
+    raise exception 'ANON FAIL: rename_owned_character allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+
+  raise notice 'TEST-OK D7 rename_owned_character';
 end $$;

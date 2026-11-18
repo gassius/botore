@@ -16,14 +16,16 @@ import {
 } from '../../fight/a2FightTimeline';
 import { useFirstRun } from '../../first-run/FirstRunContext';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
+import { paintDisplayLabel, weaponDisplayLabel } from '../../garage/loadout/proofCatalogue';
 import {
-  GlyphButton,
+  Nameplate,
   PrimaryButton,
   ScreenChrome,
+  ScreenHeader,
   StatusErrorBanner,
   garageTag,
-  uiKitAssets,
 } from '../../garage-tag';
+import { resolveOpponentPresentation } from '../../garage-tag/a6OpponentPresentation';
 import { playerFacingDisplayName } from '../../identity/platformPlayerId';
 import { isServerPlaybackReady } from '../../replay/serverPlayback';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
@@ -31,10 +33,10 @@ import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import { computeConfirmFightControls, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
+import { resolveA6OpponentPanel } from '../opponents/a6OpponentPanelAssets';
 import { FightsRemainingPanel } from '../quota/FightsRemainingPanel';
 import type { FightQuotaSummary } from '../quota/fightQuotaTypes';
-import { A6_FACEOFF, resolveA6FaceOffLayer } from '../tale/a6FaceOffAssets';
-import { buildTaleOfTheTapeRows } from '../tale/tapeRows';
+import { buildTapeRows, designCaptureTapeStats, formatTapeRecord } from '../taleOfTheTape';
 
 function capturePoseMode(): DesignCapturePoseCompare | null {
   if (!isDesignCaptureEnabled()) return null;
@@ -48,9 +50,13 @@ function capturePosePair(): { near: MotionPose; far: MotionPose } | null {
 }
 
 function kitWeaponFromId(weaponId: string): KitWeaponKind {
-  const id = weaponId.toLowerCase();
+  const id = weaponId.toLowerCase().replace(/-/g, '_');
   if (id.includes('axe')) return 'axe';
   if (id.includes('dagger')) return 'dagger';
+  if (id.includes('mace')) return 'mace';
+  if (id.includes('hammer')) return 'hammer';
+  if (id.includes('spear')) return 'spear';
+  if (id.includes('shield')) return 'shield';
   return 'sword';
 }
 
@@ -89,6 +95,7 @@ export function ConfirmFightScreen(props: {
     navigationGeneration,
     pendingIntent,
   } = useFightSession();
+  // Inherit F8 hydration — never invent a confirmed loadout here.
   const confirmed = loadout.confirmedLoadout;
   const playerName = playerFacingDisplayName(loadout.displayName);
   const [eligMessage, setEligMessage] = useState<string | null>(null);
@@ -122,37 +129,66 @@ export function ConfirmFightScreen(props: {
   const farPose: MotionPose = posePair?.far ?? 'idle';
   const nearWeaponId = captureWeaponId ?? confirmed?.weapon ?? 'sword';
 
-  const bakedFaceOff =
-    confirmed && selected
-      ? resolveA6FaceOffLayer(
-          { paintId: confirmed.paint, weaponId: nearWeaponId },
-          { paintId: selected.loadout.paint, weaponId: selected.loadout.weapon },
-        )
-      : null;
+  const opponentPresentation = useMemo(() => {
+    if (!selected) return null;
+    return resolveOpponentPresentation({
+      characterId: selected.characterId,
+      displayName: selected.displayName,
+      paintId: selected.loadout.paint,
+      weaponId: selected.loadout.weapon,
+    });
+  }, [selected]);
 
-  // D9 tape: only real data. Weapon/Paint from loadouts; Record/W-L only when
-  // ranking enriched the candidate. Never invent A6-art MOCK HP/Strength rows.
+  const opponentPanelArt = useMemo(() => {
+    if (!selected || !opponentPresentation) return null;
+    return resolveA6OpponentPanel({
+      characterId: selected.characterId,
+      displayName: selected.displayName,
+      paintId: opponentPresentation.paintId,
+      weaponId: opponentPresentation.weaponId,
+    });
+  }, [selected, opponentPresentation]);
+
   const tapeRows = useMemo(() => {
-    if (!confirmed || !selected) return [];
-    return buildTaleOfTheTapeRows(
-      {
-        weaponId: nearWeaponId,
-        paintId: confirmed.paint,
-        // Player W–L / streak / level not on Confirm path yet — omit until real.
-      },
-      {
-        weaponId: selected.loadout.weapon,
-        paintId: selected.loadout.paint,
-        ...(typeof selected.wins === 'number' ? { recordWins: selected.wins } : {}),
-        ...(typeof selected.losses === 'number' ? { recordLosses: selected.losses } : {}),
-      },
-    );
-  }, [confirmed, selected, nearWeaponId]);
+    if (!confirmed || !selected || !opponentPresentation) return [];
+    // YOU: design-capture stills share Result overlay fixture W–L / streak / level.
+    // THEM Record must match the Opponents card — same candidate wins/losses
+    // (never the defeat Result fixture 11W–7L). Streak/level stay capture-only
+    // until ranking join lands. Never MOCK HP.
+    const captureYou = isDesignCaptureEnabled() ? designCaptureTapeStats('victory') : null;
+    const captureThem = isDesignCaptureEnabled() ? designCaptureTapeStats('defeat') : null;
+    const hasRosterRecord =
+      typeof selected.wins === 'number' &&
+      Number.isFinite(selected.wins) &&
+      typeof selected.losses === 'number' &&
+      Number.isFinite(selected.losses);
+    const opponentRecord = hasRosterRecord
+      ? formatTapeRecord(selected.wins!, selected.losses!)
+      : null;
+    return buildTapeRows({
+      playerPaint: confirmed.paint,
+      playerWeapon: confirmed.weapon,
+      opponentPaint: opponentPresentation.paintId,
+      opponentWeapon: opponentPresentation.weaponId,
+      playerRecord: captureYou?.record ?? null,
+      opponentRecord,
+      playerWinStreak: captureYou?.winStreak ?? null,
+      opponentWinStreak: captureThem?.winStreak ?? null,
+      playerLevel: captureYou?.level ?? null,
+      opponentLevel: captureThem?.level ?? null,
+      weaponLabel: weaponDisplayLabel,
+      paintLabel: paintDisplayLabel,
+      opponentWeaponLabel: opponentPresentation.weaponLabel,
+      opponentPaintLabel: opponentPresentation.paintLabel,
+    });
+  }, [confirmed, selected, opponentPresentation]);
 
   useEffect(() => {
     let cancelled = false;
     async function refreshEligibility() {
       if (!session || !selected) return;
+      // Skip new-fight eligibility gate when recovering a retained same-opponent key —
+      // Edge lookup-before-eligibility is authoritative for that path.
       const recovering =
         pendingIntent !== null && pendingIntent.opponentId === selected.characterId;
       if (recovering) {
@@ -198,6 +234,7 @@ export function ConfirmFightScreen(props: {
           />
         }
       >
+        <ScreenHeader title="Confirm Fight" onBack={props.onBack} />
         <StatusErrorBanner
           title="No opponent selected"
           detail="Pick an opponent before confirming a fight."
@@ -235,6 +272,7 @@ export function ConfirmFightScreen(props: {
   const otherError =
     submit.status === 'error' && failureKind === null && !allowanceError ? submit : null;
   const { startDisabled, showRetry, retryDisabled, recoverable } = controls;
+  const opponentName = playerFacingDisplayName(selected.displayName);
 
   const runStart = () => {
     clearSubmitError();
@@ -253,6 +291,7 @@ export function ConfirmFightScreen(props: {
         props.onFightStarted();
         return;
       }
+      // Fight returned but cannot drive first-run Replay (DEV scaffold / unsealed).
       if (fight && fight.opponentId === expectedOpponentId && !isServerPlaybackReady(fight)) {
         setPlaybackBlocked(
           fightKind === 'dev' || fightKind === 'unavailable'
@@ -264,17 +303,11 @@ export function ConfirmFightScreen(props: {
   };
 
   const onBack = () => {
-    if (submitting) return;
+    if (submitting) return; // prevent Back → pick B while A is in flight
     uiAudio.playCue('uiBack');
     bumpNavigationGeneration();
     props.onBack();
   };
-
-  const opponentName = playerFacingDisplayName(selected.displayName);
-  const opponentBotore =
-    typeof selected.botoreName === 'string' && selected.botoreName.trim().length > 0
-      ? playerFacingDisplayName(selected.botoreName)
-      : null;
 
   return (
     <ScreenChrome
@@ -330,43 +363,21 @@ export function ConfirmFightScreen(props: {
         </>
       }
     >
-      {/* D9 face-off band — A6 geometry; baked layer when combo matches, else live rig. */}
-      <View style={styles.faceOff} testID="confirm-fighters">
-        <View style={[styles.spot, styles.spotLeft]} />
-        <View style={[styles.spot, styles.spotRight]} />
-        <GlyphButton
-          source={uiKitAssets.glyphBack}
-          accessibilityLabel="Back"
-          onPress={onBack}
-          style={styles.backBtn}
-          testID="confirm-back"
-        />
-        <View style={styles.totPlate} testID="confirm-tot-plate">
-          <Text style={styles.totTitle} allowFontScaling>
-            Tale of the Tape
-          </Text>
-        </View>
+      <ScreenHeader title="Tale of the Tape" onBack={onBack} />
 
-        {!canProgress || !confirmed ? (
-          <StatusErrorBanner
-            title="Equipped loadout unavailable"
-            detail={
-              loadout.lastError ??
-              'Server-confirmed loadout is required before starting a fight (F8 hydration).'
-            }
-            testID="confirm-hydration-blocked"
-          />
-        ) : bakedFaceOff && !posePair && !clipStill ? (
-          <Image
-            source={bakedFaceOff}
-            style={styles.bakedLayer}
-            resizeMode="contain"
-            accessibilityIgnoresInvertColors
-            testID="confirm-a6-faceoff"
-          />
-        ) : (
-          <>
-            <View style={styles.nearBot} testID="confirm-fighter-you">
+      {!confirmed || !canProgress ? (
+        <StatusErrorBanner
+          title="Equipped loadout unavailable"
+          detail={
+            loadout.lastError ??
+            'Server-confirmed loadout is required before starting a fight (F8 hydration).'
+          }
+          testID="confirm-hydration-blocked"
+        />
+      ) : (
+        <View style={styles.tott} testID="confirm-tott">
+          <View style={styles.faceOff} testID="confirm-fighters">
+            <View style={styles.near} testID="confirm-fighter-you">
               <BotAssemblerSlot
                 loadout={{
                   chassisId: confirmed.chassis,
@@ -376,92 +387,77 @@ export function ConfirmFightScreen(props: {
                 facing="right"
                 paintId={confirmed.paint}
                 weaponId={nearWeaponId}
-                size={A6_FACEOFF.bodyHeight}
+                size={150}
                 reducedMotion
                 motionPose={nearPose}
                 {...(clipStill?.poseOverride ? { poseOverride: clipStill.poseOverride } : {})}
                 {...(clipStill?.smearOverlay ? { smearOverlay: clipStill.smearOverlay } : {})}
+                label="You"
                 testID="confirm-you"
               />
+              <Nameplate name={playerName} badge="You" />
             </View>
-            <View style={styles.farBot} testID="confirm-fighter-opponent">
-              <BotAssemblerSlot
-                loadout={{
-                  chassisId: selected.loadout.chassis,
-                  paintId: selected.loadout.paint,
-                  weaponId: selected.loadout.weapon,
-                }}
-                facing="left"
-                paintId={selected.loadout.paint}
-                weaponId={selected.loadout.weapon}
-                size={A6_FACEOFF.bodyHeight}
-                reducedMotion
-                motionPose={farPose}
-                testID="confirm-opponent"
-              />
+            <Text style={styles.vs} allowFontScaling>
+              VS
+            </Text>
+            <View style={styles.far} testID="confirm-fighter-opponent">
+              {opponentPanelArt ? (
+                <Image
+                  source={opponentPanelArt}
+                  style={styles.opponentPanelArt}
+                  resizeMode="contain"
+                  accessibilityIgnoresInvertColors
+                  testID="confirm-opponent-a6-panel"
+                />
+              ) : (
+                <BotAssemblerSlot
+                  loadout={{
+                    chassisId: selected.loadout.chassis,
+                    paintId: opponentPresentation?.paintId ?? selected.loadout.paint,
+                    weaponId: opponentPresentation?.weaponId ?? selected.loadout.weapon,
+                  }}
+                  facing="left"
+                  paintId={opponentPresentation?.paintId ?? selected.loadout.paint}
+                  weaponId={opponentPresentation?.weaponId ?? selected.loadout.weapon}
+                  size={150}
+                  reducedMotion
+                  motionPose={farPose}
+                  label={opponentName}
+                  testID="confirm-opponent"
+                />
+              )}
+              <Nameplate name={opponentName} />
             </View>
-          </>
-        )}
-
-        <Text style={styles.vs} allowFontScaling testID="confirm-vs">
-          VS
-        </Text>
-
-        <View style={styles.nameRow}>
-          <View style={[styles.namePlate, styles.namePlateYou]} testID="confirm-name-you">
-            <Text style={styles.nameBot} numberOfLines={1} allowFontScaling>
-              {playerName}
-            </Text>
-            <Text style={styles.nameBotore} numberOfLines={1} allowFontScaling>
-              you
-            </Text>
           </View>
-          <View style={[styles.namePlate, styles.namePlateOpp]} testID="confirm-name-opp">
-            <Text style={styles.nameBot} numberOfLines={1} allowFontScaling>
-              {opponentName}
-            </Text>
-            {opponentBotore ? (
-              <Text style={styles.nameBotore} numberOfLines={1} allowFontScaling>
-                {opponentBotore}
+
+          <View style={styles.tape} testID="confirm-tape">
+            <View style={styles.tapeHeader}>
+              <Text style={styles.tapeHeadYou} allowFontScaling numberOfLines={1}>
+                You
               </Text>
-            ) : null}
+              <Text style={styles.tapeHeadLabel} allowFontScaling>
+                {' '}
+              </Text>
+              <Text style={styles.tapeHeadThem} allowFontScaling numberOfLines={1}>
+                Them
+              </Text>
+            </View>
+            {tapeRows.map((row) => (
+              <View key={row.label} style={styles.tapeRow} testID={`confirm-tape-${row.label}`}>
+                <Text style={styles.tapeYou} allowFontScaling numberOfLines={1}>
+                  {row.you}
+                </Text>
+                <Text style={styles.tapeLabel} allowFontScaling numberOfLines={1}>
+                  {row.label}
+                </Text>
+                <Text style={styles.tapeThem} allowFontScaling numberOfLines={1}>
+                  {row.them}
+                </Text>
+              </View>
+            ))}
           </View>
         </View>
-      </View>
-
-      {tapeRows.length > 0 ? (
-        <View style={styles.tape} testID="confirm-tape">
-          {tapeRows.map((row) => (
-            <View style={styles.tapeRow} key={row.key} testID={`confirm-tape-${row.key}`}>
-              <Text
-                style={[
-                  styles.tapeVal,
-                  styles.tapeLeft,
-                  row.better === 'left' ? styles.tapeWin : null,
-                ]}
-                allowFontScaling
-              >
-                {row.left}
-                {row.better === 'left' ? ' ▲' : ''}
-              </Text>
-              <Text style={styles.tapeLabel} allowFontScaling>
-                {row.label}
-              </Text>
-              <Text
-                style={[
-                  styles.tapeVal,
-                  styles.tapeRight,
-                  row.better === 'right' ? styles.tapeWin : null,
-                ]}
-                allowFontScaling
-              >
-                {row.better === 'right' ? '▲ ' : ''}
-                {row.right}
-              </Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
+      )}
 
       {recoverable && (allowances === null || allowances < 1) ? (
         <StatusErrorBanner
@@ -523,184 +519,126 @@ export function ConfirmFightScreen(props: {
 }
 
 const styles = StyleSheet.create({
+  tott: {
+    width: '100%',
+    gap: 12,
+  },
   faceOff: {
     width: '100%',
-    height: A6_FACEOFF.height,
-    backgroundColor: '#3f463c',
-    borderBottomWidth: 4,
-    borderBottomColor: garageTag.graphite,
-    overflow: 'hidden',
-    marginHorizontal: -16,
-    alignSelf: 'center',
-  },
-  spot: {
-    position: 'absolute',
-    top: -40,
-    width: 260,
-    height: 460,
-  },
-  spotLeft: {
-    left: -40,
-    backgroundColor: 'transparent',
-  },
-  spotRight: {
-    right: -40,
-    backgroundColor: 'transparent',
-  },
-  backBtn: {
-    position: 'absolute',
-    left: 10,
-    top: 12,
-    zIndex: 6,
-  },
-  totPlate: {
-    position: 'absolute',
-    alignSelf: 'center',
-    top: 14,
-    backgroundColor: garageTag.mustard,
-    borderWidth: 3,
+    minHeight: 260,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    backgroundColor: garageTag.paper,
+    borderWidth: garageTag.outline,
     borderColor: garageTag.graphite,
-    borderRadius: 7,
-    paddingVertical: 4,
-    paddingHorizontal: 16,
-    zIndex: 5,
-    transform: [{ rotate: '-2deg' }],
+    borderRadius: garageTag.cutCorner,
+    paddingHorizontal: 8,
+    paddingBottom: 10,
+    paddingTop: 12,
   },
-  totTitle: {
+  near: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    zIndex: 2,
+  },
+  far: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    zIndex: 1,
+  },
+  /** Same A6 panel art source/size as Opponents card (shared resolver). */
+  opponentPanelArt: {
+    width: 150,
+    height: 150,
+  },
+  vs: {
+    alignSelf: 'center',
     fontWeight: '900',
     fontSize: 18,
     letterSpacing: 1.2,
-    textTransform: 'uppercase',
     color: garageTag.graphite,
-  },
-  bakedLayer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: '100%',
-    height: A6_FACEOFF.height,
-  },
-  nearBot: {
-    position: 'absolute',
-    left: A6_FACEOFF.leftCenterX - A6_FACEOFF.bodyHeight / 2 - 20,
-    bottom: A6_FACEOFF.height - A6_FACEOFF.groundY,
-    zIndex: 2,
-  },
-  farBot: {
-    position: 'absolute',
-    right: A6_FACEOFF.width - A6_FACEOFF.rightCenterX - A6_FACEOFF.bodyHeight / 2 + 20,
-    bottom: A6_FACEOFF.height - A6_FACEOFF.groundY,
-    zIndex: 2,
-  },
-  vs: {
-    position: 'absolute',
-    alignSelf: 'center',
-    top: 170,
-    fontSize: 44,
-    fontWeight: '900',
-    fontStyle: 'italic',
-    color: garageTag.mustard,
-    zIndex: 6,
-    textShadowColor: garageTag.graphite,
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 0,
-  },
-  nameRow: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    top: 330,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    zIndex: 6,
-  },
-  namePlate: {
-    backgroundColor: 'rgba(36,33,29,0.88)',
-    borderWidth: 2.5,
-    borderColor: garageTag.graphite,
-    borderRadius: 7,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    minWidth: 150,
-  },
-  namePlateYou: {
-    borderColor: garageTag.oxide,
-  },
-  namePlateOpp: {
-    alignItems: 'flex-end',
-  },
-  nameBot: {
-    color: garageTag.white,
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  nameBotore: {
-    color: '#d9c9ab',
-    fontSize: 11.5,
-    fontWeight: '600',
+    paddingHorizontal: 4,
+    paddingBottom: 48,
   },
   tape: {
-    marginTop: 12,
+    width: '100%',
     borderWidth: garageTag.outline,
     borderColor: garageTag.graphite,
-    borderRadius: 9,
+    borderRadius: garageTag.cutCorner,
     backgroundColor: garageTag.white,
-    overflow: 'hidden',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    gap: 4,
+  },
+  tapeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  tapeHeadYou: {
+    flex: 1,
+    textAlign: 'left',
+    fontWeight: '800',
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: garageTag.steel,
+  },
+  tapeHeadLabel: {
+    width: 88,
+  },
+  tapeHeadThem: {
+    flex: 1,
+    textAlign: 'right',
+    fontWeight: '800',
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: garageTag.steel,
   },
   tapeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 36,
-    borderBottomWidth: 2,
-    borderBottomColor: '#e3d3b4',
+    minHeight: 28,
   },
-  tapeVal: {
+  tapeYou: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '800',
-    color: garageTag.graphite,
-    paddingHorizontal: 14,
-  },
-  tapeLeft: {
     textAlign: 'left',
-  },
-  tapeRight: {
-    textAlign: 'right',
-  },
-  tapeWin: {
-    color: garageTag.oxide,
+    fontWeight: '800',
+    fontSize: 14,
+    color: garageTag.graphite,
   },
   tapeLabel: {
-    flexBasis: 108,
+    width: 88,
     textAlign: 'center',
-    fontSize: 10.5,
-    letterSpacing: 1.2,
+    fontWeight: '800',
+    fontSize: 11,
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: '#6b6356',
-    backgroundColor: '#efe0c3',
-    alignSelf: 'stretch',
-    textAlignVertical: 'center',
-    paddingVertical: 10,
-    fontWeight: '700',
+    color: garageTag.steel,
+  },
+  tapeThem: {
+    flex: 1,
+    textAlign: 'right',
+    fontWeight: '800',
+    fontSize: 14,
+    color: garageTag.graphite,
+  },
+  eligText: {
+    textAlign: 'center',
+    fontWeight: '800',
+    fontSize: 13,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: garageTag.graphite,
   },
   eligRow: {
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
-  },
-  eligText: {
-    textAlign: 'center',
-    fontWeight: '800',
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: garageTag.graphite,
-    marginBottom: 8,
   },
 });
