@@ -235,10 +235,10 @@ function main() {
   if (existsSync(kitManifest)) {
     const raw = JSON.parse(readFileSync(kitManifest, 'utf8'));
     // Atlas pack target stays `v003` (family workshop-frame-v003); kit pin may
-    // be v003.1 (same PNG parts, superseding poses/stage/portrait).
+    // be a point release (v003.1 / v003.3 — same PNG parts, newer poses/clips).
     const accepted =
       kitVersion === 'v003'
-        ? raw.version === 'v003' || raw.version === 'v003.1'
+        ? typeof raw.version === 'string' && /^v003(\.\d+)?$/.test(raw.version)
         : raw.version === kitVersion;
     if (!accepted) {
       fail(`kit version ${raw.version} incompatible with pack kitVersion ${kitVersion}`);

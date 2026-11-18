@@ -1,10 +1,10 @@
-# Atlas v3 — Workshop Frame kit-v003.1
+# Atlas v3 — Workshop Frame kit-v003.3
 
-Immutable pack for Workshop Frame kit-v003.1 (family workshop-frame-v003; A1 grips + A3 victory/defeat poses).
+Immutable pack for Workshop Frame kit-v003.3 (family workshop-frame-v003; A1 grips + A3 poses + A2b fight clips).
 
 | Concern    | Rule                                                                                            |
 | ---------- | ----------------------------------------------------------------------------------------------- |
-| Kit pin    | **v003 only** — never mix v002/v001 coords, tiles, or pose numbers                              |
+| Kit pin    | **v003.x** — atlas family v003; never mix v002/v001 coords, tiles, or pose numbers              |
 | Packing    | `parts/{kitId}-{paint}.png` → `parts/{hyphenatedPartId}/{paint}.png` (same for masks/materials) |
 | Wraps      | `hand_l_wrap` / `hand_r_wrap` packed as `hand-l-wrap` / `hand-r-wrap`                           |
 | Weapon ids | Kit filenames use underscores (`weapon_sword`); atlas/catalogue use hyphens (`weapon-sword`)    |
