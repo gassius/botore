@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSharedTrialAudio } from '../../audio/trialAudioContext';
 import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import {
   BrandWordmark,
@@ -28,6 +29,7 @@ export function SettingsSlot(): React.ReactElement {
     osReducedMotion,
   } = useFirstRun();
   const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
+  const shared = useSharedTrialAudio();
 
   return (
     <ScreenChrome testID="slot-settings">
@@ -49,8 +51,9 @@ export function SettingsSlot(): React.ReactElement {
           label="Master mute"
           value={muted}
           onValueChange={(next) => {
-            uiAudio.playCue('uiToggle');
             setMuted(next);
+            shared?.getSession()?.setMuted(next);
+            uiAudio.playCue('uiToggle');
           }}
           detail="Persists across launches"
           testID="settings-master-mute"
@@ -59,18 +62,20 @@ export function SettingsSlot(): React.ReactElement {
           label="Music"
           value={musicEnabled}
           onValueChange={(next) => {
-            uiAudio.playCue('uiToggle');
             setMusicEnabled(next);
+            shared?.getSession()?.setMusicEnabled(next);
+            uiAudio.playCue('uiToggle');
           }}
-          detail={muted ? 'Master mute silences music' : 'Fight music loop'}
+          detail={muted ? 'Master mute silences music' : 'Menu and fight music'}
           testID="settings-music"
         />
         <SettingsToggleRow
           label="Effects"
           value={effectsEnabled}
           onValueChange={(next) => {
-            uiAudio.playCue('uiToggle');
             setEffectsEnabled(next);
+            shared?.getSession()?.setEffectsEnabled(next);
+            uiAudio.playCue('uiToggle');
           }}
           detail={muted ? 'Master mute silences effects' : 'Hits, UI taps, stingers'}
           testID="settings-effects"
@@ -85,8 +90,8 @@ export function SettingsSlot(): React.ReactElement {
           label="Reduced motion"
           value={forceReducedMotion}
           onValueChange={(next) => {
-            uiAudio.playCue('uiToggle');
             setForceReducedMotion(next);
+            uiAudio.playCue('uiToggle');
           }}
           detail={
             osReducedMotion

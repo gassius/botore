@@ -97,31 +97,47 @@ export function useTrialReplayAudio(opts: {
   }, [enabled, profileKey, fighterProfiles, shared]);
 
   useEffect(() => {
-    if (shared) return;
+    // Belt-and-suspenders: shared session also tracks FirstRun mute via the
+    // PlayerSettingsProvider → TrialAudioProvider path; keep in sync if props move.
+    if (shared) {
+      shared.getSession()?.setMuted(opts.muted);
+      return;
+    }
     sessionRef.current?.setMuted(opts.muted);
   }, [opts.muted, shared]);
 
   useEffect(() => {
-    if (shared) return;
+    if (shared) {
+      shared.getSession()?.setMusicEnabled(opts.musicEnabled !== false);
+      return;
+    }
     sessionRef.current?.setMusicEnabled(opts.musicEnabled !== false);
   }, [opts.musicEnabled, shared]);
 
   useEffect(() => {
-    if (shared) return;
+    if (shared) {
+      shared.getSession()?.setEffectsEnabled(opts.effectsEnabled !== false);
+      return;
+    }
     sessionRef.current?.setEffectsEnabled(opts.effectsEnabled !== false);
   }, [opts.effectsEnabled, shared]);
 
   useEffect(() => {
+    if (!enabled) return;
     if (shared) {
       shared.setPlaying(opts.playing);
-      return;
+      return () => {
+        // Leaving the fight: restore session so menuLoop is not fight-paused.
+        shared.setPlaying(true);
+      };
     }
     sessionRef.current?.setPlaying(opts.playing);
-  }, [opts.playing, shared]);
+  }, [opts.playing, shared, enabled]);
 
   const onCommand = useCallback(
     (cmd: AnimationCommand) => {
       try {
+        if (!enabled) return;
         if (shared) {
           shared.notifyCommand(cmd);
           return;
@@ -131,11 +147,12 @@ export function useTrialReplayAudio(opts: {
         // Never desync fight on audio errors.
       }
     },
-    [shared],
+    [shared, enabled],
   );
 
   const playUiTap = useCallback(() => {
     try {
+      if (!enabled) return;
       if (shared) {
         shared.playUiTap();
         return;
@@ -144,11 +161,12 @@ export function useTrialReplayAudio(opts: {
     } catch {
       // ignore
     }
-  }, [shared]);
+  }, [shared, enabled]);
 
   const playCue = useCallback(
     (id: TrialAudioUiCueId, options?: PlayCueOptions) => {
       try {
+        if (!enabled) return;
         if (shared) {
           shared.playCue(id, options);
           return;
@@ -158,11 +176,12 @@ export function useTrialReplayAudio(opts: {
         // ignore
       }
     },
-    [shared],
+    [shared, enabled],
   );
 
   const reset = useCallback(() => {
     try {
+      if (!enabled) return;
       if (shared) {
         shared.reset();
         return;
@@ -171,7 +190,7 @@ export function useTrialReplayAudio(opts: {
     } catch {
       // ignore
     }
-  }, [shared]);
+  }, [shared, enabled]);
 
   return { onCommand, playUiTap, playCue, reset };
 }

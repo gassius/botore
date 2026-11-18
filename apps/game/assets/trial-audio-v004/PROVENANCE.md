@@ -291,5 +291,5 @@
 ## Policy reminders
 
 - Missing / failed audio must never block or desync the fight.
-- This pack is immutable once sealed; further changes go into `trial-audio-v003+`.
+- This pack is immutable once sealed; further changes go into `trial-audio-v005+`.
 - Drafts (both takes for every item) are kept outside the repo in `/workspace/botore/audio/drafts/` for re-picks by ear.

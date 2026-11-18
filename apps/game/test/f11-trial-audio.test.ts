@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { compileAnimationQueue } from '../src/replay-playback';
 import {
   ACTIVE_TRIAL_AUDIO_ASSET_VERSION,
@@ -705,5 +705,175 @@ describe('F11 expo-av platform mode policy', () => {
     await oneshot!.setMuted(true);
     expect(sounds[1]?.muted).toBe(true);
     await oneshot!.stop();
+  });
+});
+
+describe('E8 PRR B1/B2 shared session wiring', () => {
+  function recordingBackend() {
+    const loops: Array<{
+      source: unknown;
+      volume: number;
+      paused: boolean[];
+      muted: boolean[];
+      volumes: number[];
+      stopped: number;
+    }> = [];
+    const shots: Array<{ source: unknown; mutedCalls: boolean[] }> = [];
+    const backend: TrialAudioBackend = {
+      ensureMode: async () => undefined,
+      playOneShot: async (source, opts) => {
+        const rec = { source, mutedCalls: [Boolean(opts.muted)] as boolean[] };
+        shots.push(rec);
+        return {
+          setMuted: async (m) => {
+            rec.mutedCalls.push(Boolean(m));
+          },
+          play: async () => undefined,
+          stop: async () => undefined,
+        };
+      },
+      startLoop: async (source, opts) => {
+        const rec = {
+          source,
+          volume: opts.volume,
+          paused: [] as boolean[],
+          muted: [] as boolean[],
+          volumes: [] as number[],
+          stopped: 0,
+        };
+        loops.push(rec);
+        return {
+          setMuted: async (m) => {
+            rec.muted.push(Boolean(m));
+          },
+          setPaused: async (p) => {
+            rec.paused.push(Boolean(p));
+          },
+          stop: async () => {
+            rec.stopped += 1;
+          },
+          setVolume: async (v) => {
+            rec.volumes.push(v);
+          },
+        };
+      },
+    };
+    return { backend, loops, shots };
+  }
+
+  it('B1: setPlaying(false) pauses fight loops but leaves menuLoop unpaused after crossfadeToMenu', async () => {
+    vi.useFakeTimers();
+    const { backend, loops } = recordingBackend();
+    const session = createTrialAudioSession({ backend, sources, muted: false, playing: true });
+    session.startMenuLoop();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(loops).toHaveLength(1);
+    // Enter fight.
+    session.crossfadeToFight({ durationMs: 0 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(loops.length).toBeGreaterThanOrEqual(2);
+    const fight = loops.find((l) => l.source === 8);
+    expect(fight).toBeTruthy();
+    // Replay ends under Result.
+    session.setPlaying(false);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fight!.paused.at(-1)).toBe(true);
+    session.crossfadeToMenu({ durationMs: 0 });
+    await vi.advanceTimersByTimeAsync(0);
+    const menuAfter = loops.filter((l) => l.source === 13).at(-1);
+    expect(menuAfter).toBeTruthy();
+    // Menu must not stay paused after KO → Result.
+    expect(menuAfter!.paused.at(-1)).toBe(false);
+    session.setPlaying(false);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(menuAfter!.paused.filter((p) => p === true)).toHaveLength(0);
+    session.dispose();
+    vi.useRealTimers();
+  });
+
+  it('B2: mute / Music / Effects update the live shared session while running', async () => {
+    const { backend, loops, shots } = recordingBackend();
+    const session = createTrialAudioSession({
+      backend,
+      sources,
+      muted: false,
+      musicEnabled: true,
+      effectsEnabled: true,
+      playing: true,
+    });
+    session.startMenuLoop();
+    await new Promise((r) => setTimeout(r, 0));
+    session.playUiTap();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toHaveLength(1);
+
+    session.setMuted(true);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(loops[0]?.muted.at(-1)).toBe(true);
+    session.playUiTap();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toHaveLength(1);
+
+    session.setMuted(false);
+    session.setEffectsEnabled(false);
+    await new Promise((r) => setTimeout(r, 0));
+    session.playUiTap();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toHaveLength(1);
+
+    session.setEffectsEnabled(true);
+    session.setMusicEnabled(false);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(loops[0]?.muted.at(-1)).toBe(true);
+    session.playSplashSting();
+    await new Promise((r) => setTimeout(r, 0));
+    // splashSting is music-role — Music off silences it.
+    expect(shots).toHaveLength(1);
+    session.dispose();
+  });
+
+  it('M2: in-flight splashSting follows Music, not Effects', async () => {
+    const mutedCalls: boolean[] = [];
+    const handle: OneShotHandle = {
+      setMuted: async (m) => {
+        mutedCalls.push(Boolean(m));
+      },
+      play: async () => undefined,
+      stop: async () => undefined,
+    };
+    const backend: TrialAudioBackend = {
+      ensureMode: async () => undefined,
+      playOneShot: async () => handle,
+      startLoop: async () => ({
+        setMuted: async () => undefined,
+        setPaused: async () => undefined,
+        stop: async () => undefined,
+        setVolume: async () => undefined,
+      }),
+    };
+    const session = createTrialAudioSession({ backend, sources });
+    session.playSplashSting();
+    await new Promise((r) => setTimeout(r, 0));
+    mutedCalls.length = 0;
+    session.setEffectsEnabled(false);
+    await new Promise((r) => setTimeout(r, 0));
+    // Music still on → sting should not be muted by Effects-off alone.
+    expect(mutedCalls.at(-1)).toBe(false);
+    session.setMusicEnabled(false);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(mutedCalls.at(-1)).toBe(true);
+    session.dispose();
+  });
+
+  it('crossfade starts incoming loop at volume 0', async () => {
+    const { backend, loops } = recordingBackend();
+    const session = createTrialAudioSession({ backend, sources });
+    session.startMenuLoop();
+    await new Promise((r) => setTimeout(r, 0));
+    session.crossfadeToFight({ durationMs: 100 });
+    await new Promise((r) => setTimeout(r, 0));
+    const fight = loops.find((l) => l.source === 8);
+    expect(fight?.volume).toBe(0);
+    session.dispose();
   });
 });

@@ -33,7 +33,12 @@ export type PlayerSettingsControls = {
  * Commits that race ahead of `loadPlayerSettings()` keep a pending patch and
  * merge onto the loaded file at hydrate (avoids saving defaults over disk).
  */
-export function usePlayerSettings(): PlayerSettingsControls {
+/**
+ * Stateful mute / Music / Effects / reduced-motion with disk persistence.
+ * Prefer {@link usePlayerSettings} from `PlayerSettingsProvider` so the garage
+ * audio gate and FirstRunShell share one live copy.
+ */
+export function usePlayerSettingsState(): PlayerSettingsControls {
   const [prefs, setPrefs] = useState<PlayerSettingsPrefs>({ ...DEFAULT_PLAYER_SETTINGS });
   const [hydrated, setHydrated] = useState(false);
   const [osReducedMotion, setOsReducedMotion] = useState(false);

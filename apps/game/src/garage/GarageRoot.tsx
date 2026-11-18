@@ -17,6 +17,7 @@ import { FightSessionProvider } from '../fight/FightSessionContext';
 import { FirstRunShell } from '../first-run/FirstRunShell';
 import { garageTag, InAppTitleSplash } from '../garage-tag';
 import { isPlayableFailClosed, PlayableMisconfiguredScreen } from '../runtime';
+import { PlayerSettingsProvider } from '../settings';
 import { readSupabasePublicConfig } from './auth/supabasePublicConfig';
 import { LaunchTitleScreen } from './screens/LaunchTitleScreen';
 import { SessionAuthErrorScreen } from './screens/SessionAuthErrorScreen';
@@ -291,9 +292,11 @@ function GarageRootInner(): React.ReactElement {
 export function GarageRoot(): React.ReactElement {
   return (
     <GarageSessionProvider>
-      <GarageTrialAudioGate>
-        <GarageRootInner />
-      </GarageTrialAudioGate>
+      <PlayerSettingsProvider>
+        <GarageTrialAudioGate>
+          <GarageRootInner />
+        </GarageTrialAudioGate>
+      </PlayerSettingsProvider>
     </GarageSessionProvider>
   );
 }

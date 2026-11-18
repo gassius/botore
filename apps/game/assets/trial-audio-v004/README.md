@@ -23,8 +23,8 @@ Effects: AAC-LC `.m4a`, 44.1 kHz, mono, 96 kbps. `menu-loop`: stereo 128 kbps. T
 
 `menu-loop` is a calm-but-confident Ludus / hangar loop in the same metallic / scrap-metal family as the fight loop, at 96 BPM (20 bars, 49.994 s) with a 250 ms equal-power seam. `splash-sting` is a 2.48 s logo intro that can lead into it. `face-off-sting` is a 2.48 s two-phrase sting for the Tale of the Tape screen, same family but more confrontational, played over the menu loop. UI ticks sit quieter than combat FX: `ui-confirm` and `ui-create` at about −18 LUFS; back/tab/toggle/error at about −22; `ui-snap` at −25.5 so a snapping carousel does not shout. Reuse existing `ui-tap` for generic secondary buttons, `select` for part/paint cards, and `equip` for a successful EQUIP.
 
-Unchanged from v003: `clips/{swing,hit,dodge,defeat,hush,ui-tap,win,music-loop,new-record,xp-tick,equip,select}.m4a` and everything under `atlas-v1/`.
+Unchanged from v003: `clips/{swing,hit,dodge,defeat,hush,ui-tap,win,music-loop,new-record,xp-tick,equip,select}.m4a`. Part/arena atlas clips still load from the sealed `trial-audio-v003` atlas-v1 tree in the client (not re-shipped in this pack directory).
 
-Contents: `clips/`, `atlas-v1/`, `manifest.json`, `PROVENANCE.md`, `INTEGRATION.md`, `SHA256SUMS`, `code-change.patch`, `repo-drop/`.
+Contents: `clips/`, `manifest.json`, `PROVENANCE.md`, `INTEGRATION.md`, `SHA256SUMS`.
 
 Status: final candidates, pending Carlos's ear approval on phone.
