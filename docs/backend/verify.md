@@ -72,28 +72,45 @@ latest Workshop Frame kit-v003.3 assets (former v3 contents). A prior Dev
 publish left `v1` with the old ~25 proof placeholders while `v3` held ~125
 objects.
 
-**Prereq:** migration `0031_atlas_v1_workshop_frame_consolidate.sql` applied
-(`dev_reopen_atlas_version`, `register_atlas_v1_workshop_frame_entries`).
+**Prereq:** migrations `0031_atlas_v1_workshop_frame_consolidate.sql` and
+`0036_private_environment_marker.sql` applied (`dev_reopen_atlas_version`,
+`register_atlas_v1_workshop_frame_entries`, `private.environment`).
 
-**One-time Dev DB marker** (Infra — never from a migration; never on Production):
+Hosted Postgres is not a superuser — do **not** use
+`alter database … set app.environment` (42501). The writable marker is a
+singleton row in `private.environment` (RLS on; no client grants). Absent row
+= fail closed. Infra only — never from a migration; never on Production.
+
+Keep the **one-time marker** and the **v1 reopen** in separate SQL blocks.
+Never paste a marker upsert into the same script as reopen — a Production
+paste must not overwrite an existing marker or reopen published `v1`.
+
+**One-time Dev DB marker** (Hosted Development only —
+`yrrytppmkykzhwelqmcs`; never on Production):
+
+```sql
+-- Insert once. do nothing if a row already exists (won't flip production→development).
+insert into private.environment (singleton, env)
+values (true, 'development')
+on conflict (singleton) do nothing;
+
+-- Must return development before any reopen. Abort if not.
+select env from private.environment where singleton is true;
+-- Expected: development
+```
+
+**Connector SQL — reopen only** (no marker write; requires
+`private.environment.env=development` already):
 
 ```sql
 -- Hosted Development project only (yrrytppmkykzhwelqmcs)
-alter database postgres set app.environment = 'development';
--- New sessions pick this up; reconnect the SQL editor / scripts after setting.
-```
-
-**Connector SQL** (Supabase SQL editor / connector — no DB pooler required):
-
-```sql
 -- service_role JWT context (Dashboard SQL as postgres/service is fine)
 select set_config('request.jwt.claim.role', 'service_role', true);
 
--- 1) Reopen published v1 → draft (requires app.environment=development;
---    reopen GUC is set inside the RPC; confirm required)
+-- Reopen published v1 → draft (reopen GUC set inside the RPC; confirm required)
 select public.dev_reopen_atlas_version('v1', 'DEVELOPMENT_ONLY_REOPEN');
 
--- 2) Idempotent workshop-frame kit-v003 manifest entries on draft v1
+-- Idempotent workshop-frame kit-v003 manifest entries on draft v1
 select public.register_atlas_v1_workshop_frame_entries();
 ```
 
