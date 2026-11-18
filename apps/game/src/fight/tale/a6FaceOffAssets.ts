@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import type { ImageSourcePropType } from 'react-native';
 import { paintUiAlias, weaponUiAlias } from '../../garage/loadout/proofCatalogue';
 
