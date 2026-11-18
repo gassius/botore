@@ -178,6 +178,8 @@ describe('C17 player-facing id / debug scrub', () => {
     expect(ranking).not.toMatch(/sourceLabel\s*=/);
     expect(ranking).toContain('row.totalXp');
     expect(ranking).toContain(' XP');
+    expect(ranking).not.toContain('Back to stable');
+    expect(ranking).toContain('RefreshControl');
   });
 
   it('Fight Result slot has no DomainNote debug chrome', () => {

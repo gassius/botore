@@ -17,9 +17,10 @@ export type CreateRankingReadClientInput = {
 };
 
 /**
- * Prefer live `list_ranking` when Supabase public env + JWT are present.
- * Design-capture empty/error forces DEV fixtures for those UI states.
- * Otherwise DEV fixtures only when scaffolds are allowed; else fail closed.
+ * Prefer live E2 `list_bot_ranking` / `list_botore_ranking` when Supabase
+ * public env + JWT are present. Design-capture empty/error forces DEV fixtures
+ * for those UI states. Otherwise DEV fixtures only when scaffolds are allowed;
+ * else fail closed.
  */
 export function createRankingReadClient(input: CreateRankingReadClientInput = {}): RankingReadPort {
   const scenario = input.captureScenario ?? null;

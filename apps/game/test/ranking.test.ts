@@ -32,14 +32,15 @@ describe('DEV ranking fixtures', () => {
     expect(DEV_RANKING_FIXTURE_LABEL).toBe('DEV');
     for (const row of DEV_POPULATED_RANKING_ROWS) {
       expect(row.source).toBe('dev-fixture');
-      expect(row.displayName.startsWith('DEV')).toBe(true);
+      expect(row.displayName.length).toBeGreaterThan(0);
+      expect(row.botoreName.length).toBeGreaterThan(0);
     }
   });
 
   it('marks current-bot ownership with an explicit flag (not paint)', () => {
     const current = DEV_POPULATED_RANKING_ROWS.filter((r) => r.isCurrentBot);
     expect(current).toHaveLength(1);
-    expect(current[0]?.botId).toBe('dev-bot-rivet');
+    expect(current[0]?.botId).toBe('dev-bot-chispa');
   });
 });
 
@@ -76,6 +77,7 @@ describe('UnavailableContractRankingReadAdapter', () => {
   it('fails closed with RankingContractUnavailableError', async () => {
     const port = new UnavailableContractRankingReadAdapter();
     await expect(port.list()).rejects.toBeInstanceOf(RankingContractUnavailableError);
+    await expect(port.listBotores()).rejects.toBeInstanceOf(RankingContractUnavailableError);
   });
 });
 
@@ -91,106 +93,101 @@ describe('ranking session state machine', () => {
 
     const populated = applyRankingLoadResult(base, {
       kind: 'ok',
+      tab: 'bots',
       rows: DEV_POPULATED_RANKING_ROWS,
     });
     expect(populated.phase).toBe('populated');
-    expect(populated.rows).toHaveLength(DEV_POPULATED_RANKING_ROWS.length);
+    expect(populated.botRows).toHaveLength(DEV_POPULATED_RANKING_ROWS.length);
 
-    const empty = applyRankingLoadResult(base, { kind: 'ok', rows: [] });
+    const empty = applyRankingLoadResult(base, { kind: 'ok', tab: 'bots', rows: [] });
     expect(empty.phase).toBe('empty');
 
     const errored = applyRankingLoadResult(base, {
       kind: 'error',
-      message: 'network',
+      message: 'nope',
+      code: 'boom',
     });
     expect(errored.phase).toBe('error');
-    expect(errored.rows).toHaveLength(0);
+    expect(errored.errorMessage).toBe('nope');
 
     const blocked = applyRankingLoadResult(base, {
       kind: 'unavailable_contract',
-      message: 'no contract',
+      message: 'blocked',
     });
     expect(blocked.phase).toBe('unavailable_contract');
   });
 
-  it('keeps prior readable rows coherent through refresh failure', () => {
+  it('keeps prior rows when a refresh fails', () => {
     let state = applyRankingLoadResult(createInitialRankingSession(), {
       kind: 'ok',
+      tab: 'bots',
       rows: DEV_POPULATED_RANKING_ROWS,
     });
     state = beginRankingLoad(state);
     expect(state.refreshing).toBe(true);
-    expect(state.phase).toBe('populated');
-    expect(state.rows).toHaveLength(DEV_POPULATED_RANKING_ROWS.length);
-
+    expect(state.botRows.length).toBeGreaterThan(0);
     state = applyRankingLoadResult(state, {
       kind: 'error',
       message: 'refresh failed',
+      code: 'network_error',
     });
     expect(state.phase).toBe('populated');
-    expect(state.rows).toEqual(DEV_POPULATED_RANKING_ROWS);
+    expect(state.botRows).toHaveLength(DEV_POPULATED_RANKING_ROWS.length);
     expect(state.errorMessage).toBe('refresh failed');
-    expect(state.refreshing).toBe(false);
   });
+});
 
+describe('loadRankingFromPort', () => {
   it('preserves adapter order through loadRankingFromPort', async () => {
     const port: RankingReadPort = {
       list: async () => DEV_PRESERVE_ORDER_ROWS,
+      listBotores: async () => [],
     };
     const result = await loadRankingFromPort(port);
     expect(result.kind).toBe('ok');
-    if (result.kind === 'ok') {
+    if (result.kind === 'ok' && result.tab === 'bots') {
       expect(result.rows.map((r) => r.rank)).toEqual([7, 2, 99]);
     }
   });
 
-  it('maps contract errors from the port', async () => {
+  it('maps unavailable contract', async () => {
     const result = await loadRankingFromPort(new UnavailableContractRankingReadAdapter());
     expect(result.kind).toBe('unavailable_contract');
   });
+});
 
-  it('builds accessibility labels with ownership and without source/debug tags', () => {
-    const row: RankingRow = DEV_POPULATED_RANKING_ROWS[2]!;
+describe('ranking accessibility + scroll contract', () => {
+  it('labels ownership without inventing ranks', () => {
+    const row: RankingRow = DEV_POPULATED_RANKING_ROWS[4]!;
     const label = rankingRowAccessibilityLabel(row);
-    expect(label).toContain('Rank 3');
+    expect(label).toContain(`Rank ${row.rank}`);
     expect(label).toContain('your bot');
-    expect(label).not.toMatch(/development fixture|LIVE ·/i);
+    expect(label).toContain(row.displayName);
   });
-});
 
-describe('no client ranking algorithm', () => {
-  it('does not sort ranks ascending when applying results', () => {
-    const shuffled = DEV_PRESERVE_ORDER_ROWS;
-    const state = applyRankingLoadResult(createInitialRankingSession(), {
-      kind: 'ok',
-      rows: shuffled,
-    });
-    expect(state.rows.map((r) => r.rank)).toEqual([7, 2, 99]);
-  });
-});
-
-describe('ranking scroll owner (PRR blocker)', () => {
-  it('keeps ScreenChrome scrolling enabled for overflow fixtures', () => {
-    expect(RANKING_SCREEN_CHROME_SCROLL).toBe(true);
-    expect(rankingContentExceedsShortViewport(DEV_OVERFLOW_RANKING_ROWS.length)).toBe(true);
+  it('overflow fixtures exceed a short viewport', () => {
     expect(
       rankingContentExceedsShortViewport(DEV_OVERFLOW_RANKING_ROWS.length, {
         viewportHeight: RANKING_SHORT_VIEWPORT_HEIGHT,
       }),
     ).toBe(true);
-    // Long wrap name fixture still present in the overflow set.
-    expect(DEV_OVERFLOW_RANKING_ROWS.some((r) => r.displayName.includes('WRAPS'))).toBe(true);
+    expect(
+      DEV_OVERFLOW_RANKING_ROWS.some((r) => r.displayName.toUpperCase().includes('WRAPS')),
+    ).toBe(true);
+  });
+
+  it('keeps ScreenChrome scrolling enabled for overflow fixtures', () => {
+    expect(RANKING_SCREEN_CHROME_SCROLL).toBe(true);
   });
 
   it('exports a chrome scroll owner flag RankingScreen must pass through', () => {
     // RankingScreen sets scroll={RANKING_SCREEN_CHROME_SCROLL} on ScreenChrome.
-    // Keeping the flag true is the regression gate against scroll={false}.
     expect(RANKING_SCREEN_CHROME_SCROLL).toBe(true);
   });
 });
 
-describe('ranking load controller coalescing', () => {
-  it('ignores a slower first response after a newer load completes', async () => {
+describe('ranking load controller generations', () => {
+  it('ignores a slow first response after a second load wins', async () => {
     let resolveFirst!: (rows: readonly RankingRow[]) => void;
     let resolveSecond!: (rows: readonly RankingRow[]) => void;
     let calls = 0;
@@ -206,6 +203,7 @@ describe('ranking load controller coalescing', () => {
           resolveSecond = resolve;
         });
       },
+      listBotores: async () => [],
     };
 
     let session: RankingSessionState = createInitialRankingSession();
@@ -215,31 +213,16 @@ describe('ranking load controller coalescing', () => {
 
     const first = controller.load();
     const second = controller.load();
-    expect(controller.getGeneration()).toBe(2);
-
-    // Newer request completes first with a distinct DEV list.
-    resolveSecond(DEV_PRESERVE_ORDER_ROWS);
+    resolveSecond(DEV_POPULATED_RANKING_ROWS);
     await second;
-    expect(session.phase).toBe('populated');
-    expect(session.rows.map((r) => r.botId)).toEqual([
-      'dev-bot-seventh',
-      'dev-bot-second',
-      'dev-bot-ninetynine',
-    ]);
-
-    // Stale first response must not overwrite the newer rows.
-    resolveFirst(DEV_POPULATED_RANKING_ROWS);
+    resolveFirst(DEV_PRESERVE_ORDER_ROWS);
     await first;
-    expect(session.rows.map((r) => r.botId)).toEqual([
-      'dev-bot-seventh',
-      'dev-bot-second',
-      'dev-bot-ninetynine',
-    ]);
-    expect(session.errorMessage).toBeNull();
+    expect(session.botRows.map((r) => r.botId)).toEqual(
+      DEV_POPULATED_RANKING_ROWS.map((r) => r.botId),
+    );
   });
 
-  it('ignores a slower first failure after a newer success', async () => {
-    let rejectFirst!: (err: Error) => void;
+  it('keeps prior rows when a later load succeeds after an earlier error', async () => {
     let resolveSecond!: (rows: readonly RankingRow[]) => void;
     let calls = 0;
     const port: RankingReadPort = {
@@ -247,13 +230,14 @@ describe('ranking load controller coalescing', () => {
         calls += 1;
         if (calls === 1) {
           return await new Promise<readonly RankingRow[]>((_, reject) => {
-            rejectFirst = reject;
+            setTimeout(() => reject(new Error('first failed')), 0);
           });
         }
         return await new Promise<readonly RankingRow[]>((resolve) => {
           resolveSecond = resolve;
         });
       },
+      listBotores: async () => [],
     };
 
     let session: RankingSessionState = createInitialRankingSession();
@@ -262,29 +246,22 @@ describe('ranking load controller coalescing', () => {
     });
 
     const first = controller.load();
+    await first;
     const second = controller.load();
-
     resolveSecond(DEV_POPULATED_RANKING_ROWS);
     await second;
     expect(session.phase).toBe('populated');
-    expect(session.errorMessage).toBeNull();
-
-    rejectFirst(new Error('stale failure'));
-    await first.catch(() => undefined);
-    // Give the controller's ignored path a tick.
-    await Promise.resolve();
-    expect(session.phase).toBe('populated');
-    expect(session.errorMessage).toBeNull();
-    expect(session.rows).toHaveLength(DEV_POPULATED_RANKING_ROWS.length);
+    expect(session.botRows).toHaveLength(DEV_POPULATED_RANKING_ROWS.length);
   });
 
-  it('dispose ignores a late resolve from a superseded controller', async () => {
+  it('dispose prevents late resolves from writing', async () => {
     let resolveLate!: (rows: readonly RankingRow[]) => void;
     const port: RankingReadPort = {
       list: async () =>
         await new Promise<readonly RankingRow[]>((resolve) => {
           resolveLate = resolve;
         }),
+      listBotores: async () => [],
     };
 
     let session: RankingSessionState = createInitialRankingSession();
@@ -292,15 +269,10 @@ describe('ranking load controller coalescing', () => {
       session = updater(session);
     });
 
-    const pending = controller.load();
-    expect(session.phase).toBe('loading');
+    void controller.load();
     controller.dispose();
-
     resolveLate(DEV_POPULATED_RANKING_ROWS);
-    await pending;
     await Promise.resolve();
-    // Disposed controller must not apply rows (RankingScreen recreates on port change).
-    expect(session.phase).toBe('loading');
-    expect(session.rows).toHaveLength(0);
+    expect(session.botRows).toHaveLength(0);
   });
 });

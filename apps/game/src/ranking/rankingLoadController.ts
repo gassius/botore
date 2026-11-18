@@ -1,6 +1,6 @@
 import type { RankingReadPort } from './RankingReadPort';
 import { applyRankingLoadResult, beginRankingLoad, loadRankingFromPort } from './rankingSession';
-import type { RankingSessionState } from './types';
+import type { RankingSessionState, RankingTab } from './types';
 
 export type RankingSessionSetter = (
   updater: (prev: RankingSessionState) => RankingSessionState,
@@ -8,14 +8,13 @@ export type RankingSessionSetter = (
 
 /**
  * Serialises ranking loads by generation so a slow earlier response cannot
- * overwrite a newer success/error. Callers should also disable Refresh/Retry
- * while a load is in flight for UX, but generation ignore is the correctness gate.
+ * overwrite a newer success/error. Loads the active tab (bots or botores).
  */
 export function createRankingLoadController(
   port: RankingReadPort,
   setSession: RankingSessionSetter,
 ): {
-  load: () => Promise<void>;
+  load: (tab?: RankingTab) => Promise<void>;
   /** Invalidate in-flight loads so a superseded port/controller cannot write. */
   dispose: () => void;
   /** Latest issued request id (for tests). */
@@ -28,16 +27,19 @@ export function createRankingLoadController(
     getGeneration: () => generation,
     dispose: () => {
       disposed = true;
-      // Bump past any in-flight requestId so load() ignores late resolves.
       generation += 1;
     },
-    load: async () => {
+    load: async (tab) => {
       if (disposed) {
         return;
       }
       const requestId = ++generation;
-      setSession((prev) => beginRankingLoad(prev));
-      const result = await loadRankingFromPort(port);
+      let activeTab: RankingTab = 'bots';
+      setSession((prev) => {
+        activeTab = tab ?? prev.tab;
+        return beginRankingLoad({ ...prev, tab: activeTab });
+      });
+      const result = await loadRankingFromPort(port, activeTab);
       if (disposed || requestId !== generation) {
         return;
       }

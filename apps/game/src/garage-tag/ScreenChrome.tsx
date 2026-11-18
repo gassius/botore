@@ -1,5 +1,12 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  type RefreshControlProps,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { garageTag } from './tokens';
 import { GaragePanel } from './GaragePanel';
@@ -8,6 +15,8 @@ export type ScreenChromeProps = {
   children: React.ReactNode;
   footer?: React.ReactNode;
   scroll?: boolean;
+  /** Optional pull-to-refresh control for the scrolling body (D4 Ranking). */
+  refreshControl?: React.ReactElement<RefreshControlProps>;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
@@ -17,6 +26,7 @@ export function ScreenChrome({
   children,
   footer,
   scroll = true,
+  refreshControl,
   style,
   testID,
 }: ScreenChromeProps): React.ReactElement {
@@ -25,6 +35,7 @@ export function ScreenChrome({
       style={styles.scroll}
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
+      {...(refreshControl ? { refreshControl } : {})}
     >
       {children}
     </ScrollView>

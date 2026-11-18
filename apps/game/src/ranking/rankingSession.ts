@@ -4,12 +4,20 @@ import {
   RankingTransportError,
   type RankingReadPort,
 } from './RankingReadPort';
-import type { RankingLoadResult, RankingRow, RankingSessionState } from './types';
+import type {
+  BotoreRankingRow,
+  RankingLoadResult,
+  RankingRow,
+  RankingSessionState,
+  RankingTab,
+} from './types';
 
-export function createInitialRankingSession(): RankingSessionState {
+export function createInitialRankingSession(tab: RankingTab = 'bots'): RankingSessionState {
   return {
     phase: 'idle',
-    rows: [],
+    tab,
+    botRows: [],
+    botoreRows: [],
     errorMessage: null,
     errorCode: null,
     refreshing: false,
@@ -17,7 +25,7 @@ export function createInitialRankingSession(): RankingSessionState {
 }
 
 export function beginRankingLoad(state: RankingSessionState): RankingSessionState {
-  const hasRows = state.rows.length > 0;
+  const hasRows = state.tab === 'bots' ? state.botRows.length > 0 : state.botoreRows.length > 0;
   return {
     ...state,
     phase: hasRows ? state.phase : 'loading',
@@ -27,23 +35,58 @@ export function beginRankingLoad(state: RankingSessionState): RankingSessionStat
   };
 }
 
+export function selectRankingTab(state: RankingSessionState, tab: RankingTab): RankingSessionState {
+  if (state.tab === tab) return state;
+  const hasCached = tab === 'bots' ? state.botRows.length > 0 : state.botoreRows.length > 0;
+  return {
+    ...state,
+    tab,
+    phase: hasCached ? 'populated' : 'idle',
+    errorMessage: null,
+    errorCode: null,
+    refreshing: false,
+  };
+}
+
 export function applyRankingLoadResult(
   state: RankingSessionState,
   result: RankingLoadResult,
 ): RankingSessionState {
   if (result.kind === 'ok') {
+    if (result.tab === 'bots') {
+      if (result.rows.length === 0) {
+        return {
+          ...state,
+          phase: state.tab === 'bots' ? 'empty' : state.phase,
+          botRows: [],
+          errorMessage: null,
+          errorCode: null,
+          refreshing: false,
+        };
+      }
+      return {
+        ...state,
+        phase: state.tab === 'bots' ? 'populated' : state.phase,
+        botRows: result.rows,
+        errorMessage: null,
+        errorCode: null,
+        refreshing: false,
+      };
+    }
     if (result.rows.length === 0) {
       return {
-        phase: 'empty',
-        rows: [],
+        ...state,
+        phase: state.tab === 'botores' ? 'empty' : state.phase,
+        botoreRows: [],
         errorMessage: null,
         errorCode: null,
         refreshing: false,
       };
     }
     return {
-      phase: 'populated',
-      rows: result.rows,
+      ...state,
+      phase: state.tab === 'botores' ? 'populated' : state.phase,
+      botoreRows: result.rows,
       errorMessage: null,
       errorCode: null,
       refreshing: false,
@@ -52,30 +95,35 @@ export function applyRankingLoadResult(
 
   if (result.kind === 'unavailable_contract') {
     return {
+      ...state,
       phase: 'unavailable_contract',
-      // Keep any previously readable rows coherent.
-      rows: state.rows,
       errorMessage: result.message,
       errorCode: null,
       refreshing: false,
     };
   }
 
-  // error — preserve prior rows when present; never look like an empty board.
+  const hasRows = state.tab === 'bots' ? state.botRows.length > 0 : state.botoreRows.length > 0;
   return {
-    phase: state.rows.length > 0 ? 'populated' : 'error',
-    rows: state.rows,
+    ...state,
+    phase: hasRows ? 'populated' : 'error',
     errorMessage: result.message,
     errorCode: result.code ?? null,
     refreshing: false,
   };
 }
 
-export async function loadRankingFromPort(port: RankingReadPort): Promise<RankingLoadResult> {
+export async function loadRankingFromPort(
+  port: RankingReadPort,
+  tab: RankingTab = 'bots',
+): Promise<RankingLoadResult> {
   try {
+    if (tab === 'botores') {
+      const rows = await port.listBotores();
+      return { kind: 'ok', tab: 'botores', rows: Object.freeze([...rows]) };
+    }
     const rows = await port.list();
-    // Defensive copy; never reorder — preserve backend/fixture order.
-    return { kind: 'ok', rows: Object.freeze([...rows]) };
+    return { kind: 'ok', tab: 'bots', rows: Object.freeze([...rows]) };
   } catch (err) {
     if (err instanceof RankingContractUnavailableError) {
       return { kind: 'unavailable_contract', message: err.message };
@@ -88,9 +136,37 @@ export async function loadRankingFromPort(port: RankingReadPort): Promise<Rankin
   }
 }
 
+/** Join bot paints onto botore rows when the bot board is available. */
+export function attachBotPaintsToBotoreRows(
+  botoreRows: readonly BotoreRankingRow[],
+  botRows: readonly RankingRow[],
+): readonly BotoreRankingRow[] {
+  if (botRows.length === 0) return botoreRows;
+  return botoreRows.map((row) => {
+    if (row.botPaints.length > 0) return row;
+    const paints = botRows
+      .filter((bot) => bot.botoreId === row.botoreId)
+      .map((bot) => bot.portrait?.paint)
+      .filter((paint): paint is string => typeof paint === 'string' && paint.length > 0);
+    if (paints.length === 0) return row;
+    return { ...row, botPaints: paints };
+  });
+}
+
 /** Display helper: rows stay in port order; ownership cue is label-based. */
 export function rankingRowAccessibilityLabel(row: RankingRow): string {
   const ownership = row.isCurrentBot ? ', your bot' : '';
+  const source = row.source === 'dev-fixture' ? ', development fixture' : '';
   const name = playerFacingDisplayName(row.displayName);
-  return `Rank ${row.rank}, ${name}${ownership}`;
+  const botore = playerFacingDisplayName(row.botoreName);
+  const record = `${row.wins} wins, ${row.losses} losses`;
+  return `Rank ${row.rank}, ${name}, ${botore}, ${record}${ownership}${source}`;
+}
+
+export function botoreRowAccessibilityLabel(row: BotoreRankingRow): string {
+  const ownership = row.isCurrentBotore ? ', you' : '';
+  const source = row.source === 'dev-fixture' ? ', development fixture' : '';
+  const name = playerFacingDisplayName(row.name);
+  const bots = `${row.botsOwned} ${row.botsOwned === 1 ? 'bot' : 'bots'}`;
+  return `Rank ${row.rank}, ${name}, ${bots}, ${row.wins} wins, ${row.losses} losses${ownership}${source}`;
 }
