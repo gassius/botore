@@ -1,11 +1,11 @@
 /**
  * Active trial audio pack pin for F11 replay SFX + fight loop.
- * trial-audio-v003: v002 + Result/Customise UI cues; real ElevenLabs audio, pending ear approval on phone.
+ * trial-audio-v004: v003 + Ludus/hangar menu loop, splash sting, Tale of the Tape face-off sting, and full UI button family; real ElevenLabs audio, pending ear approval on phone.
  */
-export const ACTIVE_TRIAL_AUDIO_ASSET_VERSION = 'trial-audio-v003' as const;
+export const ACTIVE_TRIAL_AUDIO_ASSET_VERSION = 'trial-audio-v004' as const;
 export type ActiveTrialAudioAssetVersion = typeof ACTIVE_TRIAL_AUDIO_ASSET_VERSION;
 
-/** Clip ids matching trial-audio-v003 manifest. */
+/** Clip ids matching trial-audio-v004 manifest. */
 export type TrialAudioClipId =
   | 'swing'
   | 'hit'
@@ -18,7 +18,17 @@ export type TrialAudioClipId =
   | 'newRecord'
   | 'xpTick'
   | 'equip'
-  | 'select';
+  | 'select'
+  | 'menuLoop'
+  | 'splashSting'
+  | 'faceOffSting'
+  | 'uiConfirm'
+  | 'uiBack'
+  | 'uiTab'
+  | 'uiSnap'
+  | 'uiCreate'
+  | 'uiError'
+  | 'uiToggle';
 
 export const TRIAL_AUDIO_CLIP_IDS: readonly TrialAudioClipId[] = [
   'swing',
@@ -33,14 +43,42 @@ export const TRIAL_AUDIO_CLIP_IDS: readonly TrialAudioClipId[] = [
   'xpTick',
   'equip',
   'select',
+  'menuLoop',
+  'splashSting',
+  'faceOffSting',
+  'uiConfirm',
+  'uiBack',
+  'uiTab',
+  'uiSnap',
+  'uiCreate',
+  'uiError',
+  'uiToggle',
 ] as const;
 
-/** Screen-driven one-shots (Result overlay + Customise), played via TrialAudioSession.playCue. */
-export type TrialAudioUiCueId = 'newRecord' | 'xpTick' | 'equip' | 'select';
+/** Screen-driven one-shots played via TrialAudioSession.playCue (effects channel). */
+export type TrialAudioUiCueId =
+  | 'newRecord'
+  | 'xpTick'
+  | 'equip'
+  | 'select'
+  | 'uiConfirm'
+  | 'uiBack'
+  | 'uiTab'
+  | 'uiSnap'
+  | 'uiCreate'
+  | 'uiError'
+  | 'uiToggle';
 
 export const TRIAL_AUDIO_UI_CUE_IDS: readonly TrialAudioUiCueId[] = [
   'newRecord',
   'xpTick',
   'equip',
   'select',
+  'uiConfirm',
+  'uiBack',
+  'uiTab',
+  'uiSnap',
+  'uiCreate',
+  'uiError',
+  'uiToggle',
 ] as const;

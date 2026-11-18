@@ -14,6 +14,11 @@ export type PrimaryButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  /**
+   * When set, a visually disabled control still receives presses and calls this
+   * (E8: soft `uiError` on blocked actions). Busy always swallows presses.
+   */
+  onDisabledPress?: () => void;
   /** In-button spinner (EQUIP saving). */
   busy?: boolean;
   /** Oxide unsaved-change dot (D3 EQUIP). */
@@ -27,6 +32,7 @@ export function PrimaryButton({
   label,
   onPress,
   disabled = false,
+  onDisabledPress,
   busy = false,
   showUnsavedDot = false,
   style,
@@ -36,8 +42,15 @@ export function PrimaryButton({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || busy, busy }}
-      disabled={disabled || busy}
-      onPress={onPress}
+      disabled={busy || (disabled && !onDisabledPress)}
+      onPress={() => {
+        if (busy) return;
+        if (disabled) {
+          onDisabledPress?.();
+          return;
+        }
+        onPress();
+      }}
       style={({ pressed }) => [
         styles.base,
         pressed && !disabled && !busy ? styles.pressed : null,

@@ -6,6 +6,8 @@ export type SecondaryButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  /** Soft blocked-action cue path (E8 `uiError`) while keeping disabled visuals. */
+  onDisabledPress?: () => void;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
@@ -15,6 +17,7 @@ export function SecondaryButton({
   label,
   onPress,
   disabled = false,
+  onDisabledPress,
   style,
   testID,
 }: SecondaryButtonProps): React.ReactElement {
@@ -22,8 +25,14 @@ export function SecondaryButton({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
+      disabled={disabled && !onDisabledPress}
+      onPress={() => {
+        if (disabled) {
+          onDisabledPress?.();
+          return;
+        }
+        onPress();
+      }}
       style={({ pressed }) => [
         styles.base,
         pressed && !disabled ? styles.pressed : null,

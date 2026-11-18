@@ -201,6 +201,7 @@ export function CustomiseScreen(props: {
 
   const onBack = () => {
     if (loadout.saving) return;
+    uiAudio.playCue('uiBack');
     if (loadout.dirty) discard();
     props.onBack();
   };
@@ -279,11 +280,24 @@ export function CustomiseScreen(props: {
               onPress={onFailureAction}
               testID="customise-retry-hydration"
             />
-            <SecondaryButton label="Back" onPress={props.onBack} testID="customise-back-blocked" />
+            <SecondaryButton
+              label="Back"
+              onPress={() => {
+                uiAudio.playCue('uiBack');
+                props.onBack();
+              }}
+              testID="customise-back-blocked"
+            />
           </>
         }
       >
-        <ScreenHeader title="Customise" onBack={props.onBack} />
+        <ScreenHeader
+          title="Customise"
+          onBack={() => {
+            uiAudio.playCue('uiBack');
+            props.onBack();
+          }}
+        />
         {failureKind ? (
           <SessionFailureBanner
             kind={failureKind}
@@ -316,8 +330,12 @@ export function CustomiseScreen(props: {
           <View style={styles.actions} testID="customise-actions">
             <SecondaryButton
               label="Discard"
-              onPress={discard}
+              onPress={() => {
+                uiAudio.playCue('uiBack');
+                discard();
+              }}
               disabled={!loadout.dirty || editingLocked}
+              onDisabledPress={() => uiAudio.playCue('uiError')}
               style={styles.discard}
               testID="customise-discard"
             />
@@ -327,6 +345,7 @@ export function CustomiseScreen(props: {
                 void onEquip();
               }}
               disabled={equipDisabled}
+              onDisabledPress={() => uiAudio.playCue('uiError')}
               busy={loadout.saving}
               showUnsavedDot={loadout.dirty && !loadout.saving}
               style={styles.equip}
@@ -372,7 +391,12 @@ export function CustomiseScreen(props: {
           selectedId={tab}
           compact
           onSelect={(id) => {
-            if (!editingLocked) setTab(id as CustomiseSlotId);
+            if (editingLocked) {
+              uiAudio.playCue('uiError');
+              return;
+            }
+            uiAudio.playCue('uiTab');
+            setTab(id as CustomiseSlotId);
           }}
           testID="customise-tabs"
         />

@@ -123,6 +123,15 @@ function wrapLoop(sound: SoundLike): LoopHandle {
         // ignore
       }
     },
+    setVolume: async (volume) => {
+      if (!alive) return;
+      try {
+        const v = Math.max(0, Math.min(1, volume));
+        await alive.setStatusAsync({ volume: v });
+      } catch {
+        // ignore
+      }
+    },
     stop: async () => {
       if (!alive) return;
       const s = alive;

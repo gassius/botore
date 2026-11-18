@@ -8,4 +8,5 @@ export {
   type PlayerSettingsPrefs,
 } from './prefs';
 export { loadPlayerSettings, savePlayerSettings } from './prefsStore';
-export { usePlayerSettings, type PlayerSettingsControls } from './usePlayerSettings';
+export { usePlayerSettingsState, type PlayerSettingsControls } from './usePlayerSettings';
+export { PlayerSettingsProvider, usePlayerSettings } from './PlayerSettingsProvider';

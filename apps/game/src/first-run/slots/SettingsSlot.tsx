@@ -1,5 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSharedTrialAudio } from '../../audio/trialAudioContext';
+import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import {
   BrandWordmark,
   ScreenChrome,
@@ -26,11 +28,20 @@ export function SettingsSlot(): React.ReactElement {
     setForceReducedMotion,
     osReducedMotion,
   } = useFirstRun();
+  const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
+  const shared = useSharedTrialAudio();
 
   return (
     <ScreenChrome testID="slot-settings">
       <BrandWordmark width={160} />
-      <ScreenHeader title="Settings" onBack={goBack} testID="settings-header" />
+      <ScreenHeader
+        title="Settings"
+        onBack={() => {
+          uiAudio.playCue('uiBack');
+          goBack();
+        }}
+        testID="settings-header"
+      />
 
       <Text style={styles.section} allowFontScaling>
         Audio
@@ -39,21 +50,33 @@ export function SettingsSlot(): React.ReactElement {
         <SettingsToggleRow
           label="Master mute"
           value={muted}
-          onValueChange={setMuted}
+          onValueChange={(next) => {
+            setMuted(next);
+            shared?.getSession()?.setMuted(next);
+            uiAudio.playCue('uiToggle');
+          }}
           detail="Persists across launches"
           testID="settings-master-mute"
         />
         <SettingsToggleRow
           label="Music"
           value={musicEnabled}
-          onValueChange={setMusicEnabled}
-          detail={muted ? 'Master mute silences music' : 'Fight music loop'}
+          onValueChange={(next) => {
+            setMusicEnabled(next);
+            shared?.getSession()?.setMusicEnabled(next);
+            uiAudio.playCue('uiToggle');
+          }}
+          detail={muted ? 'Master mute silences music' : 'Menu and fight music'}
           testID="settings-music"
         />
         <SettingsToggleRow
           label="Effects"
           value={effectsEnabled}
-          onValueChange={setEffectsEnabled}
+          onValueChange={(next) => {
+            setEffectsEnabled(next);
+            shared?.getSession()?.setEffectsEnabled(next);
+            uiAudio.playCue('uiToggle');
+          }}
           detail={muted ? 'Master mute silences effects' : 'Hits, UI taps, stingers'}
           testID="settings-effects"
         />
@@ -66,7 +89,10 @@ export function SettingsSlot(): React.ReactElement {
         <SettingsToggleRow
           label="Reduced motion"
           value={forceReducedMotion}
-          onValueChange={setForceReducedMotion}
+          onValueChange={(next) => {
+            setForceReducedMotion(next);
+            uiAudio.playCue('uiToggle');
+          }}
           detail={
             osReducedMotion
               ? 'Your device setting is on'

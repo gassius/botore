@@ -14,6 +14,8 @@ export type LoopHandle = {
   setMuted: (muted: boolean) => Promise<void>;
   setPaused: (paused: boolean) => Promise<void>;
   stop: () => Promise<void>;
+  /** Optional volume ramp for menu ↔ fight crossfades (0–1). */
+  setVolume?: (volume: number) => Promise<void>;
 };
 
 export type TrialAudioBackend = {
@@ -47,6 +49,7 @@ export function createNoopAudioBackend(): TrialAudioBackend {
       setMuted: async () => undefined,
       setPaused: async () => undefined,
       stop: async () => undefined,
+      setVolume: async () => undefined,
     }),
   };
 }

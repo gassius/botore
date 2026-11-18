@@ -1,84 +1,142 @@
 /**
- * Lightweight trial UI-cue session for Result / Customise screens.
- * Same mute / Effects channel rules as fight replay; no combat command mapping.
+ * Trial UI-cue + menu-music API for screens.
+ * Prefers the app-wide TrialAudioProvider session so menu music stays continuous.
+ * Without a provider (headless / unit tests), returns a silent no-op API so
+ * importing this hook never loads Metro `.m4a` requires.
  */
-import { useCallback, useEffect, useRef } from 'react';
-import { createExpoAvBackend } from './expoAvBackend';
-import {
-  createTrialAudioSession,
-  type PlayCueOptions,
-  type TrialAudioSession,
-} from './TrialAudioSession';
-import { TRIAL_AUDIO_METRO_SOURCES } from './trialAudioMetroAssets';
+import { useCallback, useMemo } from 'react';
+import type { PlayCueOptions } from './TrialAudioSession';
 import type { TrialAudioUiCueId } from './trialAudioPin';
+import { useSharedTrialAudio, type TrialAudioApi } from './trialAudioContext';
 
 export type TrialUiAudioApi = {
   playUiTap: () => void;
   playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
+  playSplashSting: () => void;
+  playFaceOffSting: () => void;
+  startMenuLoop: () => void;
+  crossfadeToFight: (opts?: { durationMs?: number }) => void;
+  crossfadeToMenu: (opts?: { durationMs?: number }) => void;
 };
 
-export function useTrialUiAudio(opts: {
+const NOOP_UI_AUDIO: TrialUiAudioApi = {
+  playUiTap: () => undefined,
+  playCue: () => undefined,
+  playSplashSting: () => undefined,
+  playFaceOffSting: () => undefined,
+  startMenuLoop: () => undefined,
+  crossfadeToFight: () => undefined,
+  crossfadeToMenu: () => undefined,
+};
+
+function toUiApi(api: TrialAudioApi): TrialUiAudioApi {
+  return {
+    playUiTap: api.playUiTap,
+    playCue: api.playCue,
+    playSplashSting: api.playSplashSting,
+    playFaceOffSting: api.playFaceOffSting,
+    startMenuLoop: api.startMenuLoop,
+    crossfadeToFight: api.crossfadeToFight,
+    crossfadeToMenu: api.crossfadeToMenu,
+  };
+}
+
+export function useTrialUiAudio(_opts: {
   muted: boolean;
   musicEnabled?: boolean;
   effectsEnabled?: boolean;
   enabled?: boolean;
 }): TrialUiAudioApi {
-  const sessionRef = useRef<TrialAudioSession | null>(null);
-  const mutedRef = useRef(opts.muted);
-  const musicEnabledRef = useRef(opts.musicEnabled !== false);
-  const effectsEnabledRef = useRef(opts.effectsEnabled !== false);
-  mutedRef.current = opts.muted;
-  musicEnabledRef.current = opts.musicEnabled !== false;
-  effectsEnabledRef.current = opts.effectsEnabled !== false;
-  const enabled = opts.enabled !== false;
-
-  useEffect(() => {
-    if (!enabled) {
-      sessionRef.current = null;
-      return;
-    }
-    const session = createTrialAudioSession({
-      backend: createExpoAvBackend(),
-      sources: TRIAL_AUDIO_METRO_SOURCES,
-      muted: mutedRef.current,
-      musicEnabled: musicEnabledRef.current,
-      effectsEnabled: effectsEnabledRef.current,
-      playing: true,
-    });
-    sessionRef.current = session;
-    return () => {
-      session.dispose();
-      if (sessionRef.current === session) sessionRef.current = null;
-    };
-  }, [enabled]);
-
-  useEffect(() => {
-    sessionRef.current?.setMuted(opts.muted);
-  }, [opts.muted]);
-
-  useEffect(() => {
-    sessionRef.current?.setMusicEnabled(opts.musicEnabled !== false);
-  }, [opts.musicEnabled]);
-
-  useEffect(() => {
-    sessionRef.current?.setEffectsEnabled(opts.effectsEnabled !== false);
-  }, [opts.effectsEnabled]);
+  const shared = useSharedTrialAudio();
+  const enabled = _opts.enabled !== false;
 
   const playUiTap = useCallback(() => {
     try {
-      sessionRef.current?.playUiTap();
+      shared?.playUiTap();
     } catch {
       // ignore
     }
-  }, []);
+  }, [shared]);
 
-  const playCue = useCallback((id: TrialAudioUiCueId, options?: PlayCueOptions) => {
+  const playCue = useCallback(
+    (id: TrialAudioUiCueId, options?: PlayCueOptions) => {
+      try {
+        shared?.playCue(id, options);
+      } catch {
+        // ignore
+      }
+    },
+    [shared],
+  );
+
+  const playSplashSting = useCallback(() => {
     try {
-      sessionRef.current?.playCue(id, options);
+      shared?.playSplashSting();
     } catch {
       // ignore
     }
-  }, []);
+  }, [shared]);
 
-  return { playUiTap, playCue };
+  const playFaceOffSting = useCallback(() => {
+    try {
+      shared?.playFaceOffSting();
+    } catch {
+      // ignore
+    }
+  }, [shared]);
+
+  const startMenuLoop = useCallback(() => {
+    try {
+      shared?.startMenuLoop();
+    } catch {
+      // ignore
+    }
+  }, [shared]);
+
+  const crossfadeToFight = useCallback(
+    (fadeOpts?: { durationMs?: number }) => {
+      try {
+        shared?.crossfadeToFight(fadeOpts);
+      } catch {
+        // ignore
+      }
+    },
+    [shared],
+  );
+
+  const crossfadeToMenu = useCallback(
+    (fadeOpts?: { durationMs?: number }) => {
+      try {
+        shared?.crossfadeToMenu(fadeOpts);
+      } catch {
+        // ignore
+      }
+    },
+    [shared],
+  );
+
+  return useMemo(() => {
+    if (!enabled) return NOOP_UI_AUDIO;
+    if (shared) return toUiApi(shared);
+    // Headless / no provider: silent no-op (never require Metro assets).
+    return {
+      playUiTap,
+      playCue,
+      playSplashSting,
+      playFaceOffSting,
+      startMenuLoop,
+      crossfadeToFight,
+      crossfadeToMenu,
+    };
+  }, [
+    enabled,
+    shared,
+    playUiTap,
+    playCue,
+    playSplashSting,
+    playFaceOffSting,
+    startMenuLoop,
+    crossfadeToFight,
+    crossfadeToMenu,
+  ]);
 }

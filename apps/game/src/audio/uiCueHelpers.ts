@@ -124,11 +124,18 @@ export type UiCuePlayRequest =
   | { readonly id: 'newRecord'; readonly play: boolean }
   | { readonly id: 'xpTick'; readonly play: boolean; readonly variation?: XpTickVariation }
   | { readonly id: 'equip'; readonly play: boolean }
-  | { readonly id: 'select'; readonly play: boolean };
+  | { readonly id: 'select'; readonly play: boolean }
+  | { readonly id: 'uiConfirm'; readonly play: boolean }
+  | { readonly id: 'uiBack'; readonly play: boolean }
+  | { readonly id: 'uiTab'; readonly play: boolean }
+  | { readonly id: 'uiSnap'; readonly play: boolean }
+  | { readonly id: 'uiCreate'; readonly play: boolean }
+  | { readonly id: 'uiError'; readonly play: boolean }
+  | { readonly id: 'uiToggle'; readonly play: boolean };
 
 export function resolveUiCuePlay(id: TrialAudioUiCueId, allowed: boolean): UiCuePlayRequest | null {
   if (!allowed) return null;
-  return { id, play: true };
+  return { id, play: true } as UiCuePlayRequest;
 }
 
 function clamp01(n: number): number {

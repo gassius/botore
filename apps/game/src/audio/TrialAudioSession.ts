@@ -1,19 +1,21 @@
 /**
- * Fire-and-forget trial audio session for CanonicalReplayPlayer.
+ * Fire-and-forget trial audio session for CanonicalReplayPlayer + app UI.
  * Never throws; never awaits on the fight clock.
  *
- * Music + arena ambient start use a generation token invalidated by reset /
- * victory stop / dispose so deferred startLoop completions cannot leak or
- * revive audio. One-shots are owned until natural end, mute, reset, or dispose.
+ * Music + arena ambient + menu loop start use a generation token invalidated by
+ * reset / victory stop / dispose so deferred startLoop completions cannot leak
+ * or revive audio. One-shots are owned until natural end, mute, reset, or dispose.
  *
  * Part swings / chassis hits prefer equipped sound tags when sources exist;
  * otherwise fall back to base trial clips.
+ *
+ * v004: splash/menu ↔ fight crossfade (~600 ms) and the full UI button family.
  */
 import type { AnimationCommand } from '../replay-playback';
 import { shouldStartMusicLoop, shouldStopMusicLoop } from './cueFromCommand';
 import type { AudioSource, LoopHandle, OneShotHandle, TrialAudioBackend } from './audioBackend';
 import { createNoopAudioBackend } from './audioBackend';
-import { trialAudioClipVolume } from './trialAudioManifest';
+import { TRIAL_AUDIO_MANIFEST, trialAudioClipVolume } from './trialAudioManifest';
 import type { TrialAudioClipId, TrialAudioUiCueId } from './trialAudioPin';
 import {
   ARENA_AMBIENT_VOLUME,
@@ -56,8 +58,20 @@ export type TrialAudioSessionOptions = {
 export type TrialAudioSession = {
   notifyCommand: (cmd: AnimationCommand) => void;
   playUiTap: () => void;
-  /** Result overlay / Customise one-shots (new record, XP tick, equip, card select). Fire-and-forget. */
+  /** Screen-driven one-shots (Result, Customise, and the v004 UI family). Fire-and-forget. */
   playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
+  /** Logo / splash sting on the music channel, then typically startMenuLoop. */
+  playSplashSting: () => void;
+  /** Tale of the Tape face-off sting on the music channel, over menuLoop. */
+  playFaceOffSting: () => void;
+  /** Start the hangar menu loop (splash and every non-fight screen). Idempotent. */
+  startMenuLoop: () => void;
+  /** ~600 ms crossfade from menuLoop into the fight musicLoop. */
+  crossfadeToFight: (opts?: { durationMs?: number }) => void;
+  /** ~600 ms crossfade from the fight musicLoop back to menuLoop (result overlay). */
+  crossfadeToMenu: (opts?: { durationMs?: number }) => void;
+  /** Update part-cue profiles for the next fight without recreating the session. */
+  setFighterProfiles: (profiles: readonly FighterAudioProfile[]) => void;
   setMuted: (muted: boolean) => void;
   setMusicEnabled: (enabled: boolean) => void;
   setEffectsEnabled: (enabled: boolean) => void;
@@ -85,7 +99,7 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
   const sources = opts.sources;
   const partSources = opts.partSources ?? {};
   const ambientSource = opts.ambientSource ?? null;
-  const fighterProfiles = opts.fighterProfiles ?? [];
+  let fighterProfiles = opts.fighterProfiles ?? [];
   let muted = Boolean(opts.muted);
   let musicEnabled = opts.musicEnabled !== false;
   let effectsEnabled = opts.effectsEnabled !== false;
@@ -95,15 +109,27 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
   let musicStarted = false;
   /** Bumped on stopMusic / reset / dispose — invalidates in-flight startLoop. */
   let musicGeneration = 0;
+  let menu: LoopHandle | null = null;
+  let menuStarted = false;
+  let menuGeneration = 0;
+  /** Intervals + timeouts for crossfade ramps / incoming poll. */
+  const fadeTimers = new Set<ReturnType<typeof setTimeout>>();
   let ambient: LoopHandle | null = null;
   let ambientStarted = false;
   let ambientGeneration = 0;
   let modeEnsured = false;
   const oneshots = new Set<OneShotHandle>();
+  /** Per-handle channel mute predicate (music vs effects) for in-flight one-shots. */
+  const oneshotChannelMuted = new Map<OneShotHandle, () => boolean>();
   const stats = { cues: 0, failures: 0 };
 
   const musicChannelMuted = () => muted || !musicEnabled;
   const effectsChannelMuted = () => muted || !effectsEnabled;
+
+  const channelMutedFor = (id: TrialAudioClipId) => {
+    const role = TRIAL_AUDIO_MANIFEST.clips[id]?.role;
+    return role === 'music' ? musicChannelMuted() : effectsChannelMuted();
+  };
 
   const ensureMode = () => {
     if (modeEnsured || disposed) return;
@@ -119,11 +145,13 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
 
   const forgetOneShot = (handle: OneShotHandle) => {
     oneshots.delete(handle);
+    oneshotChannelMuted.delete(handle);
   };
 
   const stopOwnedOneShots = () => {
     const pending = [...oneshots];
     oneshots.clear();
+    oneshotChannelMuted.clear();
     for (const handle of pending) {
       safeRun(
         'stopOneShot',
@@ -139,21 +167,22 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     label: string,
     source: AudioSource | null | undefined,
     volume: number,
-    rate?: number,
+    rate: number | undefined,
+    channelMuted: () => boolean,
   ) => {
     if (disposed) return;
     stats.cues += 1;
-    if (effectsChannelMuted()) return;
+    if (channelMuted()) return;
     if (source == null) {
       stats.failures += 1;
       return;
     }
     ensureMode();
-    const channelMuted = effectsChannelMuted();
+    const mutedNow = channelMuted();
     const shotOpts =
       typeof rate === 'number' && Number.isFinite(rate)
-        ? { volume, muted: channelMuted, rate }
-        : { volume, muted: channelMuted };
+        ? { volume, muted: mutedNow, rate }
+        : { volume, muted: mutedNow };
     safeRun(
       label,
       async () => {
@@ -167,14 +196,15 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
           return;
         }
         oneshots.add(handle);
+        oneshotChannelMuted.set(handle, channelMuted);
         try {
-          await handle.setMuted(effectsChannelMuted());
+          await handle.setMuted(channelMuted());
           if (disposed) {
             await handle.stop();
             forgetOneShot(handle);
             return;
           }
-          if (!effectsChannelMuted()) {
+          if (!channelMuted()) {
             await handle.play();
           }
         } catch {
@@ -197,7 +227,7 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     const volume = Math.max(0, Math.min(1, trialAudioClipVolume(id) * scale));
     const rate =
       typeof options?.rate === 'number' && Number.isFinite(options.rate) ? options.rate : undefined;
-    playSource(id, sources[id], volume, rate);
+    playSource(id, sources[id], volume, rate, () => channelMutedFor(id));
   };
 
   const playResolvedCue = (cue: ResolvedOneShotCue) => {
@@ -209,7 +239,7 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
           cue.id === 'chassisBasicHit'
             ? trialAudioClipVolume('hit')
             : trialAudioClipVolume('swing');
-        playSource(cue.id, partSource, volume);
+        playSource(cue.id, partSource, volume, undefined, effectsChannelMuted);
         return;
       }
       // Missing part source → base fallback (never block).
@@ -231,7 +261,13 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     await handle.setPaused(!playing);
   };
 
-  const startMusic = () => {
+  /** Menu ignores fight play/pause — Result / Ludus stay audible after KO. */
+  const reconcileMenu = async (handle: LoopHandle) => {
+    await handle.setMuted(musicChannelMuted());
+    await handle.setPaused(false);
+  };
+
+  const startMusic = (startOpts?: { volume?: number }) => {
     if (disposed || musicStarted) return;
     // Still create the loop handle when channel-muted so unmute can resume
     // without waiting for another show_battle — but never audible while muted.
@@ -244,7 +280,8 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
       return;
     }
     ensureMode();
-    const volume = trialAudioClipVolume('musicLoop');
+    const volume =
+      typeof startOpts?.volume === 'number' ? startOpts.volume : trialAudioClipVolume('musicLoop');
     safeRun(
       'musicLoop',
       async () => {
@@ -274,6 +311,50 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
       () => {
         stats.failures += 1;
         if (generation === musicGeneration) musicStarted = false;
+      },
+    );
+  };
+
+  const startMenu = (startOpts?: { volume?: number }) => {
+    if (disposed || menuStarted) return;
+    menuStarted = true;
+    const generation = menuGeneration;
+    const source = sources.menuLoop;
+    if (source == null) {
+      stats.failures += 1;
+      menuStarted = false;
+      return;
+    }
+    ensureMode();
+    const volume =
+      typeof startOpts?.volume === 'number' ? startOpts.volume : trialAudioClipVolume('menuLoop');
+    safeRun(
+      'menuLoop',
+      async () => {
+        const handle = await backend.startLoop(source, { volume });
+        if (!handle) {
+          if (generation === menuGeneration) menuStarted = false;
+          stats.failures += 1;
+          return;
+        }
+        if (disposed || generation !== menuGeneration) {
+          await handle.stop();
+          return;
+        }
+        menu = handle;
+        try {
+          await reconcileMenu(handle);
+        } catch {
+          stats.failures += 1;
+        }
+        if (disposed || generation !== menuGeneration) {
+          if (menu === handle) menu = null;
+          await handle.stop();
+        }
+      },
+      () => {
+        stats.failures += 1;
+        if (generation === menuGeneration) menuStarted = false;
       },
     );
   };
@@ -320,11 +401,11 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
   };
 
   const reconcileOwnedOneShots = () => {
-    const channelMuted = effectsChannelMuted();
     for (const handle of oneshots) {
+      const channelMuted = oneshotChannelMuted.get(handle) ?? effectsChannelMuted;
       safeRun(
         'oneshotMuted',
-        () => handle.setMuted(channelMuted),
+        () => handle.setMuted(channelMuted()),
         () => {
           stats.failures += 1;
         },
@@ -333,11 +414,28 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
   };
 
   const reconcileOwnedMusic = () => {
-    for (const handle of [music, ambient]) {
-      if (!handle) continue;
+    if (music) {
       safeRun(
         'setMuted',
-        () => reconcileMusic(handle),
+        () => reconcileMusic(music!),
+        () => {
+          stats.failures += 1;
+        },
+      );
+    }
+    if (ambient) {
+      safeRun(
+        'setMuted',
+        () => reconcileMusic(ambient!),
+        () => {
+          stats.failures += 1;
+        },
+      );
+    }
+    if (menu) {
+      safeRun(
+        'setMuted',
+        () => reconcileMenu(menu!),
         () => {
           stats.failures += 1;
         },
@@ -360,6 +458,21 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     );
   };
 
+  const stopMenu = () => {
+    menuGeneration += 1;
+    const handle = menu;
+    menu = null;
+    menuStarted = false;
+    if (!handle) return;
+    safeRun(
+      'stopMenu',
+      () => handle.stop(),
+      () => {
+        stats.failures += 1;
+      },
+    );
+  };
+
   const stopAmbient = () => {
     ambientGeneration += 1;
     const handle = ambient;
@@ -373,6 +486,109 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
         stats.failures += 1;
       },
     );
+  };
+
+  const clearFades = () => {
+    for (const t of fadeTimers) {
+      clearInterval(t);
+      clearTimeout(t);
+    }
+    fadeTimers.clear();
+  };
+
+  const fadeVolume = (
+    handle: LoopHandle,
+    from: number,
+    to: number,
+    ms: number,
+    onDone?: () => void,
+  ) => {
+    const setVol = handle.setVolume;
+    if (!setVol || ms <= 0) {
+      if (setVol) {
+        safeRun(
+          'setVolume',
+          () => setVol(to),
+          () => {
+            stats.failures += 1;
+          },
+        );
+      }
+      onDone?.();
+      return;
+    }
+    const steps = Math.max(4, Math.round(ms / 50));
+    let i = 0;
+    const timer = setInterval(
+      () => {
+        i += 1;
+        const t = i / steps;
+        const v = from + (to - from) * t;
+        safeRun(
+          'setVolume',
+          () => setVol(v),
+          () => {
+            stats.failures += 1;
+          },
+        );
+        if (i >= steps) {
+          clearInterval(timer);
+          fadeTimers.delete(timer);
+          onDone?.();
+        }
+      },
+      Math.max(16, Math.round(ms / steps)),
+    );
+    fadeTimers.add(timer);
+  };
+
+  const crossfade = (toFight: boolean, durationMs: number) => {
+    if (disposed) return;
+    clearFades();
+    // Returning to menu after KO / pause must not stay silenced by fight playing=false.
+    if (!toFight) {
+      playing = true;
+    }
+    const incomingStart = toFight ? startMusic : startMenu;
+    const outgoingStop = toFight ? stopMenu : stopMusic;
+    const outgoing = toFight ? menu : music;
+    const canFade = Boolean(outgoing?.setVolume) && durationMs > 0;
+    const targetVol = trialAudioClipVolume(toFight ? 'musicLoop' : 'menuLoop');
+    // Only duck the incoming loop when a real fade can ramp it back up. Otherwise
+    // startLoop is still async and a sync setVolume on a null handle leaves the
+    // loop at 0 forever (post-victory_screen → crossfadeToMenu with music=null).
+    if (!canFade) {
+      incomingStart();
+      outgoingStop();
+      return;
+    }
+    incomingStart({ volume: 0 });
+    if (outgoing) {
+      fadeVolume(
+        outgoing,
+        trialAudioClipVolume(toFight ? 'menuLoop' : 'musicLoop'),
+        0,
+        durationMs,
+        () => {
+          outgoingStop();
+        },
+      );
+    }
+    // Incoming handle may still be starting asynchronously — poll briefly for setVolume.
+    const startedAt = Date.now();
+    const tryFadeIn = () => {
+      if (disposed) return;
+      const toHandle = toFight ? music : menu;
+      if (toHandle?.setVolume) {
+        fadeVolume(toHandle, 0, targetVol, durationMs);
+        return;
+      }
+      if (Date.now() - startedAt < durationMs + 200) {
+        const poll = setTimeout(tryFadeIn, 40);
+        fadeTimers.add(poll);
+      }
+    };
+    tryFadeIn();
   };
 
   return {
@@ -391,6 +607,24 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     playCue: (id, options) => {
       playClip(id, options);
     },
+    playSplashSting: () => {
+      playClip('splashSting');
+    },
+    playFaceOffSting: () => {
+      playClip('faceOffSting');
+    },
+    startMenuLoop: () => {
+      startMenu();
+    },
+    crossfadeToFight: (fadeOpts) => {
+      crossfade(true, fadeOpts?.durationMs ?? 600);
+    },
+    crossfadeToMenu: (fadeOpts) => {
+      crossfade(false, fadeOpts?.durationMs ?? 600);
+    },
+    setFighterProfiles: (profiles) => {
+      fighterProfiles = profiles;
+    },
     setMuted: (next) => {
       muted = Boolean(next);
       reconcileOwnedOneShots();
@@ -399,12 +633,14 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     setMusicEnabled: (enabled) => {
       musicEnabled = Boolean(enabled);
       reconcileOwnedMusic();
+      reconcileOwnedOneShots();
     },
     setEffectsEnabled: (enabled) => {
       effectsEnabled = Boolean(enabled);
       reconcileOwnedOneShots();
     },
     setPlaying: (next) => {
+      // Fight-scoped only — never pause menuLoop (Result / Ludus after KO).
       playing = Boolean(next);
       for (const handle of [music, ambient]) {
         if (!handle) continue;
@@ -419,15 +655,20 @@ export function createTrialAudioSession(opts: TrialAudioSessionOptions): TrialAu
     },
     reset: () => {
       if (disposed) return;
+      clearFades();
       stopOwnedOneShots();
       stopMusic();
       stopAmbient();
+      // Keep menu loop across fight resets so Result / Ludus stay continuous;
+      // screens call crossfadeToMenu / startMenuLoop explicitly when needed.
     },
     dispose: () => {
       if (disposed) return;
       disposed = true;
+      clearFades();
       stopOwnedOneShots();
       stopMusic();
+      stopMenu();
       stopAmbient();
     },
   };

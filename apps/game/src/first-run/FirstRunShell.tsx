@@ -1,6 +1,7 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useRouteMenuMusic } from '../audio/useRouteMenuMusic';
 import { useDesignCaptureDeepLink } from '../design-capture/useDesignCaptureDeepLink';
 import { useDesignCaptureLiveFight } from '../design-capture/useDesignCaptureLiveFight';
 import { FirstRunProvider, useFirstRun } from './FirstRunContext';
@@ -40,9 +41,10 @@ function RouteSlot({ route }: { route: FirstRunRoute }): React.ReactElement {
 }
 
 function ShellInner(): React.ReactElement {
-  const { route } = useFirstRun();
+  const { route, showResultOverlay } = useFirstRun();
   useDesignCaptureDeepLink();
   useDesignCaptureLiveFight();
+  useRouteMenuMusic({ route, showResultOverlay });
   return (
     <>
       <StatusBar style="light" />

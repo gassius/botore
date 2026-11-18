@@ -11,10 +11,13 @@ import {
   peekCaptureIntent,
 } from '../design-capture/pendingCaptureIntent';
 import { loadCaptureIntentFile } from '../design-capture/readCaptureIntentFile';
+import { GarageTrialAudioGate } from '../audio/GarageTrialAudioGate';
+import { useSplashMenuBootstrap } from '../audio/useSplashMenuBootstrap';
 import { FightSessionProvider } from '../fight/FightSessionContext';
 import { FirstRunShell } from '../first-run/FirstRunShell';
 import { garageTag, InAppTitleSplash } from '../garage-tag';
 import { isPlayableFailClosed, PlayableMisconfiguredScreen } from '../runtime';
+import { PlayerSettingsProvider } from '../settings';
 import { readSupabasePublicConfig } from './auth/supabasePublicConfig';
 import { LaunchTitleScreen } from './screens/LaunchTitleScreen';
 import { SessionAuthErrorScreen } from './screens/SessionAuthErrorScreen';
@@ -214,6 +217,12 @@ function GarageRootInner(): React.ReactElement {
     };
   }, [coldStartHoldTitle, coldStartIntentReady, releaseNativeSplash]);
 
+  const showTitle = booting || !titleImageReady || !titleDwellDone || !coldStartIntentReady;
+  const splashActive = Boolean(coldStartHoldTitle || showTitle || !session);
+
+  // E8: sting + menuLoop while the launch title is up (honours mute / Music).
+  useSplashMenuBootstrap(splashActive);
+
   // C7c design-capture cold-start: hold launch-title (skip silent auth).
   // Mount title under the native splash; release only after min dwell + onLoad.
   if (coldStartHoldTitle) {
@@ -229,8 +238,6 @@ function GarageRootInner(): React.ReactElement {
       />
     );
   }
-
-  const showTitle = booting || !titleImageReady || !titleDwellDone || !coldStartIntentReady;
 
   if (showTitle) {
     return (
@@ -285,7 +292,11 @@ function GarageRootInner(): React.ReactElement {
 export function GarageRoot(): React.ReactElement {
   return (
     <GarageSessionProvider>
-      <GarageRootInner />
+      <PlayerSettingsProvider>
+        <GarageTrialAudioGate>
+          <GarageRootInner />
+        </GarageTrialAudioGate>
+      </PlayerSettingsProvider>
     </GarageSessionProvider>
   );
 }

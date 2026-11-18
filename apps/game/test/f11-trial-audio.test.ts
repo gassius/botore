@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { compileAnimationQueue } from '../src/replay-playback';
 import {
   ACTIVE_TRIAL_AUDIO_ASSET_VERSION,
@@ -26,7 +26,7 @@ import {
 } from '../src/audio';
 import { loadDevGoldenConfirmedResult } from '../src/replay';
 
-const packRoot = join(process.cwd(), 'assets/trial-audio-v003');
+const packRoot = join(process.cwd(), 'assets/trial-audio-v004');
 
 const sources: TrialAudioSources = {
   swing: 1,
@@ -41,6 +41,16 @@ const sources: TrialAudioSources = {
   xpTick: 10,
   equip: 11,
   select: 12,
+  menuLoop: 13,
+  splashSting: 14,
+  faceOffSting: 22,
+  uiConfirm: 15,
+  uiBack: 16,
+  uiTab: 17,
+  uiSnap: 18,
+  uiCreate: 19,
+  uiError: 20,
+  uiToggle: 21,
 };
 
 function deferred<T>() {
@@ -53,11 +63,11 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-describe('F11 trial-audio-v003 pack seal', () => {
-  it('pins coherent trial-audio-v003 and lists the 12 trial clips', () => {
-    expect(ACTIVE_TRIAL_AUDIO_ASSET_VERSION).toBe('trial-audio-v003');
-    expect(TRIAL_AUDIO_MANIFEST.version).toBe('trial-audio-v003');
-    expect(TRIAL_AUDIO_CLIP_IDS).toHaveLength(12);
+describe('F11 trial-audio-v004 pack seal', () => {
+  it('pins coherent trial-audio-v004 and lists the 22 trial clips', () => {
+    expect(ACTIVE_TRIAL_AUDIO_ASSET_VERSION).toBe('trial-audio-v004');
+    expect(TRIAL_AUDIO_MANIFEST.version).toBe('trial-audio-v004');
+    expect(TRIAL_AUDIO_CLIP_IDS).toHaveLength(22);
     for (const id of TRIAL_AUDIO_CLIP_IDS) {
       expect(TRIAL_AUDIO_MANIFEST.clips[id]).toBeTruthy();
       expect(TRIAL_AUDIO_MANIFEST.clips[id].placeholder).toBe(false);
@@ -67,7 +77,7 @@ describe('F11 trial-audio-v003 pack seal', () => {
   it('records provenance gate: no paid generation without product-owner go', () => {
     expect(TRIAL_AUDIO_MANIFEST.paid_generation.used).toBe(true);
     expect(TRIAL_AUDIO_MANIFEST.paid_generation.product_owner_go).toBe(true);
-    expect(TRIAL_AUDIO_MANIFEST.paid_generation.credit_cost).toBe(1216);
+    expect(TRIAL_AUDIO_MANIFEST.paid_generation.credit_cost).toBe(2916);
     expect(() => assertNoPaidGenerationWithoutGo()).not.toThrow();
     expect(existsSync(join(packRoot, 'PROVENANCE.md'))).toBe(true);
   });
@@ -152,6 +162,16 @@ describe('F11 TrialAudioSession never blocks / desyncs', () => {
     xpTick: null,
     equip: null,
     select: null,
+    menuLoop: null,
+    splashSting: null,
+    faceOffSting: null,
+    uiConfirm: null,
+    uiBack: null,
+    uiTab: null,
+    uiSnap: null,
+    uiCreate: null,
+    uiError: null,
+    uiToggle: null,
   };
 
   it('missing sources increment failures but notifyCommand does not throw', async () => {
@@ -209,7 +229,7 @@ describe('F11 TrialAudioSession never blocks / desyncs', () => {
     session.dispose();
   });
 
-  it('playCue plays each Result/Customise cue and respects master mute', async () => {
+  it('playCue plays each UI cue and respects master mute', async () => {
     const played: unknown[] = [];
     const backend: TrialAudioBackend = {
       ensureMode: async () => undefined,
@@ -234,7 +254,7 @@ describe('F11 TrialAudioSession never blocks / desyncs', () => {
     session.setMuted(false);
     for (const id of TRIAL_AUDIO_UI_CUE_IDS) session.playCue(id);
     await new Promise((r) => setTimeout(r, 0));
-    expect(played).toEqual([9, 10, 11, 12]);
+    expect(played).toEqual([9, 10, 11, 12, 15, 16, 17, 18, 19, 20, 21]);
     for (const id of TRIAL_AUDIO_UI_CUE_IDS) {
       expect(TRIAL_AUDIO_MANIFEST.clips[id].kind).toBe('oneshot');
       expect(trialAudioClipVolume(id)).toBeGreaterThan(0);
@@ -280,6 +300,54 @@ describe('F11 TrialAudioSession never blocks / desyncs', () => {
     session.playCue('xpTick', { rate: 1.02, volumeScale: 1 });
     await new Promise((r) => setTimeout(r, 0));
     expect(shots).toHaveLength(1);
+    session.dispose();
+  });
+
+  it('startMenuLoop, playSplashSting and playFaceOffSting honour master mute and the Music toggle', async () => {
+    const loops: unknown[] = [];
+    const shots: unknown[] = [];
+    const backend: TrialAudioBackend = {
+      ensureMode: async () => undefined,
+      playOneShot: async (source) => {
+        shots.push(source);
+        return {
+          setMuted: async () => undefined,
+          play: async () => undefined,
+          stop: async () => undefined,
+        };
+      },
+      startLoop: async (source) => {
+        loops.push(source);
+        return {
+          setMuted: async () => undefined,
+          setPaused: async () => undefined,
+          stop: async () => undefined,
+          setVolume: async () => undefined,
+        };
+      },
+    };
+    const session = createTrialAudioSession({ backend, sources, muted: true });
+    session.startMenuLoop();
+    session.playSplashSting();
+    session.playFaceOffSting();
+    await new Promise((r) => setTimeout(r, 0));
+    // Menu loop handle is created while muted so unmute can resume it, but oneshots stay silent.
+    expect(loops).toEqual([13]);
+    expect(shots).toHaveLength(0);
+    session.setMuted(false);
+    session.startMenuLoop();
+    session.playSplashSting();
+    session.playFaceOffSting();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(loops).toEqual([13]);
+    expect(shots).toEqual([14, 22]);
+    expect(TRIAL_AUDIO_MANIFEST.clips.menuLoop.kind).toBe('loop');
+    expect(TRIAL_AUDIO_MANIFEST.clips.menuLoop.role).toBe('music');
+    expect(trialAudioClipVolume('menuLoop')).toBeGreaterThan(0);
+    session.setMusicEnabled(false);
+    session.playSplashSting();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toEqual([14, 22]);
     session.dispose();
   });
 
@@ -637,5 +705,203 @@ describe('F11 expo-av platform mode policy', () => {
     await oneshot!.setMuted(true);
     expect(sounds[1]?.muted).toBe(true);
     await oneshot!.stop();
+  });
+});
+
+describe('E8 PRR B1/B2 shared session wiring', () => {
+  function recordingBackend() {
+    const loops: Array<{
+      source: unknown;
+      volume: number;
+      paused: boolean[];
+      muted: boolean[];
+      volumes: number[];
+      stopped: number;
+    }> = [];
+    const shots: Array<{ source: unknown; mutedCalls: boolean[] }> = [];
+    const backend: TrialAudioBackend = {
+      ensureMode: async () => undefined,
+      playOneShot: async (source, opts) => {
+        const rec = { source, mutedCalls: [Boolean(opts.muted)] as boolean[] };
+        shots.push(rec);
+        return {
+          setMuted: async (m) => {
+            rec.mutedCalls.push(Boolean(m));
+          },
+          play: async () => undefined,
+          stop: async () => undefined,
+        };
+      },
+      startLoop: async (source, opts) => {
+        const rec = {
+          source,
+          volume: opts.volume,
+          paused: [] as boolean[],
+          muted: [] as boolean[],
+          volumes: [] as number[],
+          stopped: 0,
+        };
+        loops.push(rec);
+        return {
+          setMuted: async (m) => {
+            rec.muted.push(Boolean(m));
+          },
+          setPaused: async (p) => {
+            rec.paused.push(Boolean(p));
+          },
+          stop: async () => {
+            rec.stopped += 1;
+          },
+          setVolume: async (v) => {
+            rec.volumes.push(v);
+          },
+        };
+      },
+    };
+    return { backend, loops, shots };
+  }
+
+  it('B1: setPlaying(false) pauses fight loops but leaves menuLoop unpaused after crossfadeToMenu', async () => {
+    vi.useFakeTimers();
+    const { backend, loops } = recordingBackend();
+    const session = createTrialAudioSession({ backend, sources, muted: false, playing: true });
+    session.startMenuLoop();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(loops).toHaveLength(1);
+    // Enter fight.
+    session.crossfadeToFight({ durationMs: 0 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(loops.length).toBeGreaterThanOrEqual(2);
+    const fight = loops.find((l) => l.source === 8);
+    expect(fight).toBeTruthy();
+    // Replay ends under Result.
+    session.setPlaying(false);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fight!.paused.at(-1)).toBe(true);
+    session.crossfadeToMenu({ durationMs: 0 });
+    await vi.advanceTimersByTimeAsync(0);
+    const menuAfter = loops.filter((l) => l.source === 13).at(-1);
+    expect(menuAfter).toBeTruthy();
+    // Menu must not stay paused after KO → Result.
+    expect(menuAfter!.paused.at(-1)).toBe(false);
+    session.setPlaying(false);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(menuAfter!.paused.filter((p) => p === true)).toHaveLength(0);
+    session.dispose();
+    vi.useRealTimers();
+  });
+
+  it('B2: mute / Music / Effects update the live shared session while running', async () => {
+    const { backend, loops, shots } = recordingBackend();
+    const session = createTrialAudioSession({
+      backend,
+      sources,
+      muted: false,
+      musicEnabled: true,
+      effectsEnabled: true,
+      playing: true,
+    });
+    session.startMenuLoop();
+    await new Promise((r) => setTimeout(r, 0));
+    session.playUiTap();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toHaveLength(1);
+
+    session.setMuted(true);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(loops[0]?.muted.at(-1)).toBe(true);
+    session.playUiTap();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toHaveLength(1);
+
+    session.setMuted(false);
+    session.setEffectsEnabled(false);
+    await new Promise((r) => setTimeout(r, 0));
+    session.playUiTap();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(shots).toHaveLength(1);
+
+    session.setEffectsEnabled(true);
+    session.setMusicEnabled(false);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(loops[0]?.muted.at(-1)).toBe(true);
+    session.playSplashSting();
+    await new Promise((r) => setTimeout(r, 0));
+    // splashSting is music-role — Music off silences it.
+    expect(shots).toHaveLength(1);
+    session.dispose();
+  });
+
+  it('M2: in-flight splashSting follows Music, not Effects', async () => {
+    const mutedCalls: boolean[] = [];
+    const handle: OneShotHandle = {
+      setMuted: async (m) => {
+        mutedCalls.push(Boolean(m));
+      },
+      play: async () => undefined,
+      stop: async () => undefined,
+    };
+    const backend: TrialAudioBackend = {
+      ensureMode: async () => undefined,
+      playOneShot: async () => handle,
+      startLoop: async () => ({
+        setMuted: async () => undefined,
+        setPaused: async () => undefined,
+        stop: async () => undefined,
+        setVolume: async () => undefined,
+      }),
+    };
+    const session = createTrialAudioSession({ backend, sources });
+    session.playSplashSting();
+    await new Promise((r) => setTimeout(r, 0));
+    mutedCalls.length = 0;
+    session.setEffectsEnabled(false);
+    await new Promise((r) => setTimeout(r, 0));
+    // Music still on → sting should not be muted by Effects-off alone.
+    expect(mutedCalls.at(-1)).toBe(false);
+    session.setMusicEnabled(false);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(mutedCalls.at(-1)).toBe(true);
+    session.dispose();
+  });
+
+  it('crossfade starts incoming loop at volume 0', async () => {
+    const { backend, loops } = recordingBackend();
+    const session = createTrialAudioSession({ backend, sources });
+    session.startMenuLoop();
+    await new Promise((r) => setTimeout(r, 0));
+    session.crossfadeToFight({ durationMs: 100 });
+    await new Promise((r) => setTimeout(r, 0));
+    const fight = loops.find((l) => l.source === 8);
+    expect(fight?.volume).toBe(0);
+    session.dispose();
+  });
+
+  it('B3: menu → fight → victory_screen → menu restores menuLoop at target volume', async () => {
+    vi.useFakeTimers();
+    const { backend, loops } = recordingBackend();
+    const session = createTrialAudioSession({ backend, sources, muted: false, playing: true });
+    session.startMenuLoop();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(loops.filter((l) => l.source === 13)).toHaveLength(1);
+    expect(loops[0]?.volume).toBe(trialAudioClipVolume('menuLoop'));
+
+    session.crossfadeToFight({ durationMs: 100 });
+    await vi.advanceTimersByTimeAsync(0);
+    const fight = loops.find((l) => l.source === 8);
+    expect(fight?.volume).toBe(0);
+
+    // KO / Result path: victory stops fight music, then overlay crossfades to menu
+    // with no outgoing handle — must not leave the new menuLoop stuck at 0.
+    session.notifyCommand({ kind: 'victory_screen', winner: 'a' });
+    await vi.advanceTimersByTimeAsync(0);
+    session.crossfadeToMenu({ durationMs: 600 });
+    await vi.advanceTimersByTimeAsync(0);
+    const menuAfter = loops.filter((l) => l.source === 13).at(-1);
+    expect(menuAfter).toBeTruthy();
+    expect(menuAfter!.volume).toBe(trialAudioClipVolume('menuLoop'));
+    expect(menuAfter!.volume).toBeGreaterThan(0);
+    session.dispose();
+    vi.useRealTimers();
   });
 });
