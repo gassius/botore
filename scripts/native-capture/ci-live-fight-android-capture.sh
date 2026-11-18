@@ -356,7 +356,8 @@ GOT_ARENA=0
 GOT_HIT=0
 GOT_DODGE=0
 GOT_DEFEAT=0
-FIGHT_WAIT_SEC="${CAPTURE_FIGHT_WAIT_SEC:-120}"
+# Hit + dodge each freeze ~8s; long sealed fights still need room for defeat.
+FIGHT_WAIT_SEC="${CAPTURE_FIGHT_WAIT_SEC:-240}"
 FX_DEADLINE=$((SECONDS + FIGHT_WAIT_SEC))
 
 logcat_dump() {
@@ -402,10 +403,13 @@ capture_fx_while_held() {
       write_manifest_line "${MANIFEST}" "still.android.replay-impact" "${impact_copy}"
     fi
   fi
-  # Nudge past the hold so the next family can fire (hold is ~8s; don't busy-wait adb).
+  # Wait out the ~8s FX hold so the next family (esp. defeat) can fire.
+  local resume_deadline=$((SECONDS + 12))
   if ! logcat_has "${resume_marker}"; then
-    echo "waiting briefly for ${hold_marker} resume…" >&2
-    sleep 1
+    echo "waiting for ${hold_marker} resume…" >&2
+    while (( SECONDS < resume_deadline )) && ! logcat_has "${resume_marker}"; do
+      sleep 0.5
+    done
   fi
 }
 
@@ -482,9 +486,23 @@ if [[ "${GOT_ARENA}" -eq 0 ]]; then
   ensure_arena_layers_still
 fi
 
+# Last-chance defeat: HOLD may land on the final poll tick after FX_DEADLINE.
+if [[ "${GOT_DEFEAT}" -eq 0 ]] && logcat_has 'BOTORE_CAPTURE_FX_HOLD:family=defeat'; then
+  echo "note: late defeat FX hold — capturing after poll window" >&2
+  capture_fx_while_held defeat replay-fx-defeat
+  GOT_DEFEAT=1
+fi
+
 if [[ "${FX_DODGE}" -eq 0 ]]; then
   write_manifest_line "${MANIFEST}" fx_dodge "absent-from-recorded-events"
   echo "note: no dodge in sealed replay — dodge FX correctly not invented" >&2
+fi
+
+if [[ "${GOT_HIT}" -eq 0 || "${GOT_DEFEAT}" -eq 0 ]]; then
+  echo "error: required FX stills missing after ${FIGHT_WAIT_SEC}s (hit=${GOT_HIT} defeat=${GOT_DEFEAT})" >&2
+  logcat_dump | grep -aE 'BOTORE_CAPTURE_FX_|BOTORE_CAPTURE_FIGHT_|BOTORE_CAPTURE_WEAPON_PIN' >&2 || true
+  ls -la "${OUT_DIR}" >&2 || true
+  exit 1
 fi
 
 # A2b design gate: Fight View axe mid-attack (smear) + axe KO on floor.
@@ -499,7 +517,7 @@ fi
 hit_matches=( "${OUT_DIR}"/android-*-replay-fx-hit.png )
 defeat_matches=( "${OUT_DIR}"/android-*-replay-fx-defeat.png )
 if [[ ! -e "${hit_matches[0]:-}" || ! -e "${defeat_matches[0]:-}" ]]; then
-  echo "error: missing replay-fx-hit / replay-fx-defeat for axe Fight View copies" >&2
+  echo "error: missing replay-fx-hit / replay-fx-defeat for axe Fight View copies (hit=${hit_matches[0]:-none} defeat=${defeat_matches[0]:-none})" >&2
   exit 1
 fi
 STAMP="$(stamp)"
