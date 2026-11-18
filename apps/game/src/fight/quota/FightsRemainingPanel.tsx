@@ -12,7 +12,8 @@ export type FightsRemainingPanelProps = {
 };
 
 /**
- * Shared Fights Remaining readout (D8 Opponents + D9 Tale of the Tape).
+ * Shared Fights Remaining readout (D8 Opponents + D9 Tale of the Tape mockup).
+ * Layout: big n/limit · FIGHTS REMAINING + bar pips · Next fight in HH:MM:SS.
  * Limit / refill come only from the server quota — no "today" / "UTC" copy.
  */
 export function FightsRemainingPanel(props: FightsRemainingPanelProps): React.ReactElement {
@@ -36,21 +37,25 @@ export function FightsRemainingPanel(props: FightsRemainingPanelProps): React.Re
           : `Fights remaining ${remaining} of ${limit}, next fight in ${countdown.label}`
       }
     >
-      <View style={styles.left}>
-        <Text
-          style={[
-            styles.ratio,
-            compact ? styles.ratioCompact : null,
-            isEmpty ? styles.ratioEmpty : null,
-          ]}
-          allowFontScaling
-          testID={`${testID}-ratio`}
-        >
-          {remaining}
-          <Text style={styles.ratioLimit}> / {limit}</Text>
+      <Text
+        style={[
+          styles.ratio,
+          compact ? styles.ratioCompact : null,
+          isEmpty ? styles.ratioEmpty : null,
+        ]}
+        allowFontScaling
+        testID={`${testID}-ratio`}
+      >
+        {remaining}
+        <Text style={[styles.ratioLimit, compact ? styles.ratioLimitCompact : null]}>
+          {' '}
+          / {limit}
         </Text>
+      </Text>
+
+      <View style={styles.mid}>
         <Text style={[styles.label, compact ? styles.labelCompact : null]} allowFontScaling>
-          Fights remaining
+          {`Fights\nremaining`}
         </Text>
         <View style={styles.pips} testID={`${testID}-pips`}>
           {pips.map((filled, i) => (
@@ -62,6 +67,7 @@ export function FightsRemainingPanel(props: FightsRemainingPanelProps): React.Re
           ))}
         </View>
       </View>
+
       <View style={styles.right}>
         {isFull ? (
           <Text style={styles.full} allowFontScaling testID={`${testID}-full`}>
@@ -97,43 +103,48 @@ const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    backgroundColor: garageTag.cream,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: garageTag.white,
     borderWidth: garageTag.outline,
     borderColor: garageTag.graphite,
-    borderRadius: garageTag.cutCorner,
+    borderRadius: 9,
     marginBottom: 10,
+    // Soft mechanical shadow matching mockup ink drop.
+    shadowColor: garageTag.graphite,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
   },
   rootCompact: {
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 12,
     marginBottom: 8,
   },
   rootEmpty: {
     borderColor: garageTag.oxide,
   },
-  left: {
+  mid: {
     flexShrink: 1,
     gap: 4,
     minWidth: 0,
   },
   right: {
+    marginLeft: 'auto',
     alignItems: 'flex-end',
     justifyContent: 'center',
     flexShrink: 0,
   },
   ratio: {
     fontWeight: '900',
-    fontSize: 36,
-    lineHeight: 40,
-    letterSpacing: 0.5,
+    fontSize: 40,
+    lineHeight: 42,
     color: garageTag.graphite,
   },
   ratioCompact: {
-    fontSize: 28,
+    fontSize: 30,
     lineHeight: 32,
   },
   ratioEmpty: {
@@ -141,28 +152,33 @@ const styles = StyleSheet.create({
   },
   ratioLimit: {
     fontWeight: '800',
-    fontSize: 22,
-    color: garageTag.steel,
+    fontSize: 18,
+    color: '#8a8070',
+  },
+  ratioLimitCompact: {
+    fontSize: 15,
   },
   label: {
-    fontWeight: '800',
+    fontWeight: '900',
     fontSize: 11,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    color: garageTag.steel,
+    color: garageTag.graphite,
+    lineHeight: 13,
   },
   labelCompact: {
     fontSize: 10,
+    lineHeight: 12,
   },
   pips: {
     flexDirection: 'row',
-    gap: 6,
-    marginTop: 4,
+    gap: 4,
+    marginTop: 2,
   },
   pip: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
+    width: 22,
+    height: 8,
+    borderRadius: 3,
     borderWidth: 2,
     borderColor: garageTag.graphite,
   },
@@ -170,7 +186,7 @@ const styles = StyleSheet.create({
     backgroundColor: garageTag.mustard,
   },
   pipEmpty: {
-    backgroundColor: garageTag.paper,
+    backgroundColor: '#e3d3b4',
   },
   full: {
     fontWeight: '900',
@@ -181,10 +197,10 @@ const styles = StyleSheet.create({
   },
   nextLabel: {
     fontWeight: '700',
-    fontSize: 10,
-    letterSpacing: 0.8,
+    fontSize: 10.5,
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: garageTag.steel,
+    color: '#6b6356',
     textAlign: 'right',
   },
   nextLabelHero: {
@@ -192,14 +208,14 @@ const styles = StyleSheet.create({
   },
   countdown: {
     fontWeight: '900',
-    fontSize: 20,
-    letterSpacing: 1,
+    fontSize: 22,
+    letterSpacing: 0.4,
     fontVariant: ['tabular-nums'],
     color: garageTag.graphite,
     textAlign: 'right',
   },
   countdownCompact: {
-    fontSize: 16,
+    fontSize: 18,
   },
   countdownHero: {
     fontSize: 24,

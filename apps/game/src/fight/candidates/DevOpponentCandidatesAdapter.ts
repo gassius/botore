@@ -8,25 +8,16 @@ import type { ListCandidatesResult, OpponentCandidate, PrepareEligibilityResult 
 
 const DEV_OPPONENTS: readonly OpponentCandidate[] = [
   {
-    characterId: 'opp-sir-bot',
-    displayName: 'Sir Bot',
+    characterId: 'opp-dex-bot',
+    displayName: 'Dex Bot',
+    botoreName: 'Magistra Volta',
+    wins: 14,
+    losses: 5,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
       paint: 'paint-cobalt',
-      weapon: 'weapon-sword',
-      soundTags: ['chassis.light', 'weapon.sword'],
-    },
-    loadoutVersionId: 'dev-opp-sir',
-    atlasVersion: PROOF_ATLAS_VERSION,
-  },
-  {
-    characterId: 'opp-dex-bot',
-    displayName: 'Dex Bot',
-    loadout: {
-      ...DEFAULT_CONFIRMED_LOADOUT,
-      paint: 'paint-crimson',
-      weapon: 'weapon-dagger',
-      soundTags: ['chassis.light', 'weapon.dagger'],
+      weapon: 'weapon-axe',
+      soundTags: ['chassis.light', 'weapon.axe'],
     },
     loadoutVersionId: 'dev-opp-dex',
     atlasVersion: PROOF_ATLAS_VERSION,
@@ -34,13 +25,31 @@ const DEV_OPPONENTS: readonly OpponentCandidate[] = [
   {
     characterId: 'opp-hp-bot',
     displayName: 'Tank Bot',
+    botoreName: 'Doctore Ferro',
+    wins: 9,
+    losses: 9,
     loadout: {
       ...DEFAULT_CONFIRMED_LOADOUT,
       paint: 'paint-cobalt',
-      weapon: 'weapon-axe',
-      soundTags: ['chassis.light', 'weapon.axe'],
+      weapon: 'weapon-dagger',
+      soundTags: ['chassis.light', 'weapon.dagger'],
     },
     loadoutVersionId: 'dev-opp-hp',
+    atlasVersion: PROOF_ATLAS_VERSION,
+  },
+  {
+    characterId: 'opp-sir-bot',
+    displayName: 'Sir Bot',
+    botoreName: 'Tito Rivet',
+    wins: 16,
+    losses: 4,
+    loadout: {
+      ...DEFAULT_CONFIRMED_LOADOUT,
+      paint: 'paint-crimson',
+      weapon: 'weapon-sword',
+      soundTags: ['chassis.light', 'weapon.sword'],
+    },
+    loadoutVersionId: 'dev-opp-sir',
     atlasVersion: PROOF_ATLAS_VERSION,
   },
 ];
