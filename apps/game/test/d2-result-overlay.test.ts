@@ -14,6 +14,14 @@ import {
 } from '../src/result-overlay/resultCardModel';
 import { RESULT_OVERLAY_DIM_OPACITY } from '../src/result-overlay/types';
 import { resultCaptureRecord } from '../src/result-overlay/designCaptureRecords';
+import {
+  E2_BOT_RANKING_RPC_ENABLED,
+  fetchCurrentBotFightRecord,
+} from '../src/result-overlay/fetchCurrentBotFightRecord';
+import {
+  reduceResultOverlayShell,
+  type ResultOverlayShellState,
+} from '../src/result-overlay/resultOverlayShell';
 import { shouldReopenResultOverlayOnBack } from '../src/fight-view/fightViewNavigation';
 import { FIGHT_VIEW_KO_HOLD_MS } from '../src/fight-view/types';
 import { nextRoute, prevRoute, ROUTE_FLOW } from '../src/first-run/routes';
@@ -87,7 +95,58 @@ describe('D2 route flow — Result is not a linear step', () => {
   });
 });
 
-describe('D2 KO hold → overlay (not navigate)', () => {
+describe('D2 result overlay shell reducer (behavioural)', () => {
+  const firstWatch: ResultOverlayShellState = {
+    route: 'Replay',
+    fightViewMode: 'firstWatch',
+    showResultOverlay: false,
+  };
+
+  it('KO handoff opens overlay once on Replay', () => {
+    const open = reduceResultOverlayShell(firstWatch, { type: 'ko_handoff' });
+    expect(open).toEqual({
+      route: 'Replay',
+      fightViewMode: 'firstWatch',
+      showResultOverlay: true,
+    });
+    expect(reduceResultOverlayShell(open, { type: 'ko_handoff' }).showResultOverlay).toBe(true);
+    expect(FIGHT_VIEW_KO_HOLD_MS).toBe(1000);
+  });
+
+  it('Watch again clears overlay and sets rewatch on Replay', () => {
+    const afterKo = reduceResultOverlayShell(firstWatch, { type: 'ko_handoff' });
+    expect(reduceResultOverlayShell(afterKo, { type: 'watch_again' })).toEqual({
+      route: 'Replay',
+      fightViewMode: 'rewatch',
+      showResultOverlay: false,
+    });
+  });
+
+  it('rewatch Back re-opens overlay without changing route', () => {
+    const rewatch: ResultOverlayShellState = {
+      route: 'Replay',
+      fightViewMode: 'rewatch',
+      showResultOverlay: false,
+    };
+    expect(reduceResultOverlayShell(rewatch, { type: 'rewatch_back' })).toEqual({
+      route: 'Replay',
+      fightViewMode: 'rewatch',
+      showResultOverlay: true,
+    });
+    expect(shouldReopenResultOverlayOnBack('Replay', 'rewatch')).toBe(true);
+    expect(shouldReopenResultOverlayOnBack('Replay', 'firstWatch')).toBe(false);
+  });
+
+  it('Stable / Ranking clear the overlay', () => {
+    const open = reduceResultOverlayShell(firstWatch, { type: 'ko_handoff' });
+    expect(reduceResultOverlayShell(open, { type: 'go_stable' }).showResultOverlay).toBe(false);
+    expect(reduceResultOverlayShell(open, { type: 'go_stable' }).route).toBe('Stable');
+    expect(reduceResultOverlayShell(open, { type: 'go_ranking' }).route).toBe('Ranking');
+    expect(reduceResultOverlayShell(open, { type: 'go_ranking' }).showResultOverlay).toBe(false);
+  });
+});
+
+describe('D2 KO hold → overlay wiring', () => {
   const slot = readSource('src/first-run/slots/ReplaySlot.tsx');
 
   it('shows Result overlay after KO hold instead of goNext / FightResult', () => {
@@ -96,20 +155,24 @@ describe('D2 KO hold → overlay (not navigate)', () => {
     expect(slot).toContain('ResultOverlay');
     expect(slot).toContain('ResultOverlayBand');
     expect(slot).not.toContain('handOffOnceRef.current = createOnceHandoff(() => goNext())');
-    expect(FIGHT_VIEW_KO_HOLD_MS).toBe(1000);
   });
 
-  it('Watch again clears overlay and sets rewatch', () => {
-    expect(slot).toContain("setFightViewMode('rewatch')");
-    expect(slot).toContain('setShowResultOverlay(false)');
-    expect(slot).toContain('playerRef.current?.replay()');
+  it('pauses playback when the overlay opens (rewatch Back)', () => {
+    expect(slot).toContain('playerRef.current?.pause()');
+    expect(slot).toMatch(/showResultOverlay[\s\S]*?pause\(\)/);
   });
 
-  it('rewatch Back re-opens overlay in-place', () => {
-    expect(slot).toContain('setShowResultOverlay(true)');
-    expect(slot).toContain('fight-view-back');
-    expect(shouldReopenResultOverlayOnBack('Replay', 'rewatch')).toBe(true);
-    expect(shouldReopenResultOverlayOnBack('Replay', 'firstWatch')).toBe(false);
+  it('registers Android hardware Back in rewatch to goBack()', () => {
+    expect(slot).toContain('hardwareBackPress');
+    expect(slot).toContain('goBack()');
+    expect(slot).toMatch(/isRewatch[\s\S]*?goBack\(\)/);
+  });
+
+  it('passes safe-area topInset into ResultOverlay', () => {
+    expect(slot).toContain('topInset={topInset}');
+    const overlay = readSource('src/result-overlay/ResultOverlay.tsx');
+    expect(overlay).toContain('topInset');
+    expect(overlay).toContain('contentPadTop');
   });
 
   it('uses a translucent ~55–65% ink scrim (arena stays readable)', () => {
@@ -121,6 +184,13 @@ describe('D2 KO hold → overlay (not navigate)', () => {
     const captureSlot = readSource('src/first-run/slots/FightResultSlot.tsx');
     expect(captureSlot).toContain('CanonicalReplayPlayer');
     expect(captureSlot).toContain('arenaOverlay={arenaOverlay}');
+  });
+
+  it('keys anim/cues on fight only (not W–L) and gates E2 ranking RPC', () => {
+    const overlay = readSource('src/result-overlay/ResultOverlay.tsx');
+    expect(overlay).toContain('confirmed.replay.checksum');
+    expect(overlay).not.toMatch(/fightKey = .*wins.*losses/);
+    expect(E2_BOT_RANKING_RPC_ENABLED).toBe(false);
   });
 });
 
@@ -164,6 +234,26 @@ describe('D2 result card model (player POV)', () => {
     expect(formatRecordLine(11, 7)).toBe('Record  11W – 7L');
   });
 
+  it('maps action-limit draw without inventing a winner plate', () => {
+    const confirmed = confirmedStub({
+      outcome: {
+        reason: 'action_limit_tiebreak',
+        winner: null,
+        loser: null,
+        winnerByTiebreak: null,
+      },
+      xpAwarded: 1,
+    });
+    expect(resolveOutcomeKind(confirmed)).toBe('draw');
+    const card = buildResultCardModel(confirmed);
+    expect(card.outcomeKind).toBe('draw');
+    expect(card.showNewRecord).toBe(false);
+    const overlay = readSource('src/result-overlay/ResultOverlay.tsx');
+    expect(overlay).toContain('DRAW');
+    expect(overlay).toContain("accessibilityLabel=\"Draw\"");
+    expect(overlay).toContain('isDraw');
+  });
+
   it('omits W–L / level / streak when E2 record is absent (no invent)', () => {
     const confirmed = confirmedStub({
       outcome: { reason: 'defeat', winner: 'player-hero', loser: 'opp-1' },
@@ -183,6 +273,20 @@ describe('D2 result card model (player POV)', () => {
       totalXp: 10,
     });
     expect(botFightRecordFromRankingRow({ wins: 'x', losses: 1 })).toBeNull();
+  });
+
+  it('skips list_bot_ranking while the E2 gate is off', async () => {
+    let called = false;
+    const record = await fetchCurrentBotFightRecord({
+      config: { url: 'https://example.invalid', anonKey: 'anon' },
+      accessToken: 'token',
+      fetchImpl: (async () => {
+        called = true;
+        return new Response('{}', { status: 404 });
+      }) as unknown as typeof fetch,
+    });
+    expect(record).toBeNull();
+    expect(called).toBe(false);
   });
 
   it('formats context lines from optional streak fields only', () => {

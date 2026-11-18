@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   PrimaryButton,
   ScreenChrome,
@@ -37,6 +37,7 @@ export function FightResultSlot(): React.ReactElement {
     setShowResultOverlay,
   } = useFirstRun();
   const { lastFight } = useFightSession();
+  const insets = useSafeAreaInsets();
 
   const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
 
@@ -83,6 +84,7 @@ export function FightResultSlot(): React.ReactElement {
       musicEnabled={musicEnabled}
       effectsEnabled={effectsEnabled}
       reducedMotion={reducedMotion}
+      topInset={insets.top}
       testID="fight-result"
     />
   );

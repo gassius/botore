@@ -118,11 +118,24 @@ export function ReplaySlot(): React.ReactElement {
   }, []);
 
   // First watch: ignore Android hardware back (no leave / confirm).
+  // Rewatch: hardware Back re-opens the Result overlay (same as glyph Back).
   useEffect(() => {
-    if (isRewatch) return;
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    if (!isRewatch) {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+      return () => sub.remove();
+    }
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      goBack();
+      return true;
+    });
     return () => sub.remove();
-  }, [isRewatch]);
+  }, [isRewatch, goBack]);
+
+  // Rewatch overlay: pause combat audio/playback under the Result card.
+  useEffect(() => {
+    if (!showResultOverlay) return;
+    playerRef.current?.pause();
+  }, [showResultOverlay]);
 
   // Live capture: start paused so CI can still replay-start / arena at idle,
   // then auto-play after a short window (avoids start≡first-hit-hold).
@@ -258,7 +271,10 @@ export function ReplaySlot(): React.ReactElement {
           <GlyphButton
             source={uiKitAssets.glyphBack}
             accessibilityLabel="Back"
-            onPress={() => setShowResultOverlay(true)}
+            onPress={() => {
+              playerRef.current?.pause();
+              setShowResultOverlay(true);
+            }}
             testID="fight-view-back"
           />
         </View>
@@ -281,6 +297,7 @@ export function ReplaySlot(): React.ReactElement {
           musicEnabled={musicEnabled}
           effectsEnabled={effectsEnabled}
           reducedMotion={reducedMotion}
+          topInset={topInset}
           testID="result-overlay"
         />
       ) : null}

@@ -14,4 +14,12 @@ export type { BotFightRecordSnapshot, ResultCardModel, ResultOverlayOutcomeKind 
 export { RESULT_OVERLAY_DIM_OPACITY, RESULT_PLATE_DROP_MS } from './types';
 export { parseResultCaptureScenario, resultCaptureRecord } from './designCaptureRecords';
 export type { ResultCaptureScenario } from './designCaptureRecords';
-export { fetchCurrentBotFightRecord } from './fetchCurrentBotFightRecord';
+export {
+  E2_BOT_RANKING_RPC_ENABLED,
+  fetchCurrentBotFightRecord,
+} from './fetchCurrentBotFightRecord';
+export { reduceResultOverlayShell } from './resultOverlayShell';
+export type {
+  ResultOverlayShellAction,
+  ResultOverlayShellState,
+} from './resultOverlayShell';

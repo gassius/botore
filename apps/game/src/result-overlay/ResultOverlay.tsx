@@ -1,5 +1,5 @@
 /**
- * D2 Result overlay — VICTORY/DEFEAT plate + player pose + XP card over dimmed arena.
+ * D2 Result overlay — VICTORY/DEFEAT/DRAW + player pose + XP card over dimmed arena.
  * Player POV only; no battle ids, checksums, or server-debug chrome.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -15,6 +15,7 @@ import { garageTag } from '../garage-tag';
 import { ResultDefeatPose, ResultPlate, ResultVictoryPoseSlot } from '../result-art';
 import { assemblerLoadoutFromBuild } from '../replay/fighterLoadout';
 import type { ConfirmedFightResult } from '../replay/confirmedResult';
+import { BotAssembler } from '../assembler';
 import { buildResultCardModel } from './resultCardModel';
 import type { BotFightRecordSnapshot } from './types';
 import { RESULT_OVERLAY_DIM_OPACITY, RESULT_PLATE_DROP_MS } from './types';
@@ -27,6 +28,8 @@ export type ResultOverlayProps = {
   readonly musicEnabled?: boolean;
   readonly effectsEnabled?: boolean;
   readonly reducedMotion?: boolean;
+  /** Safe-area top inset — arena is full-bleed under the status bar / notch. */
+  readonly topInset?: number;
   /** Fade HUD under the dim (parent should also hide call-outs). */
   readonly hudOpacity?: number;
   readonly rng01?: () => number;
@@ -42,6 +45,7 @@ export function ResultOverlay({
   musicEnabled = true,
   effectsEnabled = true,
   reducedMotion = false,
+  topInset = 0,
   rng01,
   nowMs,
   testID = 'result-overlay',
@@ -68,7 +72,9 @@ export function ResultOverlay({
   rngRef.current = rng01 ?? (() => Math.random());
   const nowRef = useRef(nowMs ?? (() => Date.now()));
   nowRef.current = nowMs ?? (() => Date.now());
-  const fightKey = `${card.outcomeKind}|${card.xpAwarded}|${card.showNewRecord}|${card.wins}|${card.losses}`;
+  // Fight-only key — never include W–L so a late E2 record fetch cannot
+  // restart plate drop / XP ticks / newRecord cue.
+  const fightKey = `${confirmed.replay.checksum}|${card.outcomeKind}|${card.xpAwarded}|${card.showNewRecord}`;
 
   useEffect(() => {
     if (reducedMotion) {
@@ -148,7 +154,8 @@ export function ResultOverlay({
   });
   const isVictory = card.outcomeKind === 'victory';
   const isDefeat = card.outcomeKind === 'defeat';
-  const plateKind = isDefeat ? 'defeat' : 'victory';
+  const isDraw = card.outcomeKind === 'draw';
+  const contentPadTop = Math.max(0, topInset) + 12;
 
   return (
     <View style={styles.root} pointerEvents="box-none" testID={testID}>
@@ -157,18 +164,41 @@ export function ResultOverlay({
         testID={`${testID}-dim`}
         pointerEvents="none"
       />
-      <View style={styles.content} testID={`${testID}-content`}>
+      <View
+        style={[styles.content, { paddingTop: contentPadTop }]}
+        testID={`${testID}-content`}
+      >
         <Animated.View
           style={[
             styles.plateWrap,
             {
               opacity: plateDrop,
-              transform: [{ translateY: plateTranslate }, { rotate: isDefeat ? '2deg' : '-2deg' }],
+              transform: [
+                { translateY: plateTranslate },
+                { rotate: isDefeat ? '2deg' : isVictory ? '-2deg' : '0deg' },
+              ],
             },
           ]}
           testID={`${testID}-plate-wrap`}
         >
-          <ResultPlate kind={plateKind} widthPt={280} testID={`${testID}-plate`} />
+          {isDraw ? (
+            <View
+              style={styles.drawPlate}
+              accessibilityRole="text"
+              accessibilityLabel="Draw"
+              testID={`${testID}-plate`}
+            >
+              <Text style={styles.drawPlateText} allowFontScaling>
+                DRAW
+              </Text>
+            </View>
+          ) : (
+            <ResultPlate
+              kind={isDefeat ? 'defeat' : 'victory'}
+              widthPt={280}
+              testID={`${testID}-plate`}
+            />
+          )}
         </Animated.View>
 
         <View style={styles.poseWrap} testID={`${testID}-pose`}>
@@ -179,13 +209,25 @@ export function ResultOverlay({
               reducedMotion={reducedMotion}
               testID={`${testID}-victory-pose`}
             />
-          ) : (
+          ) : isDefeat ? (
             <ResultDefeatPose
               loadout={loadout}
               size={260}
               reducedMotion={reducedMotion}
               testID={`${testID}-defeat-pose`}
             />
+          ) : (
+            <View testID={`${testID}-draw-pose`} accessibilityLabel="draw pose">
+              <BotAssembler
+                loadout={loadout}
+                facing="right"
+                motionPose="idle"
+                reducedMotion={reducedMotion}
+                placeholder={false}
+                size={260}
+                testID={`${testID}-draw-pose-assembler`}
+              />
+            </View>
           )}
         </View>
 
@@ -270,10 +312,31 @@ const styles = StyleSheet.create({
   content: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    paddingTop: 34,
   },
   plateWrap: {
     zIndex: 2,
+  },
+  drawPlate: {
+    minWidth: 220,
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    borderWidth: 4,
+    borderColor: garageTag.graphite,
+    borderRadius: 9,
+    backgroundColor: '#5b554b',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#1e1c18',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  drawPlateText: {
+    fontSize: 44,
+    fontWeight: '900',
+    letterSpacing: 3.2,
+    color: garageTag.cream,
   },
   poseWrap: {
     marginTop: -14,
