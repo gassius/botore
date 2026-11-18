@@ -6,7 +6,11 @@ import {
   readDesignCaptureSessionFailure,
 } from '../design-capture';
 import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
-import { resolveFirstRunGoBackTarget, type FightViewMode } from '../fight-view';
+import {
+  resolveFirstRunGoBackTarget,
+  shouldReopenResultOverlayOnBack,
+  type FightViewMode,
+} from '../fight-view';
 import { usePlayerSettings } from '../settings';
 import { nextRoute, prevRoute, type FirstRunRoute } from './routes';
 
@@ -53,6 +57,12 @@ export type FirstRunContextValue = {
    */
   fightViewMode: FightViewMode;
   setFightViewMode: (mode: FightViewMode) => void;
+  /**
+   * D2 — Result overlay over the dimmed arena (first-watch after KO hold;
+   * rewatch Back re-opens it). Not a separate route in ROUTE_FLOW.
+   */
+  showResultOverlay: boolean;
+  setShowResultOverlay: (visible: boolean) => void;
 };
 
 /** Exported so design-capture session-failure can read live overrides without a hard throw. */
@@ -82,18 +92,34 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       () => pending.sessionFailure ?? readDesignCaptureSessionFailure(),
     );
   const [fightViewMode, setFightViewMode] = useState<FightViewMode>('firstWatch');
+  const [showResultOverlay, setShowResultOverlay] = useState(false);
 
   const value = useMemo<FirstRunContextValue>(
     () => ({
       route,
-      goTo: setRoute,
+      goTo: (next) => {
+        setRoute(next);
+        if (next !== 'Replay' && next !== 'FightResult') {
+          setShowResultOverlay(false);
+        }
+      },
       goNext: () => {
         const n = nextRoute(route);
-        if (n) setRoute(n);
+        if (n) {
+          setRoute(n);
+          setShowResultOverlay(false);
+        }
       },
       goBack: () => {
+        if (shouldReopenResultOverlayOnBack(route, fightViewMode)) {
+          setShowResultOverlay(true);
+          return;
+        }
         const target = resolveFirstRunGoBackTarget(route, fightViewMode, prevRoute(route));
-        if (target) setRoute(target);
+        if (target) {
+          setRoute(target);
+          setShowResultOverlay(false);
+        }
       },
       muted: settings.muted,
       setMuted: settings.setMuted,
@@ -119,10 +145,13 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       setSessionFailureCapture,
       fightViewMode,
       setFightViewMode,
+      showResultOverlay,
+      setShowResultOverlay,
     }),
     [
       route,
       fightViewMode,
+      showResultOverlay,
       settings.muted,
       settings.setMuted,
       settings.toggleMute,

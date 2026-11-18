@@ -115,8 +115,10 @@ describe('D1 first-watch vs rewatch control sets', () => {
   it('ConfirmFight sets firstWatch; Result Watch again sets rewatch', () => {
     const confirm = readSource('src/first-run/slots/ConfirmFightSlot.tsx');
     const result = readSource('src/first-run/slots/FightResultSlot.tsx');
+    const replay = readSource('src/first-run/slots/ReplaySlot.tsx');
     expect(confirm).toContain("setFightViewMode('firstWatch')");
     expect(result).toContain("setFightViewMode('rewatch')");
+    expect(replay).toContain("setFightViewMode('rewatch')");
   });
 
   it('player-facing first-watch copy never says Fight Replay', () => {
@@ -130,10 +132,8 @@ describe('D1 goBack routing (behavioural)', () => {
     expect(resolveFirstRunGoBackTarget('Replay', 'firstWatch', prevRoute('Replay'))).toBeNull();
   });
 
-  it('rewatch Replay goBack returns FightResult (not ConfirmFight)', () => {
-    expect(resolveFirstRunGoBackTarget('Replay', 'rewatch', prevRoute('Replay'))).toBe(
-      'FightResult',
-    );
+  it('rewatch Replay goBack stays on Replay (D2 overlay reopen; not ConfirmFight)', () => {
+    expect(resolveFirstRunGoBackTarget('Replay', 'rewatch', prevRoute('Replay'))).toBeNull();
     expect(prevRoute('Replay')).toBe('ConfirmFight');
   });
 

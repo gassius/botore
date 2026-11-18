@@ -10,6 +10,7 @@ export {
 export { calloutFromCommand, updateCalloutAttackContext } from './calloutFromCommand';
 export {
   resolveFirstRunGoBackTarget,
+  shouldReopenResultOverlayOnBack,
   shouldScheduleKoHandoff,
   createOnceHandoff,
 } from './fightViewNavigation';

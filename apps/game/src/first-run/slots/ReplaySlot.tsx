@@ -45,17 +45,24 @@ import type { AnimationCommand } from '../../replay-playback';
 import type { ReplayPresentationState } from '../../replay/playbackState';
 import { isLiveFightCaptureEnabled } from '../../design-capture';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
+import { useGarageSession } from '../../garage/LoadoutSessionContext';
+import { readSupabasePublicConfig } from '../../garage/auth/supabasePublicConfig';
+import {
+  fetchCurrentBotFightRecord,
+  ResultOverlay,
+  ResultOverlayBand,
+  type BotFightRecordSnapshot,
+} from '../../result-overlay';
 import { useFirstRun } from '../FirstRunContext';
 
 /**
  * D1 Fight View — arena-first shell.
- * First watch: no back / transport / Continue; KO hold → Result handoff (D2 stub).
- * Rewatch: back + one REPLAY button; mute stays in-arena only.
+ * First watch: no back / transport / Continue; KO hold → D2 Result overlay.
+ * Rewatch: back re-opens Result overlay; one REPLAY button; mute stays in-arena.
  */
 export function ReplaySlot(): React.ReactElement {
   const {
     goBack,
-    goNext,
     goTo,
     muted,
     toggleMute,
@@ -63,9 +70,14 @@ export function ReplaySlot(): React.ReactElement {
     effectsEnabled,
     reducedMotion,
     fightViewMode,
+    setFightViewMode,
+    showResultOverlay,
+    setShowResultOverlay,
   } = useFirstRun();
   const insets = useSafeAreaInsets();
   const { lastFight } = useFightSession();
+  const { session } = useGarageSession();
+  const [botRecord, setBotRecord] = useState<BotFightRecordSnapshot | null>(null);
   const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
   const fxHoldRef = useRef<FxCaptureHoldState>(initialFxCaptureHoldState());
   const fxHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -77,15 +89,21 @@ export function ReplaySlot(): React.ReactElement {
   });
   const [callout, setCallout] = useState<FightViewCallout | null>(null);
   const [hp, setHp] = useState({ near: 1, far: 1 });
-  const handOffOnceRef = useRef(createOnceHandoff(() => goNext()));
+  const handOffOnceRef = useRef(
+    createOnceHandoff(() => {
+      setShowResultOverlay(true);
+    }),
+  );
   const liveCapture = isLiveFightCaptureEnabled();
   const isRewatch = fightViewMode === 'rewatch';
   const topInset = insets.top;
 
-  // Refresh the once-handoff when goNext identity changes (provider remount).
+  // Refresh the once-handoff when overlay setter identity changes.
   useEffect(() => {
-    handOffOnceRef.current = createOnceHandoff(() => goNext());
-  }, [goNext]);
+    handOffOnceRef.current = createOnceHandoff(() => {
+      setShowResultOverlay(true);
+    });
+  }, [setShowResultOverlay]);
 
   const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
   const replayChecksum =
@@ -147,7 +165,7 @@ export function ReplaySlot(): React.ReactElement {
       attackCtxRef.current = updateCalloutAttackContext(cmd, attackCtxRef.current);
       const fighters =
         resolution.status === 'confirmed' ? resolution.confirmed.replay.fighters : [];
-      // Keep the KO plate through victory_screen (null) until the Result handoff.
+      // Keep the KO plate through victory_screen (null) until the Result overlay.
       if (cmd.kind !== 'victory_screen') {
         setCallout(
           calloutFromCommand(cmd, fighters, {
@@ -161,9 +179,27 @@ export function ReplaySlot(): React.ReactElement {
     [resolution],
   );
 
+  // E2: when the Result overlay opens, refresh W–L from list_bot_ranking (no invent).
+  useEffect(() => {
+    if (!showResultOverlay) return;
+    const config = readSupabasePublicConfig();
+    const token = session?.accessToken;
+    if (!config || !token) {
+      setBotRecord(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchCurrentBotFightRecord({ config, accessToken: token }).then((record) => {
+      if (!cancelled) setBotRecord(record);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showResultOverlay, session?.accessToken]);
+
   /**
-   * D2 stub — Result overlay owns the post-KO presentation.
-   * Until D2 lands, auto-transition to the FightResult route after the KO hold.
+   * D2 — after KO hold on first watch, show Result overlay over the dimmed arena.
+   * Rewatch never auto-opens the overlay.
    */
   const onFinished = useCallback(() => {
     if (!shouldScheduleKoHandoff(fightViewMode)) return;
@@ -198,21 +234,23 @@ export function ReplaySlot(): React.ReactElement {
 
   const arenaOverlay = (
     <>
-      <FightViewHud
-        topInset={topInset}
-        near={{
-          botName: nearName,
-          ownerLabel: 'You',
-          hp: hp.near,
-          fillColor: garageTag.oxide,
-        }}
-        far={{
-          botName: farName,
-          hp: hp.far,
-          fillColor: garageTag.petrol,
-        }}
-      />
-      {isRewatch ? (
+      {!showResultOverlay ? (
+        <FightViewHud
+          topInset={topInset}
+          near={{
+            botName: nearName,
+            ownerLabel: 'You',
+            hp: hp.near,
+            fillColor: garageTag.oxide,
+          }}
+          far={{
+            botName: farName,
+            hp: hp.far,
+            fillColor: garageTag.petrol,
+          }}
+        />
+      ) : null}
+      {isRewatch && !showResultOverlay ? (
         <View
           style={[styles.backWrap, { top: topInset + FIGHT_VIEW_HUD_BELOW_INSET + 4 }]}
           testID="fight-view-back-wrap"
@@ -220,19 +258,32 @@ export function ReplaySlot(): React.ReactElement {
           <GlyphButton
             source={uiKitAssets.glyphBack}
             accessibilityLabel="Back"
-            onPress={() => goTo('FightResult')}
+            onPress={() => setShowResultOverlay(true)}
             testID="fight-view-back"
           />
         </View>
       ) : null}
-      <FightViewMuteControl
-        muted={muted}
-        onToggle={() => {
-          playerRef.current?.playUiTap();
-          toggleMute();
-        }}
-        testID="fight-view-mute"
-      />
+      {!showResultOverlay ? (
+        <FightViewMuteControl
+          muted={muted}
+          onToggle={() => {
+            playerRef.current?.playUiTap();
+            toggleMute();
+          }}
+          testID="fight-view-mute"
+        />
+      ) : null}
+      {showResultOverlay ? (
+        <ResultOverlay
+          confirmed={confirmed}
+          record={botRecord}
+          muted={muted}
+          musicEnabled={musicEnabled}
+          effectsEnabled={effectsEnabled}
+          reducedMotion={reducedMotion}
+          testID="result-overlay"
+        />
+      ) : null}
     </>
   );
 
@@ -258,18 +309,35 @@ export function ReplaySlot(): React.ReactElement {
           />
         </View>
         <View style={styles.band}>
-          <FightViewBottomBand
-            mode={fightViewMode}
-            callout={isRewatch ? null : callout}
-            onReplay={() => {
-              playerRef.current?.playUiTap();
-              playerRef.current?.replay();
-              setCallout(null);
-              setHp({ near: 1, far: 1 });
-              attackCtxRef.current = { lastAttackerId: null, wasHeavy: false };
-            }}
-            testID="fight-view-band"
-          />
+          {showResultOverlay ? (
+            <ResultOverlayBand
+              onBackToStable={() => goTo('Stable')}
+              onWatchAgain={() => {
+                setShowResultOverlay(false);
+                setFightViewMode('rewatch');
+                playerRef.current?.playUiTap();
+                playerRef.current?.replay();
+                setCallout(null);
+                setHp({ near: 1, far: 1 });
+                attackCtxRef.current = { lastAttackerId: null, wasHeavy: false };
+              }}
+              onRanking={() => goTo('Ranking')}
+              testID="result-overlay-band"
+            />
+          ) : (
+            <FightViewBottomBand
+              mode={fightViewMode}
+              callout={isRewatch ? null : callout}
+              onReplay={() => {
+                playerRef.current?.playUiTap();
+                playerRef.current?.replay();
+                setCallout(null);
+                setHp({ near: 1, far: 1 });
+                attackCtxRef.current = { lastAttackerId: null, wasHeavy: false };
+              }}
+              testID="fight-view-band"
+            />
+          )}
         </View>
       </View>
     </SafeAreaView>

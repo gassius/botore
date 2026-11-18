@@ -22,6 +22,9 @@ const PLAYER_FACING_SOURCES = [
   'src/fight-view/FightViewBottomBand.tsx',
   'src/fight-view/FightViewMuteControl.tsx',
   'src/fight-view/calloutFromCommand.ts',
+  'src/result-overlay/ResultOverlay.tsx',
+  'src/result-overlay/ResultOverlayBand.tsx',
+  'src/result-overlay/resultCardModel.ts',
   'src/screens/ReplaySlotScreen.tsx',
   'src/screens/FightResultSlotScreen.tsx',
   'src/garage/screens/CustomiseScreen.tsx',
@@ -182,6 +185,19 @@ describe('C17 player-facing id / debug scrub', () => {
     expect(slot).not.toContain('DomainNote');
     expect(slot).not.toContain('Domain: F10');
     expect(slot).not.toContain('combat-v1');
+  });
+
+  it('D2 Result overlay uses player POV copy without Winner:<id> / checksum chrome', () => {
+    const overlay = stripComments(readSource('src/result-overlay/ResultOverlay.tsx'));
+    const model = stripComments(readSource('src/result-overlay/resultCardModel.ts'));
+    expect(overlay).toContain('ResultPlate');
+    expect(overlay).toContain('+{xpDisplay} XP');
+    expect(overlay).not.toContain('battleId');
+    expect(overlay).not.toContain('replayChecksum');
+    expect(overlay).not.toContain('DomainNote');
+    expect(model).toContain('fighterDisplayName');
+    expect(model).not.toMatch(/Winner:\s*</);
+    expect(model).not.toContain('battleId');
   });
 
   it('ReplayAudioControls has no reduced-motion developer note', () => {

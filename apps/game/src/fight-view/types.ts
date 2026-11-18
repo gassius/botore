@@ -11,7 +11,7 @@ export type FightViewCallout = {
   readonly detail: string;
 };
 
-/** Hold after KO before handing off to Result (D2 overlay; stub navigates for now). */
+/** Hold after KO before showing the D2 Result overlay on the dimmed arena. */
 export const FIGHT_VIEW_KO_HOLD_MS = 1000;
 
 /** Arena share of a 390×844 phone viewport (acceptance ≥ 72%). */

@@ -1,24 +1,40 @@
 import React, { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   PrimaryButton,
-  SecondaryButton,
   ScreenChrome,
   ScreenHeader,
   StatusErrorBanner,
+  garageTag,
 } from '../../garage-tag';
 import { useFightSession } from '../../fight';
-import { FightResultContent } from '../../replay/FightResultContent';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
+import {
+  ResultOverlay,
+  ResultOverlayBand,
+  resolveOutcomeKind,
+  resultCaptureRecord,
+} from '../../result-overlay';
 import { useFirstRun } from '../FirstRunContext';
 
 /**
- * Shell FightResult slot — Garage Tag chrome owns the frame.
- * Progression XP / allowances only from server-confirmed fights — never REF samples.
- * C17: no Domain/F10/combat-v1 debug chrome on the player-facing Result route.
+ * Capture / deep-link Result surface (not in ROUTE_FLOW).
+ * D2 first-run shows the Result overlay on Replay after KO. This slot stays for
+ * design-capture deep links that still land on FightResult, using the same
+ * overlay + buttons (no IDs / checksums / Domain chrome).
  */
 export function FightResultSlot(): React.ReactElement {
-  const { goTo, goNext, goBack, muted, musicEnabled, effectsEnabled, setFightViewMode } =
-    useFirstRun();
+  const {
+    goTo,
+    goBack,
+    muted,
+    musicEnabled,
+    effectsEnabled,
+    reducedMotion,
+    setFightViewMode,
+    setShowResultOverlay,
+  } = useFirstRun();
   const { lastFight } = useFightSession();
 
   const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
@@ -46,37 +62,54 @@ export function FightResultSlot(): React.ReactElement {
   }
 
   const confirmed = resolution.confirmed;
+  const outcomeKind = resolveOutcomeKind(confirmed);
+  // Capture stills: mockup-shaped W–L so victory ± NEW RECORD / defeat are reviewable
+  // before E2 ranking is on this stack. Live Replay overlay omits invented W–L.
+  const captureRecord = resultCaptureRecord(
+    confirmed.newRecord === true
+      ? 'victory-new-record'
+      : outcomeKind === 'defeat'
+        ? 'defeat'
+        : 'victory',
+  );
 
   return (
-    <ScreenChrome
-      testID="slot-result"
-      footer={
-        <>
-          <PrimaryButton
-            label="Back to stable"
-            onPress={() => goTo('Stable')}
-            testID="result-stable"
-          />
-          <SecondaryButton
-            label="Watch again"
-            onPress={() => {
-              setFightViewMode('rewatch');
-              goTo('Replay');
-            }}
-            testID="result-watch"
-          />
-          <SecondaryButton label="Ranking" onPress={goNext} testID="result-ranking" />
-        </>
-      }
-    >
-      <ScreenHeader title="Fight Result" />
-      <FightResultContent
-        confirmed={confirmed}
-        muted={muted}
-        musicEnabled={musicEnabled}
-        effectsEnabled={effectsEnabled}
-        testID="fight-result"
+    <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']} testID="slot-result">
+      <View style={styles.arena}>
+        <ResultOverlay
+          confirmed={confirmed}
+          record={captureRecord}
+          opponentBotoreName="Magistra Volta"
+          muted={muted}
+          musicEnabled={musicEnabled}
+          effectsEnabled={effectsEnabled}
+          reducedMotion={reducedMotion}
+          testID="fight-result"
+        />
+      </View>
+      <ResultOverlayBand
+        onBackToStable={() => goTo('Stable')}
+        onWatchAgain={() => {
+          setFightViewMode('rewatch');
+          setShowResultOverlay(false);
+          goTo('Replay');
+        }}
+        onRanking={() => goTo('Ranking')}
+        testID="result-overlay-band"
       />
-    </ScreenChrome>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: garageTag.cream,
+  },
+  arena: {
+    flex: 1,
+    minHeight: 0,
+    backgroundColor: garageTag.graphite,
+    position: 'relative',
+  },
+});

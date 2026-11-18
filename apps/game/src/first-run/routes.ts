@@ -27,14 +27,17 @@ export const ROUTE_TITLES: Record<FirstRunRoute, string> = {
   Settings: 'Settings',
 };
 
-/** Linear fight-loop navigation — Settings is side-entry only. */
+/**
+ * Linear fight-loop navigation — Settings is side-entry only.
+ * D2: Result is an in-arena overlay on Replay (not a ROUTE_FLOW step).
+ * `FightResult` remains in FIRST_RUN_ROUTES for capture deep links only.
+ */
 export const ROUTE_FLOW: FirstRunRoute[] = [
   'Stable',
   'Customise',
   'Opponents',
   'ConfirmFight',
   'Replay',
-  'FightResult',
   'Ranking',
 ];
 
