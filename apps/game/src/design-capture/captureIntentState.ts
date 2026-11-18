@@ -1,9 +1,11 @@
 import type { FirstRunRoute } from '../first-run/routes';
 import { isFirstRunRoute } from '../first-run/routes';
 import {
+  type DesignCaptureFightViewMode,
   type DesignCapturePoseCompare,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
+  parseDesignCaptureFightView,
   parseDesignCapturePoseCompare,
   parseDesignCaptureRankingScenario,
   parseDesignCaptureSessionFailure,
@@ -29,6 +31,8 @@ export type CaptureIntent = {
   poseCompare: DesignCapturePoseCompare | null;
   /** C10: force offline / auth-expired banners on first-run screens. */
   sessionFailure: DesignCaptureSessionFailure | null;
+  /** D1: force Fight View firstWatch / rewatch control set for capture stills. */
+  fightViewMode: DesignCaptureFightViewMode | null;
 };
 
 const EMPTY: CaptureIntent = {
@@ -41,6 +45,7 @@ const EMPTY: CaptureIntent = {
   failClosed: null,
   poseCompare: null,
   sessionFailure: null,
+  fightViewMode: null,
 };
 
 let intent: CaptureIntent = { ...EMPTY };
@@ -62,6 +67,7 @@ export function mergeIntent(next: Partial<CaptureIntent>): void {
     // null must clear — sequential capture stills replace the prior override.
     // Omit (undefined) keeps the previous value for unrelated file merges.
     sessionFailure: next.sessionFailure === undefined ? intent.sessionFailure : next.sessionFailure,
+    fightViewMode: next.fightViewMode === undefined ? intent.fightViewMode : next.fightViewMode,
   };
 }
 
@@ -77,6 +83,8 @@ export function mergeCaptureFileIntent(raw: {
   failClosed?: boolean | null;
   poseCompare?: string | null;
   sessionFailure?: string | null;
+  fightViewMode?: string | null;
+  fightView?: string | null;
 }): void {
   const route = typeof raw.route === 'string' && isFirstRunRoute(raw.route) ? raw.route : null;
   mergeIntent({
@@ -93,6 +101,13 @@ export function mergeCaptureFileIntent(raw: {
     // Only touch sessionFailure when the file names it — omit keeps prior override.
     ...(raw.sessionFailure !== undefined
       ? { sessionFailure: parseDesignCaptureSessionFailure(raw.sessionFailure) }
+      : {}),
+    ...(raw.fightViewMode !== undefined || raw.fightView !== undefined
+      ? {
+          fightViewMode: parseDesignCaptureFightView(
+            raw.fightViewMode ?? raw.fightView ?? undefined,
+          ),
+        }
       : {}),
   });
 }

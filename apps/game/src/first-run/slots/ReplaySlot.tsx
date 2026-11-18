@@ -18,7 +18,6 @@ import {
   FightViewBottomBand,
   FightViewHud,
   FightViewMuteControl,
-  FIGHT_VIEW_ARENA_HEIGHT_RATIO,
   FIGHT_VIEW_HUD_BELOW_INSET,
   FIGHT_VIEW_KO_HOLD_MS,
   shouldScheduleKoHandoff,
@@ -287,17 +286,15 @@ const styles = StyleSheet.create({
     backgroundColor: garageTag.cream,
   },
   arena: {
-    flexGrow: FIGHT_VIEW_ARENA_HEIGHT_RATIO,
-    flexShrink: 0,
-    flexBasis: 0,
+    // Takes every pixel above the content-sized call-out band (~75%+ on 390×844).
+    flex: 1,
     minHeight: 0,
     backgroundColor: garageTag.graphite,
   },
   band: {
-    flexGrow: 1 - FIGHT_VIEW_ARENA_HEIGHT_RATIO,
+    // Hug bottom — no flexGrow cream gap under the call-out / REPLAY button.
+    flexGrow: 0,
     flexShrink: 0,
-    flexBasis: 0,
-    minHeight: 120,
   },
   backWrap: {
     position: 'absolute',

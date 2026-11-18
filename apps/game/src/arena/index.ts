@@ -9,6 +9,7 @@ export {
   ENVIRONMENT_SEALED_SHA256,
 } from './environmentAssets';
 export {
+  coverSceneToViewport,
   fitSceneToViewport,
   kitOriginFromGround,
   provisionalContactPoint,

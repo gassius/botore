@@ -438,6 +438,24 @@ echo "fight proof: battleId=${BATTLE_ID} xp=${XP}" >&2
 # Pass battle id so FightResult restores the sealed fight after process relaunch.
 capture_named FightResult result 5 "${BATTLE_ID}"
 
+# D1 rewatch Fight View — back + single REPLAY (non-gating; design re-check)
+CAPTURE_SETTLE_SEC=5 \
+  CAPTURE_IOS_COLD_SEC="${CAPTURE_IOS_COLD_SEC:-16}" \
+  "${SCRIPT_DIR}/ios-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --udid "${UDID}" \
+  --route Replay \
+  --name fight-view-rewatch \
+  --battle-id "${BATTLE_ID}" \
+  --fight-view rewatch >/dev/null
+rewatch_matches=( "${OUT_DIR}"/ios-*-fight-view-rewatch.png )
+if [[ -e "${rewatch_matches[0]:-}" ]]; then
+  write_manifest_line "${MANIFEST}" "still.ios.fight-view-rewatch" "${rewatch_matches[0]}"
+  echo "ok: ${rewatch_matches[0]}" >&2
+else
+  echo "warn: missing fight-view-rewatch PNG (non-gating)" >&2
+fi
+
 # C9 muted replay still (same sealed fight; mute=1 intent)
 capture_named Replay replay-muted 5 "${BATTLE_ID}" 1
 

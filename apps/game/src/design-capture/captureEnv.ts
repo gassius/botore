@@ -180,6 +180,18 @@ export function readDesignCaptureConfig(opts?: {
  *
  * Custom-scheme URL parsing differs across RN / JS engines; normalize first.
  */
+export type DesignCaptureFightViewMode = 'firstWatch' | 'rewatch';
+
+export function parseDesignCaptureFightView(
+  raw: string | null | undefined,
+): DesignCaptureFightViewMode | null {
+  if (raw == null) return null;
+  const v = raw.trim().toLowerCase();
+  if (v === 'rewatch' || v === 're-watch') return 'rewatch';
+  if (v === 'firstwatch' || v === 'first_watch' || v === 'first-watch') return 'firstWatch';
+  return null;
+}
+
 export function parseDesignCaptureUrl(url: string): {
   route: FirstRunRoute | null;
   mute: boolean | null;
@@ -189,6 +201,7 @@ export function parseDesignCaptureUrl(url: string): {
   failClosed: boolean | null;
   poseCompare: DesignCapturePoseCompare | null;
   sessionFailure: DesignCaptureSessionFailure | null;
+  fightViewMode: DesignCaptureFightViewMode | null;
 } {
   const trimmed = url.trim();
   if (!trimmed.toLowerCase().startsWith(`${DESIGN_CAPTURE_SCHEME}:`)) {
@@ -201,6 +214,7 @@ export function parseDesignCaptureUrl(url: string): {
       failClosed: null,
       poseCompare: null,
       sessionFailure: null,
+      fightViewMode: null,
     };
   }
 
@@ -225,6 +239,7 @@ export function parseDesignCaptureUrl(url: string): {
       failClosed: null,
       poseCompare: null,
       sessionFailure: null,
+      fightViewMode: null,
     };
   }
 
@@ -259,6 +274,9 @@ export function parseDesignCaptureUrl(url: string): {
   const sessionFailure = parseDesignCaptureSessionFailure(
     params.get('sessionFailure') ?? params.get('session_failure'),
   );
+  const fightViewMode = parseDesignCaptureFightView(
+    params.get('fightView') ?? params.get('fight_view') ?? params.get('fightViewMode'),
+  );
 
   return {
     route,
@@ -269,6 +287,7 @@ export function parseDesignCaptureUrl(url: string): {
     failClosed,
     poseCompare,
     sessionFailure,
+    fightViewMode,
   };
 }
 
@@ -282,6 +301,7 @@ export function buildDesignCaptureUrl(
     failClosed?: boolean;
     poseCompare?: DesignCapturePoseCompare;
     sessionFailure?: DesignCaptureSessionFailure;
+    fightViewMode?: DesignCaptureFightViewMode;
   },
 ): string {
   const query: string[] = [];
@@ -295,6 +315,9 @@ export function buildDesignCaptureUrl(
   if (opts?.poseCompare) query.push(`poseCompare=${encodeURIComponent(opts.poseCompare)}`);
   if (opts?.sessionFailure) {
     query.push(`sessionFailure=${encodeURIComponent(opts.sessionFailure)}`);
+  }
+  if (opts?.fightViewMode) {
+    query.push(`fightView=${encodeURIComponent(opts.fightViewMode)}`);
   }
   const q = query.length > 0 ? `?${query.join('&')}` : '';
   return `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${route}${q}`;

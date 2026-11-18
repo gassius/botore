@@ -25,6 +25,7 @@ import type { PlayCueOptions } from '../audio/TrialAudioSession';
 import type { TrialAudioUiCueId } from '../audio/trialAudioPin';
 import { BotAssembler } from '../assembler';
 import {
+  coverSceneToViewport,
   ENVIRONMENT_LAYER_Z,
   fitSceneToViewport,
   provisionalContactPoint,
@@ -147,10 +148,12 @@ export const CanonicalReplayPlayer = forwardRef<
   const placement = useMemo(() => startPlacement(), []);
   // Start at 0×0 so Play-ready waits for a real onLayout, not a placeholder box.
   const [stageBox, setStageBox] = useState({ width: 0, height: 0 });
-  const fit = useMemo(
-    () => fitSceneToViewport(Math.max(stageBox.width, 1), Math.max(stageBox.height, 1)),
-    [stageBox.height, stageBox.width],
-  );
+  const fit = useMemo(() => {
+    const w = Math.max(stageBox.width, 1);
+    const h = Math.max(stageBox.height, 1);
+    // D1 Fight View: cover so backdrop/floor fill the stage with no graphite strips.
+    return arenaFirst ? coverSceneToViewport(w, h) : fitSceneToViewport(w, h);
+  }, [arenaFirst, stageBox.height, stageBox.width]);
 
   const nearFighter = result.replay.fighters[0];
   const farFighter = result.replay.fighters[1];
@@ -528,77 +531,91 @@ export const CanonicalReplayPlayer = forwardRef<
               : { width: fit.width, height: fit.height },
           ]}
         >
-          <RepairYardArena
-            near={placement.near}
-            far={placement.far}
-            sceneScale={sceneScale}
-            testID={`${testID}-arena`}
+          <View
+            style={
+              arenaFirst
+                ? {
+                    position: 'absolute',
+                    left: fit.offsetX,
+                    top: fit.offsetY,
+                    width: fit.width,
+                    height: fit.height,
+                  }
+                : undefined
+            }
           >
-            {/*
+            <RepairYardArena
+              near={placement.near}
+              far={placement.far}
+              sceneScale={sceneScale}
+              testID={`${testID}-arena`}
+            >
+              {/*
               overflow visible: whole-hierarchy scaleX:-1 clipped far kit Images on Expo web.
               Facing:'left' uses BotAssembler per-layer mirror (absorbed from F9 1f25ea0).
             */}
-            <View
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                left: placement.far.origin.x,
-                top: placement.far.origin.y,
-                width: placement.far.size,
-                height: placement.far.size,
-                overflow: 'visible',
-                zIndex: ENVIRONMENT_LAYER_Z.farActor,
-              }}
-            >
-              <BotAssembler
-                loadout={farLoadout}
-                facing={placement.far.facing}
-                size={placement.far.size}
-                motionPose={presentation.far.motionPose}
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: placement.far.origin.x,
+                  top: placement.far.origin.y,
+                  width: placement.far.size,
+                  height: placement.far.size,
+                  overflow: 'visible',
+                  zIndex: ENVIRONMENT_LAYER_Z.farActor,
+                }}
+              >
+                <BotAssembler
+                  loadout={farLoadout}
+                  facing={placement.far.facing}
+                  size={placement.far.size}
+                  motionPose={presentation.far.motionPose}
+                  reducedMotion={reducedMotion}
+                  placeholder={false}
+                  testID={`${testID}-far`}
+                />
+              </View>
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: placement.near.origin.x,
+                  top: placement.near.origin.y,
+                  width: placement.near.size,
+                  height: placement.near.size,
+                  overflow: 'visible',
+                  zIndex: ENVIRONMENT_LAYER_Z.nearActor,
+                }}
+              >
+                <BotAssembler
+                  loadout={nearLoadout}
+                  facing={placement.near.facing}
+                  size={placement.near.size}
+                  motionPose={presentation.near.motionPose}
+                  reducedMotion={reducedMotion}
+                  placeholder={false}
+                  testID={`${testID}-near`}
+                />
+              </View>
+              <EventFxLayer
+                cues={fxCues}
                 reducedMotion={reducedMotion}
-                placeholder={false}
-                testID={`${testID}-far`}
+                // Freeze peak FX frame for the whole pause / C4 capture hold so
+                // stills are not taken after the ~270ms strip has already hidden.
+                paused={!playbackUi.playing}
               />
-            </View>
-            <View
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                left: placement.near.origin.x,
-                top: placement.near.origin.y,
-                width: placement.near.size,
-                height: placement.near.size,
-                overflow: 'visible',
-                zIndex: ENVIRONMENT_LAYER_Z.nearActor,
-              }}
-            >
-              <BotAssembler
-                loadout={nearLoadout}
-                facing={placement.near.facing}
-                size={placement.near.size}
-                motionPose={presentation.near.motionPose}
-                reducedMotion={reducedMotion}
-                placeholder={false}
-                testID={`${testID}-near`}
-              />
-            </View>
-            <EventFxLayer
-              cues={fxCues}
-              reducedMotion={reducedMotion}
-              // Freeze peak FX frame for the whole pause / C4 capture hold so
-              // stills are not taken after the ~270ms strip has already hidden.
-              paused={!playbackUi.playing}
-            />
-            {!arenaFirst && presentation.banner ? (
-              <Text style={styles.banner} testID={`${testID}-banner`}>
-                {presentation.banner === nearFighter.characterId
-                  ? fighterDisplayName(nearFighter.characterId, result.replay.fighters)
-                  : presentation.banner === farFighter.characterId
-                    ? fighterDisplayName(farFighter.characterId, result.replay.fighters)
-                    : fighterDisplayName(presentation.banner, result.replay.fighters)}
-              </Text>
-            ) : null}
-          </RepairYardArena>
+              {!arenaFirst && presentation.banner ? (
+                <Text style={styles.banner} testID={`${testID}-banner`}>
+                  {presentation.banner === nearFighter.characterId
+                    ? fighterDisplayName(nearFighter.characterId, result.replay.fighters)
+                    : presentation.banner === farFighter.characterId
+                      ? fighterDisplayName(farFighter.characterId, result.replay.fighters)
+                      : fighterDisplayName(presentation.banner, result.replay.fighters)}
+                </Text>
+              ) : null}
+            </RepairYardArena>
+          </View>
           {arenaOverlay}
         </View>
       </View>

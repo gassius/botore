@@ -103,14 +103,44 @@ export function kitOriginFromGround(
   };
 }
 
+type SceneViewportFit = {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  width: number;
+  height: number;
+};
+
 /** Uniform fit of 720×1120 scene into a phone viewport (contain). */
 export function fitSceneToViewport(
   viewportWidth: number,
   viewportHeight: number,
-): { scale: number; offsetX: number; offsetY: number; width: number; height: number } {
+): SceneViewportFit {
   const sx = viewportWidth / ENVIRONMENT_SCENE_CANVAS.width;
   const sy = viewportHeight / ENVIRONMENT_SCENE_CANVAS.height;
   const scale = Math.min(sx, sy);
+  const width = ENVIRONMENT_SCENE_CANVAS.width * scale;
+  const height = ENVIRONMENT_SCENE_CANVAS.height * scale;
+  return {
+    scale,
+    width,
+    height,
+    offsetX: (viewportWidth - width) / 2,
+    offsetY: (viewportHeight - height) / 2,
+  };
+}
+
+/**
+ * Uniform cover of 720×1120 into a phone viewport (D1 Fight View).
+ * Backdrop/floor always fill width + height; overflow is clipped by the stage frame.
+ */
+export function coverSceneToViewport(
+  viewportWidth: number,
+  viewportHeight: number,
+): SceneViewportFit {
+  const sx = viewportWidth / ENVIRONMENT_SCENE_CANVAS.width;
+  const sy = viewportHeight / ENVIRONMENT_SCENE_CANVAS.height;
+  const scale = Math.max(sx, sy);
   const width = ENVIRONMENT_SCENE_CANVAS.width * scale;
   const height = ENVIRONMENT_SCENE_CANVAS.height * scale;
   return {

@@ -13,13 +13,17 @@ import {
   resolveFirstRunGoBackTarget,
   shouldScheduleKoHandoff,
 } from '../src/fight-view/fightViewNavigation';
+import { coverSceneToViewport } from '../src/arena/scenePlacement';
 import {
   FIGHT_VIEW_ARENA_HEIGHT_RATIO,
+  FIGHT_VIEW_BAND_CONTENT_HEIGHT,
   FIGHT_VIEW_HUD_BELOW_INSET,
   FIGHT_VIEW_KO_HOLD_MS,
+  fightViewShellHeights,
 } from '../src/fight-view/types';
 import { prevRoute, ROUTE_TITLES } from '../src/first-run/routes';
 import type { AnimationCommand } from '../src/replay-playback';
+import { buildDesignCaptureUrl, parseDesignCaptureUrl } from '../src/design-capture/captureEnv';
 
 const fighters = [
   { characterId: 'player-hero', displayName: 'Chispa' },
@@ -40,6 +44,16 @@ describe('D1 Fight View rename + layout constants', () => {
     expect(FIGHT_VIEW_ARENA_HEIGHT_RATIO).toBeGreaterThanOrEqual(0.72);
     expect(FIGHT_VIEW_KO_HOLD_MS).toBe(1000);
     expect(FIGHT_VIEW_HUD_BELOW_INSET).toBeGreaterThan(80);
+  });
+
+  it('390×844 shell: arena ≥75% with content-sized band hugging bottom', () => {
+    const shell = fightViewShellHeights(844, FIGHT_VIEW_BAND_CONTENT_HEIGHT);
+    expect(shell.arenaRatio).toBeGreaterThanOrEqual(0.75);
+    expect(shell.arenaHeight + shell.bandHeight).toBe(844);
+    // Cover fill: backdrop width ≥ phone width at that arena height.
+    const cover = coverSceneToViewport(390, shell.arenaHeight);
+    expect(cover.width).toBeGreaterThanOrEqual(390);
+    expect(cover.height).toBeGreaterThanOrEqual(shell.arenaHeight);
   });
 });
 
@@ -73,8 +87,29 @@ describe('D1 first-watch vs rewatch control sets', () => {
     expect(slot).toContain('FIGHT_VIEW_HUD_BELOW_INSET');
   });
 
+  it('arena flex:1 + band content-sized (no flexGrow cream gap)', () => {
+    expect(slot).toMatch(/arena:\s*\{[^}]*flex:\s*1/s);
+    expect(slot).toMatch(/band:\s*\{[^}]*flexGrow:\s*0/s);
+    expect(slot).not.toContain('minHeight: 120');
+  });
+
   it('keeps KO plate through victory_screen until Result handoff', () => {
     expect(slot).toContain("cmd.kind !== 'victory_screen'");
+  });
+
+  it('player uses arenaFirst cover so stage fills width', () => {
+    const player = readSource('src/replay/CanonicalReplayPlayer.tsx');
+    expect(player).toContain('coverSceneToViewport');
+    expect(player).toContain('arenaFirst ? coverSceneToViewport');
+  });
+
+  it('parses fightView=rewatch capture deep link', () => {
+    expect(parseDesignCaptureUrl('botore://capture/Replay?fightView=rewatch')).toEqual(
+      expect.objectContaining({ route: 'Replay', fightViewMode: 'rewatch' }),
+    );
+    expect(buildDesignCaptureUrl('Replay', { fightViewMode: 'rewatch' })).toContain(
+      'fightView=rewatch',
+    );
   });
 
   it('ConfirmFight sets firstWatch; Result Watch again sets rewatch', () => {

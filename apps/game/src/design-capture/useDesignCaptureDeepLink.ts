@@ -29,6 +29,7 @@ export function useDesignCaptureDeepLink(): void {
     setDemoWeaponId,
     setRankingCaptureScenario,
     setSessionFailureCapture,
+    setFightViewMode,
   } = useFirstRun();
   const lastAppliedRoute = useRef<FirstRunRoute | null>(null);
   const lastSessionFailure = useRef<DesignCaptureSessionFailure | null | undefined>(undefined);
@@ -47,6 +48,7 @@ export function useDesignCaptureDeepLink(): void {
       route?: FirstRunRoute | string | null;
       rankingScenario?: DesignCaptureRankingScenario | null;
       sessionFailure?: DesignCaptureSessionFailure | null;
+      fightViewMode?: 'firstWatch' | 'rewatch' | null;
     }) => {
       // Always replace live sessionFailure (including null clear) so sequential
       // stills never stick auth_expired into a later offline capture.
@@ -68,6 +70,8 @@ export function useDesignCaptureDeepLink(): void {
       // Idempotent set — safer than toggle when prefs hydrate from disk.
       if (parsed.mute === true) setMuted(true);
       if (parsed.mute === false) setMuted(false);
+      // D1 rewatch capture stills: force Fight View control set before route paint.
+      if (parsed.fightViewMode) setFightViewMode(parsed.fightViewMode);
     };
 
     const applyRouteIfNew = (route: FirstRunRoute | null, fromFile: boolean) => {
@@ -109,6 +113,7 @@ export function useDesignCaptureDeepLink(): void {
         failClosed: parsed.failClosed,
         poseCompare: parsed.poseCompare,
         sessionFailure: parsed.sessionFailure,
+        fightViewMode: parsed.fightViewMode,
       });
       applyRouteIfNew(parsed.route, false);
     };

@@ -470,6 +470,21 @@ fi
 # 4) Result — backend XP / allowances (after server confirm so UI can show XP)
 capture_named FightResult result 5
 
+# 4a) D1 rewatch Fight View — back + single REPLAY (non-gating; design re-check)
+CAPTURE_SETTLE_SEC=4 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Replay \
+  --name fight-view-rewatch \
+  --fight-view rewatch >/dev/null
+rewatch_matches=( "${OUT_DIR}"/android-*-fight-view-rewatch.png )
+if [[ -e "${rewatch_matches[0]:-}" ]]; then
+  write_manifest_line "${MANIFEST}" "still.android.fight-view-rewatch" "${rewatch_matches[0]}"
+  echo "ok: ${rewatch_matches[0]}" >&2
+else
+  echo "warn: missing fight-view-rewatch PNG (non-gating)" >&2
+fi
+
 # 4b) C9 muted replay still (same sealed fight; mute=1 deep link)
 capture_named Replay replay-muted 3 "" 1
 
