@@ -1118,7 +1118,8 @@ begin
   perform tests.assert(v_count = 1, 'expected published atlas v1 (run seed-atlas-storage.mjs)');
 
   select count(*) into v_count from public.atlas_manifest_entries where version = 'v1';
-  perform tests.assert(v_count >= 20, format('expected >=20 manifest entries, got %s', v_count));
+  -- Proof (~25) + workshop-frame kit-v003 layers (20 assets × 5) ≥ 100.
+  perform tests.assert(v_count >= 100, format('expected >=100 manifest entries on consolidated v1, got %s', v_count));
 
   perform tests.assert(
     coalesce(array_length(public.atlas_missing_storage_paths('v1'), 1), 0) = 0,
@@ -1128,7 +1129,7 @@ begin
   select count(*) into v_count
     from storage.objects
    where bucket_id = 'atlas' and name like 'v1/%';
-  perform tests.assert(v_count >= 20, format('expected >=20 storage objects for v1, got %s', v_count));
+  perform tests.assert(v_count >= 100, format('expected >=100 storage objects for v1, got %s', v_count));
 
   select count(distinct part_id) into v_count
     from public.atlas_manifest_entries
@@ -1173,91 +1174,43 @@ begin
   perform tests.assert(v_manifest->>'bucket' = 'atlas', 'manifest bucket atlas');
   perform tests.assert(
     jsonb_typeof(v_manifest->'entries') = 'array'
-      and jsonb_array_length(v_manifest->'entries') >= 20,
+      and jsonb_array_length(v_manifest->'entries') >= 100,
     'manifest entries array populated'
   );
   raise notice 'TEST-OK atlas v1 proof pack + get_atlas_manifest';
 
-  -- C13: workshop-frame-v002 pack (v2) published with hyphenated kit paths ----
-  select count(*) into v_count from public.atlas_versions where version = 'v2' and status = 'published';
-  perform tests.assert(v_count = 1, 'expected published atlas v2 (run pack + seed-atlas-storage)');
+  -- BT-171: workshop-frame kit-v003 lives on consolidated v1 (v2/v3 retired) ----
   perform tests.assert(
-    coalesce(array_length(public.atlas_missing_storage_paths('v2'), 1), 0) = 0,
-    'v2 has no missing storage paths'
+    exists (
+      select 1 from public.atlas_manifest_entries
+       where version = 'v1' and path = 'parts/torso/oxide.png' and part_id = 'torso'
+    ),
+    'v1 has parts/torso/oxide.png'
   );
   perform tests.assert(
     exists (
       select 1 from public.atlas_manifest_entries
-       where version = 'v2' and path = 'parts/torso/oxide.png' and part_id = 'torso'
+       where version = 'v1'
+         and path = 'parts/hand-r-wrap/oxide.png'
+         and part_id = 'hand-r-wrap'
     ),
-    'v2 has parts/torso/oxide.png'
+    'v1 has hand-r-wrap oxide'
   );
   perform tests.assert(
     exists (
       select 1 from public.atlas_manifest_entries
-       where version = 'v2'
-         and path = 'parts/weapon-sword/oxide.png'
-         and part_id = 'weapon-sword'
+       where version = 'v1'
+         and path = 'parts/weapon-axe/oxide.png'
+         and part_id = 'weapon-axe'
     ),
-    'v2 weapon id is hyphenated (weapon-sword)'
+    'v1 weapon id is hyphenated (weapon-axe)'
   );
   -- LIKE '_' is a single-char wildcard — escape so we reject literal weapon_sword
   -- folders, not hyphenated weapon-sword paths.
   perform tests.assert(
     not exists (
       select 1 from public.atlas_manifest_entries
-       where version = 'v2'
-         and (
-           path like '%weapon\_sword%' escape '\'
-           or path like '%weapon\_axe%' escape '\'
-           or path like '%weapon\_dagger%' escape '\'
-           or path like '%/v001/%'
-           or part_id in ('weapon_sword', 'weapon_axe', 'weapon_dagger')
-         )
-    ),
-    'v2 must not register underscore weapon folders or kit-v001 paths'
-  );
-  select public.get_atlas_manifest('v2') into v_manifest;
-  perform tests.assert((v_manifest->>'ok')::boolean, 'get_atlas_manifest v2 ok');
-  perform tests.assert(v_manifest->>'version' = 'v2', 'manifest version v2');
-  raise notice 'TEST-OK atlas v2 workshop-frame-v002 pack + hyphen weapon ids';
-
-  -- A1: workshop-frame-v003 pack (v3) published with wraps + hyphen paths ----
-  select count(*) into v_count from public.atlas_versions where version = 'v3' and status = 'published';
-  perform tests.assert(v_count = 1, 'expected published atlas v3 (run pack + seed-atlas-storage)');
-  perform tests.assert(
-    coalesce(array_length(public.atlas_missing_storage_paths('v3'), 1), 0) = 0,
-    'v3 has no missing storage paths'
-  );
-  perform tests.assert(
-    exists (
-      select 1 from public.atlas_manifest_entries
-       where version = 'v3' and path = 'parts/torso/oxide.png' and part_id = 'torso'
-    ),
-    'v3 has parts/torso/oxide.png'
-  );
-  perform tests.assert(
-    exists (
-      select 1 from public.atlas_manifest_entries
-       where version = 'v3'
-         and path = 'parts/hand-r-wrap/oxide.png'
-         and part_id = 'hand-r-wrap'
-    ),
-    'v3 has hand-r-wrap oxide'
-  );
-  perform tests.assert(
-    exists (
-      select 1 from public.atlas_manifest_entries
-       where version = 'v3'
-         and path = 'parts/weapon-axe/oxide.png'
-         and part_id = 'weapon-axe'
-    ),
-    'v3 weapon id is hyphenated (weapon-axe)'
-  );
-  perform tests.assert(
-    not exists (
-      select 1 from public.atlas_manifest_entries
-       where version = 'v3'
+       where version = 'v1'
          and (
            path like '%weapon\_sword%' escape '\'
            or path like '%weapon\_axe%' escape '\'
@@ -1267,12 +1220,58 @@ begin
            or part_id in ('weapon_sword', 'weapon_axe', 'weapon_dagger')
          )
     ),
-    'v3 must not register underscore weapon folders or kit-v001/v002 paths'
+    'v1 must not register underscore weapon folders or kit-v001/v002 paths'
   );
-  select public.get_atlas_manifest('v3') into v_manifest;
-  perform tests.assert((v_manifest->>'ok')::boolean, 'get_atlas_manifest v3 ok');
-  perform tests.assert(v_manifest->>'version' = 'v3', 'manifest version v3');
-  raise notice 'TEST-OK atlas v3 workshop-frame-v003 pack + wraps + hyphen weapon ids';
+  perform tests.assert(
+    not exists (
+      select 1 from public.atlas_versions where version in ('v2', 'v3') and status = 'draft'
+    ),
+    'draft v2/v3 registrations retired'
+  );
+  raise notice 'TEST-OK atlas v1 workshop-frame-v003 pack + wraps + hyphen weapon ids';
+
+  -- Dev-only reopen: confirm gate + published→draft on a throwaway version ----
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  insert into public.atlas_versions (version, status, published_at, manifest, budgets_final, notes)
+  values ('v900010', 'draft', null, '{"version":"v900010"}'::jsonb, false, 'reopen fixture');
+  insert into public.atlas_manifest_entries (version, asset_key, kind, part_id, role, path)
+  values ('v900010', 'manifest.root', 'manifest', null, 'manifest', 'manifest.json');
+  -- Fabricate a storage object so we can publish (test-only; bootstrap uses API).
+  insert into storage.objects (bucket_id, name, metadata)
+  values ('atlas', 'v900010/manifest.json', '{"fixture":true}'::jsonb);
+  perform public.publish_atlas_version('v900010');
+  begin
+    perform public.dev_reopen_atlas_version('v900010', 'wrong');
+    raise exception 'REOPEN FAIL: confirm gate missing';
+  exception
+    when others then
+      if sqlstate = '22023' and sqlerrm like 'atlas_dev_reopen_confirm_required%' then null;
+      else raise;
+      end if;
+  end;
+  select public.dev_reopen_atlas_version('v900010', 'DEVELOPMENT_ONLY_REOPEN') into v_manifest;
+  perform tests.assert(
+    (v_manifest->>'status') = 'draft' or coalesce((v_manifest->>'alreadyDraft')::boolean, false),
+    format('dev_reopen returns draft, got %s', v_manifest)
+  );
+  perform tests.assert(
+    (select status from public.atlas_versions where version = 'v900010') = 'draft',
+    'v900010 reopened to draft'
+  );
+  -- Production immutability still blocks plain updates without the RPC/GUC.
+  update public.atlas_versions
+     set status = 'published', published_at = now()
+   where version = 'v900010' and status = 'draft';
+  begin
+    update public.atlas_versions set notes = 'hack' where version = 'v900010';
+    raise exception 'IMMUTABILITY FAIL: modified published without reopen';
+  exception
+    when others then
+      if sqlstate = '55000' and sqlerrm like 'atlas_version_immutable%' then null;
+      else raise;
+      end if;
+  end;
+  raise notice 'TEST-OK atlas dev_reopen_atlas_version gated reopen';
 
   -- Publish rejects missing Storage objects --------------------------------
   perform set_config('request.jwt.claim.role', 'service_role', true);

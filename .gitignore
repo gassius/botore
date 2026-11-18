@@ -18,11 +18,45 @@ supabase/.branches/
 supabase/.temp/
 supabase/.runtime/
 
-# Generated atlas/v2 + v3 pack bytes (from pack-workshop-frame-atlas.mjs)
+# Retired atlas/v2 + v3 dirs (README only). Packer overlays kit into v1.
 supabase/seed/atlas/v2/**
 !supabase/seed/atlas/v2/README.md
 supabase/seed/atlas/v3/**
 !supabase/seed/atlas/v3/README.md
+
+# Generated workshop-frame overlays under v1 (packer). Proof catalogue stays tracked.
+supabase/seed/atlas/v1/parts/torso/
+supabase/seed/atlas/v1/parts/head/
+supabase/seed/atlas/v1/parts/pelvis/
+supabase/seed/atlas/v1/parts/upper-arm-l/
+supabase/seed/atlas/v1/parts/forearm-l/
+supabase/seed/atlas/v1/parts/hand-l/
+supabase/seed/atlas/v1/parts/hand-l-wrap/
+supabase/seed/atlas/v1/parts/thigh-l/
+supabase/seed/atlas/v1/parts/shin-l/
+supabase/seed/atlas/v1/parts/foot-l/
+supabase/seed/atlas/v1/parts/upper-arm-r/
+supabase/seed/atlas/v1/parts/forearm-r/
+supabase/seed/atlas/v1/parts/hand-r/
+supabase/seed/atlas/v1/parts/hand-r-wrap/
+supabase/seed/atlas/v1/parts/thigh-r/
+supabase/seed/atlas/v1/parts/shin-r/
+supabase/seed/atlas/v1/parts/foot-r/
+supabase/seed/atlas/v1/parts/weapon-sword/oxide.png
+supabase/seed/atlas/v1/parts/weapon-sword/petrol.png
+supabase/seed/atlas/v1/parts/weapon-sword/material-under.png
+supabase/seed/atlas/v1/parts/weapon-sword/material-over.png
+supabase/seed/atlas/v1/parts/weapon-sword/mask.png
+supabase/seed/atlas/v1/parts/weapon-axe/oxide.png
+supabase/seed/atlas/v1/parts/weapon-axe/petrol.png
+supabase/seed/atlas/v1/parts/weapon-axe/material-under.png
+supabase/seed/atlas/v1/parts/weapon-axe/material-over.png
+supabase/seed/atlas/v1/parts/weapon-axe/mask.png
+supabase/seed/atlas/v1/parts/weapon-dagger/oxide.png
+supabase/seed/atlas/v1/parts/weapon-dagger/petrol.png
+supabase/seed/atlas/v1/parts/weapon-dagger/material-under.png
+supabase/seed/atlas/v1/parts/weapon-dagger/material-over.png
+supabase/seed/atlas/v1/parts/weapon-dagger/mask.png
 
 # Editors / OS
 .DS_Store

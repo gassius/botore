@@ -107,7 +107,7 @@ describe('Workshop Frame kit-v003.3 adapter (ACTIVE pin)', () => {
     expect(V002_TORSO_FROM_HISTORY.compatible_family).toBe('workshop-frame-v002');
     const bot = assembleWorkshopFrame({ loadout: baseLoadout, facing: 'right' });
     expect(bot.kitId).toBe('workshop-frame-v003.3');
-    expect(bot.atlasVersion).toBe('v3');
+    expect(bot.atlasVersion).toBe('v1');
     expect(bot.layers.every((l) => l.label?.startsWith('workshop-frame-v003.3:'))).toBe(true);
     expect(bot.canvas.width).toBe(640);
   });

@@ -349,7 +349,7 @@ export function FightSessionProvider(props: {
                   decals: opponent.loadout.decals,
                   soundTags: opponent.loadout.soundTags,
                   loadoutVersionId: opponent.loadoutVersionId,
-                  atlasVersion: opponent.atlasVersion ?? 'v3',
+                  atlasVersion: opponent.atlasVersion ?? 'v1',
                 },
               },
             }

@@ -1,21 +1,22 @@
 #!/usr/bin/env node
 /**
- * A1 / C13: Materialize supabase/seed/atlas/vN from Workshop Frame kit + v1
- * carry-forward (base / arena / FX / proof catalogue). Does not publish —
- * pair with `ATLAS_VERSION=vN node scripts/seed-atlas-storage.mjs`.
+ * BT-171 / A1 / C13: Materialize supabase/seed/atlas/v1 from Workshop Frame
+ * kit-v003(.3) overlaid onto the committed proof pack. Does not publish —
+ * pair with `ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs`.
  *
- * Default: kit-v003 → atlas/v3.
- * Historical: ATLAS_VERSION=v2 rebuilds kit-v002 → atlas/v2 (separate fallback).
+ * Default (and only) target: kit-v003 → atlas/v1 (overlay; never wipes proof
+ * catalogue / base / arena / FX bytes). Former v2/v3 pack dirs are retired.
  *
  * Usage:
  *   node scripts/pack-workshop-frame-atlas.mjs
- *   ATLAS_VERSION=v2 node scripts/pack-workshop-frame-atlas.mjs
  *   KIT_DIR=/path/to/kit node scripts/pack-workshop-frame-atlas.mjs
+ *   ATLAS_SEED_DIR=/tmp/atlas-v1 node scripts/pack-workshop-frame-atlas.mjs
  *
- * Hosted publish (Carlos credentials — never commit secrets):
+ * Hosted Development re-publish (Infra — never commit secrets):
  *   SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… DATABASE_URL=… \
  *     node scripts/pack-workshop-frame-atlas.mjs && \
- *     ATLAS_VERSION=v3 node scripts/seed-atlas-storage.mjs
+ *     # then reopen draft (see docs/backend/verify.md) + seed-atlas-storage
+ *     ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -55,22 +56,27 @@ function resolvePackTarget(version) {
   const target = WORKSHOP_FRAME_PACK_TARGETS[version];
   if (!target) {
     throw new Error(
-      `refusing ATLAS_VERSION=${version}; pack-workshop-frame-atlas only writes ${Object.keys(WORKSHOP_FRAME_PACK_TARGETS).join('|')}`,
+      `refusing ATLAS_VERSION=${version}; pack-workshop-frame-atlas only writes ${Object.keys(WORKSHOP_FRAME_PACK_TARGETS).join('|')} (v2/v3 retired — use v1)`,
     );
   }
   return target;
 }
 
 /**
- * Hard guard before any delete: this packer only materializes workshop-frame
- * v2 (history) or v3 (active). A leftover `ATLAS_VERSION=v1` from seed scripts
- * used to rmSync the committed supabase/seed/atlas/v1 tree.
+ * Guard before any delete/write. Active target is v1 only.
+ * Overlay into the committed v1 seed is allowed (never rmSync the tree).
+ * Alternate ATLAS_SEED_DIR may wipe + carry-forward from committed v1.
  */
 export function assertWorkshopFramePackTarget(version, outDir, v1Dir = V1_DIR) {
   resolvePackTarget(version);
-  if (resolve(outDir) === resolve(v1Dir)) {
-    throw new Error(`refusing to wipe committed v1 seed at ${v1Dir}`);
+  if (version !== 'v1') {
+    throw new Error(`refusing ATLAS_VERSION=${version}; only v1 is active`);
   }
+  // Overlay path: writing into committed v1 is intentional and must not wipe.
+  if (resolve(outDir) === resolve(v1Dir)) {
+    return { overlay: true };
+  }
+  return { overlay: false };
 }
 
 function resolveKitDir(kitVersion) {
@@ -147,7 +153,7 @@ function buildManifestJson(pairs, kitVersion, atlasVersion) {
   return {
     version: atlasVersion,
     status: 'draft',
-    note: `Workshop Frame kit-${kitVersion} media keys packed onto F5 parts/<hyphenatedPartId>/… plus v1 carry-forward. budgets_final stays false. Do not mix kit versions.`,
+    note: `Workshop Frame kit-${kitVersion} media keys packed onto F5 parts/<hyphenatedPartId>/… plus v1 proof carry-forward. Single Development atlas. budgets_final stays false.`,
     kit: {
       id: 'workshop-frame',
       version: kitVersion,
@@ -181,8 +187,9 @@ function buildManifestJson(pairs, kitVersion, atlasVersion) {
 
 function main() {
   let target;
+  let mode;
   try {
-    assertWorkshopFramePackTarget(VERSION, OUT_DIR, V1_DIR);
+    mode = assertWorkshopFramePackTarget(VERSION, OUT_DIR, V1_DIR);
     target = resolvePackTarget(VERSION);
   } catch (err) {
     fail(err instanceof Error ? err.message : String(err));
@@ -196,31 +203,36 @@ function main() {
     kitVersion,
   });
 
-  // Preserve committed README.md across wipe of generated pack bytes.
-  const readmePath = join(OUT_DIR, 'README.md');
-  const readmeBackup = existsSync(readmePath) ? readFileSync(readmePath) : null;
-  if (existsSync(OUT_DIR)) {
-    rmSync(OUT_DIR, { recursive: true, force: true });
-  }
-  mkdirSync(OUT_DIR, { recursive: true });
-  if (readmeBackup) {
-    writeFileSync(readmePath, readmeBackup);
-  }
+  if (mode.overlay) {
+    // Overlay into committed v1: never wipe proof catalogue / base / arena / FX.
+    for (const pair of pairs) {
+      copyFile(join(kitDir, pair.kitRelative), join(OUT_DIR, pair.atlasRelative));
+    }
+  } else {
+    // Alternate ATLAS_SEED_DIR: wipe destination, carry-forward proof bytes, then kit.
+    const readmePath = join(OUT_DIR, 'README.md');
+    const readmeBackup = existsSync(readmePath) ? readFileSync(readmePath) : null;
+    if (existsSync(OUT_DIR)) {
+      rmSync(OUT_DIR, { recursive: true, force: true });
+    }
+    mkdirSync(OUT_DIR, { recursive: true });
+    if (readmeBackup) {
+      writeFileSync(readmePath, readmeBackup);
+    }
 
-  // Carry-forward v1 proof bytes (skip its manifest — we write a versioned one).
-  for (const rel of V1_CARRY_FORWARD_PATHS) {
-    if (rel === 'manifest.json') continue;
-    copyFile(join(V1_DIR, rel), join(OUT_DIR, rel));
-  }
+    for (const rel of V1_CARRY_FORWARD_PATHS) {
+      if (rel === 'manifest.json') continue;
+      copyFile(join(V1_DIR, rel), join(OUT_DIR, rel));
+    }
 
-  for (const pair of pairs) {
-    copyFile(join(kitDir, pair.kitRelative), join(OUT_DIR, pair.atlasRelative));
+    for (const pair of pairs) {
+      copyFile(join(kitDir, pair.kitRelative), join(OUT_DIR, pair.atlasRelative));
+    }
   }
 
   const manifest = buildManifestJson(pairs, kitVersion, VERSION);
   writeFileSync(join(OUT_DIR, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
-  // Sanity: hyphenated weapon path exists; underscore form must not be a folder name.
   const swordOxide = join(OUT_DIR, 'parts/weapon-sword/oxide.png');
   if (!existsSync(swordOxide)) fail(`expected packed ${swordOxide}`);
   if (existsSync(join(OUT_DIR, 'parts/weapon_sword'))) {
@@ -229,6 +241,13 @@ function main() {
   if (target.includeWraps) {
     const wrap = join(OUT_DIR, 'parts/hand-r-wrap/oxide.png');
     if (!existsSync(wrap)) fail(`expected packed wrap ${wrap}`);
+  }
+  // Proof pack must survive overlay.
+  if (!existsSync(join(OUT_DIR, 'parts/chassis-basic/body.png'))) {
+    fail('proof pack chassis-basic/body.png missing after pack');
+  }
+  if (!existsSync(join(OUT_DIR, 'base/audio/hit.m4a'))) {
+    fail('proof pack base/audio/hit.m4a missing after pack');
   }
 
   const kitManifest = join(kitDir, 'manifest.json');
@@ -245,7 +264,9 @@ function main() {
     }
   }
 
-  console.log(`ATLAS-PACK-OK ${VERSION} kit=${kitDir} pairs=${pairs.length} out=${OUT_DIR}`);
+  console.log(
+    `ATLAS-PACK-OK ${VERSION} kit=${kitDir} pairs=${pairs.length} out=${OUT_DIR} mode=${mode.overlay ? 'overlay' : 'carry-forward'}`,
+  );
 }
 
 const isDirectRun =

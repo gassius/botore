@@ -13,14 +13,12 @@
  *   4. get_atlas_manifest(vN) / authenticated save_bot_loadout only accept published
  *
  * Usage (after supabase start + db reset migrations):
- *   node scripts/seed-atlas-storage.mjs
+ *   node scripts/pack-workshop-frame-atlas.mjs
  *   ATLAS_VERSION=v1 node scripts/seed-atlas-storage.mjs
- *   ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs   # after pack-workshop-frame-atlas.mjs
  *
- * Hosted Botore Development publish (Carlos — never commit secrets):
- *   SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… DATABASE_URL=… \
- *     node scripts/pack-workshop-frame-atlas.mjs && \
- *     ATLAS_VERSION=v2 node scripts/seed-atlas-storage.mjs
+ * Hosted Botore Development re-publish (Infra — never commit secrets):
+ *   See docs/backend/verify.md § Hosted Development atlas v1 reset
+ *   (dev_reopen_atlas_version → register entries → pack → this script).
  */
 import { spawnSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';

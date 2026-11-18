@@ -1,7 +1,12 @@
 {
   "version": "v1",
   "status": "draft",
-  "note": "Placeholder proof pack. Export sizes and cache budgets are provisional \u2014 not final. Publish only after Storage API upload.",
+  "note": "Workshop Frame kit-v003 media keys packed onto F5 parts/<hyphenatedPartId>/… plus v1 proof carry-forward. Single Development atlas. budgets_final stays false.",
+  "kit": {
+    "id": "workshop-frame",
+    "version": "v003",
+    "weaponIdRule": "Kit filenames use underscores (weapon_sword-*.png); atlas/catalogue partIds use hyphens (weapon-sword). Adapter maps both."
+  },
   "basePack": {
     "uiTap": "base/audio/ui-tap.m4a",
     "musicLoop": "base/audio/music-loop.m4a",
@@ -25,34 +30,282 @@
   },
   "parts": {
     "chassis-basic": {
-      "images": ["parts/chassis-basic/body.png", "parts/chassis-basic/mask.png"],
-      "audio": ["parts/chassis-basic/hit.m4a"],
-      "soundTags": ["chassis.light"]
+      "images": [
+        "parts/chassis-basic/body.png",
+        "parts/chassis-basic/mask.png"
+      ],
+      "audio": [
+        "parts/chassis-basic/hit.m4a"
+      ],
+      "soundTags": [
+        "chassis.light"
+      ]
     },
     "paint-crimson": {
-      "images": ["parts/paint-crimson/swatch.png"],
+      "images": [
+        "parts/paint-crimson/swatch.png"
+      ],
       "audio": [],
       "soundTags": []
     },
     "paint-cobalt": {
-      "images": ["parts/paint-cobalt/swatch.png"],
+      "images": [
+        "parts/paint-cobalt/swatch.png"
+      ],
       "audio": [],
       "soundTags": []
     },
     "weapon-sword": {
-      "images": ["parts/weapon-sword/sprite.png"],
-      "audio": ["parts/weapon-sword/swing.m4a"],
-      "soundTags": ["weapon.sword"]
+      "images": [
+        "parts/weapon-sword/sprite.png",
+        "parts/weapon-sword/oxide.png",
+        "parts/weapon-sword/petrol.png",
+        "parts/weapon-sword/material-under.png",
+        "parts/weapon-sword/material-over.png",
+        "parts/weapon-sword/mask.png"
+      ],
+      "audio": [
+        "parts/weapon-sword/swing.m4a"
+      ],
+      "soundTags": [
+        "weapon.sword"
+      ]
     },
     "weapon-axe": {
-      "images": ["parts/weapon-axe/sprite.png"],
-      "audio": ["parts/weapon-axe/swing.m4a"],
-      "soundTags": ["weapon.axe"]
+      "images": [
+        "parts/weapon-axe/sprite.png",
+        "parts/weapon-axe/oxide.png",
+        "parts/weapon-axe/petrol.png",
+        "parts/weapon-axe/material-under.png",
+        "parts/weapon-axe/material-over.png",
+        "parts/weapon-axe/mask.png"
+      ],
+      "audio": [
+        "parts/weapon-axe/swing.m4a"
+      ],
+      "soundTags": [
+        "weapon.axe"
+      ]
     },
     "weapon-dagger": {
-      "images": ["parts/weapon-dagger/sprite.png"],
-      "audio": ["parts/weapon-dagger/swing.m4a"],
-      "soundTags": ["weapon.dagger"]
+      "images": [
+        "parts/weapon-dagger/sprite.png",
+        "parts/weapon-dagger/oxide.png",
+        "parts/weapon-dagger/petrol.png",
+        "parts/weapon-dagger/material-under.png",
+        "parts/weapon-dagger/material-over.png",
+        "parts/weapon-dagger/mask.png"
+      ],
+      "audio": [
+        "parts/weapon-dagger/swing.m4a"
+      ],
+      "soundTags": [
+        "weapon.dagger"
+      ]
+    },
+    "torso": {
+      "images": [
+        "parts/torso/oxide.png",
+        "parts/torso/petrol.png",
+        "parts/torso/material-under.png",
+        "parts/torso/material-over.png",
+        "parts/torso/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "head": {
+      "images": [
+        "parts/head/oxide.png",
+        "parts/head/petrol.png",
+        "parts/head/material-under.png",
+        "parts/head/material-over.png",
+        "parts/head/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "pelvis": {
+      "images": [
+        "parts/pelvis/oxide.png",
+        "parts/pelvis/petrol.png",
+        "parts/pelvis/material-under.png",
+        "parts/pelvis/material-over.png",
+        "parts/pelvis/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "upper-arm-l": {
+      "images": [
+        "parts/upper-arm-l/oxide.png",
+        "parts/upper-arm-l/petrol.png",
+        "parts/upper-arm-l/material-under.png",
+        "parts/upper-arm-l/material-over.png",
+        "parts/upper-arm-l/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "forearm-l": {
+      "images": [
+        "parts/forearm-l/oxide.png",
+        "parts/forearm-l/petrol.png",
+        "parts/forearm-l/material-under.png",
+        "parts/forearm-l/material-over.png",
+        "parts/forearm-l/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "hand-l": {
+      "images": [
+        "parts/hand-l/oxide.png",
+        "parts/hand-l/petrol.png",
+        "parts/hand-l/material-under.png",
+        "parts/hand-l/material-over.png",
+        "parts/hand-l/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "thigh-l": {
+      "images": [
+        "parts/thigh-l/oxide.png",
+        "parts/thigh-l/petrol.png",
+        "parts/thigh-l/material-under.png",
+        "parts/thigh-l/material-over.png",
+        "parts/thigh-l/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "shin-l": {
+      "images": [
+        "parts/shin-l/oxide.png",
+        "parts/shin-l/petrol.png",
+        "parts/shin-l/material-under.png",
+        "parts/shin-l/material-over.png",
+        "parts/shin-l/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "foot-l": {
+      "images": [
+        "parts/foot-l/oxide.png",
+        "parts/foot-l/petrol.png",
+        "parts/foot-l/material-under.png",
+        "parts/foot-l/material-over.png",
+        "parts/foot-l/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "upper-arm-r": {
+      "images": [
+        "parts/upper-arm-r/oxide.png",
+        "parts/upper-arm-r/petrol.png",
+        "parts/upper-arm-r/material-under.png",
+        "parts/upper-arm-r/material-over.png",
+        "parts/upper-arm-r/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "forearm-r": {
+      "images": [
+        "parts/forearm-r/oxide.png",
+        "parts/forearm-r/petrol.png",
+        "parts/forearm-r/material-under.png",
+        "parts/forearm-r/material-over.png",
+        "parts/forearm-r/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "hand-r": {
+      "images": [
+        "parts/hand-r/oxide.png",
+        "parts/hand-r/petrol.png",
+        "parts/hand-r/material-under.png",
+        "parts/hand-r/material-over.png",
+        "parts/hand-r/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "thigh-r": {
+      "images": [
+        "parts/thigh-r/oxide.png",
+        "parts/thigh-r/petrol.png",
+        "parts/thigh-r/material-under.png",
+        "parts/thigh-r/material-over.png",
+        "parts/thigh-r/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "shin-r": {
+      "images": [
+        "parts/shin-r/oxide.png",
+        "parts/shin-r/petrol.png",
+        "parts/shin-r/material-under.png",
+        "parts/shin-r/material-over.png",
+        "parts/shin-r/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "foot-r": {
+      "images": [
+        "parts/foot-r/oxide.png",
+        "parts/foot-r/petrol.png",
+        "parts/foot-r/material-under.png",
+        "parts/foot-r/material-over.png",
+        "parts/foot-r/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "hand-l-wrap": {
+      "images": [
+        "parts/hand-l-wrap/oxide.png",
+        "parts/hand-l-wrap/petrol.png",
+        "parts/hand-l-wrap/material-under.png",
+        "parts/hand-l-wrap/material-over.png",
+        "parts/hand-l-wrap/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
+    },
+    "hand-r-wrap": {
+      "images": [
+        "parts/hand-r-wrap/oxide.png",
+        "parts/hand-r-wrap/petrol.png",
+        "parts/hand-r-wrap/material-under.png",
+        "parts/hand-r-wrap/material-over.png",
+        "parts/hand-r-wrap/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "workshop-frame-v003"
     }
   }
 }
