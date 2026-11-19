@@ -166,8 +166,8 @@ begin
 
   select count(*) into v_count from public.inventory_balances
    where account_id = v_account;
-  -- chassis + 10 paints + 7 weapons
-  perform tests.assert(v_count = 18, 'expected player to own 18 catalogue parts');
+  -- chassis + 10 paints + 7 weapons + 10 A4 shapes (0039)
+  perform tests.assert(v_count = 28, 'expected player to own 28 catalogue parts');
   raise notice 'TEST-OK bots-as-data seed fixtures';
 
   -- RLS: clients cannot write catalogue / inventory / loadouts --------------
@@ -4228,4 +4228,511 @@ begin
   reset role;
 
   raise notice 'TEST-OK 0038 get_owned_character preserves active second bot';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 0039 A4 shapes: catalogue slots, RLS, save defaults, Equip self-heal
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-0000000000ea';
+  v_character_id text := 'player-shapes-ea';
+  v_res jsonb;
+  v_version uuid;
+  v_loadout jsonb;
+  v_qty integer;
+  v_rows integer;
+  v_err text;
+begin
+  -- Catalogue: 3 heads, 3 bodies, 2 arms, 2 legs; chassis stays its own slot.
+  perform tests.assert(
+    (select count(*) from public.parts_catalogue where slot_kind = 'head' and is_active) = 3,
+    'expected 3 active heads'
+  );
+  perform tests.assert(
+    (select count(*) from public.parts_catalogue where slot_kind = 'body' and is_active) = 3,
+    'expected 3 active bodies'
+  );
+  perform tests.assert(
+    (select count(*) from public.parts_catalogue where slot_kind = 'arms' and is_active) = 2,
+    'expected 2 active arms'
+  );
+  perform tests.assert(
+    (select count(*) from public.parts_catalogue where slot_kind = 'legs' and is_active) = 2,
+    'expected 2 active legs'
+  );
+  perform tests.assert(
+    (select slot_kind from public.parts_catalogue where part_id = 'body-chassis') = 'body'
+    and (select slot_kind from public.parts_catalogue where part_id = 'chassis-basic') = 'chassis',
+    'body-chassis is a body part; chassis-basic stays chassis'
+  );
+
+  -- Atlas v1 carries the 9 shape tiles × 4 layers (uploaded + published by db-reset).
+  perform tests.assert(
+    (
+      select count(*) from public.atlas_manifest_entries
+       where version = 'v1' and kind = 'image'
+         and path ~ '^parts/(head-welder|head-can|torso-boiler|torso-slab|upper-arm-heavy|forearm-heavy|thigh-piston|shin-piston|foot-piston)/(oxide|material-under|material-over|mask)\.png$'
+    ) = 36,
+    'atlas v1 registers 36 A4 shape tile entries'
+  );
+
+  begin
+    insert into public.parts_catalogue (part_id, slot_kind, display_name, media_key)
+    values ('tail-bogus', 'tail', 'Bogus', 'parts/tail-bogus');
+    perform tests.assert(false, 'slot_kind check must reject tail');
+  exception
+    when check_violation then null;
+  end;
+
+  -- RLS: clients cannot write shape catalogue rows or grant themselves shapes.
+  set local role authenticated;
+  begin
+    insert into public.parts_catalogue (part_id, slot_kind, display_name, media_key)
+    values ('head-hack', 'head', 'Hack', 'parts/head-hack');
+    raise exception 'RLS FAIL: insert head into parts_catalogue allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    insert into public.inventory_ledger (account_id, part_id, delta, reason)
+    values (v_account, 'head-welder', 1, 'grant');
+    raise exception 'RLS FAIL: insert shape into inventory_ledger allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    update public.parts_catalogue set display_name = 'Hacked' where slot_kind = 'head';
+    get diagnostics v_rows = row_count;
+    perform tests.assert(v_rows = 0, 'RLS FAIL: shape catalogue update affected rows');
+  exception
+    when insufficient_privilege then null;
+  end;
+  reset role;
+
+  -- Returning pre-A4 player: starter loadout without shapes, no shape inventory.
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'shapes-ea@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+  insert into public.accounts (id) values (v_account) on conflict (id) do nothing;
+  insert into public.characters (
+    character_id, account_id, display_name, is_opponent, owner_is_npc
+  ) values (
+    v_character_id, v_account, 'Pilot', false, false
+  ) on conflict (character_id) do nothing;
+  update public.accounts set active_character_id = v_character_id where id = v_account;
+  insert into public.character_build_versions (
+    character_id, hp, strength, agility, speed, weapon_kind, weapon_power
+  )
+  select v_character_id, 30, 5, 5, 6, 'sword', 3
+  where not exists (
+    select 1 from public.character_build_versions where character_id = v_character_id
+  );
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  select v_account, p.part_id, 1, 'grant'
+  from (values ('chassis-basic'), ('paint-crimson'), ('weapon-sword')) as p(part_id)
+  where not exists (
+    select 1 from public.inventory_ledger il
+     where il.account_id = v_account and il.part_id = p.part_id and il.delta > 0
+  );
+  insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
+  select
+    v_character_id,
+    '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword","shield":null,"drone":null,"decals":[],"soundTags":["chassis.light","weapon.sword"]}'::jsonb,
+    'v1'
+  where not exists (
+    select 1 from public.current_bot_loadouts where character_id = v_character_id
+  );
+
+  select public.owned_part_quantity(v_account, 'head-welder') into v_qty;
+  perform tests.assert(v_qty < 1, 'pre: head-welder unowned before sync');
+
+  -- Equip a pre-A4 loadout (no shape keys): ensure grants shapes, stock defaults stored.
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_version := public.save_bot_loadout(
+    v_character_id,
+    '{"chassis":"chassis-basic","paint":"paint-cobalt","weapon":"weapon-sword"}'::jsonb,
+    'v1'
+  );
+  reset role;
+  select loadout into v_loadout from public.bot_loadout_versions
+   where loadout_version_id = v_version;
+  perform tests.assert(v_loadout->>'paint' = 'paint-cobalt', 'old-shape save keeps paint');
+  perform tests.assert(v_loadout->>'chassis' = 'chassis-basic', 'chassis untouched by shapes');
+  perform tests.assert(
+    v_loadout->>'head' = 'head-visor'
+    and v_loadout->>'body' = 'body-chassis'
+    and v_loadout->>'arms' = 'arms-stock'
+    and v_loadout->>'legs' = 'legs-stock',
+    'missing shapes default to stock ids'
+  );
+  select public.owned_part_quantity(v_account, 'legs-piston') into v_qty;
+  perform tests.assert(v_qty >= 1, 'Equip self-heals legs-piston ownership');
+
+  -- Equip the heaviest combo; explicit null head falls back to stock.
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_version := public.save_bot_loadout(
+    v_character_id,
+    '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-axe","head":"head-welder","body":"body-boiler","arms":"arms-heavy","legs":"legs-piston"}'::jsonb,
+    'v1'
+  );
+  reset role;
+  select loadout into v_loadout from public.current_bot_loadouts
+   where character_id = v_character_id;
+  perform tests.assert(v_loadout->>'head' = 'head-welder', 'head-welder persisted');
+  perform tests.assert(v_loadout->>'body' = 'body-boiler', 'body-boiler persisted');
+  perform tests.assert(v_loadout->>'arms' = 'arms-heavy', 'arms-heavy persisted');
+  perform tests.assert(v_loadout->>'legs' = 'legs-piston', 'legs-piston persisted');
+  perform tests.assert(
+    v_loadout->'soundTags' = '["chassis.light","weapon.axe"]'::jsonb,
+    'shapes add no sound tags'
+  );
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_version := public.save_bot_loadout(
+    v_character_id,
+    '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-axe","head":null,"body":"body-slab"}'::jsonb,
+    'v1'
+  );
+  reset role;
+  select loadout into v_loadout from public.bot_loadout_versions
+   where loadout_version_id = v_version;
+  perform tests.assert(
+    v_loadout->>'head' = 'head-visor' and v_loadout->>'body' = 'body-slab'
+    and v_loadout->>'legs' = 'legs-stock',
+    'null head → stock; omitted legs → stock; body-slab kept'
+  );
+
+  -- Slot mismatch + non-string shapes are rejected.
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  begin
+    perform public.save_bot_loadout(
+      v_character_id,
+      '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword","head":"body-boiler"}'::jsonb,
+      'v1'
+    );
+    perform tests.assert(false, 'body part in head slot must raise slot_mismatch');
+  exception
+    when others then
+      get stacked diagnostics v_err = message_text;
+      perform tests.assert(v_err like 'slot_mismatch%', 'head slot rejects body-boiler');
+  end;
+  begin
+    perform public.save_bot_loadout(
+      v_character_id,
+      '{"chassis":"body-chassis","paint":"paint-crimson","weapon":"weapon-sword"}'::jsonb,
+      'v1'
+    );
+    perform tests.assert(false, 'body-chassis in chassis slot must raise slot_mismatch');
+  exception
+    when others then
+      get stacked diagnostics v_err = message_text;
+      perform tests.assert(v_err like 'slot_mismatch%', 'chassis slot rejects body-chassis');
+  end;
+  begin
+    perform public.save_bot_loadout(
+      v_character_id,
+      '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword","arms":3}'::jsonb,
+      'v1'
+    );
+    perform tests.assert(false, 'numeric arms must raise invalid_loadout');
+  exception
+    when others then
+      get stacked diagnostics v_err = message_text;
+      perform tests.assert(
+        v_err like 'invalid_loadout: arms must be a string or null%',
+        'non-string arms rejected'
+      );
+  end;
+  reset role;
+
+  -- Revoke stays effective: ensure must not regrant a revoked shape.
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  values (v_account, 'head-can', -public.owned_part_quantity(v_account, 'head-can'), 'revoke');
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'hydrate after shape revoke ok');
+  begin
+    perform public.save_bot_loadout(
+      v_character_id,
+      '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword","head":"head-can"}'::jsonb,
+      'v1'
+    );
+    perform tests.assert(false, 'equip revoked head-can must raise unowned_part');
+  exception
+    when others then
+      get stacked diagnostics v_err = message_text;
+      perform tests.assert(v_err ilike '%unowned_part%', 'revoked head-can raises unowned_part');
+  end;
+  reset role;
+
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.jwt.claim.role', '', true);
+  raise notice 'TEST-OK 0039 A4 shapes catalogue + save_bot_loadout defaults + equip self-heal';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 0039: brand-new player starter loadout carries stock shapes
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-0000000000eb';
+  v_res jsonb;
+  v_loadout jsonb;
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'shapes-eb@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_owned_character();
+  reset role;
+  perform tests.assert((v_res->>'ok')::boolean, 'first hydrate provisions bot');
+
+  select loadout into v_loadout from public.current_bot_loadouts
+   where character_id = v_res->>'characterId';
+  perform tests.assert(
+    v_loadout->>'head' = 'head-visor'
+    and v_loadout->>'body' = 'body-chassis'
+    and v_loadout->>'arms' = 'arms-stock'
+    and v_loadout->>'legs' = 'legs-stock',
+    'starter loadout carries stock shapes'
+  );
+  perform tests.assert(
+    public.owned_part_quantity(v_account, 'body-boiler') >= 1
+    and public.owned_part_quantity(v_account, 'arms-heavy') >= 1,
+    'new player owns shape variants'
+  );
+
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.jwt.claim.role', '', true);
+  raise notice 'TEST-OK 0039 starter loadout stock shapes';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 0039 B1: shape backfill is once per account (multi-bot must not duplicate)
+-- Simulates hosted apply after a 2-bot account exists with no shape grants.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-0000000000ec';
+  v_character_id text;
+  v_res jsonb;
+  v_grants int;
+  v_qty int;
+  v_dupes int;
+  v_shape text;
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'shapes-ec@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'B1 hydrate provisions first bot');
+  v_character_id := v_res->>'characterId';
+  perform tests.assert(v_character_id is not null and v_character_id <> '', 'B1 first characterId');
+  v_res := public.create_owned_character('Shape Twin', 'paint-cobalt', 'weapon-axe');
+  perform tests.assert((v_res->>'ok')::boolean, 'B1 second bot created');
+  perform tests.assert((v_res->>'ownedCount')::integer = 2, 'B1 ownedCount is 2');
+  reset role;
+
+  -- Wipe shape ledger rows so the migration backfill statement can be re-run.
+  delete from public.inventory_ledger
+   where account_id = v_account
+     and part_id in (
+       'head-visor', 'head-welder', 'head-can',
+       'body-chassis', 'body-boiler', 'body-slab',
+       'arms-stock', 'arms-heavy',
+       'legs-stock', 'legs-piston'
+     );
+
+  -- Same INSERT as 0039 backfill (account-scoped, not per character).
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  select a.id, p.part_id, 1, 'grant'
+  from public.accounts a
+  cross join (
+    values
+      ('head-visor'),
+      ('head-welder'),
+      ('head-can'),
+      ('body-chassis'),
+      ('body-boiler'),
+      ('body-slab'),
+      ('arms-stock'),
+      ('arms-heavy'),
+      ('legs-stock'),
+      ('legs-piston')
+  ) as p(part_id)
+  where a.deleted_at is null
+    and a.id = v_account
+    and exists (
+      select 1 from public.characters c
+       where c.account_id = a.id
+         and c.is_opponent = false
+    )
+    and exists (
+      select 1 from public.parts_catalogue pc
+       where pc.part_id = p.part_id and pc.is_active
+    )
+    and not exists (
+      select 1 from public.inventory_ledger il
+       where il.account_id = a.id
+         and il.part_id = p.part_id
+         and il.reason in ('grant', 'seed', 'admin', 'purchase')
+         and il.delta > 0
+    );
+
+  -- Re-run: still one grant per shape.
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  select a.id, p.part_id, 1, 'grant'
+  from public.accounts a
+  cross join (
+    values
+      ('head-visor'),
+      ('head-welder'),
+      ('head-can'),
+      ('body-chassis'),
+      ('body-boiler'),
+      ('body-slab'),
+      ('arms-stock'),
+      ('arms-heavy'),
+      ('legs-stock'),
+      ('legs-piston')
+  ) as p(part_id)
+  where a.deleted_at is null
+    and a.id = v_account
+    and exists (
+      select 1 from public.characters c
+       where c.account_id = a.id
+         and c.is_opponent = false
+    )
+    and exists (
+      select 1 from public.parts_catalogue pc
+       where pc.part_id = p.part_id and pc.is_active
+    )
+    and not exists (
+      select 1 from public.inventory_ledger il
+       where il.account_id = a.id
+         and il.part_id = p.part_id
+         and il.reason in ('grant', 'seed', 'admin', 'purchase')
+         and il.delta > 0
+    );
+
+  foreach v_shape in array array[
+    'head-visor', 'head-welder', 'head-can',
+    'body-chassis', 'body-boiler', 'body-slab',
+    'arms-stock', 'arms-heavy',
+    'legs-stock', 'legs-piston'
+  ]
+  loop
+    select count(*) into v_grants
+      from public.inventory_ledger
+     where account_id = v_account
+       and part_id = v_shape
+       and reason in ('grant', 'seed', 'admin', 'purchase')
+       and delta > 0;
+    perform tests.assert(
+      v_grants = 1,
+      format('B1 exactly one positive grant for %s (got %s)', v_shape, v_grants)
+    );
+  end loop;
+
+  -- One revoke clears ownership (would fail if duplicate grants left qty ≥ 1).
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  values (v_account, 'head-can', -1, 'revoke');
+  v_qty := public.owned_part_quantity(v_account, 'head-can');
+  perform tests.assert(v_qty = 0, format('B1 qty 0 after one revoke (got %s)', v_qty));
+
+  -- Seeded / CI invariant: no account has duplicate positive shape grants.
+  select count(*) into v_dupes
+    from (
+      select il.account_id, il.part_id
+        from public.inventory_ledger il
+       where il.part_id in (
+               'head-visor', 'head-welder', 'head-can',
+               'body-chassis', 'body-boiler', 'body-slab',
+               'arms-stock', 'arms-heavy',
+               'legs-stock', 'legs-piston'
+             )
+         and il.reason in ('grant', 'seed', 'admin', 'purchase')
+         and il.delta > 0
+       group by il.account_id, il.part_id
+      having count(*) > 1
+    ) d;
+  perform tests.assert(v_dupes = 0, format('B1 no duplicate shape grants in DB (got %s)', v_dupes));
+
+  -- M1: list_owned_characters returns shape slots after Equip.
+  -- Re-grant head-can (revoked above) as postgres — authenticated cannot SELECT characters.
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  values (v_account, 'head-can', 1, 'admin');
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  perform public.save_bot_loadout(
+    v_character_id,
+    jsonb_build_object(
+      'chassis', 'chassis-basic',
+      'paint', 'paint-crimson',
+      'weapon', 'weapon-sword',
+      'head', 'head-welder',
+      'body', 'body-boiler',
+      'arms', 'arms-heavy',
+      'legs', 'legs-piston'
+    ),
+    'v1'
+  );
+  v_res := public.list_owned_characters();
+  reset role;
+  perform tests.assert((v_res->>'ok')::boolean, 'M1 list_owned_characters ok');
+  perform tests.assert(
+    exists (
+      select 1 from jsonb_array_elements(v_res->'bots') b
+       where b->>'head' = 'head-welder'
+         and b->>'body' = 'body-boiler'
+         and b->>'arms' = 'arms-heavy'
+         and b->>'legs' = 'legs-piston'
+    ),
+    'M1 list_owned_characters returns equipped shapes'
+  );
+
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.jwt.claim.role', '', true);
+  raise notice 'TEST-OK 0039 B1 account-scoped backfill + M1 list shapes';
 end $$;

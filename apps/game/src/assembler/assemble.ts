@@ -14,6 +14,7 @@ import {
   resolveWeaponKit,
 } from './kit';
 import { resolvePaintVisual } from './paints';
+import { shapeComboFromLoadout } from './shapes';
 import type {
   AssembledBot,
   AssembledLayer,
@@ -287,6 +288,7 @@ function assemblePlaceholder(input: AssembleBotInput): AssembledBot {
     paintVisual: paint.visual,
     weaponId: weapon.catalogueId,
     weaponKind: weapon.kind,
+    shapes: shapeComboFromLoadout(input.loadout),
     facing,
     mirrored,
     motionPose,
@@ -318,7 +320,7 @@ export function assembleBot(input: AssembleBotInput): AssembledBot {
 /** Swap helpers used by tests and preview overrides. */
 export function withPaint(bot: AssembledBot, paintId: string): AssembledBot {
   return assembleBot({
-    loadout: { chassis: bot.chassisId, paint: paintId, weapon: bot.weaponId },
+    loadout: { chassis: bot.chassisId, paint: paintId, weapon: bot.weaponId, ...bot.shapes },
     facing: bot.facing,
     motionPose: bot.motionPose,
     placeholder: bot.placeholder,
@@ -327,7 +329,7 @@ export function withPaint(bot: AssembledBot, paintId: string): AssembledBot {
 
 export function withWeapon(bot: AssembledBot, weaponId: string): AssembledBot {
   return assembleBot({
-    loadout: { chassis: bot.chassisId, paint: bot.paintId, weapon: weaponId },
+    loadout: { chassis: bot.chassisId, paint: bot.paintId, weapon: weaponId, ...bot.shapes },
     facing: bot.facing,
     motionPose: bot.motionPose,
     placeholder: bot.placeholder,
@@ -336,7 +338,7 @@ export function withWeapon(bot: AssembledBot, weaponId: string): AssembledBot {
 
 export function withFacing(bot: AssembledBot, facing: BotFacing): AssembledBot {
   return assembleBot({
-    loadout: { chassis: bot.chassisId, paint: bot.paintId, weapon: bot.weaponId },
+    loadout: { chassis: bot.chassisId, paint: bot.paintId, weapon: bot.weaponId, ...bot.shapes },
     facing,
     motionPose: bot.motionPose,
     placeholder: bot.placeholder,

@@ -318,6 +318,14 @@ capture_named Customise customise-equipped 6 "" "" equipped
 capture_named Customise customise-weapon-soon 5 "" "" weapon-soon
 capture_named Customise customise-paint-hazard 5 "" "" paint-hazard
 capture_named Customise customise-weapon-unlocked 5 "" "" weapon-unlocked
+# 1a') A4 shapes — Head welder / Body boiler / heaviest combo / Equip saves shapes.
+# shape-equipped persists the heaviest combo, so later fight stills wear it.
+capture_named Customise customise-shape-head-welder 5 "" "" shape-head-welder
+capture_named Customise customise-shape-body-boiler 5 "" "" shape-body-boiler
+capture_named Customise customise-shape-heaviest 5 "" "" shape-heaviest
+capture_named Customise customise-shape-equipped 6 "" "" shape-equipped
+# Ludus card after Equip — must show heaviest shapes (not stock silhouette).
+capture_named Stable garage-shapes-equipped 5 "" "" "" bot
 
 # 1a″) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
 # Need ≥3 whole 175pt cards (185 snap, 150pt robots). Seed has Sir/Dex/Tank.
@@ -895,6 +903,11 @@ required_labels=(
   customise-weapon-soon
   customise-paint-hazard
   customise-weapon-unlocked
+  customise-shape-head-welder
+  customise-shape-body-boiler
+  customise-shape-heaviest
+  customise-shape-equipped
+  garage-shapes-equipped
   opponents-snap-rest
   opponents-quota-remaining
   ranking-bots

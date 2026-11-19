@@ -1,6 +1,7 @@
 /**
  * Client loadout shape aligned with F1 / save_bot_loadout jsonb and F7
  * AssemblerLoadoutInput (required fields for confirmed saves).
+ * A4 shapes (head/body/arms/legs) are catalogue ids; pre-A4 rows read as stock.
  */
 export type GarageLoadout = {
   readonly chassis: string;
@@ -10,6 +11,10 @@ export type GarageLoadout = {
   readonly drone: string | null;
   readonly decals: readonly string[];
   readonly soundTags: readonly string[];
+  readonly head: string;
+  readonly body: string;
+  readonly arms: string;
+  readonly legs: string;
 };
 
 export type ConfirmedLoadoutSnapshot = {
@@ -68,6 +73,11 @@ export type OwnedBotSummary = {
   readonly losses: number;
   readonly paint: string | null;
   readonly weapon: string | null;
+  /** A4 shape slots — null when omitted (pre-A4 / stock). */
+  readonly head: string | null;
+  readonly body: string | null;
+  readonly arms: string | null;
+  readonly legs: string | null;
   readonly atlasVersion: string | null;
   readonly isActive: boolean;
 };

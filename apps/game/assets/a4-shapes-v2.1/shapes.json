@@ -1,0 +1,244 @@
+{
+  "pass": "a4-shapes-v2",
+  "base_kit": "/workspace/botore-art/2026-11-17-kit-v003/v003.3/kit-v003.3/",
+  "base_kit_manifest_sha256": "8d30ada6bbc49492f24c2fc009a5716e6e932623fbc125d236b2e46417b49bfd",
+  "paints": "/workspace/botore-art/2026-11-18-a4-paints/paints.json",
+  "paints_sha256": "3cdc0c7a59b34cc34dc7e124bfd98ecc43814528a2d4a5a644239c6ec486c5f2",
+  "paints_version": "v3",
+  "note": "Alternate body parts that drop into the v003.3 rig. Pose rotations and world-space attachments are unchanged. Chests and piston legs use a larger canvas; pivots and sockets are padded by the same amount so attachments stay put. ShapeKit applies those overrides; the kit manifest is not written. Current (stock) parts are referenced from the kit, not copied.",
+  "heads": [
+    {
+      "id": "visor",
+      "label": "Visor slit",
+      "stock": true,
+      "face_rect": [
+        112,
+        58,
+        192,
+        142
+      ]
+    },
+    {
+      "id": "welder",
+      "label": "Welder mask",
+      "stock": false,
+      "face_rect": [
+        112,
+        66,
+        188,
+        140
+      ],
+      "parts": {
+        "head": "welder"
+      },
+      "canvas": [
+        210,
+        180
+      ],
+      "pivot": [
+        99,
+        154
+      ]
+    },
+    {
+      "id": "can",
+      "label": "Can antenna",
+      "stock": false,
+      "face_rect": [
+        116,
+        70,
+        182,
+        136
+      ],
+      "parts": {
+        "head": "can"
+      },
+      "canvas": [
+        210,
+        180
+      ],
+      "pivot": [
+        99,
+        154
+      ]
+    }
+  ],
+  "chests": [
+    {
+      "id": "chassis",
+      "label": "Chassis",
+      "stock": true
+    },
+    {
+      "id": "boiler",
+      "label": "Barrel boiler",
+      "stock": false,
+      "parts": {
+        "torso": "boiler"
+      },
+      "canvas": [
+        292,
+        234
+      ],
+      "pivot": [
+        150,
+        176
+      ],
+      "sockets": {
+        "neck": [
+          150,
+          81.4
+        ],
+        "shoulder_l": [
+          63.2,
+          95
+        ],
+        "shoulder_r": [
+          226.88,
+          105.8
+        ],
+        "waist": [
+          150,
+          197.6
+        ]
+      },
+      "pad": {
+        "left": 32,
+        "top": 30,
+        "right": 32,
+        "bottom": 8
+      }
+    },
+    {
+      "id": "slab",
+      "label": "Slab plate",
+      "stock": false,
+      "parts": {
+        "torso": "slab"
+      },
+      "canvas": [
+        292,
+        234
+      ],
+      "pivot": [
+        150,
+        176
+      ],
+      "sockets": {
+        "neck": [
+          150,
+          81.4
+        ],
+        "shoulder_l": [
+          63.2,
+          95
+        ],
+        "shoulder_r": [
+          226.88,
+          105.8
+        ],
+        "waist": [
+          150,
+          197.6
+        ]
+      },
+      "pad": {
+        "left": 32,
+        "top": 30,
+        "right": 32,
+        "bottom": 8
+      }
+    }
+  ],
+  "arms": [
+    {
+      "id": "stock",
+      "label": "Stock",
+      "stock": true
+    },
+    {
+      "id": "heavy",
+      "label": "Heavy",
+      "stock": false,
+      "parts": {
+        "upper_arm": "heavy",
+        "forearm": "heavy"
+      }
+    }
+  ],
+  "legs": [
+    {
+      "id": "stock",
+      "label": "Stock",
+      "stock": true
+    },
+    {
+      "id": "piston",
+      "label": "Piston",
+      "stock": false,
+      "parts": {
+        "thigh": "piston",
+        "shin": "piston",
+        "foot": "piston"
+      },
+      "geom": {
+        "thigh": {
+          "canvas": [
+            164,
+            150
+          ],
+          "pivot": [
+            82,
+            30
+          ],
+          "sockets": {
+            "knee": [
+              82,
+              92.32
+            ]
+          }
+        },
+        "shin": {
+          "canvas": [
+            160,
+            150
+          ],
+          "pivot": [
+            80,
+            30
+          ],
+          "sockets": {
+            "ankle": [
+              80,
+              104.1
+            ]
+          }
+        },
+        "foot": {
+          "canvas": [
+            194,
+            100
+          ],
+          "pivot": [
+            80,
+            30
+          ]
+        }
+      }
+    }
+  ],
+  "heaviest": {
+    "head": "welder",
+    "chest": "boiler",
+    "arms": "heavy",
+    "legs": "piston"
+  },
+  "n_combos": 36,
+  "validator": {
+    "checks": 518,
+    "failures": 0,
+    "max_offhand_error_px": 0.0186,
+    "min_joint_overlap_px": 195,
+    "report": "validation/report.json"
+  }
+}

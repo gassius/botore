@@ -4,6 +4,7 @@
  * Includes precomposited parts/ (fallback/reference) plus materials/ + masks/
  * for under → mask-tint → over paint compositing. hand_*_wrap required.
  * E7: new weapons (mace/hammer/spear/shield) + A6 pattern fills.
+ * A4 shapes v2.1: 1x under/mask/over/oxide for the 9 variant tiles (ShapeKit).
  */
 /* eslint-disable @typescript-eslint/no-require-imports */
 import type { ImageSourcePropType } from 'react-native';
@@ -272,6 +273,78 @@ export const WORKSHOP_FRAME_PART_SOURCES: Record<string, ImageSourcePropType> = 
     require('../../assets/a6-paints-v4/pattern-fills/racing/thigh_r.png') as ImageSourcePropType,
   'a6-paints-v4/pattern-fills/racing/weapon_shield.png':
     require('../../assets/a6-paints-v4/pattern-fills/racing/weapon_shield.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/foot-piston/under.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/foot-piston/under.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/foot-piston/mask.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/foot-piston/mask.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/foot-piston/over.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/foot-piston/over.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/foot-piston/oxide.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/foot-piston/oxide.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/forearm-heavy/under.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/forearm-heavy/under.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/forearm-heavy/mask.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/forearm-heavy/mask.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/forearm-heavy/over.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/forearm-heavy/over.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/forearm-heavy/oxide.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/forearm-heavy/oxide.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/head-can/under.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/head-can/under.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/head-can/mask.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/head-can/mask.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/head-can/over.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/head-can/over.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/head-can/oxide.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/head-can/oxide.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/head-welder/under.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/head-welder/under.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/head-welder/mask.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/head-welder/mask.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/head-welder/over.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/head-welder/over.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/head-welder/oxide.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/head-welder/oxide.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/shin-piston/under.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/shin-piston/under.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/shin-piston/mask.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/shin-piston/mask.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/shin-piston/over.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/shin-piston/over.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/shin-piston/oxide.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/shin-piston/oxide.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/thigh-piston/under.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/thigh-piston/under.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/thigh-piston/mask.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/thigh-piston/mask.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/thigh-piston/over.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/thigh-piston/over.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/thigh-piston/oxide.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/thigh-piston/oxide.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/torso-boiler/under.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/torso-boiler/under.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/torso-boiler/mask.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/torso-boiler/mask.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/torso-boiler/over.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/torso-boiler/over.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/torso-boiler/oxide.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/torso-boiler/oxide.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/torso-slab/under.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/torso-slab/under.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/torso-slab/mask.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/torso-slab/mask.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/torso-slab/over.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/torso-slab/over.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/torso-slab/oxide.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/torso-slab/oxide.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/upper_arm-heavy/under.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/upper_arm-heavy/under.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/upper_arm-heavy/mask.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/upper_arm-heavy/mask.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/upper_arm-heavy/over.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/upper_arm-heavy/over.png') as ImageSourcePropType,
+  'a4-shapes-v2.1/parts/1x/upper_arm-heavy/oxide.png':
+    require('../../assets/a4-shapes-v2.1/parts/1x/upper_arm-heavy/oxide.png') as ImageSourcePropType,
 };
 
 export function workshopFramePartSource(relPath: string): ImageSourcePropType | undefined {

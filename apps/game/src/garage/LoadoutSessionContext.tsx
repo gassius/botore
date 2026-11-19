@@ -31,7 +31,8 @@ import {
 } from './loadout/loadoutState';
 import { loadoutSavePlayerMessage } from './loadout/loadoutSaveErrors';
 import type { OwnedBotSummary } from './loadout/loadoutTypes';
-import { withUpdatedPaint, withUpdatedWeapon } from './loadout/proofCatalogue';
+import { withUpdatedPaint, withUpdatedShape, withUpdatedWeapon } from './loadout/proofCatalogue';
+import type { ShapeSlot } from '../assembler/shapes';
 import { ensureRuntimePacksBestEffort } from '../atlas/atlasPackRuntime';
 import { DEFAULT_PLAYER_BOT_CAP } from '../supabase/multiBotRpcs';
 
@@ -76,6 +77,8 @@ export type GarageSessionContextValue = {
   retryHydration: () => Promise<void>;
   selectPaint: (paintId: string) => void;
   selectWeapon: (weaponId: string) => void;
+  /** A4 head / body / arms / legs — catalogue id or UI alias. */
+  selectShape: (slot: ShapeSlot, shapeId: string) => void;
   discard: () => void;
   save: () => Promise<boolean>;
   /** D7 nameplate — persist via rename_owned_character; survives remount. */
@@ -463,6 +466,12 @@ export function GarageSessionProvider(props: {
           return setPendingLoadout(s, withUpdatedWeapon(s.pendingLoadout, weaponId));
         });
       },
+      selectShape: (slot, shapeId) => {
+        setLoadout((s) => {
+          if (!s.pendingLoadout) return s;
+          return setPendingLoadout(s, withUpdatedShape(s.pendingLoadout, slot, shapeId));
+        });
+      },
       discard: () => setLoadout((s) => discardPending(s)),
       save: async () => {
         const current = await auth.getSession();
@@ -528,6 +537,9 @@ export function GarageSessionProvider(props: {
             atlasVersion: result.atlasVersion,
           }),
         );
+        // Ludus reads ownedBots (list_owned_characters), not confirmedLoadout.
+        // Refresh so the home card shows paint/weapon/shapes right after Equip.
+        await refreshOwnedBots();
         return true;
       },
       renameDisplayName: async (displayName) => {

@@ -1,0 +1,3654 @@
+{
+  "passed": true,
+  "checks": 520,
+  "failures": [],
+  "n_combos": 36,
+  "max_offhand_error_px": 0.0186,
+  "max_offhand_angle_err_deg": 0.01,
+  "min_joint_overlap_px": 195,
+  "face": {
+    "visor": {
+      "weapon_px_on_face": {
+        "idle.sword": 0,
+        "idle.axe": 0,
+        "idle.dagger": 0,
+        "victory.sword": 0,
+        "victory.axe": 0,
+        "victory.dagger": 0,
+        "defeat.sword": 0,
+        "defeat.axe": 0,
+        "defeat.dagger": 0,
+        "walk_in.sword": 0,
+        "walk_in.axe": 0,
+        "walk_in.dagger": 0,
+        "windup.sword": 0,
+        "windup.axe": 0,
+        "windup.dagger": 0,
+        "strike.sword": 0,
+        "strike.axe": 0,
+        "strike.dagger": 0,
+        "follow_through.sword": 0,
+        "follow_through.axe": 0,
+        "follow_through.dagger": 0,
+        "recovery.sword": 0,
+        "recovery.axe": 0,
+        "recovery.dagger": 0,
+        "dodge.sword": 0,
+        "dodge.axe": 0,
+        "dodge.dagger": 0,
+        "hit_react.sword": 0,
+        "hit_react.axe": 0,
+        "hit_react.dagger": 0,
+        "knockout.sword": 0,
+        "knockout.axe": 0,
+        "knockout.dagger": 0,
+        "quick_attack.sword": 0,
+        "quick_attack.axe": 0,
+        "quick_attack.dagger": 0,
+        "heavy_windup.sword": 0,
+        "heavy_windup.axe": 0,
+        "heavy_windup.dagger": 0,
+        "heavy_attack.sword": 0,
+        "heavy_attack.axe": 0,
+        "heavy_attack.dagger": 0,
+        "hit.sword": 0,
+        "hit.axe": 0,
+        "hit.dagger": 0
+      },
+      "hand_px_on_face": {
+        "idle.sword": 0,
+        "idle.axe": 0,
+        "idle.dagger": 0,
+        "victory.sword": 0,
+        "victory.axe": 0,
+        "victory.dagger": 0,
+        "defeat.sword": 0,
+        "defeat.axe": 308,
+        "defeat.dagger": 0,
+        "walk_in.sword": 0,
+        "walk_in.axe": 0,
+        "walk_in.dagger": 0,
+        "windup.sword": 0,
+        "windup.axe": 0,
+        "windup.dagger": 0,
+        "strike.sword": 0,
+        "strike.axe": 0,
+        "strike.dagger": 0,
+        "follow_through.sword": 0,
+        "follow_through.axe": 173,
+        "follow_through.dagger": 0,
+        "recovery.sword": 0,
+        "recovery.axe": 0,
+        "recovery.dagger": 0,
+        "dodge.sword": 0,
+        "dodge.axe": 0,
+        "dodge.dagger": 0,
+        "hit_react.sword": 0,
+        "hit_react.axe": 0,
+        "hit_react.dagger": 0,
+        "knockout.sword": 0,
+        "knockout.axe": 0,
+        "knockout.dagger": 0,
+        "quick_attack.sword": 0,
+        "quick_attack.axe": 0,
+        "quick_attack.dagger": 0,
+        "heavy_windup.sword": 0,
+        "heavy_windup.axe": 0,
+        "heavy_windup.dagger": 0,
+        "heavy_attack.sword": 0,
+        "heavy_attack.axe": 0,
+        "heavy_attack.dagger": 0,
+        "hit.sword": 0,
+        "hit.axe": 0,
+        "hit.dagger": 0
+      },
+      "clip_weapon_max": {
+        "sword.walk": 0,
+        "sword.attack": 0,
+        "sword.dodge": 0,
+        "sword.hit_react": 0,
+        "sword.knockout": 0,
+        "axe.walk": 0,
+        "axe.attack": 0,
+        "axe.dodge": 0,
+        "axe.hit_react": 0,
+        "axe.knockout": 0,
+        "dagger.walk": 0,
+        "dagger.attack": 0,
+        "dagger.dodge": 0,
+        "dagger.hit_react": 0,
+        "dagger.knockout": 0
+      },
+      "clip_hand_max": {
+        "sword.walk": 0,
+        "sword.attack": 0,
+        "sword.dodge": 0,
+        "sword.hit_react": 0,
+        "sword.knockout": 0,
+        "axe.walk": 0,
+        "axe.attack": 639,
+        "axe.dodge": 0,
+        "axe.hit_react": 0,
+        "axe.knockout": 692,
+        "dagger.walk": 0,
+        "dagger.attack": 0,
+        "dagger.dodge": 0,
+        "dagger.hit_react": 0,
+        "dagger.knockout": 0
+      },
+      "clip_smear_max": {
+        "sword.walk": 0,
+        "sword.attack": 0,
+        "sword.dodge": 0,
+        "sword.hit_react": 0,
+        "sword.knockout": 0,
+        "axe.walk": 0,
+        "axe.attack": 0,
+        "axe.dodge": 0,
+        "axe.hit_react": 0,
+        "axe.knockout": 0,
+        "dagger.walk": 0,
+        "dagger.attack": 0,
+        "dagger.dodge": 0,
+        "dagger.hit_react": 0,
+        "dagger.knockout": 0
+      }
+    },
+    "welder": {
+      "weapon_px_on_face": {
+        "idle.sword": 0,
+        "idle.axe": 0,
+        "idle.dagger": 0,
+        "victory.sword": 0,
+        "victory.axe": 0,
+        "victory.dagger": 0,
+        "defeat.sword": 0,
+        "defeat.axe": 0,
+        "defeat.dagger": 0,
+        "walk_in.sword": 0,
+        "walk_in.axe": 0,
+        "walk_in.dagger": 0,
+        "windup.sword": 0,
+        "windup.axe": 0,
+        "windup.dagger": 0,
+        "strike.sword": 0,
+        "strike.axe": 0,
+        "strike.dagger": 0,
+        "follow_through.sword": 0,
+        "follow_through.axe": 0,
+        "follow_through.dagger": 0,
+        "recovery.sword": 0,
+        "recovery.axe": 0,
+        "recovery.dagger": 0,
+        "dodge.sword": 0,
+        "dodge.axe": 0,
+        "dodge.dagger": 0,
+        "hit_react.sword": 0,
+        "hit_react.axe": 0,
+        "hit_react.dagger": 0,
+        "knockout.sword": 0,
+        "knockout.axe": 0,
+        "knockout.dagger": 0,
+        "quick_attack.sword": 0,
+        "quick_attack.axe": 0,
+        "quick_attack.dagger": 0,
+        "heavy_windup.sword": 0,
+        "heavy_windup.axe": 0,
+        "heavy_windup.dagger": 0,
+        "heavy_attack.sword": 0,
+        "heavy_attack.axe": 0,
+        "heavy_attack.dagger": 0,
+        "hit.sword": 0,
+        "hit.axe": 0,
+        "hit.dagger": 0
+      },
+      "hand_px_on_face": {
+        "idle.sword": 0,
+        "idle.axe": 0,
+        "idle.dagger": 0,
+        "victory.sword": 0,
+        "victory.axe": 0,
+        "victory.dagger": 0,
+        "defeat.sword": 0,
+        "defeat.axe": 135,
+        "defeat.dagger": 0,
+        "walk_in.sword": 0,
+        "walk_in.axe": 0,
+        "walk_in.dagger": 0,
+        "windup.sword": 0,
+        "windup.axe": 0,
+        "windup.dagger": 0,
+        "strike.sword": 0,
+        "strike.axe": 0,
+        "strike.dagger": 0,
+        "follow_through.sword": 0,
+        "follow_through.axe": 115,
+        "follow_through.dagger": 0,
+        "recovery.sword": 0,
+        "recovery.axe": 0,
+        "recovery.dagger": 0,
+        "dodge.sword": 0,
+        "dodge.axe": 0,
+        "dodge.dagger": 0,
+        "hit_react.sword": 0,
+        "hit_react.axe": 0,
+        "hit_react.dagger": 0,
+        "knockout.sword": 0,
+        "knockout.axe": 0,
+        "knockout.dagger": 0,
+        "quick_attack.sword": 0,
+        "quick_attack.axe": 0,
+        "quick_attack.dagger": 0,
+        "heavy_windup.sword": 0,
+        "heavy_windup.axe": 0,
+        "heavy_windup.dagger": 0,
+        "heavy_attack.sword": 0,
+        "heavy_attack.axe": 0,
+        "heavy_attack.dagger": 0,
+        "hit.sword": 0,
+        "hit.axe": 0,
+        "hit.dagger": 0
+      },
+      "clip_weapon_max": {
+        "sword.walk": 0,
+        "sword.attack": 0,
+        "sword.dodge": 0,
+        "sword.hit_react": 0,
+        "sword.knockout": 0,
+        "axe.walk": 0,
+        "axe.attack": 0,
+        "axe.dodge": 0,
+        "axe.hit_react": 0,
+        "axe.knockout": 0,
+        "dagger.walk": 0,
+        "dagger.attack": 0,
+        "dagger.dodge": 0,
+        "dagger.hit_react": 0,
+        "dagger.knockout": 0
+      },
+      "clip_hand_max": {
+        "sword.walk": 0,
+        "sword.attack": 0,
+        "sword.dodge": 0,
+        "sword.hit_react": 0,
+        "sword.knockout": 0,
+        "axe.walk": 0,
+        "axe.attack": 498,
+        "axe.dodge": 0,
+        "axe.hit_react": 0,
+        "axe.knockout": 492,
+        "dagger.walk": 0,
+        "dagger.attack": 0,
+        "dagger.dodge": 0,
+        "dagger.hit_react": 0,
+        "dagger.knockout": 0
+      },
+      "clip_smear_max": {
+        "sword.walk": 0,
+        "sword.attack": 0,
+        "sword.dodge": 0,
+        "sword.hit_react": 0,
+        "sword.knockout": 0,
+        "axe.walk": 0,
+        "axe.attack": 0,
+        "axe.dodge": 0,
+        "axe.hit_react": 0,
+        "axe.knockout": 0,
+        "dagger.walk": 0,
+        "dagger.attack": 0,
+        "dagger.dodge": 0,
+        "dagger.hit_react": 0,
+        "dagger.knockout": 0
+      }
+    },
+    "can": {
+      "weapon_px_on_face": {
+        "idle.sword": 0,
+        "idle.axe": 0,
+        "idle.dagger": 0,
+        "victory.sword": 0,
+        "victory.axe": 0,
+        "victory.dagger": 0,
+        "defeat.sword": 0,
+        "defeat.axe": 0,
+        "defeat.dagger": 0,
+        "walk_in.sword": 0,
+        "walk_in.axe": 0,
+        "walk_in.dagger": 0,
+        "windup.sword": 0,
+        "windup.axe": 0,
+        "windup.dagger": 0,
+        "strike.sword": 0,
+        "strike.axe": 0,
+        "strike.dagger": 0,
+        "follow_through.sword": 0,
+        "follow_through.axe": 0,
+        "follow_through.dagger": 0,
+        "recovery.sword": 0,
+        "recovery.axe": 0,
+        "recovery.dagger": 0,
+        "dodge.sword": 0,
+        "dodge.axe": 0,
+        "dodge.dagger": 0,
+        "hit_react.sword": 0,
+        "hit_react.axe": 0,
+        "hit_react.dagger": 0,
+        "knockout.sword": 0,
+        "knockout.axe": 0,
+        "knockout.dagger": 0,
+        "quick_attack.sword": 0,
+        "quick_attack.axe": 0,
+        "quick_attack.dagger": 0,
+        "heavy_windup.sword": 0,
+        "heavy_windup.axe": 0,
+        "heavy_windup.dagger": 0,
+        "heavy_attack.sword": 0,
+        "heavy_attack.axe": 0,
+        "heavy_attack.dagger": 0,
+        "hit.sword": 0,
+        "hit.axe": 0,
+        "hit.dagger": 0
+      },
+      "hand_px_on_face": {
+        "idle.sword": 0,
+        "idle.axe": 0,
+        "idle.dagger": 0,
+        "victory.sword": 0,
+        "victory.axe": 0,
+        "victory.dagger": 0,
+        "defeat.sword": 0,
+        "defeat.axe": 2,
+        "defeat.dagger": 0,
+        "walk_in.sword": 0,
+        "walk_in.axe": 0,
+        "walk_in.dagger": 0,
+        "windup.sword": 0,
+        "windup.axe": 0,
+        "windup.dagger": 0,
+        "strike.sword": 0,
+        "strike.axe": 0,
+        "strike.dagger": 0,
+        "follow_through.sword": 0,
+        "follow_through.axe": 13,
+        "follow_through.dagger": 0,
+        "recovery.sword": 0,
+        "recovery.axe": 0,
+        "recovery.dagger": 0,
+        "dodge.sword": 0,
+        "dodge.axe": 0,
+        "dodge.dagger": 0,
+        "hit_react.sword": 0,
+        "hit_react.axe": 0,
+        "hit_react.dagger": 0,
+        "knockout.sword": 0,
+        "knockout.axe": 0,
+        "knockout.dagger": 0,
+        "quick_attack.sword": 0,
+        "quick_attack.axe": 0,
+        "quick_attack.dagger": 0,
+        "heavy_windup.sword": 0,
+        "heavy_windup.axe": 0,
+        "heavy_windup.dagger": 0,
+        "heavy_attack.sword": 0,
+        "heavy_attack.axe": 0,
+        "heavy_attack.dagger": 0,
+        "hit.sword": 0,
+        "hit.axe": 0,
+        "hit.dagger": 0
+      },
+      "clip_weapon_max": {
+        "sword.walk": 0,
+        "sword.attack": 0,
+        "sword.dodge": 0,
+        "sword.hit_react": 0,
+        "sword.knockout": 0,
+        "axe.walk": 0,
+        "axe.attack": 0,
+        "axe.dodge": 0,
+        "axe.hit_react": 0,
+        "axe.knockout": 0,
+        "dagger.walk": 0,
+        "dagger.attack": 0,
+        "dagger.dodge": 0,
+        "dagger.hit_react": 0,
+        "dagger.knockout": 0
+      },
+      "clip_hand_max": {
+        "sword.walk": 0,
+        "sword.attack": 0,
+        "sword.dodge": 0,
+        "sword.hit_react": 0,
+        "sword.knockout": 0,
+        "axe.walk": 0,
+        "axe.attack": 297,
+        "axe.dodge": 0,
+        "axe.hit_react": 0,
+        "axe.knockout": 222,
+        "dagger.walk": 0,
+        "dagger.attack": 0,
+        "dagger.dodge": 0,
+        "dagger.hit_react": 0,
+        "dagger.knockout": 0
+      },
+      "clip_smear_max": {
+        "sword.walk": 0,
+        "sword.attack": 0,
+        "sword.dodge": 0,
+        "sword.hit_react": 0,
+        "sword.knockout": 0,
+        "axe.walk": 0,
+        "axe.attack": 0,
+        "axe.dodge": 0,
+        "axe.hit_react": 0,
+        "axe.knockout": 0,
+        "dagger.walk": 0,
+        "dagger.attack": 0,
+        "dagger.dodge": 0,
+        "dagger.hit_react": 0,
+        "dagger.knockout": 0
+      }
+    }
+  },
+  "ground": {
+    "visor-chassis-stock-stock.idle": 494,
+    "visor-chassis-stock-stock.defeat": 494,
+    "visor-chassis-stock-stock.victory": 494,
+    "visor-chassis-stock-stock.strike": 492,
+    "visor-chassis-stock-stock.knockout": 494,
+    "visor-chassis-stock-stock.dodge": 494,
+    "welder-chassis-stock-stock.idle": 494,
+    "welder-chassis-stock-stock.defeat": 494,
+    "welder-chassis-stock-stock.victory": 494,
+    "welder-chassis-stock-stock.strike": 492,
+    "welder-chassis-stock-stock.knockout": 494,
+    "welder-chassis-stock-stock.dodge": 494,
+    "can-chassis-stock-stock.idle": 494,
+    "can-chassis-stock-stock.defeat": 494,
+    "can-chassis-stock-stock.victory": 494,
+    "can-chassis-stock-stock.strike": 492,
+    "can-chassis-stock-stock.knockout": 494,
+    "can-chassis-stock-stock.dodge": 494,
+    "visor-boiler-stock-stock.idle": 494,
+    "visor-boiler-stock-stock.defeat": 494,
+    "visor-boiler-stock-stock.victory": 494,
+    "visor-boiler-stock-stock.strike": 492,
+    "visor-boiler-stock-stock.knockout": 494,
+    "visor-boiler-stock-stock.dodge": 494,
+    "visor-slab-stock-stock.idle": 494,
+    "visor-slab-stock-stock.defeat": 494,
+    "visor-slab-stock-stock.victory": 494,
+    "visor-slab-stock-stock.strike": 492,
+    "visor-slab-stock-stock.knockout": 494,
+    "visor-slab-stock-stock.dodge": 494,
+    "visor-chassis-heavy-stock.idle": 494,
+    "visor-chassis-heavy-stock.defeat": 494,
+    "visor-chassis-heavy-stock.victory": 494,
+    "visor-chassis-heavy-stock.strike": 492,
+    "visor-chassis-heavy-stock.knockout": 494,
+    "visor-chassis-heavy-stock.dodge": 494,
+    "visor-chassis-stock-piston.idle": 494,
+    "visor-chassis-stock-piston.defeat": 494,
+    "visor-chassis-stock-piston.victory": 494,
+    "visor-chassis-stock-piston.strike": 492,
+    "visor-chassis-stock-piston.knockout": 496,
+    "visor-chassis-stock-piston.dodge": 494,
+    "welder-boiler-heavy-piston.idle": 494,
+    "welder-boiler-heavy-piston.defeat": 494,
+    "welder-boiler-heavy-piston.victory": 494,
+    "welder-boiler-heavy-piston.strike": 492,
+    "welder-boiler-heavy-piston.knockout": 496,
+    "welder-boiler-heavy-piston.dodge": 494,
+    "can-slab-heavy-piston.idle": 494,
+    "can-slab-heavy-piston.defeat": 494,
+    "can-slab-heavy-piston.victory": 494,
+    "can-slab-heavy-piston.strike": 492,
+    "can-slab-heavy-piston.knockout": 496,
+    "can-slab-heavy-piston.dodge": 494
+  },
+  "eyes": {
+    "visor-chassis": {
+      "visible_min": {
+        "sword": 1.0,
+        "axe": 0.881,
+        "dagger": 0.961
+      },
+      "chest_clear_min": {
+        "sword": 0.909,
+        "axe": 0.906,
+        "dagger": 0.91
+      }
+    },
+    "visor-boiler": {
+      "visible_min": {
+        "sword": 1.0,
+        "axe": 0.881,
+        "dagger": 0.961
+      },
+      "chest_clear_min": {
+        "sword": 0.932,
+        "axe": 0.926,
+        "dagger": 0.929
+      }
+    },
+    "visor-slab": {
+      "visible_min": {
+        "sword": 1.0,
+        "axe": 0.881,
+        "dagger": 0.961
+      },
+      "chest_clear_min": {
+        "sword": 0.932,
+        "axe": 0.926,
+        "dagger": 0.929
+      }
+    },
+    "welder-chassis": {
+      "visible_min": {
+        "sword": 0.95,
+        "axe": 0.963,
+        "dagger": 0.996
+      },
+      "chest_clear_min": {
+        "sword": 1.0,
+        "axe": 1.0,
+        "dagger": 1.0
+      }
+    },
+    "welder-boiler": {
+      "visible_min": {
+        "sword": 0.95,
+        "axe": 0.963,
+        "dagger": 0.996
+      },
+      "chest_clear_min": {
+        "sword": 1.0,
+        "axe": 1.0,
+        "dagger": 1.0
+      }
+    },
+    "welder-slab": {
+      "visible_min": {
+        "sword": 0.95,
+        "axe": 0.963,
+        "dagger": 0.996
+      },
+      "chest_clear_min": {
+        "sword": 1.0,
+        "axe": 1.0,
+        "dagger": 1.0
+      }
+    },
+    "can-chassis": {
+      "visible_min": {
+        "sword": 0.951,
+        "axe": 0.966,
+        "dagger": 1.0
+      },
+      "chest_clear_min": {
+        "sword": 1.0,
+        "axe": 1.0,
+        "dagger": 1.0
+      }
+    },
+    "can-boiler": {
+      "visible_min": {
+        "sword": 0.951,
+        "axe": 0.966,
+        "dagger": 1.0
+      },
+      "chest_clear_min": {
+        "sword": 1.0,
+        "axe": 1.0,
+        "dagger": 1.0
+      }
+    },
+    "can-slab": {
+      "visible_min": {
+        "sword": 0.951,
+        "axe": 0.966,
+        "dagger": 1.0
+      },
+      "chest_clear_min": {
+        "sword": 1.0,
+        "axe": 1.0,
+        "dagger": 1.0
+      }
+    }
+  },
+  "eye_threshold": 0.8,
+  "meaning": "Face clearance and off-hand follow the v003.3 validator rules, run on ShapeKit assemblies (v003.3 poses and clips, variant tiles). Weapon and hands must have 0 opaque pixels in the head's visor rect on every named pose and every clip frame; smears too. Off-hand is coordinate-only (same for every combo). Joint overlap and ground contact are checked on a covering set of combos including the heaviest. Piston-leg plant uses the kit thresholds (body within 3 px of ground_y-1, nothing below ground_y+1). Visor-eye pixels (#FFE65C) must stay at least 80% visible in the z-ordered composite on every pose and clip, and 80% clear of the chest silhouette on stance poses (idle, windup, strike, \u2026). Defeat and knockout are exempt from the chest-clear test because the head rests on the chest, but eyes must still be visible. The same rule applies to mace and hammer when those weapons exist. The kit folder is not written.",
+  "results": [
+    {
+      "name": "idle.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "idle.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "idle.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "idle.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "idle.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0186
+    },
+    {
+      "name": "idle.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.01
+    },
+    {
+      "name": "idle.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "idle.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "victory.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "victory.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "victory.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "victory.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "victory.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "victory.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "defeat.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "defeat.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "defeat.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "defeat.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "defeat.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "defeat.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "walk_in.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "walk_in.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "walk_in.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "walk_in.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "walk_in.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0031
+    },
+    {
+      "name": "walk_in.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "walk_in.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "walk_in.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "windup.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "windup.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "windup.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "windup.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "windup.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0132
+    },
+    {
+      "name": "windup.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.01
+    },
+    {
+      "name": "windup.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "windup.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "strike.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "strike.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "strike.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "strike.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "strike.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0076
+    },
+    {
+      "name": "strike.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "strike.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "strike.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "follow_through.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "follow_through.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "follow_through.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "follow_through.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "follow_through.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0024
+    },
+    {
+      "name": "follow_through.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.01
+    },
+    {
+      "name": "follow_through.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "follow_through.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "recovery.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "recovery.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "recovery.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "recovery.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "recovery.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0022
+    },
+    {
+      "name": "recovery.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "recovery.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "recovery.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "dodge.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "dodge.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "dodge.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "dodge.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "dodge.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0057
+    },
+    {
+      "name": "dodge.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "dodge.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "dodge.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit_react.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit_react.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit_react.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit_react.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit_react.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0131
+    },
+    {
+      "name": "hit_react.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.01
+    },
+    {
+      "name": "hit_react.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit_react.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "knockout.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "knockout.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "knockout.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "knockout.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "knockout.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.016
+    },
+    {
+      "name": "knockout.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.01
+    },
+    {
+      "name": "knockout.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "knockout.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "quick_attack.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "quick_attack.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "quick_attack.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "quick_attack.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "quick_attack.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0076
+    },
+    {
+      "name": "quick_attack.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "quick_attack.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "quick_attack.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_windup.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_windup.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_windup.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_windup.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_windup.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0132
+    },
+    {
+      "name": "heavy_windup.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.01
+    },
+    {
+      "name": "heavy_windup.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_windup.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_attack.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_attack.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_attack.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_attack.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_attack.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0076
+    },
+    {
+      "name": "heavy_attack.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_attack.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "heavy_attack.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit.sword.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit.sword.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit.axe.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit.axe.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit.axe.off.hand-on-socket",
+      "ok": true,
+      "detail": 0.0131
+    },
+    {
+      "name": "hit.axe.off.attach-angle",
+      "ok": true,
+      "detail": 0.01
+    },
+    {
+      "name": "hit.dagger.main.hand-on-socket",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "hit.dagger.main.attach-angle",
+      "ok": true,
+      "detail": 0.0
+    },
+    {
+      "name": "offhand.named-poses-main-and-off-within-kit-limits",
+      "ok": true,
+      "detail": 0.0186
+    },
+    {
+      "name": "face.visor.idle.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.idle.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.idle.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.victory.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.victory.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.victory.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.defeat.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.defeat.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.defeat.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.walk_in.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.walk_in.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.walk_in.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.windup.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.windup.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.windup.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.strike.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.strike.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.strike.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.follow_through.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.follow_through.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.follow_through.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.recovery.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.recovery.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.recovery.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.dodge.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.dodge.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.dodge.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.hit_react.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.hit_react.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.hit_react.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.knockout.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.knockout.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.knockout.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.quick_attack.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.quick_attack.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.quick_attack.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.heavy_windup.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.heavy_windup.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.heavy_windup.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.heavy_attack.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.heavy_attack.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.heavy_attack.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.hit.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.hit.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.hit.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.sword.walk.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.sword.walk.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.sword.attack.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.sword.attack.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.sword.dodge.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.sword.dodge.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.sword.hit_react.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.sword.hit_react.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.sword.knockout.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.sword.knockout.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.axe.walk.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.axe.walk.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.axe.attack.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.axe.attack.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.axe.dodge.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.axe.dodge.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.axe.hit_react.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.axe.hit_react.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.axe.knockout.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.axe.knockout.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.dagger.walk.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.dagger.walk.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.dagger.attack.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.dagger.attack.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.dagger.dodge.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.dagger.dodge.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.dagger.hit_react.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.dagger.hit_react.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.dagger.knockout.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.visor.clip.dagger.knockout.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.idle.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.idle.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.idle.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.victory.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.victory.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.victory.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.defeat.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.defeat.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.defeat.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.walk_in.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.walk_in.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.walk_in.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.windup.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.windup.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.windup.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.strike.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.strike.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.strike.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.follow_through.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.follow_through.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.follow_through.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.recovery.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.recovery.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.recovery.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.dodge.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.dodge.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.dodge.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.hit_react.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.hit_react.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.hit_react.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.knockout.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.knockout.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.knockout.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.quick_attack.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.quick_attack.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.quick_attack.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.heavy_windup.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.heavy_windup.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.heavy_windup.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.heavy_attack.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.heavy_attack.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.heavy_attack.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.hit.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.hit.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.hit.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.walk.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.walk.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.attack.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.attack.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.dodge.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.dodge.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.hit_react.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.hit_react.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.knockout.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.knockout.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.axe.walk.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.axe.walk.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.axe.attack.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.axe.attack.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.axe.dodge.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.axe.dodge.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.axe.hit_react.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.axe.hit_react.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.axe.knockout.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.axe.knockout.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.dagger.walk.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.dagger.walk.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.dagger.attack.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.dagger.attack.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.dagger.dodge.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.dagger.dodge.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.dagger.hit_react.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.dagger.hit_react.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.dagger.knockout.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.dagger.knockout.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.idle.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.idle.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.idle.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.victory.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.victory.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.victory.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.defeat.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.defeat.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.defeat.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.walk_in.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.walk_in.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.walk_in.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.windup.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.windup.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.windup.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.strike.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.strike.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.strike.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.follow_through.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.follow_through.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.follow_through.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.recovery.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.recovery.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.recovery.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.dodge.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.dodge.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.dodge.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.hit_react.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.hit_react.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.hit_react.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.knockout.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.knockout.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.knockout.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.quick_attack.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.quick_attack.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.quick_attack.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.heavy_windup.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.heavy_windup.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.heavy_windup.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.heavy_attack.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.heavy_attack.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.heavy_attack.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.hit.sword.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.hit.axe.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.hit.dagger.weapon-clear",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.sword.walk.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.sword.walk.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.sword.attack.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.sword.attack.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.sword.dodge.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.sword.dodge.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.sword.hit_react.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.sword.hit_react.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.sword.knockout.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.sword.knockout.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.axe.walk.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.axe.walk.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.axe.attack.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.axe.attack.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.axe.dodge.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.axe.dodge.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.axe.hit_react.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.axe.hit_react.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.axe.knockout.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.axe.knockout.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.dagger.walk.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.dagger.walk.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.dagger.attack.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.dagger.attack.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.dagger.dodge.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.dagger.dodge.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.dagger.hit_react.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.dagger.hit_react.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.dagger.knockout.weapon-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.can.clip.dagger.knockout.smear-clear-all-frames",
+      "ok": true,
+      "detail": 0
+    },
+    {
+      "name": "face.welder.clip.sword.walk.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.sword.attack.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.sword.dodge.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.sword.hit_react.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.sword.knockout.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.axe.walk.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.axe.attack.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 498,
+        "stock": 639
+      }
+    },
+    {
+      "name": "face.welder.clip.axe.dodge.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.axe.hit_react.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.axe.knockout.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 492,
+        "stock": 692
+      }
+    },
+    {
+      "name": "face.welder.clip.dagger.walk.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.dagger.attack.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.dagger.dodge.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.dagger.hit_react.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.welder.clip.dagger.knockout.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.sword.walk.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.sword.attack.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.sword.dodge.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.sword.hit_react.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.sword.knockout.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.axe.walk.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.axe.attack.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 297,
+        "stock": 639
+      }
+    },
+    {
+      "name": "face.can.clip.axe.dodge.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.axe.hit_react.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.axe.knockout.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 222,
+        "stock": 692
+      }
+    },
+    {
+      "name": "face.can.clip.dagger.walk.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.dagger.attack.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.dagger.dodge.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.dagger.hit_react.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "face.can.clip.dagger.knockout.hands-no-worse-than-stock-max",
+      "ok": true,
+      "detail": {
+        "new": 0,
+        "stock": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.idle.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.idle.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.defeat.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.defeat.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.victory.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.victory.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.strike.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "GY": 495,
+        "d": -2
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.strike.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.knockout.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.knockout.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.dodge.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-stock.dodge.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.idle.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.idle.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.defeat.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.defeat.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.victory.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.victory.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.strike.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "GY": 495,
+        "d": -2
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.strike.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.knockout.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.knockout.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.dodge.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.welder-chassis-stock-stock.dodge.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.idle.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.idle.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.defeat.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.defeat.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.victory.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.victory.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.strike.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "GY": 495,
+        "d": -2
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.strike.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.knockout.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.knockout.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.dodge.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.can-chassis-stock-stock.dodge.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.idle.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.idle.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.defeat.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.defeat.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.victory.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.victory.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.strike.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "GY": 495,
+        "d": -2
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.strike.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.knockout.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.knockout.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.dodge.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-boiler-stock-stock.dodge.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.idle.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.idle.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.defeat.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.defeat.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.victory.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.victory.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.strike.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "GY": 495,
+        "d": -2
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.strike.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.knockout.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.knockout.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.dodge.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-slab-stock-stock.dodge.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.idle.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.idle.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.defeat.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.defeat.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.victory.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.victory.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.strike.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "GY": 495,
+        "d": -2
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.strike.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.knockout.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.knockout.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.dodge.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-heavy-stock.dodge.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.idle.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.idle.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.defeat.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.defeat.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.victory.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.victory.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.strike.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "GY": 495,
+        "d": -2
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.strike.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.knockout.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 496,
+        "GY": 495,
+        "d": 2
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.knockout.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 496,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.dodge.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.visor-chassis-stock-piston.dodge.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.idle.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.idle.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.defeat.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.defeat.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.victory.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.victory.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.strike.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "GY": 495,
+        "d": -2
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.strike.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.knockout.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 496,
+        "GY": 495,
+        "d": 2
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.knockout.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 496,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.dodge.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.welder-boiler-heavy-piston.dodge.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.idle.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.idle.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.defeat.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.defeat.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.victory.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.victory.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.strike.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "GY": 495,
+        "d": -2
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.strike.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 492,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.knockout.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 496,
+        "GY": 495,
+        "d": 2
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.knockout.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 496,
+        "limit": 496
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.dodge.body-near-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "GY": 495,
+        "d": 0
+      }
+    },
+    {
+      "name": "ground.can-slab-heavy-piston.dodge.nothing-below-ground",
+      "ok": true,
+      "detail": {
+        "lowest": 494,
+        "limit": 496
+      }
+    },
+    {
+      "name": "joints.min-overlap-recorded",
+      "ok": true,
+      "detail": 195
+    },
+    {
+      "name": "eyes.rule-weapon-mace-present-or-deferred",
+      "ok": true,
+      "detail": "deferred: checked on kit weapons so shapes are ready; mace/hammer will use the same 80% rule"
+    },
+    {
+      "name": "eyes.rule-weapon-hammer-present-or-deferred",
+      "ok": true,
+      "detail": "deferred: checked on kit weapons so shapes are ready; mace/hammer will use the same 80% rule"
+    },
+    {
+      "name": "combo.visor-chassis-stock-stock.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-chassis-stock-piston.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-chassis-heavy-stock.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-chassis-heavy-piston.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-boiler-stock-stock.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-boiler-stock-piston.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-boiler-heavy-stock.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-boiler-heavy-piston.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-slab-stock-stock.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-slab-stock-piston.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-slab-heavy-stock.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.visor-slab-heavy-piston.face-covered-by-head-visor",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-chassis-stock-stock.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-chassis-stock-piston.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-chassis-heavy-stock.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-chassis-heavy-piston.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-boiler-stock-stock.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-boiler-stock-piston.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-boiler-heavy-stock.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-boiler-heavy-piston.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-slab-stock-stock.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-slab-stock-piston.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-slab-heavy-stock.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.welder-slab-heavy-piston.face-covered-by-head-welder",
+      "ok": true
+    },
+    {
+      "name": "combo.can-chassis-stock-stock.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-chassis-stock-piston.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-chassis-heavy-stock.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-chassis-heavy-piston.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-boiler-stock-stock.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-boiler-stock-piston.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-boiler-heavy-stock.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-boiler-heavy-piston.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-slab-stock-stock.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-slab-stock-piston.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-slab-heavy-stock.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "combo.can-slab-heavy-piston.face-covered-by-head-can",
+      "ok": true
+    },
+    {
+      "name": "all-36-combos-listed",
+      "ok": true,
+      "detail": 36
+    }
+  ]
+}

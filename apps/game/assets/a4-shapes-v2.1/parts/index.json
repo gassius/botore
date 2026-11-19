@@ -1,0 +1,227 @@
+{
+  "parts": [
+    {
+      "id": "head",
+      "variant": "welder",
+      "width": 210,
+      "height": 180,
+      "face_rect": [
+        112,
+        66,
+        188,
+        140
+      ],
+      "1x": {
+        "under": "1x/head-welder/under.png",
+        "mask": "1x/head-welder/mask.png",
+        "over": "1x/head-welder/over.png",
+        "oxide": "1x/head-welder/oxide.png"
+      },
+      "2x": {
+        "under": "2x/head-welder/under.png",
+        "mask": "2x/head-welder/mask.png",
+        "over": "2x/head-welder/over.png",
+        "oxide": "2x/head-welder/oxide.png"
+      }
+    },
+    {
+      "id": "head",
+      "variant": "can",
+      "width": 210,
+      "height": 180,
+      "face_rect": [
+        116,
+        70,
+        182,
+        136
+      ],
+      "1x": {
+        "under": "1x/head-can/under.png",
+        "mask": "1x/head-can/mask.png",
+        "over": "1x/head-can/over.png",
+        "oxide": "1x/head-can/oxide.png"
+      },
+      "2x": {
+        "under": "2x/head-can/under.png",
+        "mask": "2x/head-can/mask.png",
+        "over": "2x/head-can/over.png",
+        "oxide": "2x/head-can/oxide.png"
+      }
+    },
+    {
+      "id": "torso",
+      "variant": "boiler",
+      "width": 292,
+      "height": 234,
+      "face_rect": null,
+      "1x": {
+        "under": "1x/torso-boiler/under.png",
+        "mask": "1x/torso-boiler/mask.png",
+        "over": "1x/torso-boiler/over.png",
+        "oxide": "1x/torso-boiler/oxide.png"
+      },
+      "2x": {
+        "under": "2x/torso-boiler/under.png",
+        "mask": "2x/torso-boiler/mask.png",
+        "over": "2x/torso-boiler/over.png",
+        "oxide": "2x/torso-boiler/oxide.png"
+      }
+    },
+    {
+      "id": "torso",
+      "variant": "slab",
+      "width": 292,
+      "height": 234,
+      "face_rect": null,
+      "1x": {
+        "under": "1x/torso-slab/under.png",
+        "mask": "1x/torso-slab/mask.png",
+        "over": "1x/torso-slab/over.png",
+        "oxide": "1x/torso-slab/oxide.png"
+      },
+      "2x": {
+        "under": "2x/torso-slab/under.png",
+        "mask": "2x/torso-slab/mask.png",
+        "over": "2x/torso-slab/over.png",
+        "oxide": "2x/torso-slab/oxide.png"
+      }
+    },
+    {
+      "id": "upper_arm",
+      "variant": "heavy",
+      "width": 155,
+      "height": 150,
+      "face_rect": null,
+      "1x": {
+        "under": "1x/upper_arm-heavy/under.png",
+        "mask": "1x/upper_arm-heavy/mask.png",
+        "over": "1x/upper_arm-heavy/over.png",
+        "oxide": "1x/upper_arm-heavy/oxide.png"
+      },
+      "2x": {
+        "under": "2x/upper_arm-heavy/under.png",
+        "mask": "2x/upper_arm-heavy/mask.png",
+        "over": "2x/upper_arm-heavy/over.png",
+        "oxide": "2x/upper_arm-heavy/oxide.png"
+      }
+    },
+    {
+      "id": "forearm",
+      "variant": "heavy",
+      "width": 145,
+      "height": 140,
+      "face_rect": null,
+      "1x": {
+        "under": "1x/forearm-heavy/under.png",
+        "mask": "1x/forearm-heavy/mask.png",
+        "over": "1x/forearm-heavy/over.png",
+        "oxide": "1x/forearm-heavy/oxide.png"
+      },
+      "2x": {
+        "under": "2x/forearm-heavy/under.png",
+        "mask": "2x/forearm-heavy/mask.png",
+        "over": "2x/forearm-heavy/over.png",
+        "oxide": "2x/forearm-heavy/oxide.png"
+      }
+    },
+    {
+      "id": "thigh",
+      "variant": "piston",
+      "width": 164,
+      "height": 150,
+      "face_rect": null,
+      "1x": {
+        "under": "1x/thigh-piston/under.png",
+        "mask": "1x/thigh-piston/mask.png",
+        "over": "1x/thigh-piston/over.png",
+        "oxide": "1x/thigh-piston/oxide.png"
+      },
+      "2x": {
+        "under": "2x/thigh-piston/under.png",
+        "mask": "2x/thigh-piston/mask.png",
+        "over": "2x/thigh-piston/over.png",
+        "oxide": "2x/thigh-piston/oxide.png"
+      }
+    },
+    {
+      "id": "shin",
+      "variant": "piston",
+      "width": 160,
+      "height": 150,
+      "face_rect": null,
+      "1x": {
+        "under": "1x/shin-piston/under.png",
+        "mask": "1x/shin-piston/mask.png",
+        "over": "1x/shin-piston/over.png",
+        "oxide": "1x/shin-piston/oxide.png"
+      },
+      "2x": {
+        "under": "2x/shin-piston/under.png",
+        "mask": "2x/shin-piston/mask.png",
+        "over": "2x/shin-piston/over.png",
+        "oxide": "2x/shin-piston/oxide.png"
+      }
+    },
+    {
+      "id": "foot",
+      "variant": "piston",
+      "width": 194,
+      "height": 100,
+      "face_rect": null,
+      "1x": {
+        "under": "1x/foot-piston/under.png",
+        "mask": "1x/foot-piston/mask.png",
+        "over": "1x/foot-piston/over.png",
+        "oxide": "1x/foot-piston/oxide.png"
+      },
+      "2x": {
+        "under": "2x/foot-piston/under.png",
+        "mask": "2x/foot-piston/mask.png",
+        "over": "2x/foot-piston/over.png",
+        "oxide": "2x/foot-piston/oxide.png"
+      }
+    }
+  ],
+  "sided": {
+    "upper_arm_l": {
+      "variant": "heavy",
+      "source": "upper_arm-heavy"
+    },
+    "upper_arm_r": {
+      "variant": "heavy",
+      "source": "upper_arm-heavy"
+    },
+    "forearm_l": {
+      "variant": "heavy",
+      "source": "forearm-heavy"
+    },
+    "forearm_r": {
+      "variant": "heavy",
+      "source": "forearm-heavy"
+    },
+    "thigh_l": {
+      "variant": "piston",
+      "source": "thigh-piston"
+    },
+    "thigh_r": {
+      "variant": "piston",
+      "source": "thigh-piston"
+    },
+    "shin_l": {
+      "variant": "piston",
+      "source": "shin-piston"
+    },
+    "shin_r": {
+      "variant": "piston",
+      "source": "shin-piston"
+    },
+    "foot_l": {
+      "variant": "piston",
+      "source": "foot-piston"
+    },
+    "foot_r": {
+      "variant": "piston",
+      "source": "foot-piston"
+    }
+  }
+}

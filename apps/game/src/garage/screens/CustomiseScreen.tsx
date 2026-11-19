@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { shouldPlayEquipCue, shouldPlaySelectCue } from '../../audio';
 import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
+import { HEAVIEST_SHAPES, SHAPE_SLOTS, shapePartId } from '../../assembler/shapes';
 import {
   Nameplate,
   PartPickerStrip,
@@ -31,12 +32,15 @@ import {
   CUSTOMISE_STAGE_MIN_HEIGHT,
   EQUIPPED_CONFIRM_MS,
   buildPaintPickerCards,
+  buildShapePickerCards,
   buildWeaponPickerCards,
+  isShapeSlot,
   pickerMetaLabel,
   type CustomiseSlotId,
 } from '../customise/customiseSlots';
 import {
   PROOF_PAINTS,
+  PROOF_SHAPES,
   PROOF_WEAPONS,
   paintCatalogueId,
   paintUiAlias,
@@ -55,6 +59,7 @@ export function CustomiseScreen(props: {
     canProgress,
     selectPaint,
     selectWeapon,
+    selectShape,
     discard,
     save,
     renameDisplayName,
@@ -131,10 +136,12 @@ export function CustomiseScreen(props: {
       return paintCatalogueId(next.uiAlias);
     };
 
-    if (customiseCaptureScenario === 'equipped' && captureEquipArmed.current) {
-      if (lastCaptureScenario.current === 'equipped') return;
+    const equipScenario =
+      customiseCaptureScenario === 'equipped' || customiseCaptureScenario === 'shape-equipped';
+    if (equipScenario && captureEquipArmed.current) {
+      if (lastCaptureScenario.current === customiseCaptureScenario) return;
       if (!loadout.dirty || loadout.saving) return;
-      lastCaptureScenario.current = 'equipped';
+      lastCaptureScenario.current = customiseCaptureScenario;
       void (async () => {
         const ok = await save();
         if (!ok) {
@@ -146,7 +153,7 @@ export function CustomiseScreen(props: {
         equipFlashTimer.current = null;
         captureEquipHold.current = true;
         setEquipFlash(true);
-        console.log('BOTORE_CAPTURE_CUSTOMISE:equipped');
+        console.log(`BOTORE_CAPTURE_CUSTOMISE:${customiseCaptureScenario}`);
       })();
       return;
     }
@@ -215,6 +222,52 @@ export function CustomiseScreen(props: {
       setCapturePickerIndex(lastStop);
       selectWeapon(PROOF_WEAPONS[Math.max(0, maceIdx)]!.partId);
       console.log('BOTORE_CAPTURE_CUSTOMISE:weapon-unlocked');
+      return;
+    }
+    if (customiseCaptureScenario === 'shape-head-welder') {
+      lastCaptureScenario.current = customiseCaptureScenario;
+      if (loadout.dirty) discard();
+      clearEquipFlash();
+      setTab('head');
+      setCapturePickerIndex(0);
+      selectShape('head', 'welder');
+      console.log('BOTORE_CAPTURE_CUSTOMISE:shape-head-welder');
+      return;
+    }
+    if (customiseCaptureScenario === 'shape-body-boiler') {
+      lastCaptureScenario.current = customiseCaptureScenario;
+      if (loadout.dirty) discard();
+      clearEquipFlash();
+      setTab('body');
+      setCapturePickerIndex(0);
+      selectShape('body', 'boiler');
+      console.log('BOTORE_CAPTURE_CUSTOMISE:shape-body-boiler');
+      return;
+    }
+    if (customiseCaptureScenario === 'shape-heaviest') {
+      lastCaptureScenario.current = customiseCaptureScenario;
+      if (loadout.dirty) discard();
+      clearEquipFlash();
+      setTab('legs');
+      setCapturePickerIndex(0);
+      for (const slot of SHAPE_SLOTS) selectShape(slot, HEAVIEST_SHAPES[slot]);
+      console.log('BOTORE_CAPTURE_CUSTOMISE:shape-heaviest');
+      return;
+    }
+    if (customiseCaptureScenario === 'shape-equipped') {
+      if (loadout.dirty) discard();
+      clearEquipFlash();
+      setTab('body');
+      setCapturePickerIndex(0);
+      // Equip needs a dirty diff: heaviest unless already confirmed, else stock.
+      const confirmed = loadout.confirmedLoadout;
+      const heaviestConfirmed = SHAPE_SLOTS.every(
+        (slot) => confirmed[slot] === shapePartId(slot, HEAVIEST_SHAPES[slot]),
+      );
+      for (const slot of SHAPE_SLOTS) {
+        selectShape(slot, heaviestConfirmed ? PROOF_SHAPES[slot][0].alias : HEAVIEST_SHAPES[slot]);
+      }
+      captureEquipArmed.current = true;
     }
   }, [
     customiseCaptureScenario,
@@ -226,6 +279,7 @@ export function CustomiseScreen(props: {
     discard,
     selectPaint,
     selectWeapon,
+    selectShape,
     save,
   ]);
 
@@ -250,8 +304,17 @@ export function CustomiseScreen(props: {
 
   const paintCards = useMemo(() => buildPaintPickerCards(previewPaint), [previewPaint]);
   const weaponCards = useMemo(() => buildWeaponPickerCards(previewWeapon), [previewWeapon]);
-  const activeCards = tab === 'paint' ? paintCards : weaponCards;
-  const ownedCount = tab === 'paint' ? PROOF_PAINTS.length : PROOF_WEAPONS.length;
+  const previewShapeId = preview && isShapeSlot(tab) ? preview[tab] : null;
+  const shapeCards = useMemo(
+    () => (isShapeSlot(tab) && previewShapeId ? buildShapePickerCards(tab, previewShapeId) : []),
+    [tab, previewShapeId],
+  );
+  const activeCards = isShapeSlot(tab) ? shapeCards : tab === 'paint' ? paintCards : weaponCards;
+  const ownedCount = isShapeSlot(tab)
+    ? PROOF_SHAPES[tab].length
+    : tab === 'paint'
+      ? PROOF_PAINTS.length
+      : PROOF_WEAPONS.length;
   const slotLabel = CUSTOMISE_SLOTS.find((s) => s.id === tab)?.label ?? 'Parts';
 
   const onBack = () => {
@@ -274,6 +337,12 @@ export function CustomiseScreen(props: {
   };
 
   const onSelectCard = (cardId: string) => {
+    if (isShapeSlot(tab)) {
+      if (editingLocked) return;
+      selectShape(tab, cardId);
+      if (shouldPlaySelectCue(true)) uiAudio.playCue('select');
+      return;
+    }
     if (tab === 'paint') {
       onSelectPaint(cardId);
       return;
@@ -297,7 +366,7 @@ export function CustomiseScreen(props: {
   };
 
   const onEquip = async () => {
-    // Nameplate → rename_owned_character; paint/weapon → save_bot_loadout.
+    // Nameplate → rename_owned_character; paint/weapon/shapes → save_bot_loadout.
     let ok = true;
     const nextName = playerFacingDisplayName(clampBotNameDraft(pendingName) || 'Bot');
     if (nameDirty) {
@@ -446,6 +515,10 @@ export function CustomiseScreen(props: {
               chassisId: preview.chassis,
               paintId: preview.paint,
               weaponId: preview.weapon,
+              head: preview.head,
+              body: preview.body,
+              arms: preview.arms,
+              legs: preview.legs,
             }}
             facing="right"
             paintId={preview.paint}

@@ -386,6 +386,10 @@ export function ConfirmFightScreen(props: {
                   chassisId: confirmed.chassis,
                   paintId: confirmed.paint,
                   weaponId: nearWeaponId,
+                  head: confirmed.head,
+                  body: confirmed.body,
+                  arms: confirmed.arms,
+                  legs: confirmed.legs,
                 }}
                 facing="right"
                 paintId={confirmed.paint}

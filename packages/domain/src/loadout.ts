@@ -5,8 +5,23 @@
  * The Postgres function remains authoritative for persistence.
  */
 
-/** Catalogue / loadout slots. Shield, drone, and decal are reserved extensions. */
-export type PartSlotKind = 'chassis' | 'paint' | 'weapon' | 'shield' | 'drone' | 'decal';
+/**
+ * Catalogue / loadout slots. Shield, drone, and decal are reserved extensions.
+ * head / body / arms / legs are A4 shape slots (cosmetic; no combat effect).
+ */
+export type PartSlotKind =
+  'chassis' | 'paint' | 'weapon' | 'shield' | 'drone' | 'decal' | 'head' | 'body' | 'arms' | 'legs';
+
+export const SHAPE_LOADOUT_SLOTS = ['head', 'body', 'arms', 'legs'] as const;
+export type ShapeLoadoutSlot = (typeof SHAPE_LOADOUT_SLOTS)[number];
+
+/** Stock shape per slot. Loadouts saved before A4 omit shapes and read as these. */
+export const STOCK_SHAPE_PART_IDS: Readonly<Record<ShapeLoadoutSlot, string>> = {
+  head: 'head-visor',
+  body: 'body-chassis',
+  arms: 'arms-stock',
+  legs: 'legs-stock',
+};
 
 /** Mirrors combat-v1 WeaponKind without importing from index (avoid cycles). */
 export type LoadoutWeaponKind = 'sword' | 'axe' | 'dagger';
@@ -27,6 +42,10 @@ export interface BotLoadout {
   readonly drone: string | null;
   readonly decals: readonly string[];
   readonly soundTags: readonly string[];
+  readonly head: string;
+  readonly body: string;
+  readonly arms: string;
+  readonly legs: string;
 }
 
 /** Catalogue part row (subset shared with clients). */
@@ -123,6 +142,15 @@ export function validateBotLoadout(input: ValidateLoadoutInput): LoadoutValidati
     errors.push({ code: 'invalid_loadout', message: 'drone must be a string or null' });
   }
 
+  const shapes = {} as Record<ShapeLoadoutSlot, string>;
+  for (const slot of SHAPE_LOADOUT_SLOTS) {
+    const value = readOptionalPartId(raw[slot]);
+    if (raw[slot] !== undefined && value === undefined) {
+      errors.push({ code: 'invalid_loadout', message: `${slot} must be a string or null` });
+    }
+    shapes[slot] = value ?? STOCK_SHAPE_PART_IDS[slot];
+  }
+
   let decals: string[] = [];
   if (raw['decals'] !== undefined) {
     if (!Array.isArray(raw['decals']) || raw['decals'].some((d) => typeof d !== 'string')) {
@@ -165,6 +193,7 @@ export function validateBotLoadout(input: ValidateLoadoutInput): LoadoutValidati
   if (shield) assertSlot(shield, 'shield');
   if (drone) assertSlot(drone, 'drone');
   for (const decal of decals) assertSlot(decal, 'decal');
+  for (const slot of SHAPE_LOADOUT_SLOTS) assertSlot(shapes[slot], slot);
 
   let soundTags: string[] = [];
   if (raw['soundTags'] !== undefined) {
@@ -196,6 +225,7 @@ export function validateBotLoadout(input: ValidateLoadoutInput): LoadoutValidati
       drone: drone ?? null,
       decals,
       soundTags,
+      ...shapes,
     },
   };
 }

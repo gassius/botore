@@ -57,6 +57,16 @@ supabase/seed/atlas/v1/parts/weapon-dagger/petrol.png
 supabase/seed/atlas/v1/parts/weapon-dagger/material-under.png
 supabase/seed/atlas/v1/parts/weapon-dagger/material-over.png
 supabase/seed/atlas/v1/parts/weapon-dagger/mask.png
+# A4 shapes v2.1 variant tiles (packer copies from apps/game/assets/a4-shapes-v2.1).
+supabase/seed/atlas/v1/parts/head-welder/
+supabase/seed/atlas/v1/parts/head-can/
+supabase/seed/atlas/v1/parts/torso-boiler/
+supabase/seed/atlas/v1/parts/torso-slab/
+supabase/seed/atlas/v1/parts/upper-arm-heavy/
+supabase/seed/atlas/v1/parts/forearm-heavy/
+supabase/seed/atlas/v1/parts/thigh-piston/
+supabase/seed/atlas/v1/parts/shin-piston/
+supabase/seed/atlas/v1/parts/foot-piston/
 
 # Editors / OS
 .DS_Store

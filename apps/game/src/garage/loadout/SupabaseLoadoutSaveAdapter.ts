@@ -188,6 +188,10 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
             drone: input.loadout.drone,
             decals: input.loadout.decals,
             soundTags: input.loadout.soundTags,
+            head: input.loadout.head,
+            body: input.loadout.body,
+            arms: input.loadout.arms,
+            legs: input.loadout.legs,
           },
           p_atlas_version: input.atlasVersion,
         }),
@@ -554,6 +558,10 @@ function normalizeOwnedBotRow(
       typeof row.losses === 'number' && Number.isFinite(row.losses) ? Math.max(0, row.losses) : 0,
     paint: typeof row.paint === 'string' && row.paint.trim() ? row.paint.trim() : null,
     weapon: typeof row.weapon === 'string' && row.weapon.trim() ? row.weapon.trim() : null,
+    head: typeof row.head === 'string' && row.head.trim() ? row.head.trim() : null,
+    body: typeof row.body === 'string' && row.body.trim() ? row.body.trim() : null,
+    arms: typeof row.arms === 'string' && row.arms.trim() ? row.arms.trim() : null,
+    legs: typeof row.legs === 'string' && row.legs.trim() ? row.legs.trim() : null,
     atlasVersion:
       typeof row.atlasVersion === 'string' && row.atlasVersion.trim()
         ? row.atlasVersion.trim()

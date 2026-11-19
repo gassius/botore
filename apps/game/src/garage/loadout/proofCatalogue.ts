@@ -1,6 +1,7 @@
 import type { GarageLoadout } from './loadoutTypes';
 import type { WeaponGlyphId } from '../../garage-tag';
 import { resolvePaintVisual } from '../../assembler/paints';
+import { SHAPE_OPTIONS, STOCK_SHAPES, shapePartId, type ShapeSlot } from '../../assembler/shapes';
 import { WORKSHOP_FRAME_ATLAS_VERSION } from '../../atlas/workshop-frame-paths';
 
 /**
@@ -40,6 +41,17 @@ export const PROOF_WEAPONS = [
   { partId: 'weapon-shield', label: 'Shield', uiAlias: 'shield' as const },
 ] as const;
 
+/** A4 shapes v2.1 per slot, stock first (cosmetic; no sound tags). */
+export const PROOF_SHAPES = SHAPE_OPTIONS;
+
+/** Stock A4 shape catalogue ids — what a pre-A4 loadout reads as. */
+export const STOCK_SHAPE_LOADOUT: Pick<GarageLoadout, ShapeSlot> = {
+  head: shapePartId('head', STOCK_SHAPES.head),
+  body: shapePartId('body', STOCK_SHAPES.body),
+  arms: shapePartId('arms', STOCK_SHAPES.arms),
+  legs: shapePartId('legs', STOCK_SHAPES.legs),
+};
+
 export const DEFAULT_CONFIRMED_LOADOUT: GarageLoadout = {
   chassis: 'chassis-basic',
   paint: 'paint-crimson',
@@ -48,6 +60,7 @@ export const DEFAULT_CONFIRMED_LOADOUT: GarageLoadout = {
   drone: null,
   decals: [],
   soundTags: ['chassis.light', 'weapon.sword'],
+  ...STOCK_SHAPE_LOADOUT,
 };
 
 const PAINT_ALIAS_TO_CATALOGUE: Readonly<Record<string, string>> = Object.fromEntries(
@@ -119,4 +132,13 @@ export function withUpdatedPaint(loadout: GarageLoadout, paint: string): GarageL
 export function withUpdatedWeapon(loadout: GarageLoadout, weapon: string): GarageLoadout {
   const next = { ...loadout, weapon: weaponCatalogueId(weapon) };
   return { ...next, soundTags: soundTagsFor(next) };
+}
+
+/** Shapes carry no sound tags, so soundTags stay as they are. */
+export function withUpdatedShape(
+  loadout: GarageLoadout,
+  slot: ShapeSlot,
+  aliasOrId: string,
+): GarageLoadout {
+  return { ...loadout, [slot]: shapePartId(slot, aliasOrId) };
 }

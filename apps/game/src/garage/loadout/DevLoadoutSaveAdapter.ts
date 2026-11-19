@@ -22,11 +22,22 @@ import {
   PROOF_CHARACTER_ID,
   PROOF_DISPLAY_NAME,
   PROOF_PAINTS,
+  PROOF_SHAPES,
   PROOF_WEAPONS,
+  STOCK_SHAPE_LOADOUT,
 } from './proofCatalogue';
+import { SHAPE_SLOTS } from '../../assembler/shapes';
 
-/** Pre-A6 starter ownership — mirrors a returning player before ensure grants. */
-const DEV_STARTER_OWNED_PARTS = ['chassis-basic', 'paint-crimson', 'weapon-sword'] as const;
+/**
+ * Pre-A6 starter ownership — mirrors a returning player before ensure grants.
+ * Stock A4 shapes count as starter: every pre-A4 loadout already wears them.
+ */
+const DEV_STARTER_OWNED_PARTS = [
+  'chassis-basic',
+  'paint-crimson',
+  'weapon-sword',
+  ...Object.values(STOCK_SHAPE_LOADOUT),
+] as const;
 
 const DEV_NAME_LEFT = ['Rust', 'Tin', 'Iron', 'Bolt', 'Oxide', 'Spark'] as const;
 const DEV_NAME_RIGHT = ['Baron', 'Caesar', 'Pilot', 'Knight', 'Rex', 'Scout'] as const;
@@ -70,11 +81,14 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
   /** Optional second owned character for dual-account tests. */
   extraOwned: { characterId: string; displayName: string; loadout: GarageLoadout } | null = null;
 
-  /** Mirrors ensure_player_character A6 catalogue grants (0038 always-ensure). */
+  /** Mirrors ensure_player_character A6 + A4 shape grants (0038 always-ensure, 0039). */
   ensureCatalogueGrants(): void {
     this.ownedParts.add('chassis-basic');
     for (const paint of PROOF_PAINTS) this.ownedParts.add(paint.partId);
     for (const weapon of PROOF_WEAPONS) this.ownedParts.add(weapon.partId);
+    for (const slot of SHAPE_SLOTS) {
+      for (const shape of PROOF_SHAPES[slot]) this.ownedParts.add(shape.partId);
+    }
   }
 
   async resolveOwnedCharacter(accessToken: string): Promise<OwnedCharacterResult> {
@@ -163,9 +177,12 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
     if (this.ensureCatalogueOnResolve) {
       this.ensureCatalogueGrants();
     }
-    const required = [input.loadout.chassis, input.loadout.paint, input.loadout.weapon].filter(
-      (partId): partId is string => typeof partId === 'string' && partId.length > 0,
-    );
+    const required = [
+      input.loadout.chassis,
+      input.loadout.paint,
+      input.loadout.weapon,
+      ...SHAPE_SLOTS.map((slot) => input.loadout[slot]),
+    ].filter((partId): partId is string => typeof partId === 'string' && partId.length > 0);
     for (const partId of required) {
       if (!this.ownedParts.has(partId)) {
         return {
@@ -230,6 +247,10 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
         losses: id === PROOF_CHARACTER_ID ? 6 : 0,
         paint: loadout.paint,
         weapon: loadout.weapon,
+        head: loadout.head,
+        body: loadout.body,
+        arms: loadout.arms,
+        legs: loadout.legs,
         atlasVersion: row?.atlasVersion ?? PROOF_ATLAS_VERSION,
         isActive: id === this.activeCharacterId,
       };

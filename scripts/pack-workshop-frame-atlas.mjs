@@ -24,12 +24,15 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 import {
+  A4_SHAPES_KIT_ID,
+  A4_SHAPES_PARTS_DIR,
   V1_CARRY_FORWARD_PATHS,
   WORKSHOP_FRAME_ATLAS_VERSION,
   WORKSHOP_FRAME_KIT_VERSION,
   WORKSHOP_FRAME_LEGACY_ATLAS_VERSION,
   WORKSHOP_FRAME_LEGACY_KIT_VERSION,
   WORKSHOP_FRAME_PACK_TARGETS,
+  a4ShapePackPairs,
   workshopFrameKitPackPairs,
 } from './workshop-frame-atlas-recipe.mjs';
 
@@ -143,7 +146,7 @@ function buildManifestJson(pairs, kitVersion, atlasVersion) {
         images: [],
         audio: [],
         soundTags: [],
-        kit: `workshop-frame-${kitVersion}`,
+        kit: pair.kit ?? `workshop-frame-${kitVersion}`,
       };
     }
     if (!parts[pair.partId].images.includes(pair.atlasRelative)) {
@@ -154,7 +157,7 @@ function buildManifestJson(pairs, kitVersion, atlasVersion) {
   return {
     version: atlasVersion,
     status: 'draft',
-    note: `Workshop Frame kit-${kitVersion} media keys packed onto F5 parts/<hyphenatedPartId>/… plus v1 proof carry-forward. Single Development atlas. budgets_final stays false.`,
+    note: `Workshop Frame kit-${kitVersion} media keys packed onto F5 parts/<hyphenatedPartId>/… plus ${A4_SHAPES_KIT_ID} variant tiles and v1 proof carry-forward. Single Development atlas. budgets_final stays false.`,
     kit: {
       id: 'workshop-frame',
       version: kitVersion,
@@ -203,12 +206,20 @@ function main() {
     includeWraps: target.includeWraps,
     kitVersion,
   });
+  const shapesDir = join(ROOT, A4_SHAPES_PARTS_DIR);
+  const shapePairs = a4ShapePackPairs();
+  const copyShapes = () => {
+    for (const pair of shapePairs) {
+      copyFile(join(shapesDir, pair.sourceRelative), join(OUT_DIR, pair.atlasRelative));
+    }
+  };
 
   if (mode.overlay) {
     // Overlay into committed v1: never wipe proof catalogue / base / arena / FX.
     for (const pair of pairs) {
       copyFile(join(kitDir, pair.kitRelative), join(OUT_DIR, pair.atlasRelative));
     }
+    copyShapes();
   } else {
     // Alternate ATLAS_SEED_DIR: wipe destination, carry-forward proof bytes, then kit.
     const readmePath = join(OUT_DIR, 'README.md');
@@ -229,9 +240,10 @@ function main() {
     for (const pair of pairs) {
       copyFile(join(kitDir, pair.kitRelative), join(OUT_DIR, pair.atlasRelative));
     }
+    copyShapes();
   }
 
-  const manifest = buildManifestJson(pairs, kitVersion, VERSION);
+  const manifest = buildManifestJson([...pairs, ...shapePairs], kitVersion, VERSION);
   const manifestPath = join(OUT_DIR, 'manifest.json');
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
   // Keep committed v1/manifest.json byte-stable with repo Prettier (compact arrays).
@@ -251,6 +263,9 @@ function main() {
   if (target.includeWraps) {
     const wrap = join(OUT_DIR, 'parts/hand-r-wrap/oxide.png');
     if (!existsSync(wrap)) fail(`expected packed wrap ${wrap}`);
+  }
+  if (!existsSync(join(OUT_DIR, 'parts/torso-boiler/oxide.png'))) {
+    fail('expected packed A4 shape parts/torso-boiler/oxide.png');
   }
   // Proof pack must survive overlay.
   if (!existsSync(join(OUT_DIR, 'parts/chassis-basic/body.png'))) {
@@ -275,7 +290,7 @@ function main() {
   }
 
   console.log(
-    `ATLAS-PACK-OK ${VERSION} kit=${kitDir} pairs=${pairs.length} out=${OUT_DIR} mode=${mode.overlay ? 'overlay' : 'carry-forward'}`,
+    `ATLAS-PACK-OK ${VERSION} kit=${kitDir} pairs=${pairs.length} shapes=${shapePairs.length} out=${OUT_DIR} mode=${mode.overlay ? 'overlay' : 'carry-forward'}`,
   );
 }
 

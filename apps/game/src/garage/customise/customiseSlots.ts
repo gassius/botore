@@ -1,10 +1,15 @@
 /**
  * D3/D7 Customise slot + picker catalogue helpers.
- * Tabs and cards are data-driven from proof catalogue (10 paints / 7 weapons).
+ * Tabs and cards are data-driven from proof catalogue (10 paints / 7 weapons /
+ * A4 shapes: 3 heads, 3 bodies, 2 arms, 2 legs).
  */
+import type { ImageSourcePropType } from 'react-native';
 import { resolvePaintVisual } from '../../assembler/paints';
-import { garageTag, type WeaponGlyphId } from '../../garage-tag';
-import { PROOF_PAINTS, PROOF_WEAPONS } from '../loadout/proofCatalogue';
+import { shapeAlias, type ShapeSlot } from '../../assembler/shapes';
+import type { WeaponGlyphId } from '../../garage-tag';
+import { garageTag } from '../../garage-tag/tokens';
+import { PROOF_PAINTS, PROOF_SHAPES, PROOF_WEAPONS } from '../loadout/proofCatalogue';
+import { shapeThumbnailSource } from './shapeThumbnails';
 
 export type CustomiseSlotId = 'paint' | 'head' | 'body' | 'arms' | 'legs' | 'weapon';
 
@@ -15,7 +20,7 @@ export type CustomiseSlotDef = {
   readonly hasContent: boolean;
 };
 
-export type PartPickerCardKind = 'paint' | 'weapon' | 'locked';
+export type PartPickerCardKind = 'paint' | 'weapon' | 'shape' | 'locked';
 
 export type PartPickerCardModel = {
   readonly id: string;
@@ -31,15 +36,21 @@ export type PartPickerCardModel = {
   readonly patternTag?: boolean;
   /** Paint visual alias for A6 tile lookup. */
   readonly paintAlias?: string;
+  /** Signature tile art — only for A4 shape cards. */
+  readonly shapeThumbnail?: ImageSourcePropType;
 };
 
-/** Fixed slot order from the D3 mockup. Empty slots stay dashed until A4. */
+export function isShapeSlot(slot: CustomiseSlotId): slot is ShapeSlot {
+  return slot === 'head' || slot === 'body' || slot === 'arms' || slot === 'legs';
+}
+
+/** Fixed slot order from the D3 mockup. */
 export const CUSTOMISE_SLOTS: readonly CustomiseSlotDef[] = [
   { id: 'paint', label: 'Paint', hasContent: PROOF_PAINTS.length > 0 },
-  { id: 'head', label: 'Head', hasContent: false },
-  { id: 'body', label: 'Body', hasContent: false },
-  { id: 'arms', label: 'Arms', hasContent: false },
-  { id: 'legs', label: 'Legs', hasContent: false },
+  { id: 'head', label: 'Head', hasContent: PROOF_SHAPES.head.length > 0 },
+  { id: 'body', label: 'Body', hasContent: PROOF_SHAPES.body.length > 0 },
+  { id: 'arms', label: 'Arms', hasContent: PROOF_SHAPES.arms.length > 0 },
+  { id: 'legs', label: 'Legs', hasContent: PROOF_SHAPES.legs.length > 0 },
   { id: 'weapon', label: 'Weapon', hasContent: PROOF_WEAPONS.length > 0 },
 ] as const;
 
@@ -71,6 +82,22 @@ export function buildWeaponPickerCards(selectedWeaponAlias: string): PartPickerC
     selected: selectedWeaponAlias === weapon.uiAlias,
     locked: false,
     weaponGlyph: weapon.uiAlias,
+  }));
+}
+
+export function buildShapePickerCards(
+  slot: ShapeSlot,
+  selectedPartId: string,
+): PartPickerCardModel[] {
+  const selected = shapeAlias(slot, selectedPartId);
+  const options: readonly { alias: string; partId: string; label: string }[] = PROOF_SHAPES[slot];
+  return options.map((shape) => ({
+    id: shape.partId,
+    label: shape.label,
+    kind: 'shape' as const,
+    selected: selected === shape.alias,
+    locked: false,
+    shapeThumbnail: shapeThumbnailSource(slot, shapeAlias(slot, shape.alias)),
   }));
 }
 
