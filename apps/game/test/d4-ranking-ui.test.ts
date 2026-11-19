@@ -108,15 +108,18 @@ describe('D4 Ranking UI contracts', () => {
     expect(volta?.botPaints.length).toBeGreaterThan(0);
   });
 
-  it('portrait paint resolves Oxide vs Petrol for ranking heads', () => {
+  it('portrait paint resolves Oxide vs Petrol; RankingPortrait uses BotPortrait/ShapeKit', () => {
     expect(resolvePaintVisual('paint-crimson').visual).toBe('oxide');
     expect(resolvePaintVisual('paint-cobalt').visual).toBe('petrol');
-    // RankingPortrait module must not require kit sample portrait sheets.
     const portrait = readSource('src/ranking/RankingPortrait.tsx');
-    expect(portrait).toContain('parts/head-oxide.png');
-    expect(portrait).toContain('parts/head-petrol.png');
+    expect(portrait).toContain('BotPortrait');
+    expect(portrait).toContain('loadoutFromPortrait');
+    expect(portrait).not.toContain('parts/head-oxide.png');
     expect(portrait).not.toContain('portraits/oxide-');
     expect(portrait).not.toContain('PLACEHOLDER');
+    // Fixture rows include distinct A4 heads (welder / can) for capture proof.
+    expect(DEV_POPULATED_RANKING_ROWS.some((r) => r.portrait?.head === 'head-welder')).toBe(true);
+    expect(DEV_POPULATED_RANKING_ROWS.some((r) => r.portrait?.head === 'head-can')).toBe(true);
   });
 
   it('design-capture ranking scenarios pick tab + fixture ports', async () => {

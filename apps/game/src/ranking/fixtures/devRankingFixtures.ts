@@ -8,10 +8,18 @@ import type { BotoreRankingRow, RankingRow } from '../types';
  */
 export const DEV_RANKING_FIXTURE_LABEL = 'DEV' as const;
 
-const portrait = (paint: string, weapon = 'weapon-sword'): RankingRow['portrait'] => ({
+const portrait = (
+  paint: string,
+  weapon = 'weapon-sword',
+  shapes?: { head?: string; body?: string; arms?: string; legs?: string },
+): RankingRow['portrait'] => ({
   chassis: 'chassis-basic',
   paint,
   weapon,
+  head: shapes?.head ?? 'head-visor',
+  body: shapes?.body ?? 'body-chassis',
+  arms: shapes?.arms ?? 'arms-stock',
+  legs: shapes?.legs ?? 'legs-stock',
   atlasVersion: 'v1',
 });
 
@@ -41,7 +49,12 @@ export const DEV_POPULATED_RANKING_ROWS: readonly RankingRow[] = Object.freeze([
     totalXp: 870,
     isCurrentBot: false,
     source: 'dev-fixture',
-    portrait: portrait('paint-crimson', 'weapon-axe'),
+    portrait: portrait('paint-crimson', 'weapon-axe', {
+      head: 'head-welder',
+      body: 'body-boiler',
+      arms: 'arms-heavy',
+      legs: 'legs-piston',
+    }),
   },
   {
     rank: 3,
@@ -54,7 +67,7 @@ export const DEV_POPULATED_RANKING_ROWS: readonly RankingRow[] = Object.freeze([
     totalXp: 812,
     isCurrentBot: false,
     source: 'dev-fixture',
-    portrait: portrait('paint-cobalt', 'weapon-dagger'),
+    portrait: portrait('paint-cobalt', 'weapon-dagger', { head: 'head-can' }),
   },
   {
     rank: 4,
@@ -80,7 +93,7 @@ export const DEV_POPULATED_RANKING_ROWS: readonly RankingRow[] = Object.freeze([
     totalXp: 664,
     isCurrentBot: true,
     source: 'dev-fixture',
-    portrait: portrait('paint-crimson'),
+    portrait: portrait('paint-crimson', 'weapon-sword', { head: 'head-welder' }),
   },
   {
     rank: 6,

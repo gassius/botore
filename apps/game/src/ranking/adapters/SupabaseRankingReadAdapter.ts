@@ -22,6 +22,10 @@ function mapPortrait(
     chassis: typeof raw.chassis === 'string' ? raw.chassis : null,
     paint: typeof raw.paint === 'string' ? raw.paint : null,
     weapon: typeof raw.weapon === 'string' ? raw.weapon : null,
+    head: typeof raw.head === 'string' ? raw.head : null,
+    body: typeof raw.body === 'string' ? raw.body : null,
+    arms: typeof raw.arms === 'string' ? raw.arms : null,
+    legs: typeof raw.legs === 'string' ? raw.legs : null,
     atlasVersion: typeof raw.atlasVersion === 'string' ? raw.atlasVersion : null,
   };
 }

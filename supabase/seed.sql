@@ -612,13 +612,17 @@ select a.id, p.part_id, 1, 'seed'
         and il.delta > 0
    );
 
--- Confirmed loadouts — visibly different paint/weapon pairs
+-- Confirmed loadouts — paint/weapon + A4 shapes (0041 ranking portraits)
 insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
 select v.character_id,
        jsonb_build_object(
          'chassis', 'chassis-basic',
          'paint', v.paint,
          'weapon', v.weapon,
+         'head', v.head,
+         'body', v.body,
+         'arms', v.arms,
+         'legs', v.legs,
          'decals', '[]'::jsonb,
          'soundTags', v.sound_tags
        )
@@ -626,31 +630,31 @@ select v.character_id,
        || jsonb_build_object('drone', 'null'::jsonb),
        'v1'
   from (values
-    ('npc-bot-rivet',    'paint-crimson', 'weapon-sword',  '["chassis.light","weapon.sword"]'::jsonb),
-    ('npc-bot-brace',    'paint-cobalt',  'weapon-axe',    '["chassis.light","weapon.axe"]'::jsonb),
-    ('npc-bot-girder',   'paint-crimson', 'weapon-dagger', '["chassis.light","weapon.dagger"]'::jsonb),
-    ('npc-bot-keel',     'paint-cobalt',  'weapon-sword',  '["chassis.light","weapon.sword"]'::jsonb),
-    ('npc-bot-barnacle', 'paint-crimson', 'weapon-dagger', '["chassis.light","weapon.dagger"]'::jsonb),
-    ('npc-bot-helix',    'paint-cobalt',  'weapon-dagger', '["chassis.light","weapon.dagger"]'::jsonb),
-    ('npc-bot-spool',    'paint-crimson', 'weapon-axe',    '["chassis.light","weapon.axe"]'::jsonb),
-    ('npc-bot-arc',      'paint-cobalt',  'weapon-sword',  '["chassis.light","weapon.sword"]'::jsonb),
-    ('npc-bot-cog',      'paint-crimson', 'weapon-axe',    '["chassis.light","weapon.axe"]'::jsonb),
-    ('npc-bot-sprocket', 'paint-cobalt',  'weapon-dagger', '["chassis.light","weapon.dagger"]'::jsonb),
-    ('npc-bot-ratchet',  'paint-crimson', 'weapon-sword',  '["chassis.light","weapon.sword"]'::jsonb),
-    ('npc-bot-forge',    'paint-cobalt',  'weapon-axe',    '["chassis.light","weapon.axe"]'::jsonb),
-    ('npc-bot-hammer',   'paint-crimson', 'weapon-axe',    '["chassis.light","weapon.axe"]'::jsonb),
-    ('npc-bot-current',  'paint-cobalt',  'weapon-dagger', '["chassis.light","weapon.dagger"]'::jsonb),
-    ('npc-bot-junk',     'paint-crimson', 'weapon-sword',  '["chassis.light","weapon.sword"]'::jsonb),
-    ('npc-bot-shard',    'paint-cobalt',  'weapon-dagger', '["chassis.light","weapon.dagger"]'::jsonb),
-    ('npc-bot-tangle',   'paint-crimson', 'weapon-axe',    '["chassis.light","weapon.axe"]'::jsonb),
-    ('npc-bot-surge',    'paint-cobalt',  'weapon-sword',  '["chassis.light","weapon.sword"]'::jsonb),
-    ('npc-bot-zap',      'paint-crimson', 'weapon-dagger', '["chassis.light","weapon.dagger"]'::jsonb),
-    ('npc-bot-patina',   'paint-cobalt',  'weapon-sword',  '["chassis.light","weapon.sword"]'::jsonb),
-    ('npc-bot-stroke',   'paint-crimson', 'weapon-axe',    '["chassis.light","weapon.axe"]'::jsonb),
-    ('npc-bot-cam',      'paint-cobalt',  'weapon-sword',  '["chassis.light","weapon.sword"]'::jsonb),
-    ('npc-bot-cinder',   'paint-crimson', 'weapon-axe',    '["chassis.light","weapon.axe"]'::jsonb),
-    ('npc-bot-flare',    'paint-cobalt',  'weapon-dagger', '["chassis.light","weapon.dagger"]'::jsonb)
-  ) as v(character_id, paint, weapon, sound_tags)
+    ('npc-bot-rivet',    'paint-crimson', 'weapon-sword',  'head-welder', 'body-chassis', 'arms-stock', 'legs-stock', '["chassis.light","weapon.sword"]'::jsonb),
+    ('npc-bot-brace',    'paint-cobalt',  'weapon-axe',    'head-can',    'body-boiler',  'arms-heavy', 'legs-piston', '["chassis.light","weapon.axe"]'::jsonb),
+    ('npc-bot-girder',   'paint-crimson', 'weapon-dagger', 'head-visor',  'body-slab',    'arms-stock', 'legs-stock', '["chassis.light","weapon.dagger"]'::jsonb),
+    ('npc-bot-keel',     'paint-cobalt',  'weapon-sword',  'head-welder', 'body-chassis', 'arms-heavy', 'legs-stock', '["chassis.light","weapon.sword"]'::jsonb),
+    ('npc-bot-barnacle', 'paint-crimson', 'weapon-dagger', 'head-can',    'body-chassis', 'arms-stock', 'legs-piston', '["chassis.light","weapon.dagger"]'::jsonb),
+    ('npc-bot-helix',    'paint-cobalt',  'weapon-dagger', 'head-visor',  'body-boiler',  'arms-stock', 'legs-stock', '["chassis.light","weapon.dagger"]'::jsonb),
+    ('npc-bot-spool',    'paint-crimson', 'weapon-axe',    'head-welder', 'body-slab',    'arms-heavy', 'legs-piston', '["chassis.light","weapon.axe"]'::jsonb),
+    ('npc-bot-arc',      'paint-cobalt',  'weapon-sword',  'head-visor',  'body-chassis', 'arms-stock', 'legs-stock', '["chassis.light","weapon.sword"]'::jsonb),
+    ('npc-bot-cog',      'paint-crimson', 'weapon-axe',    'head-can',    'body-chassis', 'arms-stock', 'legs-stock', '["chassis.light","weapon.axe"]'::jsonb),
+    ('npc-bot-sprocket', 'paint-cobalt',  'weapon-dagger', 'head-welder', 'body-boiler',  'arms-heavy', 'legs-stock', '["chassis.light","weapon.dagger"]'::jsonb),
+    ('npc-bot-ratchet',  'paint-crimson', 'weapon-sword',  'head-visor',  'body-chassis', 'arms-stock', 'legs-piston', '["chassis.light","weapon.sword"]'::jsonb),
+    ('npc-bot-forge',    'paint-cobalt',  'weapon-axe',    'head-can',    'body-slab',    'arms-heavy', 'legs-piston', '["chassis.light","weapon.axe"]'::jsonb),
+    ('npc-bot-hammer',   'paint-crimson', 'weapon-axe',    'head-welder', 'body-chassis', 'arms-stock', 'legs-stock', '["chassis.light","weapon.axe"]'::jsonb),
+    ('npc-bot-current',  'paint-cobalt',  'weapon-dagger', 'head-visor',  'body-boiler',  'arms-stock', 'legs-stock', '["chassis.light","weapon.dagger"]'::jsonb),
+    ('npc-bot-junk',     'paint-crimson', 'weapon-sword',  'head-can',    'body-chassis', 'arms-heavy', 'legs-stock', '["chassis.light","weapon.sword"]'::jsonb),
+    ('npc-bot-shard',    'paint-cobalt',  'weapon-dagger', 'head-welder', 'body-chassis', 'arms-stock', 'legs-piston', '["chassis.light","weapon.dagger"]'::jsonb),
+    ('npc-bot-tangle',   'paint-crimson', 'weapon-axe',    'head-visor',  'body-slab',    'arms-stock', 'legs-stock', '["chassis.light","weapon.axe"]'::jsonb),
+    ('npc-bot-surge',    'paint-cobalt',  'weapon-sword',  'head-can',    'body-boiler',  'arms-heavy', 'legs-piston', '["chassis.light","weapon.sword"]'::jsonb),
+    ('npc-bot-zap',      'paint-crimson', 'weapon-dagger', 'head-welder', 'body-chassis', 'arms-stock', 'legs-stock', '["chassis.light","weapon.dagger"]'::jsonb),
+    ('npc-bot-patina',   'paint-cobalt',  'weapon-sword',  'head-visor',  'body-chassis', 'arms-stock', 'legs-stock', '["chassis.light","weapon.sword"]'::jsonb),
+    ('npc-bot-stroke',   'paint-crimson', 'weapon-axe',    'head-can',    'body-chassis', 'arms-heavy', 'legs-stock', '["chassis.light","weapon.axe"]'::jsonb),
+    ('npc-bot-cam',      'paint-cobalt',  'weapon-sword',  'head-welder', 'body-boiler',  'arms-stock', 'legs-piston', '["chassis.light","weapon.sword"]'::jsonb),
+    ('npc-bot-cinder',   'paint-crimson', 'weapon-axe',    'head-visor',  'body-slab',    'arms-heavy', 'legs-piston', '["chassis.light","weapon.axe"]'::jsonb),
+    ('npc-bot-flare',    'paint-cobalt',  'weapon-dagger', 'head-can',    'body-chassis', 'arms-stock', 'legs-stock', '["chassis.light","weapon.dagger"]'::jsonb)
+  ) as v(character_id, paint, weapon, head, body, arms, legs, sound_tags)
  where exists (select 1 from public.characters c where c.character_id = v.character_id)
    and not exists (
      select 1 from public.bot_loadout_versions l where l.character_id = v.character_id
