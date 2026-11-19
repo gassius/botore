@@ -10,16 +10,7 @@
  * head / body / arms / legs are A4 shape slots (cosmetic; no combat effect).
  */
 export type PartSlotKind =
-  | 'chassis'
-  | 'paint'
-  | 'weapon'
-  | 'shield'
-  | 'drone'
-  | 'decal'
-  | 'head'
-  | 'body'
-  | 'arms'
-  | 'legs';
+  'chassis' | 'paint' | 'weapon' | 'shield' | 'drone' | 'decal' | 'head' | 'body' | 'arms' | 'legs';
 
 export const SHAPE_LOADOUT_SLOTS = ['head', 'body', 'arms', 'legs'] as const;
 export type ShapeLoadoutSlot = (typeof SHAPE_LOADOUT_SLOTS)[number];
