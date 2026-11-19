@@ -4544,6 +4544,7 @@ end $$;
 do $$
 declare
   v_account uuid := '00000000-0000-4000-8000-0000000000ec';
+  v_character_id text;
   v_res jsonb;
   v_grants int;
   v_qty int;
@@ -4565,6 +4566,8 @@ begin
   set local role authenticated;
   v_res := public.get_owned_character();
   perform tests.assert((v_res->>'ok')::boolean, 'B1 hydrate provisions first bot');
+  v_character_id := v_res->>'characterId';
+  perform tests.assert(v_character_id is not null and v_character_id <> '', 'B1 first characterId');
   v_res := public.create_owned_character('Shape Twin', 'paint-cobalt', 'weapon-axe');
   perform tests.assert((v_res->>'ok')::boolean, 'B1 second bot created');
   perform tests.assert((v_res->>'ownedCount')::integer = 2, 'B1 ownedCount is 2');
@@ -4696,20 +4699,14 @@ begin
   perform tests.assert(v_dupes = 0, format('B1 no duplicate shape grants in DB (got %s)', v_dupes));
 
   -- M1: list_owned_characters returns shape slots after Equip.
-  perform set_config('request.jwt.claim.role', 'authenticated', true);
-  perform set_config('request.jwt.claim.sub', v_account::text, true);
-  set local role authenticated;
-  -- Re-grant head-can for Equip (revoked above).
-  reset role;
+  -- Re-grant head-can (revoked above) as postgres — authenticated cannot SELECT characters.
   insert into public.inventory_ledger (account_id, part_id, delta, reason)
   values (v_account, 'head-can', 1, 'admin');
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   perform set_config('request.jwt.claim.sub', v_account::text, true);
   set local role authenticated;
   perform public.save_bot_loadout(
-    (select character_id from public.characters
-      where account_id = v_account and is_opponent = false
-      order by created_at asc limit 1),
+    v_character_id,
     jsonb_build_object(
       'chassis', 'chassis-basic',
       'paint', 'paint-crimson',
