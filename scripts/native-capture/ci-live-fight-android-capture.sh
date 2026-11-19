@@ -644,10 +644,167 @@ if [[ "${CAPTURE_CLIPS:-false}" == "true" || "${CAPTURE_CLIPS:-0}" == "1" ]]; th
   fi
 fi
 
+# 3b) Fight nav + rewatch controls — real taps on the live first-watch Result.
+# Ranking → Back (hardware and header) must land on the Result overlay, not
+# Ludus; Watch again shows replay controls under the hit-message plate.
+# Landing is asserted from BOTORE_CAPTURE_NAV markers. uiautomator flakes only
+# warn; a Back that lands on Ludus fails the job.
+UI_XML=/tmp/botore-ui.xml
+NAV_RESULT='BOTORE_CAPTURE_NAV:route=Replay overlay=1'
+NAV_LUDUS='BOTORE_CAPTURE_NAV:route=Stable overlay=0'
+
+android_ui_dump() {
+  local _
+  for _ in 1 2 3 4 5; do
+    if adb shell uiautomator dump /sdcard/botore-ui.xml >/dev/null 2>&1 &&
+      adb exec-out cat /sdcard/botore-ui.xml >"${UI_XML}" 2>/dev/null &&
+      grep -q '<hierarchy' "${UI_XML}"; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+android_find() {
+  node "${SCRIPT_DIR}/android-ui-find.mjs" --xml "${UI_XML}" --label "$1" ${2:-}
+}
+
+android_tap_label() {
+  local xy
+  if ! android_ui_dump; then
+    echo "warn: uiautomator dump failed (tap '$1')" >&2
+    return 1
+  fi
+  if ! xy="$(android_find "$1")"; then
+    echo "warn: no UI node '$1'" >&2
+    return 1
+  fi
+  # shellcheck disable=SC2086
+  adb shell input tap ${xy}
+}
+
+wait_ui_label() {
+  local deadline=$((SECONDS + ${2:-30}))
+  while ((SECONDS < deadline)); do
+    if android_ui_dump && android_find "$1" >/dev/null; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+marker_count() {
+  logcat_dump | grep -aFc "$1" || true
+}
+
+wait_marker_after() {
+  local marker="$1" baseline="$2" deadline=$((SECONDS + ${3:-20}))
+  while ((SECONDS < deadline)); do
+    if (($(marker_count "${marker}") > baseline)); then
+      return 0
+    fi
+    sleep 0.5
+  done
+  return 1
+}
+
+# Ranking from the Result, then leave via $1 (hardware|header). Stills: $2.
+ranking_round_trip() {
+  local via="$1" label="$2" result_before ludus_before
+  result_before="$(marker_count "${NAV_RESULT}")"
+  ludus_before="$(marker_count "${NAV_LUDUS}")"
+  if ! android_tap_label "Ranking"; then
+    write_manifest_line "${MANIFEST}" "fight_nav_ranking_back_${via}" "skipped-ui"
+    return 0
+  fi
+  sleep 4
+  capture_current "ranking-from-result-${via}" || true
+  if [[ "${via}" == "hardware" ]]; then
+    adb shell input keyevent KEYCODE_BACK || true
+  elif ! android_tap_label "Back"; then
+    write_manifest_line "${MANIFEST}" "fight_nav_ranking_back_${via}" "skipped-ui"
+    return 0
+  fi
+  if wait_marker_after "${NAV_RESULT}" "${result_before}" 10; then
+    sleep 2
+    capture_current "${label}" || true
+    write_manifest_line "${MANIFEST}" "fight_nav_ranking_back_${via}" "result-overlay"
+    echo "ok: Ranking ${via} Back → Result overlay" >&2
+  elif (($(marker_count "${NAV_LUDUS}") > ludus_before)); then
+    capture_current "${label}" || true
+    write_manifest_line "${MANIFEST}" "fight_nav_ranking_back_${via}" "ludus-REGRESSION"
+    echo "error: Ranking ${via} Back landed on Ludus, not the fight Result" >&2
+    missing=1
+  else
+    write_manifest_line "${MANIFEST}" "fight_nav_ranking_back_${via}" "unknown"
+    echo "warn: no nav marker after Ranking ${via} Back" >&2
+  fi
+}
+
+# Fight proof is already in the manifest; a fresh, larger buffer keeps the
+# marker counts below from shrinking when the ring buffer rotates.
+adb logcat -G 8M >/dev/null 2>&1 || true
+adb logcat -c >/dev/null 2>&1 || true
+echo "fight nav: waiting for first-watch Result overlay…" >&2
+if wait_ui_label "Watch again" 60; then
+  sleep 2
+  capture_current fight-end-result || true
+  ranking_round_trip hardware result-after-ranking-hardware-back
+  ranking_round_trip header result-after-ranking-header-back
+
+  echo "rewatch controls: Watch again → first hit hold…" >&2
+  hit_holds="$(marker_count 'BOTORE_CAPTURE_FX_HOLD:family=hit')"
+  hit_resumes="$(marker_count 'BOTORE_CAPTURE_FX_RESUME:family=hit')"
+  if android_tap_label "Watch again" &&
+    wait_marker_after 'BOTORE_CAPTURE_FX_HOLD:family=hit' "${hit_holds}" 30; then
+    sleep 0.35
+    capture_current rewatch-controls-hit || true
+    # Playback is frozen on the hit, so the dump is idle; controls do not move.
+    play_xy=""
+    speed_xy=""
+    scrub_box=""
+    if android_ui_dump; then
+      play_xy="$(android_find "Play" || android_find "Pause" || true)"
+      speed_xy="$(android_find "Fast forward" || true)"
+      scrub_box="$(android_find "Fight progress" --bounds || true)"
+    fi
+    wait_marker_after 'BOTORE_CAPTURE_FX_RESUME:family=hit' "${hit_resumes}" 12 || true
+    sleep 1
+    capture_current rewatch-controls-playing || true
+    if [[ -n "${speed_xy}" ]]; then
+      # shellcheck disable=SC2086
+      adb shell input tap ${speed_xy} || true
+      sleep 1
+      capture_current rewatch-controls-fast || true
+    fi
+    if [[ -n "${play_xy}" ]]; then
+      # shellcheck disable=SC2086
+      adb shell input tap ${play_xy} || true
+      sleep 1
+      capture_current rewatch-controls-paused || true
+    fi
+    if [[ -n "${scrub_box}" ]]; then
+      read -r sx1 sy1 sx2 sy2 <<<"${scrub_box}"
+      sy=$(((sy1 + sy2) / 2))
+      adb shell input swipe $((sx1 + (sx2 - sx1) * 8 / 10)) "${sy}" \
+        $((sx1 + (sx2 - sx1) * 3 / 10)) "${sy}" 400 || true
+      sleep 1.5
+      capture_current rewatch-controls-scrubbed || true
+    fi
+    write_manifest_line "${MANIFEST}" "rewatch_controls" "play=${play_xy:-none} speed=${speed_xy:-none} scrub=${scrub_box:-none}"
+  else
+    echo "warn: rewatch controls stills skipped (Watch again tap / hit hold)" >&2
+  fi
+else
+  echo "warn: first-watch Result overlay not found — fight nav stills skipped" >&2
+fi
+
 # 4) Result — backend XP / allowances (after server confirm so UI can show XP)
 capture_named FightResult result 5
 
-# 4a) D1 rewatch Fight View — back + single REPLAY (non-gating; design re-check)
+# 4a) D1 rewatch Fight View — back + replay controls (non-gating; design re-check)
 CAPTURE_SETTLE_SEC=4 \
   "${SCRIPT_DIR}/android-screencap.sh" \
   --out "${OUT_DIR}" \
