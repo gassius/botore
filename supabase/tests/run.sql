@@ -3880,10 +3880,13 @@ begin
   v_res := public.create_owned_character('', 'paint-crimson', 'weapon-sword');
   perform tests.assert(v_res->>'ok' = 'false', 'empty name rejected');
 
+  -- Avoid probing characters as authenticated (no table SELECT).
   v_name := 'Tin Scout';
+  v_res := public.list_owned_characters();
   if exists (
-    select 1 from public.characters c
-     where c.account_id = v_account and lower(c.display_name) = lower(v_name)
+    select 1
+      from jsonb_array_elements(coalesce(v_res->'bots', '[]'::jsonb)) b
+     where lower(b->>'displayName') = lower(v_name)
   ) then
     v_name := 'Ash Hawk';
   end if;
