@@ -175,14 +175,6 @@ export function OpponentsScreen(props: {
           />
         ) : null}
 
-        {noAllowance && !recoverable ? (
-          <StatusErrorBanner
-            title="No fights remaining"
-            detail="Come back when the refill clock hits zero. Quota is server-owned."
-            testID="opponents-no-allowance"
-          />
-        ) : null}
-
         {noAllowance && recoverable ? (
           <StatusErrorBanner
             title="Recover previous fight"

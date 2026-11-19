@@ -327,6 +327,22 @@ capture_named Customise customise-shape-equipped 6 "" "" shape-equipped
 # Ludus card after Equip — must show heaviest shapes (not stock silhouette).
 capture_named Stable garage-shapes-equipped 5 "" "" "" bot
 
+# Ludus freshness: before Customise → Equip still → hardware Back → Ludus
+# (must prove Back-after-Equip, not a fresh Stable deep-link — PRR M3).
+capture_named Stable ludus-before-customise 4 "" "" "" bot
+capture_named Customise customise-weapon-equipped-fresh 6 "" "" equipped
+adb logcat -c >/dev/null 2>&1 || true
+NAV_LUDUS_FRESH='BOTORE_CAPTURE_NAV:route=Stable overlay=0'
+adb shell input keyevent 4 >/dev/null
+if ! wait_logcat_marker "${NAV_LUDUS_FRESH}" 20; then
+  echo "error: Customise hardware Back did not land on Ludus after Equip still" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_NAV' >&2 || true
+  exit 1
+fi
+sleep 1
+capture_current ludus-after-equip-back
+echo "ok: ludus-after-equip-back (Customise Back → Ludus after Equip)" >&2
+
 # 1a″) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
 # Need ≥3 whole 175pt cards (185 snap, 150pt robots). Seed has Sir/Dex/Tank.
 # Capture before C10 offline/auth stills so the pack has a real snapped list.
@@ -374,6 +390,52 @@ fi
 sleep 2
 capture_current opponents-quota-remaining
 echo "ok: opponents-quota-remaining gated on ${QUOTA_MARKER}" >&2
+
+# 1c‴) D8 Opponents — fightQuota=exhausted → 0/3 + countdown (no redundant warning box)
+adb logcat -c >/dev/null 2>&1 || true
+QUOTA_EXHAUSTED_URL="$(capture_url_for_route Opponents "" "" "" "" "" "" "" "" "" "" "" exhausted)"
+echo "opening ${QUOTA_EXHAUSTED_URL}" >&2
+adb shell am start -a android.intent.action.VIEW -d "${QUOTA_EXHAUSTED_URL}" >/dev/null
+QUOTA_EXHAUSTED_MARKER='BOTORE_CAPTURE_QUOTA:remaining=0 limit=3'
+if ! wait_logcat_marker "${QUOTA_EXHAUSTED_MARKER}" 45; then
+  echo "error: missing ${QUOTA_EXHAUSTED_MARKER} after fightQuota=exhausted" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_QUOTA|BOTORE_CAPTURE_ROUTE' >&2 || true
+  exit 1
+fi
+sleep 2
+capture_current opponents-quota-exhausted
+echo "ok: opponents-quota-exhausted gated on ${QUOTA_EXHAUSTED_MARKER}" >&2
+
+# 1c⁗) Opponents → hardware Back → Ludus (must not land on Customise).
+# Open Opponents first, then clear logcat so the Stable marker can only come
+# from Back (PRR M3 — not a stale deep-link boot line).
+CAPTURE_SETTLE_SEC=4 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Opponents \
+  --name opponents-before-back >/dev/null
+opponents_before_back=( "${OUT_DIR}"/android-*-opponents-before-back.png )
+if [[ ! -e "${opponents_before_back[0]:-}" ]]; then
+  echo "error: missing PNG for opponents-before-back" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "still.android.opponents-before-back" "${opponents_before_back[0]}"
+NAV_LUDUS_MARKER='BOTORE_CAPTURE_NAV:route=Stable overlay=0'
+NAV_CUSTOMISE_MARKER='BOTORE_CAPTURE_NAV:route=Customise overlay=0'
+adb logcat -c >/dev/null 2>&1 || true
+adb shell input keyevent 4 >/dev/null
+if ! wait_logcat_marker "${NAV_LUDUS_MARKER}" 20; then
+  echo "error: Opponents hardware Back did not land on Ludus (Stable)" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_NAV' >&2 || true
+  exit 1
+fi
+if adb logcat -d 2>/dev/null | tr -d '\r' | grep -aFq "${NAV_CUSTOMISE_MARKER}"; then
+  echo "error: Opponents hardware Back landed on Customise (must be Ludus)" >&2
+  exit 1
+fi
+sleep 1
+capture_current opponents-back-to-ludus
+echo "ok: opponents-back-to-ludus (hardware Back → Ludus; logcat cleared pre-Back)" >&2
 
 # 1c′) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
 # Need ≥3 whole 175pt cards (185 snap, 150pt robots). Capture before C10
@@ -908,8 +970,14 @@ required_labels=(
   customise-shape-heaviest
   customise-shape-equipped
   garage-shapes-equipped
+  ludus-before-customise
+  customise-weapon-equipped-fresh
+  ludus-after-equip-back
   opponents-snap-rest
   opponents-quota-remaining
+  opponents-quota-exhausted
+  opponents-before-back
+  opponents-back-to-ludus
   ranking-bots
   ranking-botores
   ranking-empty

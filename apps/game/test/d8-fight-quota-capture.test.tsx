@@ -234,4 +234,54 @@ describe('D8 fightQuota design-capture (PRR B1)', () => {
     expect(findByTestId(tree, 'opponents-fights-remaining-full').length).toBe(1);
     expect(findByTestId(tree, 'opponents-fights-remaining-countdown').length).toBe(0);
   });
+
+  it('fightQuota=exhausted shows 0/3 header + list without the redundant warning box', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const backend = new DevFightBackendState(3, 3);
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const candidates = new DevOpponentCandidatesAdapter(backend);
+    const fights = new DevFightRequestAdapter(backend);
+    const loadouts = new DevLoadoutSaveAdapter();
+
+    let tree!: ReactTestRenderer;
+    await act(async () => {
+      tree = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <FightSessionProvider candidates={candidates} fights={fights}>
+              <OpponentsScreen onBack={() => undefined} onContinue={() => undefined} />
+            </FightSessionProvider>
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    for (let i = 0; i < 40; i += 1) {
+      await flush();
+      if (findByTestId(tree, 'opponents-fights-remaining-full').length > 0) break;
+    }
+
+    await act(async () => {
+      setFightQuotaCaptureScenario('exhausted');
+    });
+    await flush();
+
+    expect(findByTestId(tree, 'opponents-fights-remaining-countdown').length).toBe(1);
+    const panel = findByTestId(tree, 'opponents-fights-remaining')[0];
+    expect(String(panel?.props.accessibilityLabel ?? '')).toMatch(
+      /Fights remaining 0 of 3, next fight in/i,
+    );
+    expect(findByTestId(tree, 'opponents-no-allowance').length).toBe(0);
+    expect(findByTestId(tree, 'opponents-range').length).toBe(1);
+    expect(findByTestId(tree, 'opponents-continue')[0]?.props.accessibilityState?.disabled).toBe(
+      true,
+    );
+    expect(logSpy).toHaveBeenCalledWith(formatDesignCaptureQuotaLog(0, 3));
+  });
 });

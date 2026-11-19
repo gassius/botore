@@ -83,17 +83,11 @@ function confirmedStub(
 
 describe('D2 route flow — Result is not a linear step', () => {
   it('ROUTE_FLOW goes Replay → Ranking (FightResult capture-only)', () => {
-    expect(ROUTE_FLOW).toEqual([
-      'Stable',
-      'Customise',
-      'Opponents',
-      'ConfirmFight',
-      'Replay',
-      'Ranking',
-    ]);
+    expect(ROUTE_FLOW).toEqual(['Stable', 'Opponents', 'ConfirmFight', 'Replay', 'Ranking']);
     expect(nextRoute('Replay')).toBe('Ranking');
     expect(prevRoute('Ranking')).toBe('Replay');
     expect(ROUTE_FLOW).not.toContain('FightResult');
+    expect(ROUTE_FLOW).not.toContain('Customise');
   });
 });
 

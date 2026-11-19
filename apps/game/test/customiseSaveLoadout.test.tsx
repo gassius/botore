@@ -150,6 +150,7 @@ type SessionProbe = {
     arms: string | null | undefined;
     legs: string | null | undefined;
   } | null;
+  ownedActivePaintWeapon: () => { paint: string | null; weapon: string | null } | null;
   displayName: () => string | null;
   lastError: () => string | null;
   dirty: () => boolean;
@@ -178,6 +179,11 @@ function GarageProbe(props: { apiRef: { current: SessionProbe | null } }): null 
         arms: active.arms,
         legs: active.legs,
       };
+    },
+    ownedActivePaintWeapon: () => {
+      const active = garage.ownedBots.find((b) => b.isActive) ?? garage.ownedBots[0];
+      if (!active) return null;
+      return { paint: active.paint, weapon: active.weapon };
     },
     displayName: () => garage.loadout.displayName,
     lastError: () => garage.loadout.lastError,
@@ -348,6 +354,70 @@ describe('E1 Customise Save Loadout (390×844)', () => {
     expect(source).toContain('Equip');
     expect(source).not.toMatch(/Save loadout/i);
     expect(source).not.toContain('confirmedVersionId');
+  });
+
+  it('after Equip weapon, ownedBots / Ludus chips update immediately (no bot switch)', async () => {
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const loadouts = new DevLoadoutSaveAdapter();
+    const apiRef: { current: SessionProbe | null } = { current: null };
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <GarageProbe apiRef={apiRef} />
+            <CustomiseScreen onBack={() => undefined} />
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    const api = () => {
+      if (!apiRef.current) throw new Error('probe missing');
+      return apiRef.current;
+    };
+
+    for (let i = 0; i < 40 && (api().booting() || !api().canProgress()); i += 1) {
+      await flush();
+    }
+    expect(api().canProgress()).toBe(true);
+
+    await act(async () => {
+      api().selectWeapon('weapon-spear');
+    });
+    await flush();
+    expect(api().dirty()).toBe(true);
+
+    const saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+
+    expect(api().confirmedWeapon()).toBe('weapon-spear');
+    expect(api().ownedActivePaintWeapon()).toEqual(
+      expect.objectContaining({ weapon: 'weapon-spear' }),
+    );
+
+    const listed = await loadouts.listOwnedBots('dev-token');
+    expect(listed.ok).toBe(true);
+    if (!listed.ok) return;
+    const active = listed.bots.find((b) => b.isActive) ?? listed.bots[0]!;
+    let ludus!: ReactTestRenderer;
+    await act(async () => {
+      ludus = TestRenderer.create(<LudusBotCard bot={active} />);
+    });
+    const assembler = ludus.root.findByProps({ testID: 'ludus-bot-assembler' });
+    expect(assembler.props.weaponId).toBe('weapon-spear');
   });
 
   it('after Equip, ownedBots / Ludus card carry equipped shapes (not stock)', async () => {

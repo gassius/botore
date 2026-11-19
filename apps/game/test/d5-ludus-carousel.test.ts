@@ -82,6 +82,27 @@ describe('D5 Ludus carousel metrics + create slot', () => {
     expect(selectBlock).not.toContain('setBooting(true)');
   });
 
+  it('refreshOwnedBots is newest-wins vs selectEpoch (PRR M1)', () => {
+    const src = readSource('src/garage/LoadoutSessionContext.tsx');
+    const refreshBlock = src.slice(
+      src.indexOf('const refreshOwnedBots = useCallback'),
+      src.indexOf('const hydrate = useCallback'),
+    );
+    expect(refreshBlock).toContain('selectEpochRef.current');
+    expect(refreshBlock).toMatch(/epoch !== selectEpochRef\.current/);
+  });
+
+  it('StableScreen has no mount refreshOwnedBots (PRR M2)', () => {
+    const src = readSource('src/garage/screens/StableScreen.tsx');
+    expect(src).not.toMatch(/useEffect\(\(\)\s*=>\s*\{\s*void refreshOwnedBots\(\)/);
+  });
+
+  it('carousel onSnap only when focus changes (PRR M2)', () => {
+    const src = readSource('src/garage/ludus/LudusBotCarousel.tsx');
+    expect(src).toContain('focusChanged');
+    expect(src).toMatch(/if \(focusChanged && item\) onSnapRef\.current/);
+  });
+
   it('chevrons do not double-fire handleSnap (source)', () => {
     const src = readSource('src/garage/ludus/LudusBotCarousel.tsx');
     expect(src).toContain('scrollToIndex(index - 1, true)');

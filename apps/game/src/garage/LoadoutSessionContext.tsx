@@ -30,6 +30,10 @@ import {
   type LoadoutPreviewState,
 } from './loadout/loadoutState';
 import { loadoutSavePlayerMessage } from './loadout/loadoutSaveErrors';
+import {
+  applyDisplayNameToOwnedBots,
+  applyLoadoutToOwnedBots,
+} from './loadout/applyLoadoutToOwnedBots';
 import type { OwnedBotSummary } from './loadout/loadoutTypes';
 import { withUpdatedPaint, withUpdatedShape, withUpdatedWeapon } from './loadout/proofCatalogue';
 import type { ShapeSlot } from '../assembler/shapes';
@@ -125,13 +129,18 @@ export function GarageSessionProvider(props: {
   loadoutRef.current = loadout;
 
   const refreshOwnedBots = useCallback(async () => {
+    // Newest-wins vs in-place Ludus select: a late list_owned_characters must
+    // not overwrite hydrate's active bot / flip the carousel (PRR M1).
+    const epoch = selectEpochRef.current;
     const current = await auth.getSession();
+    if (epoch !== selectEpochRef.current) return;
     if (!current) {
       setOwnedBots([]);
       setBotCap(DEFAULT_PLAYER_BOT_CAP);
       return;
     }
     const listed = await loadouts.listOwnedBots(current.accessToken);
+    if (epoch !== selectEpochRef.current) return;
     if (!listed.ok) {
       return;
     }
@@ -538,7 +547,11 @@ export function GarageSessionProvider(props: {
           }),
         );
         // Ludus reads ownedBots (list_owned_characters), not confirmedLoadout.
-        // Refresh so the home card shows paint/weapon/shapes right after Equip.
+        // Patch immediately so Back → Ludus shows the new sprite/chips without
+        // waiting on the list RPC (or a bot switch that re-hydrates).
+        setOwnedBots((prev) =>
+          applyLoadoutToOwnedBots(prev, characterId, result.loadout, result.atlasVersion),
+        );
         await refreshOwnedBots();
         return true;
       },
@@ -587,6 +600,7 @@ export function GarageSessionProvider(props: {
           lastError: null,
           lastErrorCode: null,
         }));
+        setOwnedBots((prev) => applyDisplayNameToOwnedBots(prev, result.characterId, next));
         await refreshOwnedBots();
         return true;
       },

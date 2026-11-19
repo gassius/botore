@@ -22,20 +22,16 @@ describe('first-run routes', () => {
       'Settings',
     ]);
     expect(isFirstRunRoute('CreateBot')).toBe(true);
-    expect(ROUTE_FLOW).toEqual([
-      'Stable',
-      'Customise',
-      'Opponents',
-      'ConfirmFight',
-      'Replay',
-      'Ranking',
-    ]);
+    expect(ROUTE_FLOW).toEqual(['Stable', 'Opponents', 'ConfirmFight', 'Replay', 'Ranking']);
+    // Customise is Ludus side-entry — not under Opponents.
+    expect(ROUTE_FLOW).not.toContain('Customise');
   });
 
   it('walks next/prev without inventing extra screens', () => {
-    expect(nextRoute('Stable')).toBe('Customise');
+    expect(nextRoute('Stable')).toBe('Opponents');
     expect(nextRoute('Ranking')).toBeNull();
     expect(prevRoute('Stable')).toBeNull();
+    expect(prevRoute('Opponents')).toBe('Stable');
     expect(prevRoute('Ranking')).toBe('Replay');
     expect(nextRoute('Replay')).toBe('Ranking');
     expect(isFirstRunRoute('Stable')).toBe(true);
