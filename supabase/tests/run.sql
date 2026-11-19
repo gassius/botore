@@ -4755,9 +4755,9 @@ declare
   v_atk_loadout uuid;
   v_def_loadout uuid;
   v_battle uuid;
-  v_seed text := 'bt272seedbt272seedbt272seedbt272se';
-  v_checksum text := 'bt272checksumbt272checksumbt272che';
-  v_input_hash text := 'bt272inputbt272inputbt272inputbt27';
+  v_seed text := repeat('27', 16);
+  v_checksum text := repeat('a1', 32);
+  v_input_hash text := repeat('b2', 32);
   v_replay jsonb;
   v_attacker jsonb;
   v_defender jsonb;
@@ -4892,7 +4892,10 @@ begin
     v_account, v_key, 'opp-sir-bot', v_battle, v_seed, 'combat-v1',
     v_replay, v_attacker, v_defender, v_day
   );
-  perform tests.assert((v_res->>'ok')::boolean, 'BT-272 persist ok');
+  perform tests.assert(
+    (v_res->>'ok')::boolean,
+    format('BT-272 persist ok (got %s)', coalesce(v_res->>'code', v_res::text))
+  );
 
   select count(*) into v_ledger2
     from public.progression_ledger
