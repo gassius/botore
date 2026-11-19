@@ -162,7 +162,7 @@ describe('PRR M1 — CanonicalReplayPlayer onFinished after victory_screen dwell
     // Node has no rAF — polyfill via setTimeout, then fake those timers + performance.
     vi.stubGlobal(
       'requestAnimationFrame',
-      (cb: FrameRequestCallback): number =>
+      (cb: (time: number) => void): number =>
         setTimeout(() => cb(performance.now()), 16) as unknown as number,
     );
     vi.stubGlobal('cancelAnimationFrame', (id: number) => {
