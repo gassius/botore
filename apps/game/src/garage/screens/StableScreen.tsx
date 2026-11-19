@@ -130,6 +130,12 @@ export function StableScreen(props: {
     void refreshOwnedBots();
   }, [refreshOwnedBots, uiAudio]);
 
+  // Ludus focus: refresh owned list silently so Equip/save from Customise is
+  // visible on Back without switching bots. Does not clear carousel first.
+  useEffect(() => {
+    void refreshOwnedBots();
+  }, [refreshOwnedBots]);
+
   if (showDeleteAccount) {
     return (
       <DeleteAccountScreen

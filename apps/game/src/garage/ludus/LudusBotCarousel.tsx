@@ -41,13 +41,31 @@ export function LudusBotCarousel({
   );
   const onSnapRef = useRef(onSnap);
   onSnapRef.current = onSnap;
+  /** Preserve the same bot when ownedBots refreshes after Equip (no carousel jump). */
+  const focusedKeyRef = useRef<string | null>(null);
+  const prevInitialRef = useRef(initialIndex);
 
   useEffect(() => {
     const max = Math.max(0, items.length - 1);
-    const next = Math.min(Math.max(0, initialIndex), max);
+    const initialChanged = prevInitialRef.current !== initialIndex;
+    prevInitialRef.current = initialIndex;
+
+    let next = Math.min(Math.max(0, initialIndex), max);
+    if (!initialChanged && focusedKeyRef.current) {
+      const byKey = items.findIndex((it) =>
+        it.kind === 'bot'
+          ? it.bot.characterId === focusedKeyRef.current
+          : focusedKeyRef.current === 'create',
+      );
+      if (byKey >= 0) next = byKey;
+    }
+
+    const item = items[next];
+    if (item) {
+      focusedKeyRef.current = item.kind === 'bot' ? item.bot.characterId : 'create';
+    }
     setIndex(next);
     carouselRef.current?.scrollToIndex(next, false);
-    const item = items[next];
     if (item) onSnapRef.current?.(next, item);
   }, [initialIndex, items]);
 
@@ -56,6 +74,7 @@ export function LudusBotCarousel({
       setIndex(next);
       const item = items[next];
       if (!item) return;
+      focusedKeyRef.current = item.kind === 'bot' ? item.bot.characterId : 'create';
       onSnap?.(next, item);
       if (item.kind === 'bot' && !item.bot.isActive) {
         onSelectBot(item.bot.characterId);

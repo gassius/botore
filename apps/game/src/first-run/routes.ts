@@ -33,13 +33,14 @@ export const ROUTE_TITLES: Record<FirstRunRoute, string> = {
 };
 
 /**
- * Linear fight-loop navigation — Settings is side-entry only.
+ * Linear fight-loop navigation — Customise / CreateBot / Settings are
+ * Ludus side-entry only (not under Opponents). Find opponent is Stable →
+ * Opponents; Back from Opponents returns Ludus, not Customise.
  * D2: Result is an in-arena overlay on Replay (not a ROUTE_FLOW step).
  * `FightResult` remains in FIRST_RUN_ROUTES for capture deep links only.
  */
 export const ROUTE_FLOW: FirstRunRoute[] = [
   'Stable',
-  'Customise',
   'Opponents',
   'ConfirmFight',
   'Replay',

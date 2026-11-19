@@ -16,8 +16,14 @@ export function resolveFirstRunGoBackTarget(
   fightViewMode: FightViewMode,
   prev: FirstRunRoute | null,
 ): FirstRunRoute | null {
-  // Settings is side-entry — Back always returns to Stable chrome.
-  if (route === 'Settings') return 'Stable';
+  // Ludus side-entry surfaces — Back always returns to Stable (Ludus).
+  // Customise / CreateBot / Settings are never under Opponents.
+  if (route === 'Settings' || route === 'Customise' || route === 'CreateBot') {
+    return 'Stable';
+  }
+  // Find opponent is opened from Ludus — never walk back into Customise
+  // even if a stale linear prev still names it.
+  if (route === 'Opponents') return 'Stable';
   // First watch: hardware / chrome back must not leave the fight.
   if (route === 'Replay' && fightViewMode === 'firstWatch') return null;
   // Rewatch back stays on Replay; caller shows the Result overlay in-place.

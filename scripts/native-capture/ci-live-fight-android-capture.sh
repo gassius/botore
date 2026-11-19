@@ -327,6 +327,23 @@ capture_named Customise customise-shape-equipped 6 "" "" shape-equipped
 # Ludus card after Equip — must show heaviest shapes (not stock silhouette).
 capture_named Stable garage-shapes-equipped 5 "" "" "" bot
 
+# Ludus freshness: before Customise, after Equip on Customise, Ludus immediately on Back.
+capture_named Stable ludus-before-customise 4 "" "" "" bot
+capture_named Customise customise-weapon-equipped-fresh 6 "" "" equipped
+CAPTURE_SETTLE_SEC=3 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Stable \
+  --name ludus-after-equip-back \
+  --home bot >/dev/null
+ludus_after_matches=( "${OUT_DIR}"/android-*-ludus-after-equip-back.png )
+if [[ ! -e "${ludus_after_matches[0]:-}" ]]; then
+  echo "error: missing PNG for ludus-after-equip-back" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "still.android.ludus-after-equip-back" "${ludus_after_matches[0]}"
+echo "ok: ${ludus_after_matches[0]}" >&2
+
 # 1a″) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
 # Need ≥3 whole 175pt cards (185 snap, 150pt robots). Seed has Sir/Dex/Tank.
 # Capture before C10 offline/auth stills so the pack has a real snapped list.
@@ -389,6 +406,32 @@ fi
 sleep 2
 capture_current opponents-quota-exhausted
 echo "ok: opponents-quota-exhausted gated on ${QUOTA_EXHAUSTED_MARKER}" >&2
+
+# 1c⁗) Opponents → hardware Back → Ludus (must not land on Customise).
+adb logcat -c >/dev/null 2>&1 || true
+CAPTURE_SETTLE_SEC=4 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Opponents \
+  --name opponents-before-back >/dev/null
+opponents_before_back=( "${OUT_DIR}"/android-*-opponents-before-back.png )
+if [[ ! -e "${opponents_before_back[0]:-}" ]]; then
+  echo "error: missing PNG for opponents-before-back" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "still.android.opponents-before-back" "${opponents_before_back[0]}"
+NAV_LUDUS_MARKER='BOTORE_CAPTURE_NAV:route=Stable overlay=0'
+ludus_before_back="$(adb logcat -d 2>/dev/null | tr -d '\r' | grep -aFc "${NAV_LUDUS_MARKER}" || true)"
+adb shell input keyevent 4 >/dev/null
+if ! wait_logcat_marker "${NAV_LUDUS_MARKER}" 20; then
+  echo "error: Opponents hardware Back did not land on Ludus (Stable)" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_NAV' >&2 || true
+  exit 1
+fi
+# Prefer a new Stable nav after Back (baseline may already include prior Stable stills).
+sleep 1
+capture_current opponents-back-to-ludus
+echo "ok: opponents-back-to-ludus (hardware Back → Ludus; baseline=${ludus_before_back})" >&2
 
 # 1c′) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
 # Need ≥3 whole 175pt cards (185 snap, 150pt robots). Capture before C10
@@ -923,9 +966,14 @@ required_labels=(
   customise-shape-heaviest
   customise-shape-equipped
   garage-shapes-equipped
+  ludus-before-customise
+  customise-weapon-equipped-fresh
+  ludus-after-equip-back
   opponents-snap-rest
   opponents-quota-remaining
   opponents-quota-exhausted
+  opponents-before-back
+  opponents-back-to-ludus
   ranking-bots
   ranking-botores
   ranking-empty
