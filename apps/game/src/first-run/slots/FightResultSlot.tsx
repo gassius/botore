@@ -10,6 +10,7 @@ import {
 } from '../../garage-tag';
 import { isDesignCaptureEnabled } from '../../design-capture';
 import { useFightSession } from '../../fight';
+import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import { CanonicalReplayPlayer } from '../../replay/CanonicalReplayPlayer';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
 import {
@@ -42,6 +43,7 @@ export function FightResultSlot(): React.ReactElement {
     resultCaptureScenario,
   } = useFirstRun();
   const { lastFight } = useFightSession();
+  const { refreshOwnedBots } = useGarageSession();
   const insets = useSafeAreaInsets();
 
   const resolution = useMemo(() => {
@@ -119,7 +121,10 @@ export function FightResultSlot(): React.ReactElement {
         />
       </View>
       <ResultOverlayBand
-        onBackToStable={() => goTo('Stable')}
+        onBackToStable={() => {
+          void refreshOwnedBots();
+          goTo('Stable');
+        }}
         onWatchAgain={() => {
           setFightViewMode('rewatch');
           setShowResultOverlay(false);

@@ -166,6 +166,10 @@ describe('ticket B client-read RPC adapters', () => {
                     chassis: 'chassis-basic',
                     paint: 'paint-crimson',
                     weapon: 'weapon-sword',
+                    head: 'head-welder',
+                    body: 'body-boiler',
+                    arms: 'arms-heavy',
+                    legs: 'legs-piston',
                     atlasVersion: 'v1',
                   },
                   isCurrentBot: false,
@@ -210,6 +214,8 @@ describe('ticket B client-read RPC adapters', () => {
     expect(rows[0]?.wins).toBe(3);
     expect(rows[0]?.botoreName).toBe('Steel Yard');
     expect(rows[0]?.portrait?.paint).toBe('paint-crimson');
+    expect(rows[0]?.portrait?.head).toBe('head-welder');
+    expect(rows[0]?.portrait?.body).toBe('body-boiler');
     expect(fetches).toEqual([`http://127.0.0.1:54321/rest/v1/rpc/${LIST_BOT_RANKING_RPC}`]);
     expect(fetches.some((u) => u.includes('/rest/v1/characters'))).toBe(false);
     expect(fetches.some((u) => u.includes('/rest/v1/progression_ledger'))).toBe(false);

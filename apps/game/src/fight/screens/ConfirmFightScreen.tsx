@@ -422,6 +422,10 @@ export function ConfirmFightScreen(props: {
                     chassisId: selected.loadout.chassis,
                     paintId: opponentPresentation?.paintId ?? selected.loadout.paint,
                     weaponId: opponentPresentation?.weaponId ?? selected.loadout.weapon,
+                    head: selected.loadout.head,
+                    body: selected.loadout.body,
+                    arms: selected.loadout.arms,
+                    legs: selected.loadout.legs,
                   }}
                   facing="left"
                   paintId={opponentPresentation?.paintId ?? selected.loadout.paint}

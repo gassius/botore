@@ -80,6 +80,11 @@ export type BotRankingPortraitRpc = {
   readonly chassis: string | null;
   readonly paint: string | null;
   readonly weapon: string | null;
+  /** A4 shape slots — present after migration 0041; null/omitted → stock ShapeKit. */
+  readonly head?: string | null;
+  readonly body?: string | null;
+  readonly arms?: string | null;
+  readonly legs?: string | null;
   readonly atlasVersion: string | null;
 };
 

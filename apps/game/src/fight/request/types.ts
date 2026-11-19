@@ -7,6 +7,11 @@ export type SealedFightBuildSnapshot = {
   readonly drone?: string | null;
   readonly decals?: readonly string[];
   readonly soundTags?: readonly string[];
+  /** A4 shape slots — must match Ludus Customise (0039) when sealing. */
+  readonly head?: string | null;
+  readonly body?: string | null;
+  readonly arms?: string | null;
+  readonly legs?: string | null;
   readonly loadoutVersionId?: string | null;
   readonly atlasVersion?: string;
   /** Ludus / roster character id — stamped client-side for BT-272 identity checks. */

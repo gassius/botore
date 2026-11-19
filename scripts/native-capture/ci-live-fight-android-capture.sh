@@ -462,22 +462,27 @@ echo "ok: ${opponents_rest_matches[0]} (${rest_bytes} bytes)" >&2
 # 1d) BT-272 — select a non-first owned bot before the live fight.
 # Seed Ash Crown as second bot, set accounts.active_character_id to it, and
 # rename the first bot to Gaskiller so a wrong LIMIT-1 attacker is obvious.
-echo "BT-272: seeding Ash Crown as active (non-first) bot…" >&2
+echo "BT-272: seeding Ash Crown as active (non-first) bot with non-stock A4 shapes…" >&2
 psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
 do $$
 declare
   uid uuid := '00000000-0000-4000-8000-000000000001';
   ash text := 'player-ash-crown';
   v_sound jsonb;
+  v_loadout jsonb;
 begin
   update public.characters
      set display_name = 'Gaskiller'
    where character_id = 'player-hero'
      and account_id = uid;
 
+  -- Paint/weapon + A4 shape variants (Customise → fight parity evidence).
   insert into public.inventory_ledger (account_id, part_id, delta, reason)
   select uid, v.p, 1, 'bt272-capture'
-    from (values ('paint-cobalt'), ('weapon-axe')) as v(p)
+    from (values
+      ('paint-cobalt'), ('weapon-axe'),
+      ('head-welder'), ('body-boiler'), ('arms-heavy'), ('legs-piston')
+    ) as v(p)
    where public.owned_part_quantity(uid, v.p) < 1;
 
   if not exists (
@@ -498,31 +503,34 @@ begin
      where pc.part_id = 'weapon-axe'
        and pc.slot_kind = 'weapon'
        and pc.is_active;
-
-    select coalesce(jsonb_agg(tag order by tag), '[]'::jsonb)
-      into v_sound
-      from (
-        select distinct jsonb_array_elements_text(pc.sound_tags) as tag
-          from public.parts_catalogue pc
-         where pc.part_id in ('chassis-basic', 'weapon-axe')
-      ) t
-     where tag is not null and tag <> '';
-
-    insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
-    values (
-      ash,
-      jsonb_build_object(
-        'chassis', 'chassis-basic',
-        'paint', 'paint-cobalt',
-        'weapon', 'weapon-axe',
-        'decals', '[]'::jsonb,
-        'soundTags', coalesce(v_sound, '[]'::jsonb),
-        'shield', null,
-        'drone', null
-      ),
-      'v1'
-    );
   end if;
+
+  select coalesce(jsonb_agg(tag order by tag), '[]'::jsonb)
+    into v_sound
+    from (
+      select distinct jsonb_array_elements_text(pc.sound_tags) as tag
+        from public.parts_catalogue pc
+       where pc.part_id in ('chassis-basic', 'weapon-axe')
+    ) t
+   where tag is not null and tag <> '';
+
+  -- Always pin Ash Crown to non-stock shapes so Confirm + Fight prove Welder/Boiler
+  -- (not stock visor) for the same bot that fights (design review blocker).
+  v_loadout := jsonb_build_object(
+    'chassis', 'chassis-basic',
+    'paint', 'paint-cobalt',
+    'weapon', 'weapon-axe',
+    'head', 'head-welder',
+    'body', 'body-boiler',
+    'arms', 'arms-heavy',
+    'legs', 'legs-piston',
+    'decals', '[]'::jsonb,
+    'soundTags', coalesce(v_sound, '[]'::jsonb),
+    'shield', null,
+    'drone', null
+  );
+  insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
+  values (ash, v_loadout, 'v1');
 
   update public.accounts
      set active_character_id = ash
@@ -586,8 +594,16 @@ fi
 android_assert_app_foreground "${PACKAGE}"
 echo "ok: BT-272 cold hydrate Ash Crown" >&2
 
+# Same-bot Customise evidence: Ash Crown with WELDER head (active fighter).
+capture_named Customise customise-ash-crown-welder 5 "" "" shape-head-welder
+# Confirm W–L baseline for post-fight Ludus refresh proof.
+ASH_WINS_BEFORE="$(psql "${DATABASE_URL}" -Atc "select coalesce(wins,0) from public.bot_fight_records where character_id = 'player-ash-crown'")"
+ASH_LOSSES_BEFORE="$(psql "${DATABASE_URL}" -Atc "select coalesce(losses,0) from public.bot_fight_records where character_id = 'player-ash-crown'")"
+write_manifest_line "${MANIFEST}" "ash_crown_wl_before" "${ASH_WINS_BEFORE}-${ASH_LOSSES_BEFORE}"
+echo "ok: Ash Crown W–L before fight ${ASH_WINS_BEFORE}W–${ASH_LOSSES_BEFORE}L" >&2
+
 # 2) Confirm — both bots; deep-link weapon=axe so live-fight pin saves before Replay.
-# Active bot is Ash Crown (non-first) — Confirm nameplate must match.
+# Active bot is Ash Crown (non-first) with non-stock shapes — Confirm must match fight.
 CAPTURE_SETTLE_SEC=8 \
   "${SCRIPT_DIR}/android-screencap.sh" \
   --out "${OUT_DIR}" \
@@ -600,7 +616,12 @@ if [[ ! -e "${confirm_matches[0]:-}" ]]; then
   exit 1
 fi
 write_manifest_line "${MANIFEST}" "still.android.confirm" "${confirm_matches[0]}"
+# Alias for design review: same-bot Confirm with Welder/Boiler loadout.
+cp -f "${confirm_matches[0]}" "${OUT_DIR}/android-$(date +%Y%m%d-%H%M%S)-confirm-ash-crown-shapes.png"
+confirm_shapes_matches=( "${OUT_DIR}"/android-*-confirm-ash-crown-shapes.png )
+write_manifest_line "${MANIFEST}" "still.android.confirm-ash-crown-shapes" "${confirm_shapes_matches[0]}"
 echo "ok: ${confirm_matches[0]}" >&2
+echo "ok: ${confirm_shapes_matches[0]} (Ash Crown Confirm shapes)" >&2
 
 # 3) Replay — live-capture starts paused (~3s idle) so replay-start is NOT the
 # first hit-hold frame. Settle must stay below FX_CAPTURE_IDLE_BEFORE_PLAY_MS.
@@ -828,6 +849,25 @@ if [[ "${ATTACKER_WEAPON}" != *axe* ]]; then
   logcat_dump | grep -aE 'BOTORE_CAPTURE_WEAPON_PIN|BOTORE_CAPTURE_FIGHT_' >&2 || true
   exit 1
 fi
+# A4 shapes sealed into fight builds (Customise parity) — Ash Crown must keep Welder/Boiler.
+ATTACKER_HEAD="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.attackerHead==null?'':String(j.attackerHead))" "${FIGHT_JSON}")"
+ATTACKER_BODY="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.attackerBody==null?'':String(j.attackerBody))" "${FIGHT_JSON}")"
+ATTACKER_ARMS="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.attackerArms==null?'':String(j.attackerArms))" "${FIGHT_JSON}")"
+ATTACKER_LEGS="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.attackerLegs==null?'':String(j.attackerLegs))" "${FIGHT_JSON}")"
+write_manifest_line "${MANIFEST}" attacker_head "${ATTACKER_HEAD}"
+write_manifest_line "${MANIFEST}" attacker_body "${ATTACKER_BODY}"
+write_manifest_line "${MANIFEST}" attacker_arms "${ATTACKER_ARMS}"
+write_manifest_line "${MANIFEST}" attacker_legs "${ATTACKER_LEGS}"
+if [[ "${ATTACKER_HEAD}" != "head-welder" ]]; then
+  echo "error: sealed attackerHead=${ATTACKER_HEAD} (want head-welder — same-bot Customise→Fight)" >&2
+  logcat_dump | grep -aE 'BOTORE_CAPTURE_FIGHT_JSON' >&2 || true
+  exit 1
+fi
+if [[ "${ATTACKER_BODY}" != "body-boiler" ]]; then
+  echo "error: sealed attackerBody=${ATTACKER_BODY} (want body-boiler)" >&2
+  exit 1
+fi
+echo "ok: sealed attacker shapes head=${ATTACKER_HEAD} body=${ATTACKER_BODY} arms=${ATTACKER_ARMS} legs=${ATTACKER_LEGS}" >&2
 hit_matches=( "${OUT_DIR}"/android-*-replay-fx-hit.png )
 defeat_matches=( "${OUT_DIR}"/android-*-replay-fx-defeat.png )
 if [[ ! -e "${hit_matches[0]:-}" || ! -e "${defeat_matches[0]:-}" ]]; then
@@ -988,6 +1028,29 @@ echo "fight nav: waiting for first-watch Result overlay…" >&2
 if wait_ui_label "Watch again" 60; then
   sleep 2
   capture_current fight-end-result || true
+
+  # W–L refresh: Back to Ludus from Result must show updated Ash Crown record.
+  echo "Ludus W–L refresh: Back to Ludus from Result…" >&2
+  ludus_before_wl="$(marker_count "${NAV_LUDUS}")"
+  if android_tap_label "Back to Ludus" && wait_marker_after "${NAV_LUDUS}" "${ludus_before_wl}" 20; then
+    sleep 2
+    capture_current ludus-after-fight-wl
+    ASH_WINS_AFTER="$(psql "${DATABASE_URL}" -Atc "select coalesce(wins,0) from public.bot_fight_records where character_id = 'player-ash-crown'")"
+    ASH_LOSSES_AFTER="$(psql "${DATABASE_URL}" -Atc "select coalesce(losses,0) from public.bot_fight_records where character_id = 'player-ash-crown'")"
+    write_manifest_line "${MANIFEST}" "ash_crown_wl_after" "${ASH_WINS_AFTER}-${ASH_LOSSES_AFTER}"
+    echo "ok: ludus-after-fight-wl (Ash Crown ${ASH_WINS_AFTER}W–${ASH_LOSSES_AFTER}L; before ${ASH_WINS_BEFORE:-?}-${ASH_LOSSES_BEFORE:-?})" >&2
+    # Re-open Result for Ranking round-trips / rewatch (deep-link FightResult).
+    CAPTURE_SETTLE_SEC=4 \
+      "${SCRIPT_DIR}/android-screencap.sh" \
+      --out "${OUT_DIR}" \
+      --route FightResult \
+      --name result-reopen-after-ludus >/dev/null || true
+  else
+    echo "error: Back to Ludus from Result did not land on Ludus (W–L refresh evidence)" >&2
+    adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_NAV' >&2 || true
+    exit 1
+  fi
+
   ranking_round_trip hardware result-after-ranking-hardware-back
   ranking_round_trip header result-after-ranking-header-back
 
@@ -1140,6 +1203,9 @@ required_labels=(
   ludus-before-customise
   customise-weapon-equipped-fresh
   ludus-after-equip-back
+  customise-ash-crown-welder
+  confirm-ash-crown-shapes
+  ludus-after-fight-wl
   opponents-snap-rest
   opponents-quota-remaining
   opponents-quota-exhausted

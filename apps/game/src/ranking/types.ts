@@ -11,11 +11,15 @@ export type RankingDataSource = 'dev-fixture' | 'live';
 /** Segmented board tab (mustard = active in UI). */
 export type RankingTab = 'bots' | 'botores';
 
-/** Portrait parts from E2 `list_bot_ranking` (paint drives head look). */
+/** Portrait parts from E2 `list_bot_ranking` (paint + A4 shapes via ShapeKit). */
 export type RankingPortraitParts = {
   readonly chassis: string | null;
   readonly paint: string | null;
   readonly weapon: string | null;
+  readonly head?: string | null;
+  readonly body?: string | null;
+  readonly arms?: string | null;
+  readonly legs?: string | null;
   readonly atlasVersion: string | null;
 };
 

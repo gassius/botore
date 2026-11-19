@@ -3310,6 +3310,12 @@ begin
   perform tests.assert(v_row->'portrait'->>'chassis' = 'chassis-basic', 'rivet portrait chassis');
   perform tests.assert(v_row->'portrait'->>'paint' is not null, 'rivet portrait paint');
   perform tests.assert(v_row->'portrait'->>'weapon' is not null, 'rivet portrait weapon');
+  -- 0041: portrait includes A4 shape keys (seed rivet = head-welder)
+  perform tests.assert(v_row->'portrait' ? 'head', 'rivet portrait has head key');
+  perform tests.assert(v_row->'portrait' ? 'body', 'rivet portrait has body key');
+  perform tests.assert(v_row->'portrait' ? 'arms', 'rivet portrait has arms key');
+  perform tests.assert(v_row->'portrait' ? 'legs', 'rivet portrait has legs key');
+  perform tests.assert(v_row->'portrait'->>'head' = 'head-welder', 'rivet portrait head-welder');
   perform tests.assert((v_row->>'isNpc')::boolean = true, 'rivet isNpc');
 
   -- Caller current bot flag (hero when present)
@@ -4931,4 +4937,82 @@ begin
   perform set_config('request.jwt.claim.sub', '', true);
   perform set_config('request.jwt.claim.role', '', true);
   raise notice 'TEST-OK 0040 prepare_fight active_character BT-272';
+end $$;
+
+-- 0041 list_bot_ranking portrait A4 shapes
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000041';
+  v_character text;
+  v_res jsonb;
+  v_row jsonb;
+  v_version uuid;
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'ranking-shapes-0041@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+  insert into public.accounts (id) values (v_account)
+  on conflict (id) do nothing;
+
+  insert into public.profiles (account_id, display_name, botore_id)
+  values (v_account, 'Shape Ranker', 'shape-ranker-0041')
+  on conflict (account_id) do update
+    set display_name = excluded.display_name,
+        botore_id = coalesce(public.profiles.botore_id, excluded.botore_id);
+
+  -- Auto-provision first bot + starter inventory
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.list_owned_characters();
+  perform tests.assert((v_res->>'ok')::boolean, '0041 list_owned ok');
+  v_character := v_res->'bots'->0->>'characterId';
+  perform tests.assert(v_character is not null, '0041 has character');
+  reset role;
+
+  -- Grant A4 shape variants (RLS blocks authenticated ledger writes)
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  select v_account, p.part_id, 1, 'grant'
+    from (values
+      ('paint-cobalt'), ('weapon-axe'),
+      ('head-welder'), ('body-boiler'), ('arms-heavy'), ('legs-piston')
+    ) as p(part_id)
+   where not exists (
+     select 1 from public.inventory_ledger il
+      where il.account_id = v_account and il.part_id = p.part_id and il.delta > 0
+   );
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_version := public.save_bot_loadout(
+    v_character,
+    '{"chassis":"chassis-basic","paint":"paint-cobalt","weapon":"weapon-axe","head":"head-welder","body":"body-boiler","arms":"arms-heavy","legs":"legs-piston"}'::jsonb,
+    'v1'
+  );
+  perform tests.assert(v_version is not null, '0041 save loadout returns version');
+
+  v_res := public.list_bot_ranking();
+  perform tests.assert((v_res->>'ok')::boolean, '0041 list_bot_ranking ok');
+  select r into v_row
+    from jsonb_array_elements(v_res->'rows') r
+   where r->>'botId' = v_character
+   limit 1;
+  perform tests.assert(v_row is not null, '0041 current bot on board');
+  perform tests.assert(v_row->'portrait'->>'head' = 'head-welder', '0041 portrait head-welder');
+  perform tests.assert(v_row->'portrait'->>'body' = 'body-boiler', '0041 portrait body-boiler');
+  perform tests.assert(v_row->'portrait'->>'arms' = 'arms-heavy', '0041 portrait arms-heavy');
+  perform tests.assert(v_row->'portrait'->>'legs' = 'legs-piston', '0041 portrait legs-piston');
+  perform tests.assert(v_row->'portrait'->>'paint' = 'paint-cobalt', '0041 portrait paint');
+  reset role;
+
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.jwt.claim.role', '', true);
+  raise notice 'TEST-OK 0041 list_bot_ranking A4 shape portraits';
 end $$;

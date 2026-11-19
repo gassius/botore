@@ -409,6 +409,7 @@ function BotRankingRowView({ row }: { row: RankingRow }): React.ReactElement {
           {row.rank}
         </Text>
         <RankingPortrait
+          portrait={row.portrait}
           paintId={row.portrait?.paint ?? null}
           size={46}
           testID={`ranking-portrait-${row.botId}`}

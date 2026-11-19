@@ -24,6 +24,11 @@ export type CaptureFightProof = {
   readonly attackerWeapon: string;
   readonly defenderPaint: string;
   readonly defenderWeapon: string;
+  /** A4 shapes sealed into fight builds (Customise parity). */
+  readonly attackerHead?: string | null;
+  readonly attackerBody?: string | null;
+  readonly attackerArms?: string | null;
+  readonly attackerLegs?: string | null;
   /** Sealed replay attacker — must match Ludus-selected bot (BT-272). */
   readonly attackerCharacterId?: string;
   readonly attackerDisplayName?: string;
@@ -214,6 +219,10 @@ export function useDesignCaptureLiveFight(): void {
       attackerWeapon: lastFight.sealedBuilds.attacker.weapon,
       defenderPaint: lastFight.sealedBuilds.defender.paint,
       defenderWeapon: lastFight.sealedBuilds.defender.weapon,
+      attackerHead: lastFight.sealedBuilds.attacker.head ?? null,
+      attackerBody: lastFight.sealedBuilds.attacker.body ?? null,
+      attackerArms: lastFight.sealedBuilds.attacker.arms ?? null,
+      attackerLegs: lastFight.sealedBuilds.attacker.legs ?? null,
       ...(attackerCharacterId ? { attackerCharacterId } : {}),
       ...(attackerDisplayName ? { attackerDisplayName } : {}),
       ...(selectedCharacterId ? { selectedCharacterId } : {}),

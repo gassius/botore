@@ -1,64 +1,43 @@
 /**
- * Ranking row portrait — kit head part in the bot's real paint (Oxide / Petrol).
- * A5 live BotAssembler crop lands later; until then the workshop head PNG matches paint.
+ * Ranking row portrait — ShapeKit head+paint (and full A4 loadout) via BotPortrait.
+ * Never a static stock helmet PNG; every row uses equipped shapes when present.
  */
-import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
-import { resolvePaintVisual } from '../assembler/paints';
-import { WORKSHOP_FRAME_PART_SOURCES } from '../assembler/workshopFrameAssets';
-import { garageTag } from '../garage-tag';
+import React, { useMemo } from 'react';
+import type { AssemblerLoadoutInput } from '../assembler';
+import { BotPortrait } from '../portrait/BotPortrait';
+import type { RankingPortraitParts } from './types';
 
 export type RankingPortraitProps = {
   readonly paintId?: string | null;
+  /** Full portrait parts from list_bot_ranking (preferred over paintId alone). */
+  readonly portrait?: RankingPortraitParts | null;
   /** Display edge length in pt (mockup ~46). */
   readonly size?: number;
   readonly testID?: string;
 };
 
-function headSourceForPaint(paintId: string | null | undefined) {
-  const visual = resolvePaintVisual(paintId ?? 'paint-crimson').visual;
-  const key = visual === 'petrol' ? 'parts/head-petrol.png' : 'parts/head-oxide.png';
-  return WORKSHOP_FRAME_PART_SOURCES[key] ?? WORKSHOP_FRAME_PART_SOURCES['parts/head-oxide.png'];
+function loadoutFromPortrait(
+  portrait: RankingPortraitParts | null | undefined,
+  paintFallback: string | null | undefined,
+): AssemblerLoadoutInput {
+  const paint = portrait?.paint ?? paintFallback ?? 'paint-crimson';
+  return {
+    chassis: portrait?.chassis ?? 'chassis-basic',
+    paint,
+    weapon: portrait?.weapon ?? 'weapon-sword',
+    head: portrait?.head ?? null,
+    body: portrait?.body ?? null,
+    arms: portrait?.arms ?? null,
+    legs: portrait?.legs ?? null,
+  };
 }
 
 export function RankingPortrait({
   paintId,
+  portrait,
   size = 46,
   testID = 'ranking-portrait',
 }: RankingPortraitProps): React.ReactElement {
-  const paint = resolvePaintVisual(paintId ?? 'paint-crimson');
-  return (
-    <View
-      style={[
-        styles.frame,
-        {
-          width: size,
-          height: size,
-          backgroundColor: paint.armourColor,
-        },
-      ]}
-      accessibilityLabel={`Bot portrait, ${paint.label}`}
-      testID={testID}
-    >
-      <Image
-        source={headSourceForPaint(paintId)}
-        style={{ width: size - 2, height: size - 2, marginTop: 2 }}
-        resizeMode="contain"
-        accessibilityIgnoresInvertColors
-        accessible={false}
-      />
-    </View>
-  );
+  const loadout = useMemo(() => loadoutFromPortrait(portrait, paintId), [portrait, paintId]);
+  return <BotPortrait loadout={loadout} paintId={loadout.paint} size={size} testID={testID} />;
 }
-
-const styles = StyleSheet.create({
-  frame: {
-    borderWidth: 2.5,
-    borderColor: garageTag.graphite,
-    borderRadius: 7,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-});
