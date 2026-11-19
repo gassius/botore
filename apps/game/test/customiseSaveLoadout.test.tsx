@@ -88,8 +88,11 @@ vi.mock('react-native-safe-area-context', async () => {
 });
 
 vi.mock('../src/bot/BotAssemblerSlot', () => ({
-  BotAssemblerSlot: (props: { testID?: string }) =>
-    React.createElement('BotAssemblerSlot', { testID: props.testID ?? 'bot' }),
+  BotAssemblerSlot: (props: { testID?: string; loadout?: unknown }) =>
+    React.createElement('BotAssemblerSlot', {
+      testID: props.testID ?? 'bot',
+      loadout: props.loadout,
+    }),
 }));
 
 vi.mock('../src/session-failure/useForcedSessionFailure', () => ({
@@ -127,6 +130,8 @@ import { DevAuthAdapter } from '../src/garage/auth/DevAuthAdapter';
 import { GarageSessionProvider, useGarageSession } from '../src/garage/LoadoutSessionContext';
 import { DevLoadoutSaveAdapter } from '../src/garage/loadout/DevLoadoutSaveAdapter';
 import { CustomiseScreen } from '../src/garage/screens/CustomiseScreen';
+import { STOCK_SHAPE_LOADOUT } from '../src/garage/loadout/proofCatalogue';
+import type { GarageLoadout } from '../src/garage/loadout/loadoutTypes';
 
 type SessionProbe = {
   selectPaint: (id: string) => void;
@@ -135,6 +140,7 @@ type SessionProbe = {
   renameDisplayName: (name: string) => Promise<boolean>;
   confirmedPaint: () => string | null;
   confirmedWeapon: () => string | null;
+  confirmedLoadout: () => GarageLoadout | null;
   displayName: () => string | null;
   lastError: () => string | null;
   dirty: () => boolean;
@@ -152,6 +158,7 @@ function GarageProbe(props: { apiRef: { current: SessionProbe | null } }): null 
     renameDisplayName: (name) => garage.renameDisplayName(name),
     confirmedPaint: () => garage.loadout.confirmedLoadout?.paint ?? null,
     confirmedWeapon: () => garage.loadout.confirmedLoadout?.weapon ?? null,
+    confirmedLoadout: () => garage.loadout.confirmedLoadout,
     displayName: () => garage.loadout.displayName,
     lastError: () => garage.loadout.lastError,
     dirty: () => garage.loadout.dirty,
@@ -438,6 +445,125 @@ describe('E1 Customise Save Loadout (390×844)', () => {
     expect(api().lastError()).toBeNull();
   });
 
+  it('equips A4 welder head + boiler body from shape tabs and keeps them across remount', async () => {
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({ email: 'dev@botore.local', password: 'x' });
+    expect(signed.ok).toBe(true);
+    const loadouts = new DevLoadoutSaveAdapter();
+    const apiRef: { current: SessionProbe | null } = { current: null };
+    const tree = (
+      <SafeAreaProvider>
+        <GarageSessionProvider auth={auth} loadouts={loadouts}>
+          <GarageProbe apiRef={apiRef} />
+          <CustomiseScreen onBack={() => undefined} />
+        </GarageSessionProvider>
+      </SafeAreaProvider>
+    );
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(tree);
+    });
+    const api = () => {
+      if (!apiRef.current) throw new Error('probe missing');
+      return apiRef.current;
+    };
+    for (let i = 0; i < 40 && (api().booting() || !api().canProgress()); i += 1) {
+      await flush();
+    }
+    const before = api().confirmedLoadout()!;
+    expect(before).toEqual(expect.objectContaining(STOCK_SHAPE_LOADOUT));
+
+    const press = async (testID: string) => {
+      await act(async () => {
+        root.root.findByProps({ testID }).props.onPress();
+      });
+      await flush();
+    };
+    await press('customise-tabs-head');
+    expect(root.root.findByProps({ testID: 'customise-picker-card-head-visor' })).toBeTruthy();
+    expect(root.root.findByProps({ testID: 'customise-picker-card-head-can' })).toBeTruthy();
+    await press('customise-picker-card-head-welder');
+    await press('customise-tabs-body');
+    await press('customise-picker-card-body-boiler');
+    expect(api().dirty()).toBe(true);
+    const preview = root.root.findByProps({ testID: 'customise-bot' }).props.loadout as {
+      head: string;
+      body: string;
+    };
+    expect(preview.head).toBe('head-welder');
+    expect(preview.body).toBe('body-boiler');
+
+    await press('customise-save');
+    expect(api().lastError()).toBeNull();
+    expect(api().dirty()).toBe(false);
+    const saved = api().confirmedLoadout()!;
+    expect(saved).toEqual(
+      expect.objectContaining({
+        head: 'head-welder',
+        body: 'body-boiler',
+        arms: 'arms-stock',
+        legs: 'legs-stock',
+        chassis: 'chassis-basic',
+      }),
+    );
+    expect(saved.soundTags).toEqual(before.soundTags);
+
+    await act(async () => {
+      root.update(tree);
+    });
+    for (let i = 0; i < 40 && (api().booting() || !api().remountHydrateReady()); i += 1) {
+      await flush();
+    }
+    expect(api().confirmedLoadout()).toEqual(
+      expect.objectContaining({ head: 'head-welder', body: 'body-boiler' }),
+    );
+  });
+
+  it('Supabase adapter sends A4 shapes in p_loadout', async () => {
+    const calls: { body: string }[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init: { body: string }) => {
+        calls.push({ body: init.body });
+        return new Response(JSON.stringify({ message: 'boom', code: 'XX000' }), { status: 500 });
+      }),
+    );
+    const { SupabaseLoadoutSaveAdapter } =
+      await import('../src/garage/loadout/SupabaseLoadoutSaveAdapter');
+    const adapter = new SupabaseLoadoutSaveAdapter({
+      url: 'http://127.0.0.1:54321',
+      anonKey: 'eyJ.anon.fake',
+    });
+    await adapter.save({
+      characterId: 'player-hero',
+      atlasVersion: 'v1',
+      accessToken: 'jwt',
+      loadout: {
+        chassis: 'chassis-basic',
+        paint: 'paint-crimson',
+        weapon: 'weapon-sword',
+        shield: null,
+        drone: null,
+        decals: [],
+        soundTags: ['chassis.light', 'weapon.sword'],
+        head: 'head-welder',
+        body: 'body-boiler',
+        arms: 'arms-heavy',
+        legs: 'legs-piston',
+      },
+    });
+    const sent = JSON.parse(calls[0]!.body) as { p_loadout: Record<string, unknown> };
+    expect(sent.p_loadout).toEqual(
+      expect.objectContaining({
+        chassis: 'chassis-basic',
+        head: 'head-welder',
+        body: 'body-boiler',
+        arms: 'arms-heavy',
+        legs: 'legs-piston',
+      }),
+    );
+  });
+
   it('equips paint+weapon after nameplate rename in one Equip press', async () => {
     const auth = new DevAuthAdapter();
     const signed = await auth.signInWithPassword({
@@ -628,6 +754,7 @@ describe('E1 Customise Save Loadout (390×844)', () => {
         drone: null,
         decals: [],
         soundTags: [],
+        ...STOCK_SHAPE_LOADOUT,
       },
     });
     expect(result.ok).toBe(false);

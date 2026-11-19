@@ -45,9 +45,22 @@ export type DesignCaptureSessionFailure = 'offline' | 'auth_expired';
  * - weapon-soon: Weapon tab (legacy name; first stop — sword/axe/dagger)
  * - paint-hazard: Paint tab with hazard selected — PATTERN tile + robot pattern fill
  * - weapon-unlocked: Weapon tab last snap stop — mace/hammer/spear/shield unlocked
+ * - shape-head-welder: Head tab with the A4 welder mask on the robot
+ * - shape-body-boiler: Body tab with the A4 barrel boiler chest
+ * - shape-heaviest: Legs tab, welder + boiler + heavy arms + piston legs (padded tiles)
+ * - shape-equipped: Body tab right after EQUIP saves the heaviest A4 combo
  */
 export type DesignCaptureCustomiseScenario =
-  'paint-clean' | 'paint-dirty' | 'equipped' | 'weapon-soon' | 'paint-hazard' | 'weapon-unlocked';
+  | 'paint-clean'
+  | 'paint-dirty'
+  | 'equipped'
+  | 'weapon-soon'
+  | 'paint-hazard'
+  | 'weapon-unlocked'
+  | 'shape-head-welder'
+  | 'shape-body-boiler'
+  | 'shape-heaviest'
+  | 'shape-equipped';
 
 /**
  * E5/D5/D6: Ludus home + Create Bot capture stills
@@ -163,6 +176,18 @@ export function parseDesignCaptureCustomiseScenario(
     v === 'weapon-last'
   ) {
     return 'weapon-unlocked';
+  }
+  if (v === 'shape-head-welder' || v === 'head-welder' || v === 'welder') {
+    return 'shape-head-welder';
+  }
+  if (v === 'shape-body-boiler' || v === 'body-boiler' || v === 'boiler') {
+    return 'shape-body-boiler';
+  }
+  if (v === 'shape-heaviest' || v === 'heaviest' || v === 'shapes-heaviest') {
+    return 'shape-heaviest';
+  }
+  if (v === 'shape-equipped' || v === 'shapes-equipped' || v === 'equipped-shapes') {
+    return 'shape-equipped';
   }
   return null;
 }

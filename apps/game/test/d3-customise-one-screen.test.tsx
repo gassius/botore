@@ -297,7 +297,8 @@ describe('D3 Customise one screen (390×844)', () => {
       expect(root.root.findByProps({ testID: `customise-tabs-${id}` })).toBeTruthy();
     }
     const headTab = root.root.findByProps({ testID: 'customise-tabs-head' });
-    expect(headTab.props.accessibilityState).toEqual(expect.objectContaining({ disabled: true }));
+    // A4 shapes give Head / Body / Arms / Legs real picker content.
+    expect(headTab.props.accessibilityState).toEqual(expect.objectContaining({ disabled: false }));
     expect(headTab.props.hitSlop).toEqual({ top: 5, bottom: 5, left: 0, right: 0 });
     expect(
       root.root.findByProps({ testID: 'customise-tabs-weapon' }).props.accessibilityState,

@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Image,
+  type ImageSourcePropType,
   Pressable,
   StyleSheet,
   Text,
@@ -25,6 +26,8 @@ export type PartPickerCard = {
   readonly patternTag?: boolean;
   /** Paint visual alias for A6 tile / swatch lookup (oxide, hazard, …). */
   readonly paintAlias?: string;
+  /** A4 shape signature tile (head / chest / forearm / shin). */
+  readonly shapeThumbnail?: ImageSourcePropType;
 };
 
 export type PartPickerStripProps = {
@@ -116,6 +119,14 @@ export function PartPickerStrip({
                     ?
                   </Text>
                 </View>
+              ) : card.shapeThumbnail ? (
+                <Image
+                  source={card.shapeThumbnail}
+                  style={styles.shapeImage}
+                  resizeMode="contain"
+                  accessibilityIgnoresInvertColors
+                  testID={`part-card-shape-${card.id}`}
+                />
               ) : card.weaponGlyph ? (
                 <Image
                   source={weaponGlyphSource(card.weaponGlyph)}
@@ -205,6 +216,10 @@ const styles = StyleSheet.create({
   swatchImage: {
     width: 72,
     height: 72,
+  },
+  shapeImage: {
+    width: 84,
+    height: 84,
   },
   paintChip: {
     width: 56,

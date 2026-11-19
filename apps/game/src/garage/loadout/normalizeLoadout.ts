@@ -38,5 +38,9 @@ export function normalizeGarageLoadout(raw: unknown): GarageLoadout {
     drone,
     decals,
     soundTags,
+    head: asString(row.head) ?? DEFAULT_CONFIRMED_LOADOUT.head,
+    body: asString(row.body) ?? DEFAULT_CONFIRMED_LOADOUT.body,
+    arms: asString(row.arms) ?? DEFAULT_CONFIRMED_LOADOUT.arms,
+    legs: asString(row.legs) ?? DEFAULT_CONFIRMED_LOADOUT.legs,
   };
 }

@@ -28,6 +28,10 @@ export function loadoutsEqual(a: GarageLoadout, b: GarageLoadout): boolean {
     a.weapon === b.weapon &&
     a.shield === b.shield &&
     a.drone === b.drone &&
+    a.head === b.head &&
+    a.body === b.body &&
+    a.arms === b.arms &&
+    a.legs === b.legs &&
     a.decals.length === b.decals.length &&
     a.decals.every((id: string, i: number) => id === b.decals[i]) &&
     a.soundTags.length === b.soundTags.length &&
