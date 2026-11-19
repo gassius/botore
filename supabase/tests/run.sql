@@ -4267,6 +4267,16 @@ begin
     'body-chassis is a body part; chassis-basic stays chassis'
   );
 
+  -- Atlas v1 carries the 9 shape tiles × 4 layers (uploaded + published by db-reset).
+  perform tests.assert(
+    (
+      select count(*) from public.atlas_manifest_entries
+       where version = 'v1' and kind = 'image'
+         and path ~ '^parts/(head-welder|head-can|torso-boiler|torso-slab|upper-arm-heavy|forearm-heavy|thigh-piston|shin-piston|foot-piston)/(oxide|material-under|material-over|mask)\.png$'
+    ) = 36,
+    'atlas v1 registers 36 A4 shape tile entries'
+  );
+
   begin
     insert into public.parts_catalogue (part_id, slot_kind, display_name, media_key)
     values ('tail-bogus', 'tail', 'Bogus', 'parts/tail-bogus');

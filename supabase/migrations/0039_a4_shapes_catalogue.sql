@@ -18,6 +18,10 @@
 --      or '' default to stock so pre-A4 loadouts still save. Every shape is
 --      slot-asserted and written into the normalized jsonb.
 --   5) Idempotent shape inventory backfill for existing players.
+--   6) register_atlas_v1_a4_shape_entries(): 36 image entries (9 tiles ×
+--      oxide/material_under/material_over/mask) on draft v1 only, 0031
+--      pattern. Hosted Development (v1 published) runs it after the
+--      dev_reopen runbook in docs/backend/verify.md, then pack + upload.
 --
 -- Atlas stays v1 (no version bump). Shape media lands under
 -- atlas/v1/parts/<tile>-<variant>/ via scripts/pack-workshop-frame-atlas.mjs.
@@ -588,3 +592,82 @@ where c.is_opponent = false
        and il.reason in ('grant', 'seed', 'admin', 'purchase')
        and il.delta > 0
   );
+
+-- ---------------------------------------------------------------------------
+-- Register A4 shape tile media onto atlas v1 (draft only, 0031 pattern)
+-- ---------------------------------------------------------------------------
+create or replace function public.register_atlas_v1_a4_shape_entries()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_status text;
+    v_inserted int := 0;
+begin
+    select status into v_status from public.atlas_versions where version = 'v1';
+    if not found then
+        raise exception 'unknown_atlas_version: v1' using errcode = 'P0002';
+    end if;
+    if v_status is distinct from 'draft' then
+        raise exception 'atlas_register_requires_draft: v1 is %', v_status
+            using errcode = '22023';
+    end if;
+
+    insert into public.atlas_manifest_entries (
+        version, asset_key, kind, part_id, role, path, sound_tags
+    )
+    select
+        'v1',
+        'parts.' || t.part_id || '.' || layer.role,
+        'image',
+        t.part_id,
+        layer.role,
+        'parts/' || t.part_id || '/' || layer.file,
+        '[]'::jsonb
+    from (
+      values
+        ('head-welder'),
+        ('head-can'),
+        ('torso-boiler'),
+        ('torso-slab'),
+        ('upper-arm-heavy'),
+        ('forearm-heavy'),
+        ('thigh-piston'),
+        ('shin-piston'),
+        ('foot-piston')
+    ) as t(part_id)
+    cross join (
+      values
+        ('oxide', 'oxide.png'),
+        ('material_under', 'material-under.png'),
+        ('material_over', 'material-over.png'),
+        ('mask', 'mask.png')
+    ) as layer(role, file)
+    where not exists (
+      select 1
+        from public.atlas_manifest_entries e
+       where e.version = 'v1'
+         and e.asset_key = 'parts.' || t.part_id || '.' || layer.role
+    );
+
+    get diagnostics v_inserted = row_count;
+
+    return jsonb_build_object('ok', true, 'version', 'v1', 'inserted', v_inserted);
+end;
+$$;
+
+revoke all on function public.register_atlas_v1_a4_shape_entries() from public;
+revoke all on function public.register_atlas_v1_a4_shape_entries() from anon;
+revoke all on function public.register_atlas_v1_a4_shape_entries() from authenticated;
+grant execute on function public.register_atlas_v1_a4_shape_entries() to service_role;
+
+comment on function public.register_atlas_v1_a4_shape_entries() is
+  'Idempotent: add A4 shapes v2.1 tile entries (parts/<tile>-<variant>/…) to draft atlas v1. Call after dev_reopen on hosted Development; runs automatically on fresh local migrations.';
+
+-- Fresh local / CI: v1 is still draft here (publish happens in db-reset.sh).
+select public.register_atlas_v1_a4_shape_entries()
+where exists (
+  select 1 from public.atlas_versions where version = 'v1' and status = 'draft'
+);
