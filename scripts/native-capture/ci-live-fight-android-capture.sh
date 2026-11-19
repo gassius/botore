@@ -375,6 +375,21 @@ sleep 2
 capture_current opponents-quota-remaining
 echo "ok: opponents-quota-remaining gated on ${QUOTA_MARKER}" >&2
 
+# 1c‴) D8 Opponents — fightQuota=exhausted → 0/3 + countdown (no redundant warning box)
+adb logcat -c >/dev/null 2>&1 || true
+QUOTA_EXHAUSTED_URL="$(capture_url_for_route Opponents "" "" "" "" "" "" "" "" "" "" "" exhausted)"
+echo "opening ${QUOTA_EXHAUSTED_URL}" >&2
+adb shell am start -a android.intent.action.VIEW -d "${QUOTA_EXHAUSTED_URL}" >/dev/null
+QUOTA_EXHAUSTED_MARKER='BOTORE_CAPTURE_QUOTA:remaining=0 limit=3'
+if ! wait_logcat_marker "${QUOTA_EXHAUSTED_MARKER}" 45; then
+  echo "error: missing ${QUOTA_EXHAUSTED_MARKER} after fightQuota=exhausted" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_QUOTA|BOTORE_CAPTURE_ROUTE' >&2 || true
+  exit 1
+fi
+sleep 2
+capture_current opponents-quota-exhausted
+echo "ok: opponents-quota-exhausted gated on ${QUOTA_EXHAUSTED_MARKER}" >&2
+
 # 1c′) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
 # Need ≥3 whole 175pt cards (185 snap, 150pt robots). Capture before C10
 # offline/auth stills so the pack has a real snapped list.
@@ -910,6 +925,7 @@ required_labels=(
   garage-shapes-equipped
   opponents-snap-rest
   opponents-quota-remaining
+  opponents-quota-exhausted
   ranking-bots
   ranking-botores
   ranking-empty

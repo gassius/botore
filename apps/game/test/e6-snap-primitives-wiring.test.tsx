@@ -33,6 +33,9 @@ describe('E6 shared snap primitive wiring', () => {
     expect(src).toContain('minHeight: OPPONENTS_LIST.trackHeight');
     expect(src).toContain('opponents-range');
     expect(src).not.toContain('opponents-snap-hint');
+    // Zero-quota UX: header card owns the empty state; no redundant warning box.
+    expect(src).not.toContain('opponents-no-allowance');
+    expect(src).not.toContain('Come back when the refill clock hits zero');
     const snapSrc = read('src/garage-tag/snap/SnapVerticalList.tsx');
     expect(snapSrc).toContain('listClipped');
     expect(snapSrc).toMatch(/flexBasis:\s*['\"]auto['\"]/);
