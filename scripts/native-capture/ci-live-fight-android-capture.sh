@@ -307,6 +307,9 @@ capture_named Stable garage-create-slot 5 "" "" "" create-slot
 # 1‴) D6 Create Bot view (at-rest under cap)
 capture_named CreateBot create-bot 6
 
+# 1⁗) D6 Create Bot at-cap blocked copy (home=at-cap)
+capture_named CreateBot create-bot-at-cap 4 "" "" "" at-cap
+
 # 1a) D3 Customise — Paint clean / dirty+dot / Equipped / Weapon Coming soon
 # Capture early so design evidence lands even if later fight frames fail.
 capture_named Customise customise-paint-clean 5 "" "" paint-clean
@@ -709,6 +712,7 @@ required_labels=(
   garage-more
   garage-create-slot
   create-bot
+  create-bot-at-cap
   customise-paint-clean
   customise-paint-dirty
   customise-equipped

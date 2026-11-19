@@ -422,6 +422,8 @@ capture_named Stable garage-more 5 "" "" "" "" more
 capture_named Stable garage-create-slot 5 "" "" "" "" create-slot
 # D6 Create Bot view (at-rest under cap)
 capture_named CreateBot create-bot 6
+# D6 Create Bot at-cap blocked copy (home=at-cap)
+capture_named CreateBot create-bot-at-cap 4 "" "" "" "" at-cap
 # D3 Customise — early so PNG artifacts upload even if the live fight later fails.
 capture_named Customise customise-paint-clean 6 "" "" paint-clean
 capture_named Customise customise-paint-dirty 6 "" "" paint-dirty
@@ -509,6 +511,7 @@ for label in \
   garage-more \
   garage-create-slot \
   create-bot \
+  create-bot-at-cap \
   customise-paint-clean \
   customise-paint-dirty \
   customise-equipped \

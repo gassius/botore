@@ -51,6 +51,7 @@ describe('D5 Ludus carousel metrics + create slot', () => {
     expect(parseDesignCaptureHomeScenario('more')).toBe('more');
     expect(parseDesignCaptureHomeScenario('bot')).toBe('bot');
     expect(parseDesignCaptureHomeScenario('create-slot')).toBe('create-slot');
+    expect(parseDesignCaptureHomeScenario('at-cap')).toBe('at-cap');
   });
 
   it('never treats bare UUIDs as bot labels in fixture rows', () => {

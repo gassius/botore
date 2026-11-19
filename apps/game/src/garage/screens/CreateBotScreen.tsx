@@ -1,7 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
+import { peekCaptureIntent } from '../../design-capture/captureIntentState';
+import { isDesignCaptureEnabled } from '../../design-capture';
 import { useFirstRun } from '../../first-run/FirstRunContext';
 import {
   PartPickerStrip,
@@ -60,10 +62,18 @@ export function CreateBotScreen(props: {
   const [error, setError] = useState<string | null>(null);
   const [nameReady, setNameReady] = useState(false);
 
+  const createInFlight = useRef(false);
+  const createdLatch = useRef(false);
+  const mountedRef = useRef(true);
+
   const ownedCount = ownedBots.length;
   const cap = botCap > 0 ? botCap : 3;
   const nextSlot = ownedCount + 1;
   const atCap = ownedCount >= cap;
+  /** Design-capture still: `home=at-cap` forces the blocked Ludus-full copy. */
+  const forceAtCapCapture =
+    isDesignCaptureEnabled() && peekCaptureIntent().homeScenario === 'at-cap';
+  const showAtCap = (atCap || forceAtCapCapture) && !busy && !createdLatch.current;
   const trimmed = name.trim();
   const canCreate = !atCap && !busy && trimmed.length > 0 && trimmed.length <= NAME_MAX;
 
@@ -78,50 +88,68 @@ export function CreateBotScreen(props: {
     weapons.findIndex((w) => w.id === weaponId),
   );
 
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const rollName = useCallback(async () => {
-    const suggested = await suggestBotName();
-    if (suggested) {
-      setName(suggested.slice(0, NAME_MAX));
-      setError(null);
-      return;
+    try {
+      const suggested = await suggestBotName();
+      if (!mountedRef.current) return;
+      if (suggested) {
+        setName(suggested.slice(0, NAME_MAX));
+        setError(null);
+        return;
+      }
+      setName('Rust Baron');
+    } catch {
+      if (!mountedRef.current) return;
+      setName('Rust Baron');
+      setError('Could not load a name. Try again.');
+    } finally {
+      if (mountedRef.current) setNameReady(true);
     }
-    setName('Rust Baron');
   }, [suggestBotName]);
 
   useEffect(() => {
-    let mounted = true;
-    void (async () => {
-      await rollName();
-      if (mounted) setNameReady(true);
-    })();
-    return () => {
-      mounted = false;
-    };
+    void rollName();
   }, [rollName]);
 
   const onCreate = useCallback(async () => {
-    if (!canCreate) {
+    if (createInFlight.current || !canCreate) {
       uiAudio.playCue('uiError');
       return;
     }
+    createInFlight.current = true;
     setBusy(true);
     setError(null);
     uiAudio.playCue('uiConfirm');
-    const result = await createOwnedBot({
-      displayName: trimmed,
-      paint: paintId,
-      weapon: weaponId,
-    });
-    setBusy(false);
-    if (!result.ok) {
+    try {
+      const result = await createOwnedBot({
+        displayName: trimmed,
+        paint: paintId,
+        weapon: weaponId,
+      });
+      if (!result.ok) {
+        uiAudio.playCue('uiError');
+        if (mountedRef.current) setError(result.message);
+        return;
+      }
+      createdLatch.current = true;
+      props.onCreated();
+    } catch {
       uiAudio.playCue('uiError');
-      setError(result.message);
-      return;
+      if (mountedRef.current) setError('Could not create bot. Try again.');
+    } finally {
+      createInFlight.current = false;
+      if (mountedRef.current) setBusy(false);
     }
-    props.onCreated();
   }, [canCreate, createOwnedBot, paintId, props, trimmed, uiAudio, weaponId]);
 
-  if (atCap) {
+  if (showAtCap) {
     return (
       <ScreenChrome
         testID="slot-create-bot"
@@ -166,6 +194,7 @@ export function CreateBotScreen(props: {
               void onCreate();
             }}
             disabled={!canCreate}
+            busy={busy}
             onDisabledPress={() => uiAudio.playCue('uiError')}
             testID="create-bot-submit"
           />
@@ -212,7 +241,11 @@ export function CreateBotScreen(props: {
         </View>
         <View style={styles.nameRow}>
           {!nameReady ? (
-            <ActivityIndicator color={garageTag.graphite} style={styles.nameLoading} />
+            <ActivityIndicator
+              color={garageTag.graphite}
+              style={styles.nameLoading}
+              accessibilityLabel="Loading name"
+            />
           ) : (
             <TextInput
               value={name}
@@ -280,7 +313,13 @@ export function CreateBotScreen(props: {
       </View>
 
       {error ? (
-        <Text style={styles.error} allowFontScaling testID="create-bot-error">
+        <Text
+          style={styles.error}
+          allowFontScaling
+          testID="create-bot-error"
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
           {error}
         </Text>
       ) : null}
