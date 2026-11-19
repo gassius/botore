@@ -536,8 +536,60 @@ if [[ "${ASH_ACTIVE}" != "player-ash-crown" ]]; then
 fi
 write_manifest_line "${MANIFEST}" "bt272_active_character_id" "${ASH_ACTIVE}"
 # Cold-start so hydrate picks Ash Crown (not an in-memory Gaskiller loadout).
+# android-screencap asserts the package is already foreground before deep-link —
+# mirror the boot path: force-stop → monkey launch → wait pid + auth.
 adb shell am force-stop "${PACKAGE}" >/dev/null 2>&1 || true
-sleep 1
+adb logcat -c >/dev/null 2>&1 || true
+adb shell monkey -p "${PACKAGE}" -c android.intent.category.LAUNCHER 1 >/dev/null
+echo "BT-272: waiting for ${PACKAGE} after Ash Crown select…" >&2
+booted=0
+for _ in $(seq 1 60); do
+  if adb shell pidof -s "${PACKAGE}" 2>/dev/null | tr -d '\r' | grep -q '[0-9]'; then
+    booted=1
+    break
+  fi
+  sleep 1
+done
+if [[ "${booted}" != "1" ]]; then
+  echo "error: BT-272 ${PACKAGE} did not start after Ash Crown select" >&2
+  adb logcat -d -t 160 '*:E' >&2 || true
+  exit 1
+fi
+auth_ok=0
+for _ in $(seq 1 "${CAPTURE_AUTH_WAIT_SEC:-45}"); do
+  if adb logcat -d 2>/dev/null | tr -d '\r' | grep -Fq 'BOTORE_CAPTURE_AUTH_OK:'; then
+    auth_ok=1
+    break
+  fi
+  if adb logcat -d 2>/dev/null | tr -d '\r' | grep -Fq 'BOTORE_CAPTURE_AUTH_ERROR:'; then
+    break
+  fi
+  sleep 1
+done
+if [[ "${auth_ok}" != "1" ]]; then
+  echo "error: BT-272 design-capture auto sign-in did not succeed after Ash Crown select" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_' >&2 || true
+  exit 1
+fi
+# Prefer hydrate for Ash Crown; fall back to any hydrate-ok (auth may race list).
+hydrate_ok=0
+for _ in $(seq 1 45); do
+  if adb logcat -d 2>/dev/null | tr -d '\r' | grep -Fq 'BOTORE_CAPTURE_HYDRATE_OK:characterId=player-ash-crown'; then
+    hydrate_ok=1
+    break
+  fi
+  if adb logcat -d 2>/dev/null | tr -d '\r' | grep -Fq 'BOTORE_CAPTURE_HYDRATE_ERROR:'; then
+    break
+  fi
+  sleep 1
+done
+if [[ "${hydrate_ok}" != "1" ]]; then
+  echo "error: BT-272 hydrate did not confirm player-ash-crown" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_HYDRATE|BOTORE_CAPTURE_AUTH' >&2 || true
+  exit 1
+fi
+android_assert_app_foreground "${PACKAGE}"
+echo "ok: BT-272 cold hydrate Ash Crown" >&2
 
 # 2) Confirm — both bots; deep-link weapon=axe so live-fight pin saves before Replay.
 # Active bot is Ash Crown (non-first) — Confirm nameplate must match.
