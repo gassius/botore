@@ -125,11 +125,18 @@ export function StableScreen(props: {
   );
 
   const handleFindOpponent = useCallback(() => {
-    uiAudio.playCue('uiConfirm');
-    const go = () => props.onFindOpponent?.();
+    const go = () => {
+      uiAudio.playCue('uiConfirm');
+      props.onFindOpponent?.();
+    };
+    const fail = () => uiAudio.playCue('uiError');
     const pending = selectPromiseRef.current;
     if (pending) {
-      void pending.then(go, go);
+      // PRR M1: only leave Ludus when select resolved true (active bot synced).
+      void pending.then((ok) => {
+        if (ok) go();
+        else fail();
+      }, fail);
       return;
     }
     go();

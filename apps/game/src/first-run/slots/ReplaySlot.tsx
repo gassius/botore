@@ -49,6 +49,7 @@ import {
   type FxCaptureHoldState,
 } from '../../replay/fxCaptureHold';
 import { fighterDisplayName } from '../../replay/confirmedResult';
+import { selectedBotFightHeaderName } from '../../fight/selectedBotFightIdentity';
 import type { AnimationCommand } from '../../replay-playback';
 import type { ReplayPresentationState } from '../../replay/playbackState';
 import type { PlaybackUiState } from '../../replay/playbackControl';
@@ -88,7 +89,7 @@ export function ReplaySlot(): React.ReactElement {
   } = useFirstRun();
   const insets = useSafeAreaInsets();
   const { lastFight } = useFightSession();
-  const { session } = useGarageSession();
+  const { session, loadout } = useGarageSession();
   const [botRecord, setBotRecord] = useState<BotFightRecordSnapshot | null>(null);
   const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
   const fxHoldRef = useRef<FxCaptureHoldState>(initialFxCaptureHoldState());
@@ -329,7 +330,11 @@ export function ReplaySlot(): React.ReactElement {
 
   const confirmed = resolution.confirmed;
   const fighters = confirmed.replay.fighters;
-  const nearName = fighterDisplayName(fighters[0]?.characterId, fighters);
+  // BT-272 / PRR M2: near header prefers sealed replay attacker, falls back to Ludus name.
+  const nearName = selectedBotFightHeaderName({
+    selectedDisplayName: loadout.displayName,
+    fighters,
+  });
   const farName = fighterDisplayName(fighters[1]?.characterId, fighters);
 
   const arenaOverlay = (

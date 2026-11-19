@@ -108,15 +108,26 @@ describe('selected bot fight identity (BT-272)', () => {
     expect(sql).not.toMatch(/where c\.account_id = p_account_id\s+limit 1;/i);
   });
 
-  it('Find opponent awaits in-flight selectActiveBot (StableScreen)', () => {
+  it('Find opponent only proceeds when in-flight select resolves true (PRR M1)', () => {
     const src = readFileSync(join(gameRoot, 'src/garage/screens/StableScreen.tsx'), 'utf8');
     expect(src).toContain('selectPromiseRef');
     expect(src).toContain('handleFindOpponent');
-    expect(src).toMatch(/selectPromiseRef\.current/);
+    expect(src).toMatch(/pending\.then\(\(ok\)\s*=>\s*\{/);
+    expect(src).toMatch(/if \(ok\) go\(\)/);
+    expect(src).toMatch(/else fail\(\)/);
   });
 
-  it('selectActiveBot optimistically flips ownedBots isActive', () => {
+  it('selectActiveBot refreshes ownedBots when RPC fails (PRR M1)', () => {
     const src = readFileSync(join(gameRoot, 'src/garage/LoadoutSessionContext.tsx'), 'utf8');
     expect(src).toContain('applyActiveFlagToOwnedBots');
+    expect(src).toMatch(
+      /if \(!selected\.ok\) \{[\s\S]*?await refreshOwnedBots\(\);[\s\S]*?return false;/,
+    );
+  });
+
+  it('Fight View near header uses selectedBotFightHeaderName (PRR M2)', () => {
+    const src = readFileSync(join(gameRoot, 'src/first-run/slots/ReplaySlot.tsx'), 'utf8');
+    expect(src).toContain('selectedBotFightHeaderName');
+    expect(src).toMatch(/selectedDisplayName:\s*loadout\.displayName/);
   });
 });
