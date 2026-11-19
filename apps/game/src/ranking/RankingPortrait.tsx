@@ -38,11 +38,6 @@ export function RankingPortrait({
   size = 46,
   testID = 'ranking-portrait',
 }: RankingPortraitProps): React.ReactElement {
-  const loadout = useMemo(
-    () => loadoutFromPortrait(portrait, paintId),
-    [portrait, paintId],
-  );
-  return (
-    <BotPortrait loadout={loadout} paintId={loadout.paint} size={size} testID={testID} />
-  );
+  const loadout = useMemo(() => loadoutFromPortrait(portrait, paintId), [portrait, paintId]);
+  return <BotPortrait loadout={loadout} paintId={loadout.paint} size={size} testID={testID} />;
 }

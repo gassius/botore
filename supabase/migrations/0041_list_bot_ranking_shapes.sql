@@ -111,7 +111,10 @@ comment on function public.list_bot_ranking() is
   'E2 sanctioned client read: bot ranking (W-L, XP, portrait chassis/paint/weapon/A4 shapes, botore name). No account UUIDs. EXECUTE authenticated only.';
 
 -- Admin view: expose shape columns for ops (additive; service_role only).
-create or replace view public.admin_bot_ranking
+-- DROP + CREATE: CREATE OR REPLACE cannot insert columns before portrait_atlas_version
+-- (Postgres 42P16: cannot change name of view column).
+drop view if exists public.admin_bot_ranking;
+create view public.admin_bot_ranking
 with (security_invoker = true) as
 select
     row_number() over (
