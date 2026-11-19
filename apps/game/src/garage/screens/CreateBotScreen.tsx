@@ -18,8 +18,14 @@ import { useGarageSession } from '../LoadoutSessionContext';
 import { PROOF_PAINTS, PROOF_WEAPONS } from '../loadout/proofCatalogue';
 
 const NAME_MAX = 12;
-const PREVIEW_HEIGHT = 250;
-const BOT_SIZE = 200;
+/**
+ * Art (0bdf0a5): 250pt preview overflowed the phone frame — STARTING WEAPON
+ * heading showed with Create flush under it and no weapon tiles (catalogue is
+ * fine; layout clipped the strip). Shrink preview + tighten form gaps so paint
+ * and weapon strips both sit fully above the footer at rest.
+ */
+const PREVIEW_HEIGHT = 140;
+const BOT_SIZE = 120;
 
 /** D6 starting paints — solids only (A4); hazard/racing stay Customise-only. */
 function solidPaintCards(selectedPartId: string): PartPickerCard[] {
@@ -204,130 +210,138 @@ export function CreateBotScreen(props: {
         </View>
       }
     >
-      <ScreenHeader
-        title="Create Bot"
-        onBack={() => {
-          uiAudio.playCue('uiBack');
-          props.onBack();
-        }}
-        testID="create-bot-header"
-      />
-
-      <View style={styles.preview} testID="create-bot-preview">
-        <BotAssemblerSlot
-          loadout={{
-            chassisId: 'chassis-basic',
-            paintId,
-            weaponId,
+      {/* Single child avoids ScreenChrome scrollContent gap:16 stacking that
+          pushed the weapon strip under the fold on phone capture stills. */}
+      <View style={styles.form}>
+        <ScreenHeader
+          title="Create Bot"
+          onBack={() => {
+            uiAudio.playCue('uiBack');
+            props.onBack();
           }}
-          facing="right"
-          paintId={paintId}
-          weaponId={weaponId}
-          motionPose="idle"
-          size={BOT_SIZE}
-          label="New bot preview"
-          testID="create-bot-assembler"
+          testID="create-bot-header"
         />
-      </View>
 
-      <View style={styles.nameBlock}>
-        <View style={styles.nameHeader}>
-          <Text style={styles.sectionLabel} allowFontScaling>
-            Name
-          </Text>
-          <Text style={styles.nameHint} allowFontScaling>
-            Random — tap to edit · {NAME_MAX} max
-          </Text>
-        </View>
-        <View style={styles.nameRow}>
-          {!nameReady ? (
-            <ActivityIndicator
-              color={garageTag.graphite}
-              style={styles.nameLoading}
-              accessibilityLabel="Loading name"
-            />
-          ) : (
-            <TextInput
-              value={name}
-              onChangeText={(v) => {
-                setName(v.slice(0, NAME_MAX));
-                setError(null);
-              }}
-              maxLength={NAME_MAX}
-              autoCapitalize="words"
-              autoCorrect={false}
-              placeholder="Bot name"
-              placeholderTextColor={garageTag.steel}
-              style={styles.nameInput}
-              testID="create-bot-name"
-              accessibilityLabel="Bot name"
-            />
-          )}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Reroll name"
-            onPress={() => {
-              uiAudio.playUiTap();
-              void rollName();
+        <View style={styles.preview} testID="create-bot-preview">
+          <BotAssemblerSlot
+            loadout={{
+              chassisId: 'chassis-basic',
+              paintId,
+              weaponId,
             }}
-            style={styles.dice}
-            testID="create-bot-reroll"
-          >
-            <Text style={styles.diceGlyph} allowFontScaling>
-              ⚄
-            </Text>
-          </Pressable>
+            facing="right"
+            paintId={paintId}
+            weaponId={weaponId}
+            motionPose="idle"
+            size={BOT_SIZE}
+            label="New bot preview"
+            testID="create-bot-assembler"
+          />
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel} allowFontScaling>
-          Starting paint
-        </Text>
-        <PartPickerStrip
-          cards={paints}
-          initialIndex={paintInitial}
-          onSelect={(id) => {
-            uiAudio.playCue('uiSnap');
-            setPaintId(id);
-          }}
-          onSnapIndexChange={() => uiAudio.playCue('uiSnap')}
-          testID="create-bot-paint-strip"
-        />
-      </View>
+        <View style={styles.nameBlock}>
+          <View style={styles.nameHeader}>
+            <Text style={styles.sectionLabel} allowFontScaling>
+              Name
+            </Text>
+            <Text style={styles.nameHint} allowFontScaling>
+              Random — tap to edit · {NAME_MAX} max
+            </Text>
+          </View>
+          <View style={styles.nameRow}>
+            {!nameReady ? (
+              <ActivityIndicator
+                color={garageTag.graphite}
+                style={styles.nameLoading}
+                accessibilityLabel="Loading name"
+              />
+            ) : (
+              <TextInput
+                value={name}
+                onChangeText={(v) => {
+                  setName(v.slice(0, NAME_MAX));
+                  setError(null);
+                }}
+                maxLength={NAME_MAX}
+                autoCapitalize="words"
+                autoCorrect={false}
+                placeholder="Bot name"
+                placeholderTextColor={garageTag.steel}
+                style={styles.nameInput}
+                testID="create-bot-name"
+                accessibilityLabel="Bot name"
+              />
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Reroll name"
+              onPress={() => {
+                uiAudio.playUiTap();
+                void rollName();
+              }}
+              style={styles.dice}
+              testID="create-bot-reroll"
+            >
+              <Text style={styles.diceGlyph} allowFontScaling>
+                ⚄
+              </Text>
+            </Pressable>
+          </View>
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel} allowFontScaling>
-          Starting weapon
-        </Text>
-        <PartPickerStrip
-          cards={weapons}
-          initialIndex={weaponInitial}
-          onSelect={(id) => {
-            uiAudio.playCue('uiSnap');
-            setWeaponId(id);
-          }}
-          onSnapIndexChange={() => uiAudio.playCue('uiSnap')}
-          testID="create-bot-weapon-strip"
-        />
-      </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel} allowFontScaling>
+            Starting paint
+          </Text>
+          <PartPickerStrip
+            cards={paints}
+            initialIndex={paintInitial}
+            onSelect={(id) => {
+              uiAudio.playCue('uiSnap');
+              setPaintId(id);
+            }}
+            onSnapIndexChange={() => uiAudio.playCue('uiSnap')}
+            testID="create-bot-paint-strip"
+          />
+        </View>
 
-      {error ? (
-        <Text
-          style={styles.error}
-          allowFontScaling
-          testID="create-bot-error"
-          accessibilityRole="alert"
-          accessibilityLiveRegion="polite"
-        >
-          {error}
-        </Text>
-      ) : null}
+        <View style={styles.section} testID="create-bot-weapon-section">
+          <Text style={styles.sectionLabel} allowFontScaling>
+            Starting weapon
+          </Text>
+          <PartPickerStrip
+            cards={weapons}
+            initialIndex={weaponInitial}
+            onSelect={(id) => {
+              uiAudio.playCue('uiSnap');
+              setWeaponId(id);
+            }}
+            onSnapIndexChange={() => uiAudio.playCue('uiSnap')}
+            testID="create-bot-weapon-strip"
+          />
+        </View>
+
+        {error ? (
+          <Text
+            style={styles.error}
+            allowFontScaling
+            testID="create-bot-error"
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+          >
+            {error}
+          </Text>
+        ) : null}
+      </View>
     </ScreenChrome>
   );
 }
 
 const styles = StyleSheet.create({
+  form: {
+    gap: 10,
+    paddingBottom: 4,
+  },
   preview: {
     height: PREVIEW_HEIGHT,
     alignItems: 'center',
@@ -336,13 +350,10 @@ const styles = StyleSheet.create({
     borderColor: garageTag.graphite,
     borderRadius: 12,
     backgroundColor: garageTag.paper,
-    marginTop: 8,
-    marginBottom: 16,
     overflow: 'hidden',
   },
   nameBlock: {
-    marginBottom: 16,
-    gap: 8,
+    gap: 6,
   },
   nameHeader: {
     flexDirection: 'row',
@@ -403,8 +414,7 @@ const styles = StyleSheet.create({
     color: garageTag.graphite,
   },
   section: {
-    marginBottom: 16,
-    gap: 8,
+    gap: 6,
   },
   footer: {
     gap: 8,

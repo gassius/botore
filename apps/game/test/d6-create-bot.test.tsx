@@ -188,11 +188,15 @@ describe('D6 Create Bot view', () => {
     expect(screen).toContain('create-bot-reroll');
     expect(screen).toContain('create-bot-submit');
     expect(screen).toContain('create-bot-helper');
+    expect(screen).toContain('create-bot-weapon-strip');
     expect(screen).toContain('suggestBotName');
     expect(screen).toContain('createOwnedBot');
     expect(screen).toContain('busy={busy}');
     expect(screen).toContain('createInFlight');
     expect(screen).toContain('accessibilityRole="alert"');
+    // Art: preview must stay short enough that the weapon strip sits above Create.
+    expect(screen).toMatch(/PREVIEW_HEIGHT = 1[0-6]\d/);
+    expect(screen).not.toMatch(/PREVIEW_HEIGHT = 250/);
 
     const slot = readSource('src/first-run/slots/CreateBotSlot.tsx');
     expect(slot).toContain('CreateBotScreen');
@@ -206,6 +210,7 @@ describe('D6 Create Bot view', () => {
     const solids = PROOF_PAINTS.filter((p) => resolvePaintVisual(p.uiAlias).kind === 'solid');
     expect(solids.length).toBeGreaterThanOrEqual(3);
     expect(solids.every((p) => resolvePaintVisual(p.uiAlias).kind === 'solid')).toBe(true);
+    // Not an empty capture fixture — catalogue always has weapons for the strip.
     expect(PROOF_WEAPONS.length).toBeGreaterThanOrEqual(3);
     expect(CUSTOMISE_CAROUSEL.visibleCount).toBe(3);
     expect(CUSTOMISE_CAROUSEL.viewportClip).toBe(337);
