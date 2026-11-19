@@ -247,6 +247,10 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
         losses: id === PROOF_CHARACTER_ID ? 6 : 0,
         paint: loadout.paint,
         weapon: loadout.weapon,
+        head: loadout.head,
+        body: loadout.body,
+        arms: loadout.arms,
+        legs: loadout.legs,
         atlasVersion: row?.atlasVersion ?? PROOF_ATLAS_VERSION,
         isActive: id === this.activeCharacterId,
       };

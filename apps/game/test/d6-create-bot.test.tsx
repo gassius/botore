@@ -108,6 +108,10 @@ let ownedBotsMock: Array<{
   losses: number;
   paint: string;
   weapon: string;
+  head: string;
+  body: string;
+  arms: string;
+  legs: string;
   atlasVersion: string;
   isActive: boolean;
 }> = [
@@ -118,6 +122,10 @@ let ownedBotsMock: Array<{
     losses: 6,
     paint: 'paint-crimson',
     weapon: 'weapon-sword',
+    head: 'head-visor',
+    body: 'body-chassis',
+    arms: 'arms-stock',
+    legs: 'legs-stock',
     atlasVersion: 'v1',
     isActive: true,
   },
@@ -177,6 +185,10 @@ describe('D6 Create Bot view', () => {
         losses: 6,
         paint: 'paint-crimson',
         weapon: 'weapon-sword',
+        head: 'head-visor',
+        body: 'body-chassis',
+        arms: 'arms-stock',
+        legs: 'legs-stock',
         atlasVersion: 'v1',
         isActive: true,
       },
@@ -285,6 +297,10 @@ describe('D6 Create Bot view', () => {
       losses: 0,
       paint: 'paint-cobalt',
       weapon: 'weapon-sword',
+      head: 'head-visor',
+      body: 'body-chassis',
+      arms: 'arms-stock',
+      legs: 'legs-stock',
       atlasVersion: 'v1',
       isActive: n === 1,
     }));

@@ -51,6 +51,10 @@ function LudusBotCardImpl({ bot, testID }: LudusBotCardProps): React.ReactElemen
             chassisId: 'chassis-basic',
             paintId: paint,
             weaponId: weapon,
+            ...(bot.head ? { head: bot.head } : {}),
+            ...(bot.body ? { body: bot.body } : {}),
+            ...(bot.arms ? { arms: bot.arms } : {}),
+            ...(bot.legs ? { legs: bot.legs } : {}),
           }}
           facing="right"
           paintId={paint}

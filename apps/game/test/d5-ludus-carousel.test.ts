@@ -13,6 +13,11 @@ import type { OwnedBotSummary } from '../src/garage/loadout/loadoutTypes';
 import { STABLE_HOME_TITLE } from '../src/garage/stableHomeCopy';
 import { parseDesignCaptureHomeScenario } from '../src/design-capture/captureEnv';
 
+/** M1: Ludus card must forward equipped shapes into BotAssemblerSlot. */
+function ludusCardSource(): string {
+  return readSource('src/garage/ludus/LudusBotCard.tsx');
+}
+
 const ROOT = process.cwd();
 
 function readSource(rel: string): string {
@@ -26,6 +31,10 @@ const bot = (id: string, active = false): OwnedBotSummary => ({
   losses: 0,
   paint: 'paint-crimson',
   weapon: 'weapon-sword',
+  head: 'head-visor',
+  body: 'body-chassis',
+  arms: 'arms-stock',
+  legs: 'legs-stock',
   atlasVersion: 'v1',
   isActive: active,
 });
@@ -78,5 +87,13 @@ describe('D5 Ludus carousel metrics + create slot', () => {
     expect(src).toContain('scrollToIndex(index - 1, true)');
     expect(src).toContain('scrollToIndex(index + 1, true)');
     expect(src).not.toMatch(/scrollToIndex\([^)]+\);\s*handleSnap\(/);
+  });
+
+  it('LudusBotCard forwards A4 shape slots into BotAssemblerSlot (M1)', () => {
+    const src = ludusCardSource();
+    expect(src).toContain('bot.head');
+    expect(src).toContain('bot.body');
+    expect(src).toContain('bot.arms');
+    expect(src).toContain('bot.legs');
   });
 });

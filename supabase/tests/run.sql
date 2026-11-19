@@ -4536,3 +4536,206 @@ begin
   perform set_config('request.jwt.claim.role', '', true);
   raise notice 'TEST-OK 0039 starter loadout stock shapes';
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- 0039 B1: shape backfill is once per account (multi-bot must not duplicate)
+-- Simulates hosted apply after a 2-bot account exists with no shape grants.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-0000000000ec';
+  v_res jsonb;
+  v_grants int;
+  v_qty int;
+  v_dupes int;
+  v_shape text;
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'shapes-ec@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'B1 hydrate provisions first bot');
+  v_res := public.create_owned_character('Shape Twin', 'paint-cobalt', 'weapon-axe');
+  perform tests.assert((v_res->>'ok')::boolean, 'B1 second bot created');
+  perform tests.assert((v_res->>'ownedCount')::integer = 2, 'B1 ownedCount is 2');
+  reset role;
+
+  -- Wipe shape ledger rows so the migration backfill statement can be re-run.
+  delete from public.inventory_ledger
+   where account_id = v_account
+     and part_id in (
+       'head-visor', 'head-welder', 'head-can',
+       'body-chassis', 'body-boiler', 'body-slab',
+       'arms-stock', 'arms-heavy',
+       'legs-stock', 'legs-piston'
+     );
+
+  -- Same INSERT as 0039 backfill (account-scoped, not per character).
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  select a.id, p.part_id, 1, 'grant'
+  from public.accounts a
+  cross join (
+    values
+      ('head-visor'),
+      ('head-welder'),
+      ('head-can'),
+      ('body-chassis'),
+      ('body-boiler'),
+      ('body-slab'),
+      ('arms-stock'),
+      ('arms-heavy'),
+      ('legs-stock'),
+      ('legs-piston')
+  ) as p(part_id)
+  where a.deleted_at is null
+    and a.id = v_account
+    and exists (
+      select 1 from public.characters c
+       where c.account_id = a.id
+         and c.is_opponent = false
+    )
+    and exists (
+      select 1 from public.parts_catalogue pc
+       where pc.part_id = p.part_id and pc.is_active
+    )
+    and not exists (
+      select 1 from public.inventory_ledger il
+       where il.account_id = a.id
+         and il.part_id = p.part_id
+         and il.reason in ('grant', 'seed', 'admin', 'purchase')
+         and il.delta > 0
+    );
+
+  -- Re-run: still one grant per shape.
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  select a.id, p.part_id, 1, 'grant'
+  from public.accounts a
+  cross join (
+    values
+      ('head-visor'),
+      ('head-welder'),
+      ('head-can'),
+      ('body-chassis'),
+      ('body-boiler'),
+      ('body-slab'),
+      ('arms-stock'),
+      ('arms-heavy'),
+      ('legs-stock'),
+      ('legs-piston')
+  ) as p(part_id)
+  where a.deleted_at is null
+    and a.id = v_account
+    and exists (
+      select 1 from public.characters c
+       where c.account_id = a.id
+         and c.is_opponent = false
+    )
+    and exists (
+      select 1 from public.parts_catalogue pc
+       where pc.part_id = p.part_id and pc.is_active
+    )
+    and not exists (
+      select 1 from public.inventory_ledger il
+       where il.account_id = a.id
+         and il.part_id = p.part_id
+         and il.reason in ('grant', 'seed', 'admin', 'purchase')
+         and il.delta > 0
+    );
+
+  foreach v_shape in array array[
+    'head-visor', 'head-welder', 'head-can',
+    'body-chassis', 'body-boiler', 'body-slab',
+    'arms-stock', 'arms-heavy',
+    'legs-stock', 'legs-piston'
+  ]
+  loop
+    select count(*) into v_grants
+      from public.inventory_ledger
+     where account_id = v_account
+       and part_id = v_shape
+       and reason in ('grant', 'seed', 'admin', 'purchase')
+       and delta > 0;
+    perform tests.assert(
+      v_grants = 1,
+      format('B1 exactly one positive grant for %s (got %s)', v_shape, v_grants)
+    );
+  end loop;
+
+  -- One revoke clears ownership (would fail if duplicate grants left qty ≥ 1).
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  values (v_account, 'head-can', -1, 'revoke');
+  v_qty := public.owned_part_quantity(v_account, 'head-can');
+  perform tests.assert(v_qty = 0, format('B1 qty 0 after one revoke (got %s)', v_qty));
+
+  -- Seeded / CI invariant: no account has duplicate positive shape grants.
+  select count(*) into v_dupes
+    from (
+      select il.account_id, il.part_id
+        from public.inventory_ledger il
+       where il.part_id in (
+               'head-visor', 'head-welder', 'head-can',
+               'body-chassis', 'body-boiler', 'body-slab',
+               'arms-stock', 'arms-heavy',
+               'legs-stock', 'legs-piston'
+             )
+         and il.reason in ('grant', 'seed', 'admin', 'purchase')
+         and il.delta > 0
+       group by il.account_id, il.part_id
+      having count(*) > 1
+    ) d;
+  perform tests.assert(v_dupes = 0, format('B1 no duplicate shape grants in DB (got %s)', v_dupes));
+
+  -- M1: list_owned_characters returns shape slots after Equip.
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  -- Re-grant head-can for Equip (revoked above).
+  reset role;
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  values (v_account, 'head-can', 1, 'admin');
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  perform public.save_bot_loadout(
+    (select character_id from public.characters
+      where account_id = v_account and is_opponent = false
+      order by created_at asc limit 1),
+    jsonb_build_object(
+      'chassis', 'chassis-basic',
+      'paint', 'paint-crimson',
+      'weapon', 'weapon-sword',
+      'head', 'head-welder',
+      'body', 'body-boiler',
+      'arms', 'arms-heavy',
+      'legs', 'legs-piston'
+    ),
+    'v1'
+  );
+  v_res := public.list_owned_characters();
+  reset role;
+  perform tests.assert((v_res->>'ok')::boolean, 'M1 list_owned_characters ok');
+  perform tests.assert(
+    exists (
+      select 1 from jsonb_array_elements(v_res->'bots') b
+       where b->>'head' = 'head-welder'
+         and b->>'body' = 'body-boiler'
+         and b->>'arms' = 'arms-heavy'
+         and b->>'legs' = 'legs-piston'
+    ),
+    'M1 list_owned_characters returns equipped shapes'
+  );
+
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.jwt.claim.role', '', true);
+  raise notice 'TEST-OK 0039 B1 account-scoped backfill + M1 list shapes';
+end $$;

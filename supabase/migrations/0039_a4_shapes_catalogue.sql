@@ -17,8 +17,12 @@
 --   4) save_bot_loadout (0038 body) reads head/body/arms/legs; null, missing,
 --      or '' default to stock so pre-A4 loadouts still save. Every shape is
 --      slot-asserted and written into the normalized jsonb.
---   5) Idempotent shape inventory backfill for existing players.
---   6) register_atlas_v1_a4_shape_entries(): 36 image entries (9 tiles ×
+--   5) Idempotent shape inventory backfill for existing players — one grant
+--      per account (distinct account_id), never per character. Multi-bot
+--      accounts must not get duplicate ledger rows (PRR B1).
+--   6) list_owned_characters returns head/body/arms/legs from current
+--      loadout so Ludus cards render equipped shapes (PRR M1).
+--   7) register_atlas_v1_a4_shape_entries(): 36 image entries (9 tiles ×
 --      oxide/material_under/material_over/mask) on draft v1 only, 0031
 --      pattern. Hosted Development (v1 published) runs it after the
 --      dev_reopen runbook in docs/backend/verify.md, then pack + upload.
@@ -559,13 +563,11 @@ comment on function public.save_bot_loadout(text, jsonb, text) is
 
 -- ---------------------------------------------------------------------------
 -- Idempotent A4 shape inventory backfill (0035 revoke-safe predicate)
+-- One row per account — never per character (multi-bot must not duplicate).
 -- ---------------------------------------------------------------------------
 insert into public.inventory_ledger (account_id, part_id, delta, reason)
-select c.account_id, p.part_id, 1, 'grant'
-from public.characters c
-join public.accounts a
-  on a.id = c.account_id
- and a.deleted_at is null
+select a.id, p.part_id, 1, 'grant'
+from public.accounts a
 cross join (
   values
     ('head-visor'),
@@ -579,19 +581,135 @@ cross join (
     ('legs-stock'),
     ('legs-piston')
 ) as p(part_id)
-where c.is_opponent = false
-  and c.account_id is not null
+where a.deleted_at is null
+  and exists (
+    select 1 from public.characters c
+     where c.account_id = a.id
+       and c.is_opponent = false
+  )
   and exists (
     select 1 from public.parts_catalogue pc
      where pc.part_id = p.part_id and pc.is_active
   )
   and not exists (
     select 1 from public.inventory_ledger il
-     where il.account_id = c.account_id
+     where il.account_id = a.id
        and il.part_id = p.part_id
        and il.reason in ('grant', 'seed', 'admin', 'purchase')
        and il.delta > 0
   );
+
+-- ---------------------------------------------------------------------------
+-- list_owned_characters: expose A4 shapes for Ludus cards (0037 body + shapes)
+-- ---------------------------------------------------------------------------
+create or replace function public.list_owned_characters()
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_caller uuid := auth.uid();
+  v_jwt_role text := coalesce(auth.role(), '');
+  v_deleted_at timestamptz;
+  v_active text;
+  v_cap integer;
+  v_ensure jsonb;
+  v_bots jsonb;
+begin
+  if v_jwt_role is distinct from 'authenticated' or v_caller is null then
+    raise exception 'forbidden: list_owned_characters requires authenticated auth.uid()'
+      using errcode = '42501';
+  end if;
+
+  select a.deleted_at, a.active_character_id
+    into v_deleted_at, v_active
+    from public.accounts a
+   where a.id = v_caller;
+
+  if v_deleted_at is not null then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'account_deleted',
+      'message', 'account has been deleted'
+    );
+  end if;
+
+  if not exists (
+    select 1 from public.characters c
+     where c.account_id = v_caller
+       and c.is_opponent = false
+       and coalesce(c.owner_is_npc, false) = false
+  ) then
+    v_ensure := public.ensure_player_character(v_caller);
+    if coalesce((v_ensure->>'ok')::boolean, false) is not true then
+      return jsonb_build_object(
+        'ok', false,
+        'code', coalesce(v_ensure->>'code', 'no_character'),
+        'message', coalesce(v_ensure->>'message', 'account has no player character')
+      );
+    end if;
+    update public.accounts
+       set active_character_id = v_ensure->>'characterId'
+     where id = v_caller
+       and (active_character_id is distinct from (v_ensure->>'characterId'));
+    select a.active_character_id into v_active
+      from public.accounts a where a.id = v_caller;
+  end if;
+
+  -- Heal stale / missing active pointer.
+  perform public._resolve_active_owned_character(v_caller);
+  select a.active_character_id into v_active
+    from public.accounts a where a.id = v_caller;
+
+  v_cap := public._player_bot_limit();
+
+  select coalesce(
+           jsonb_agg(
+             jsonb_build_object(
+               'characterId', c.character_id,
+               'displayName', c.display_name,
+               'wins', coalesce(rec.wins, 0),
+               'losses', coalesce(rec.losses, 0),
+               'paint', cl.loadout ->> 'paint',
+               'weapon', cl.loadout ->> 'weapon',
+               'head', cl.loadout ->> 'head',
+               'body', cl.loadout ->> 'body',
+               'arms', cl.loadout ->> 'arms',
+               'legs', cl.loadout ->> 'legs',
+               'atlasVersion', cl.atlas_version,
+               'isActive', (c.character_id = v_active)
+             )
+             order by c.created_at asc, c.character_id asc
+           ),
+           '[]'::jsonb
+         )
+    into v_bots
+    from public.characters c
+    left join public.bot_fight_records rec on rec.character_id = c.character_id
+    left join public.current_bot_loadouts cl on cl.character_id = c.character_id
+   where c.account_id = v_caller
+     and c.is_opponent = false
+     and coalesce(c.owner_is_npc, false) = false;
+
+  return jsonb_build_object(
+    'ok', true,
+    'bots', v_bots,
+    'cap', v_cap,
+    'ownedCount', jsonb_array_length(v_bots),
+    'activeCharacterId', v_active
+  );
+end;
+$$;
+
+revoke all on function public.list_owned_characters() from public;
+revoke all on function public.list_owned_characters() from anon;
+revoke all on function public.list_owned_characters() from service_role;
+grant execute on function public.list_owned_characters() to authenticated;
+
+comment on function public.list_owned_characters() is
+  'E4+A4: list owned player bots + cap + active + shape slots for auth.uid(). Returns {ok, bots, cap, ownedCount, activeCharacterId}. EXECUTE authenticated only.';
 
 -- ---------------------------------------------------------------------------
 -- Register A4 shape tile media onto atlas v1 (draft only, 0031 pattern)

@@ -20,6 +20,11 @@ export type OwnedBotRpcRow = {
   readonly losses: number;
   readonly paint: string | null;
   readonly weapon: string | null;
+  /** A4 shape slots from current loadout (null/omit → stock on client). */
+  readonly head?: string | null;
+  readonly body?: string | null;
+  readonly arms?: string | null;
+  readonly legs?: string | null;
   readonly atlasVersion: string | null;
   readonly isActive: boolean;
 };

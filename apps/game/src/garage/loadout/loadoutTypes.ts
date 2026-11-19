@@ -73,6 +73,11 @@ export type OwnedBotSummary = {
   readonly losses: number;
   readonly paint: string | null;
   readonly weapon: string | null;
+  /** A4 shape slots — null when omitted (pre-A4 / stock). */
+  readonly head: string | null;
+  readonly body: string | null;
+  readonly arms: string | null;
+  readonly legs: string | null;
   readonly atlasVersion: string | null;
   readonly isActive: boolean;
 };
