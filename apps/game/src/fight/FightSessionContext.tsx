@@ -14,7 +14,6 @@ import { ensureRuntimePacksBestEffort } from '../atlas/atlasPackRuntime';
 import { readSupabasePublicConfig } from '../garage/auth/supabasePublicConfig';
 import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { createOpponentCandidatesClient } from './candidates/createOpponentCandidatesClient';
-import { DevOpponentCandidatesAdapter } from './candidates/DevOpponentCandidatesAdapter';
 import type { OpponentCandidatesPort } from './candidates/OpponentCandidatesPort';
 import type { OpponentCandidate, PrepareEligibilityResult } from './candidates/types';
 import {
@@ -185,14 +184,8 @@ export function FightSessionProvider(props: {
       });
       return;
     }
-    // E3 design-capture: force remaining / exhausted on the shared DEV backend.
-    if (isDesignCaptureEnabled() && candidatesPort instanceof DevOpponentCandidatesAdapter) {
-      const scenario = peekCaptureIntent().fightQuotaScenario;
-      if (scenario === 'exhausted') candidatesPort.allowancesRemaining = 0;
-      if (scenario === 'remaining') {
-        candidatesPort.allowancesRemaining = Math.max(1, candidatesPort.allowancesRemaining || 2);
-      }
-    }
+    // Keep list as live server/DEV truth. Design-capture fightQuota overlays apply
+    // at read time in Opponents/Confirm (same-route deep links skip remount).
     setList({ status: 'loading' });
     const result = await candidatesPort.listCandidates({
       accessToken: session.accessToken,

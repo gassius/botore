@@ -5,6 +5,7 @@ import type { FirstRunRoute } from '../first-run/routes';
 import type { ResultCaptureScenario } from '../result-overlay/designCaptureRecords';
 import {
   type DesignCaptureCustomiseScenario,
+  type DesignCaptureFightQuotaScenario,
   type DesignCaptureHomeScenario,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
@@ -35,6 +36,7 @@ export function useDesignCaptureDeepLink(): void {
     setCustomiseCaptureScenario,
     setResultCaptureScenario,
     setHomeCaptureScenario,
+    setFightQuotaCaptureScenario,
     setFightViewMode,
   } = useFirstRun();
   const lastAppliedRoute = useRef<FirstRunRoute | null>(null);
@@ -45,6 +47,9 @@ export function useDesignCaptureDeepLink(): void {
   const lastResultScenario = useRef<ResultCaptureScenario | null | undefined>(undefined);
   const lastHomeScenario = useRef<DesignCaptureHomeScenario | null | undefined>(undefined);
   const lastRankingScenario = useRef<DesignCaptureRankingScenario | null | undefined>(undefined);
+  const lastFightQuotaScenario = useRef<DesignCaptureFightQuotaScenario | null | undefined>(
+    undefined,
+  );
   const fileConsumed = useRef(false);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
@@ -64,6 +69,7 @@ export function useDesignCaptureDeepLink(): void {
       customiseScenario?: DesignCaptureCustomiseScenario | null;
       resultScenario?: ResultCaptureScenario | null;
       homeScenario?: DesignCaptureHomeScenario | null;
+      fightQuotaScenario?: DesignCaptureFightQuotaScenario | null;
     }) => {
       // Always replace live sessionFailure (including null clear) so sequential
       // stills never stick auth_expired into a later offline capture.
@@ -114,6 +120,24 @@ export function useDesignCaptureDeepLink(): void {
       } else if (parsed.route === 'Ranking') {
         lastRankingScenario.current = 'live';
         setRankingCaptureScenario('live');
+      }
+      // D8/D9 fightQuota — same-route Opponents stills (roster → 2/3 remaining → snap-rest)
+      // must refresh even when applyRouteIfNew skips goTo. Null clears so later stills
+      // restore the live Full chip.
+      if (parsed.fightQuotaScenario !== lastFightQuotaScenario.current) {
+        lastFightQuotaScenario.current = parsed.fightQuotaScenario ?? null;
+        setFightQuotaCaptureScenario(parsed.fightQuotaScenario ?? null);
+      } else if (
+        (parsed.route === 'Opponents' || parsed.route === 'ConfirmFight') &&
+        parsed.fightQuotaScenario
+      ) {
+        setFightQuotaCaptureScenario(parsed.fightQuotaScenario);
+      } else if (
+        (parsed.route === 'Opponents' || parsed.route === 'ConfirmFight') &&
+        parsed.fightQuotaScenario == null
+      ) {
+        lastFightQuotaScenario.current = null;
+        setFightQuotaCaptureScenario(null);
       }
       if (parsed.paintId) setDemoPaintId(parsed.paintId);
       if (parsed.weaponId) setDemoWeaponId(parsed.weaponId);
@@ -208,6 +232,7 @@ export function useDesignCaptureDeepLink(): void {
     setCustomiseCaptureScenario,
     setResultCaptureScenario,
     setHomeCaptureScenario,
+    setFightQuotaCaptureScenario,
     setMuted,
   ]);
 }

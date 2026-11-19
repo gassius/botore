@@ -36,6 +36,7 @@ import { useFightSession } from '../FightSessionContext';
 import { resolveA6OpponentPanel } from '../opponents/a6OpponentPanelAssets';
 import { FightsRemainingPanel } from '../quota/FightsRemainingPanel';
 import type { FightQuotaSummary } from '../quota/fightQuotaTypes';
+import { useDesignCaptureFightQuota } from '../quota/useDesignCaptureFightQuota';
 import { buildTapeRows, designCaptureTapeStats, formatTapeRecord } from '../taleOfTheTape';
 
 function capturePoseMode(): DesignCapturePoseCompare | null {
@@ -105,12 +106,14 @@ export function ConfirmFightScreen(props: {
   const activeNavGenRef = useRef(navigationGeneration);
   activeNavGenRef.current = navigationGeneration;
 
-  const allowancesFromList = list.status === 'ready' ? list.allowancesRemaining : null;
+  const { displayAllowancesRemaining, displayQuota } = useDesignCaptureFightQuota(list);
+  const allowancesFromList =
+    displayAllowancesRemaining ?? (list.status === 'ready' ? list.allowancesRemaining : null);
   const allowances =
     submit.status === 'error' && submit.allowancesRemaining !== undefined
       ? submit.allowancesRemaining
       : (eligAllowances ?? allowancesFromList);
-  const quotaFromList = list.status === 'ready' ? list.quota : null;
+  const quotaFromList = displayQuota ?? (list.status === 'ready' ? list.quota : null);
   const confirmQuota: FightQuotaSummary | null =
     quotaFromList && allowances !== null
       ? {
