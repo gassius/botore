@@ -33,7 +33,20 @@ vi.mock('react-native', async () => {
     TextInput: make('TextInput'),
     Image: make('Image'),
     ActivityIndicator: make('ActivityIndicator'),
-    StyleSheet: { create: (s: object) => s },
+    StyleSheet: {
+      create: (s: object) => s,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      flatten: (style: any) => {
+        if (!style) return {};
+        if (Array.isArray(style)) {
+          return Object.assign(
+            {},
+            ...style.filter(Boolean).map((s: unknown) => (s && typeof s === 'object' ? s : {})),
+          );
+        }
+        return typeof style === 'object' ? style : {};
+      },
+    },
     Linking: { openURL: async () => undefined },
     Platform: { OS: 'web' },
     ScrollView: make('ScrollView'),
@@ -106,8 +119,10 @@ vi.mock('../src/first-run/FirstRunContext', () => ({
 }));
 
 import TestRenderer, { ReactTestRenderer, act } from 'react-test-renderer';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { measureScreenChromeLayout } from '../src/garage-tag/screenChromeLayout';
+import { BOT_DISPLAY_NAME_MAX_LEN } from '../src/garage/customise/botNameInput';
 import { DevAuthAdapter } from '../src/garage/auth/DevAuthAdapter';
 import { GarageSessionProvider, useGarageSession } from '../src/garage/LoadoutSessionContext';
 import { DevLoadoutSaveAdapter } from '../src/garage/loadout/DevLoadoutSaveAdapter';
@@ -348,8 +363,19 @@ describe('E1 Customise Save Loadout (390×844)', () => {
     });
     await flush();
     const input = root.root.findByProps({ testID: 'customise-nameplate-input' });
+    // M1: rendered contract — no textTransform on controlled input; IME strip off; case preserved.
+    expect(StyleSheet.flatten(input.props.style).textTransform).toBeUndefined();
+    expect(input.props.autoCorrect).toBe(false);
+    expect(input.props.autoComplete).toBe('off');
+    expect(input.props.maxLength).toBe(BOT_DISPLAY_NAME_MAX_LEN);
     await act(async () => {
-      input.props.onChangeText('Rivet');
+      input.props.onChangeText('aBcDe');
+    });
+    await flush();
+    const inputAfterCase = root.root.findByProps({ testID: 'customise-nameplate-input' });
+    expect(inputAfterCase.props.value).toBe('aBcDe');
+    await act(async () => {
+      inputAfterCase.props.onChangeText('Rivet');
     });
     await flush();
 

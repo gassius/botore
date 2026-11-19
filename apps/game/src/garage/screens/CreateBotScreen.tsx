@@ -15,9 +15,13 @@ import {
 } from '../../garage-tag';
 import { resolvePaintVisual } from '../../assembler/paints';
 import { useGarageSession } from '../LoadoutSessionContext';
+import {
+  BOT_DISPLAY_NAME_MAX_LEN,
+  BOT_NAME_INPUT_IME_PROPS,
+  clampBotNameDraft,
+} from '../customise/botNameInput';
 import { PROOF_PAINTS, PROOF_WEAPONS } from '../loadout/proofCatalogue';
 
-const NAME_MAX = 12;
 /**
  * Art (0bdf0a5): 250pt preview overflowed the phone frame — STARTING WEAPON
  * heading showed with Create flush under it and no weapon tiles (catalogue is
@@ -81,7 +85,8 @@ export function CreateBotScreen(props: {
     isDesignCaptureEnabled() && peekCaptureIntent().homeScenario === 'at-cap';
   const showAtCap = (atCap || forceAtCapCapture) && !busy && !createdLatch.current;
   const trimmed = name.trim();
-  const canCreate = !atCap && !busy && trimmed.length > 0 && trimmed.length <= NAME_MAX;
+  const canCreate =
+    !atCap && !busy && trimmed.length > 0 && trimmed.length <= BOT_DISPLAY_NAME_MAX_LEN;
 
   const paints = useMemo(() => solidPaintCards(paintId), [paintId]);
   const weapons = useMemo(() => weaponCards(weaponId), [weaponId]);
@@ -106,7 +111,7 @@ export function CreateBotScreen(props: {
       const suggested = await suggestBotName();
       if (!mountedRef.current) return;
       if (suggested) {
-        setName(suggested.slice(0, NAME_MAX));
+        setName(clampBotNameDraft(suggested));
         setError(null);
         return;
       }
@@ -245,7 +250,7 @@ export function CreateBotScreen(props: {
               Name
             </Text>
             <Text style={styles.nameHint} allowFontScaling>
-              Random — tap to edit · {NAME_MAX} max
+              Random — tap to edit · {BOT_DISPLAY_NAME_MAX_LEN} max
             </Text>
           </View>
           <View style={styles.nameRow}>
@@ -259,17 +264,16 @@ export function CreateBotScreen(props: {
               <TextInput
                 value={name}
                 onChangeText={(v) => {
-                  setName(v.slice(0, NAME_MAX));
+                  setName(clampBotNameDraft(v));
                   setError(null);
                 }}
-                maxLength={NAME_MAX}
-                autoCapitalize="words"
-                autoCorrect={false}
+                maxLength={BOT_DISPLAY_NAME_MAX_LEN}
                 placeholder="Bot name"
                 placeholderTextColor={garageTag.steel}
                 style={styles.nameInput}
                 testID="create-bot-name"
                 accessibilityLabel="Bot name"
+                {...BOT_NAME_INPUT_IME_PROPS}
               />
             )}
             <Pressable
@@ -385,6 +389,8 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
   },
+  // No textTransform here: Android controlled TextInput + textTransform/IME
+  // composition duplicates characters after a few keystrokes (same E13 as Customise).
   nameInput: {
     flex: 1,
     minHeight: 48,
@@ -396,7 +402,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 16,
     letterSpacing: 0.6,
-    textTransform: 'uppercase',
     color: garageTag.graphite,
   },
   dice: {

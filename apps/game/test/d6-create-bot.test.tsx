@@ -31,6 +31,17 @@ vi.mock('react-native', async () => {
     StyleSheet: {
       create: (s: object) => s,
       absoluteFillObject: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      flatten: (style: any) => {
+        if (!style) return {};
+        if (Array.isArray(style)) {
+          return Object.assign(
+            {},
+            ...style.filter(Boolean).map((s: unknown) => (s && typeof s === 'object' ? s : {})),
+          );
+        }
+        return typeof style === 'object' ? style : {};
+      },
     },
     Platform: { OS: 'web' },
   };
@@ -131,7 +142,9 @@ vi.mock('../src/first-run/FirstRunContext', () => ({
 }));
 
 import TestRenderer, { ReactTestRenderer, act } from 'react-test-renderer';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BOT_DISPLAY_NAME_MAX_LEN } from '../src/garage/customise/botNameInput';
 import { CreateBotScreen } from '../src/garage/screens/CreateBotScreen';
 
 function findByTestId(root: ReactTestRenderer, testID: string) {
@@ -181,9 +194,12 @@ describe('D6 Create Bot view', () => {
     }
   });
 
-  it('keeps name max 12 and CreateBot route wired from Ludus', () => {
+  it('keeps name max via BOT_DISPLAY_NAME_MAX_LEN and CreateBot route wired from Ludus', () => {
     const screen = readSource('src/garage/screens/CreateBotScreen.tsx');
-    expect(screen).toContain('NAME_MAX = 12');
+    expect(screen).toContain('BOT_DISPLAY_NAME_MAX_LEN');
+    expect(screen).toContain('clampBotNameDraft');
+    expect(screen).toContain('BOT_NAME_INPUT_IME_PROPS');
+    expect(screen).not.toContain('NAME_MAX = 12');
     expect(screen).toContain('create-bot-name');
     expect(screen).toContain('create-bot-reroll');
     expect(screen).toContain('create-bot-submit');
@@ -237,6 +253,28 @@ describe('D6 Create Bot view', () => {
     });
 
     expect(findByTestId(renderer!, 'create-bot-submit').props.disabled).toBe(true);
+  });
+
+  it('preserves name case and omits textTransform on Create Bot input (Android E13)', async () => {
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <SafeAreaProvider>
+          <CreateBotScreen onCreated={onCreated} onBack={onBack} />
+        </SafeAreaProvider>,
+      );
+    });
+
+    const input = findByTestId(renderer!, 'create-bot-name');
+    expect(StyleSheet.flatten(input.props.style).textTransform).toBeUndefined();
+    expect(input.props.autoCorrect).toBe(false);
+    expect(input.props.autoComplete).toBe('off');
+    expect(input.props.autoCapitalize).toBe('none');
+    expect(input.props.maxLength).toBe(BOT_DISPLAY_NAME_MAX_LEN);
+
+    await act(async () => {
+      input.props.onChangeText('aBcDe');
+    });
+    expect(findByTestId(renderer!, 'create-bot-name').props.value).toBe('aBcDe');
   });
 
   it('shows at-cap branch when owned bots reach cap', async () => {
