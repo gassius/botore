@@ -132,98 +132,101 @@ export function GarageSessionProvider(props: {
     setBotCap(listed.cap);
   }, [auth, loadouts]);
 
-  const hydrate = useCallback(async (opts?: { selectEpoch?: number }) => {
-    const stillCurrent = () =>
-      opts?.selectEpoch === undefined || opts.selectEpoch === selectEpochRef.current;
+  const hydrate = useCallback(
+    async (opts?: { selectEpoch?: number }) => {
+      const stillCurrent = () =>
+        opts?.selectEpoch === undefined || opts.selectEpoch === selectEpochRef.current;
 
-    const current = await auth.getSession();
-    if (!stillCurrent()) return;
-    setSession(current);
-    if (!current) {
-      setLoadout(createUnavailableLoadoutState());
-      setOwnedBots([]);
-      setBotCap(DEFAULT_PLAYER_BOT_CAP);
-      setBooting(false);
-      return;
-    }
-
-    const listed = await loadouts.listOwnedBots(current.accessToken);
-    if (!stillCurrent()) return;
-    if (listed.ok) {
-      setOwnedBots(listed.bots);
-      setBotCap(listed.cap);
-    }
-
-    const owned = await loadouts.resolveOwnedCharacter(current.accessToken);
-    if (!stillCurrent()) return;
-    if (!owned.ok) {
-      if (isDesignCaptureEnabled()) {
-        console.warn(
-          `BOTORE_CAPTURE_HYDRATE_ERROR:owned code=${owned.code} message=${owned.message}`,
-        );
+      const current = await auth.getSession();
+      if (!stillCurrent()) return;
+      setSession(current);
+      if (!current) {
+        setLoadout(createUnavailableLoadoutState());
+        setOwnedBots([]);
+        setBotCap(DEFAULT_PLAYER_BOT_CAP);
+        setBooting(false);
+        return;
       }
-      setLoadout((prev) =>
-        markHydrationUnavailable(prev, {
-          accountId: current.userId,
-          characterId: null,
-          message: owned.message,
-          code: owned.code,
-        }),
-      );
-      setBooting(false);
-      return;
-    }
 
-    const fetched = await loadouts.fetchCurrent({
-      characterId: owned.character.characterId,
-      accessToken: current.accessToken,
-    });
-    if (!stillCurrent()) return;
-    if (fetched.ok) {
-      if (isDesignCaptureEnabled()) {
-        console.log(
-          `BOTORE_CAPTURE_HYDRATE_OK:characterId=${owned.character.characterId} version=${fetched.snapshot.loadoutVersionId}`,
-        );
+      const listed = await loadouts.listOwnedBots(current.accessToken);
+      if (!stillCurrent()) return;
+      if (listed.ok) {
+        setOwnedBots(listed.bots);
+        setBotCap(listed.cap);
       }
-      setLoadout(
-        createLoadoutPreviewState({
-          accountId: current.userId,
-          characterId: owned.character.characterId,
-          // C16: never hold platform player ids in garage UI state.
-          // C17: never fall back to character UUID / player-hero as a label.
-          displayName: playerFacingDisplayName(owned.character.displayName),
-          confirmedLoadout: fetched.snapshot.loadout,
-          confirmedVersionId: fetched.snapshot.loadoutVersionId,
-          atlasVersion: fetched.snapshot.atlasVersion,
-        }),
-      );
-      // C13: teach ensurePacks for stable bots (download/cache; never blocks hydrate).
-      void ensureRuntimePacksBestEffort({
-        config: readSupabasePublicConfig(),
+
+      const owned = await loadouts.resolveOwnedCharacter(current.accessToken);
+      if (!stillCurrent()) return;
+      if (!owned.ok) {
+        if (isDesignCaptureEnabled()) {
+          console.warn(
+            `BOTORE_CAPTURE_HYDRATE_ERROR:owned code=${owned.code} message=${owned.message}`,
+          );
+        }
+        setLoadout((prev) =>
+          markHydrationUnavailable(prev, {
+            accountId: current.userId,
+            characterId: null,
+            message: owned.message,
+            code: owned.code,
+          }),
+        );
+        setBooting(false);
+        return;
+      }
+
+      const fetched = await loadouts.fetchCurrent({
+        characterId: owned.character.characterId,
         accessToken: current.accessToken,
-        atlasVersion: fetched.snapshot.atlasVersion,
-        loadouts: [fetched.snapshot.loadout],
-        includeArena: false,
-        includeFx: false,
       });
-    } else {
-      if (isDesignCaptureEnabled()) {
-        console.warn(
-          `BOTORE_CAPTURE_HYDRATE_ERROR:loadout characterId=${owned.character.characterId} code=${fetched.code} message=${fetched.message}`,
+      if (!stillCurrent()) return;
+      if (fetched.ok) {
+        if (isDesignCaptureEnabled()) {
+          console.log(
+            `BOTORE_CAPTURE_HYDRATE_OK:characterId=${owned.character.characterId} version=${fetched.snapshot.loadoutVersionId}`,
+          );
+        }
+        setLoadout(
+          createLoadoutPreviewState({
+            accountId: current.userId,
+            characterId: owned.character.characterId,
+            // C16: never hold platform player ids in garage UI state.
+            // C17: never fall back to character UUID / player-hero as a label.
+            displayName: playerFacingDisplayName(owned.character.displayName),
+            confirmedLoadout: fetched.snapshot.loadout,
+            confirmedVersionId: fetched.snapshot.loadoutVersionId,
+            atlasVersion: fetched.snapshot.atlasVersion,
+          }),
+        );
+        // C13: teach ensurePacks for stable bots (download/cache; never blocks hydrate).
+        void ensureRuntimePacksBestEffort({
+          config: readSupabasePublicConfig(),
+          accessToken: current.accessToken,
+          atlasVersion: fetched.snapshot.atlasVersion,
+          loadouts: [fetched.snapshot.loadout],
+          includeArena: false,
+          includeFx: false,
+        });
+      } else {
+        if (isDesignCaptureEnabled()) {
+          console.warn(
+            `BOTORE_CAPTURE_HYDRATE_ERROR:loadout characterId=${owned.character.characterId} code=${fetched.code} message=${fetched.message}`,
+          );
+        }
+        setLoadout((prev) =>
+          markHydrationUnavailable(prev, {
+            accountId: current.userId,
+            characterId: owned.character.characterId,
+            displayName: playerFacingDisplayName(owned.character.displayName),
+            message: fetched.message,
+            code: fetched.code,
+          }),
         );
       }
-      setLoadout((prev) =>
-        markHydrationUnavailable(prev, {
-          accountId: current.userId,
-          characterId: owned.character.characterId,
-          displayName: playerFacingDisplayName(owned.character.displayName),
-          message: fetched.message,
-          code: fetched.code,
-        }),
-      );
-    }
-    setBooting(false);
-  }, [auth, loadouts]);
+      setBooting(false);
+    },
+    [auth, loadouts],
+  );
 
   const captureAutoSignInStarted = useRef(false);
   const silentAuthStarted = useRef(false);
