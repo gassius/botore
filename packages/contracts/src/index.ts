@@ -125,8 +125,14 @@ export const PartSlotKindSchema = Type.Union([
   Type.Literal('shield'),
   Type.Literal('drone'),
   Type.Literal('decal'),
+  Type.Literal('head'),
+  Type.Literal('body'),
+  Type.Literal('arms'),
+  Type.Literal('legs'),
 ]);
 export type PartSlotKindDto = Static<typeof PartSlotKindSchema>;
+
+const ShapePartIdSchema = Type.Optional(Type.Union([IdSchema, Type.Null()]));
 
 export const CataloguePartSchema = Type.Object({
   partId: IdSchema,
@@ -153,6 +159,11 @@ export const BotLoadoutSchema = Type.Object({
   drone: Type.Union([IdSchema, Type.Null()]),
   decals: Type.Array(IdSchema, { maxItems: 8 }),
   soundTags: Type.Array(Type.String({ minLength: 1, maxLength: 64 }), { maxItems: 32 }),
+  // Saves from 0039 on always carry shapes; older immutable versions omit them (= stock).
+  head: Type.Optional(IdSchema),
+  body: Type.Optional(IdSchema),
+  arms: Type.Optional(IdSchema),
+  legs: Type.Optional(IdSchema),
 });
 export type BotLoadoutDto = Static<typeof BotLoadoutSchema>;
 
@@ -168,6 +179,10 @@ export const SaveBotLoadoutRequestSchema = Type.Object({
     soundTags: Type.Optional(
       Type.Array(Type.String({ minLength: 1, maxLength: 64 }), { maxItems: 32 }),
     ),
+    head: ShapePartIdSchema,
+    body: ShapePartIdSchema,
+    arms: ShapePartIdSchema,
+    legs: ShapePartIdSchema,
   }),
   atlasVersion: Type.Optional(Type.String({ pattern: '^v[0-9]+$' })),
 });

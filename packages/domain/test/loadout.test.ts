@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   MAX_DECALS,
+  STOCK_SHAPE_PART_IDS,
   validateBotLoadout,
   loadoutWeaponFromCatalogue,
   fighterSnapshotFromBuildAndLoadout,
@@ -82,7 +83,38 @@ const PROOF: CataloguePart[] = [
     soundTags: ['shield.metal'],
     mediaKey: 'parts/shield-proto',
   }),
+  ...(
+    [
+      ['head-visor', 'head'],
+      ['head-welder', 'head'],
+      ['head-can', 'head'],
+      ['body-chassis', 'body'],
+      ['body-boiler', 'body'],
+      ['body-slab', 'body'],
+      ['arms-stock', 'arms'],
+      ['arms-heavy', 'arms'],
+      ['legs-stock', 'legs'],
+      ['legs-piston', 'legs'],
+    ] as const
+  ).map(([partId, slotKind]) =>
+    part({
+      partId,
+      slotKind,
+      displayName: partId,
+      weaponKind: null,
+      weaponPower: null,
+      soundTags: [],
+      mediaKey: `parts/${partId}`,
+    }),
+  ),
 ];
+
+const STOCK_SHAPES = {
+  head: 'head-visor',
+  body: 'body-chassis',
+  arms: 'arms-stock',
+  legs: 'legs-stock',
+} as const;
 
 const catalogue = new Map(PROOF.map((p) => [p.partId, p]));
 const owned = new Set(PROOF.map((p) => p.partId));
@@ -109,7 +141,98 @@ describe('validateBotLoadout', () => {
       drone: null,
       decals: [],
       soundTags: ['chassis.light', 'weapon.sword'],
+      ...STOCK_SHAPES,
     } satisfies BotLoadout);
+  });
+
+  it('defaults missing or null shape slots to stock (pre-A4 loadouts)', () => {
+    const result = validateBotLoadout({
+      loadout: {
+        chassis: 'chassis-basic',
+        paint: 'paint-crimson',
+        weapon: 'weapon-sword',
+        head: null,
+        legs: '',
+      },
+      catalogue,
+      ownedPartIds: owned,
+      requireOwnership: true,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.loadout).toMatchObject(STOCK_SHAPES);
+    expect(STOCK_SHAPE_PART_IDS).toEqual(STOCK_SHAPES);
+  });
+
+  it('keeps chosen shapes, does not touch chassis, and leaves sound tags alone', () => {
+    const result = validateBotLoadout({
+      loadout: {
+        chassis: 'chassis-basic',
+        paint: 'paint-crimson',
+        weapon: 'weapon-sword',
+        head: 'head-welder',
+        body: 'body-boiler',
+        arms: 'arms-heavy',
+        legs: 'legs-piston',
+      },
+      catalogue,
+      ownedPartIds: owned,
+      requireOwnership: true,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.loadout).toMatchObject({
+      chassis: 'chassis-basic',
+      head: 'head-welder',
+      body: 'body-boiler',
+      arms: 'arms-heavy',
+      legs: 'legs-piston',
+      soundTags: ['chassis.light', 'weapon.sword'],
+    });
+  });
+
+  it('rejects shape slot mismatches, unowned shapes, and non-string shapes', () => {
+    const mismatch = validateBotLoadout({
+      loadout: {
+        chassis: 'chassis-basic',
+        paint: 'paint-crimson',
+        weapon: 'weapon-sword',
+        body: 'head-can',
+      },
+      catalogue,
+      ownedPartIds: owned,
+      requireOwnership: true,
+    });
+    expect(mismatch.ok).toBe(false);
+    if (!mismatch.ok) expect(mismatch.errors.map((e) => e.code)).toContain('slot_mismatch');
+
+    const unowned = validateBotLoadout({
+      loadout: {
+        chassis: 'chassis-basic',
+        paint: 'paint-crimson',
+        weapon: 'weapon-sword',
+        legs: 'legs-piston',
+      },
+      catalogue,
+      ownedPartIds: new Set([...owned].filter((id) => id !== 'legs-piston')),
+      requireOwnership: true,
+    });
+    expect(unowned.ok).toBe(false);
+    if (!unowned.ok) expect(unowned.errors.map((e) => e.code)).toContain('unowned_part');
+
+    const badType = validateBotLoadout({
+      loadout: {
+        chassis: 'chassis-basic',
+        paint: 'paint-crimson',
+        weapon: 'weapon-sword',
+        arms: 7,
+      },
+      catalogue,
+      ownedPartIds: owned,
+      requireOwnership: true,
+    });
+    expect(badType.ok).toBe(false);
+    if (!badType.ok) expect(badType.errors.map((e) => e.code)).toContain('invalid_loadout');
   });
 
   it('rejects missing required slots', () => {
@@ -274,6 +397,7 @@ describe('loadoutWeaponFromCatalogue', () => {
       drone: null,
       decals: [],
       soundTags: [],
+      ...STOCK_SHAPES,
     };
     expect(loadoutWeaponFromCatalogue(loadout, catalogue)).toEqual({
       kind: 'axe',
@@ -292,6 +416,7 @@ describe('fighterSnapshotFromBuildAndLoadout', () => {
       drone: null,
       decals: [],
       soundTags: ['chassis.light', 'weapon.sword'],
+      ...STOCK_SHAPES,
     };
     expect(
       fighterSnapshotFromBuildAndLoadout(

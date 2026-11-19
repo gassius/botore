@@ -154,6 +154,50 @@ describe('API contracts', () => {
     ).toBe(true);
   });
 
+  it('accepts A4 shape slots on catalogue rows and loadouts', () => {
+    expect(
+      Value.Check(CataloguePartSchema, {
+        partId: 'body-boiler',
+        slotKind: 'body',
+        displayName: 'Barrel boiler',
+        weaponKind: null,
+        weaponPower: null,
+        soundTags: [],
+        mediaKey: 'parts/body-boiler',
+        isActive: true,
+      }),
+    ).toBe(true);
+
+    const shapedLoadout = {
+      chassis: 'chassis-basic',
+      paint: 'paint-crimson',
+      weapon: 'weapon-sword',
+      shield: null,
+      drone: null,
+      decals: [],
+      soundTags: ['chassis.light', 'weapon.sword'],
+      head: 'head-welder',
+      body: 'body-boiler',
+      arms: 'arms-heavy',
+      legs: 'legs-piston',
+    };
+    expect(Value.Check(BotLoadoutSchema, shapedLoadout)).toBe(true);
+    expect(Value.Check(BotLoadoutSchema, { ...shapedLoadout, head: 42 })).toBe(false);
+
+    expect(
+      Value.Check(SaveBotLoadoutRequestSchema, {
+        characterId: 'player-hero',
+        loadout: {
+          chassis: 'chassis-basic',
+          paint: 'paint-crimson',
+          weapon: 'weapon-sword',
+          head: null,
+          body: 'body-slab',
+        },
+      }),
+    ).toBe(true);
+  });
+
   it('validates backend health snapshot envelope', () => {
     expect(
       Value.Check(BackendHealthSchema, {
