@@ -11,9 +11,12 @@ import {
 import { peekCaptureIntent } from '../design-capture/pendingCaptureIntent';
 import type { ResultCaptureScenario } from '../result-overlay/designCaptureRecords';
 import {
+  rankingReturnTargetFor,
   resolveFirstRunGoBackTarget,
+  resolveRankingExit,
   shouldReopenResultOverlayOnBack,
   type FightViewMode,
+  type RankingReturnTarget,
 } from '../fight-view';
 import { usePlayerSettings } from '../settings';
 import { nextRoute, prevRoute, type FirstRunRoute } from './routes';
@@ -23,6 +26,11 @@ export type FirstRunContextValue = {
   goTo: (route: FirstRunRoute) => void;
   goNext: () => void;
   goBack: () => void;
+  /**
+   * Leave Ranking to where it was opened from: the in-arena Result (after a
+   * fight) or Ludus. Ranking opened from Result must not drop the fight end.
+   */
+  leaveRanking: () => void;
   muted: boolean;
   setMuted: (muted: boolean) => void;
   toggleMute: () => void;
@@ -131,11 +139,21 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
     useState<DesignCaptureFightQuotaScenario | null>(() => pending.fightQuotaScenario ?? null);
   const [fightViewMode, setFightViewMode] = useState<FightViewMode>('firstWatch');
   const [showResultOverlay, setShowResultOverlay] = useState(false);
+  const [rankingReturn, setRankingReturn] = useState<RankingReturnTarget>('Stable');
 
-  const value = useMemo<FirstRunContextValue>(
-    () => ({
+  const value = useMemo<FirstRunContextValue>(() => {
+    const leaveRanking = () => {
+      const exit = resolveRankingExit(rankingReturn);
+      setRankingReturn('Stable');
+      setRoute(exit.route);
+      setShowResultOverlay(exit.showResultOverlay);
+    };
+    return {
       route,
       goTo: (next) => {
+        if (next === 'Ranking' && route !== 'Ranking') {
+          setRankingReturn(rankingReturnTargetFor(route, showResultOverlay));
+        }
         setRoute(next);
         if (next !== 'Replay' && next !== 'FightResult') {
           setShowResultOverlay(false);
@@ -149,6 +167,10 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
         }
       },
       goBack: () => {
+        if (route === 'Ranking') {
+          leaveRanking();
+          return;
+        }
         if (shouldReopenResultOverlayOnBack(route, fightViewMode)) {
           setShowResultOverlay(true);
           return;
@@ -159,6 +181,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
           setShowResultOverlay(false);
         }
       },
+      leaveRanking,
       muted: settings.muted,
       setMuted: settings.setMuted,
       toggleMute: settings.toggleMute,
@@ -193,34 +216,34 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       setFightViewMode,
       showResultOverlay,
       setShowResultOverlay,
-    }),
-    [
-      route,
-      fightViewMode,
-      showResultOverlay,
-      settings.muted,
-      settings.setMuted,
-      settings.toggleMute,
-      settings.musicEnabled,
-      settings.setMusicEnabled,
-      settings.effectsEnabled,
-      settings.setEffectsEnabled,
-      settings.reducedMotion,
-      settings.forceReducedMotion,
-      settings.setForceReducedMotion,
-      settings.osReducedMotion,
-      settings.hydrated,
-      demoPaintId,
-      demoWeaponId,
-      demoOpponentId,
-      rankingCaptureScenario,
-      sessionFailureCapture,
-      customiseCaptureScenario,
-      resultCaptureScenario,
-      homeCaptureScenario,
-      fightQuotaCaptureScenario,
-    ],
-  );
+    };
+  }, [
+    route,
+    fightViewMode,
+    showResultOverlay,
+    rankingReturn,
+    settings.muted,
+    settings.setMuted,
+    settings.toggleMute,
+    settings.musicEnabled,
+    settings.setMusicEnabled,
+    settings.effectsEnabled,
+    settings.setEffectsEnabled,
+    settings.reducedMotion,
+    settings.forceReducedMotion,
+    settings.setForceReducedMotion,
+    settings.osReducedMotion,
+    settings.hydrated,
+    demoPaintId,
+    demoWeaponId,
+    demoOpponentId,
+    rankingCaptureScenario,
+    sessionFailureCapture,
+    customiseCaptureScenario,
+    resultCaptureScenario,
+    homeCaptureScenario,
+    fightQuotaCaptureScenario,
+  ]);
 
   return <FirstRunContext.Provider value={value}>{children}</FirstRunContext.Provider>;
 }

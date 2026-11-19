@@ -24,6 +24,7 @@ import {
   FightViewMuteControl,
   FIGHT_VIEW_HUD_BELOW_INSET,
   FIGHT_VIEW_KO_HOLD_MS,
+  FIGHT_VIEW_REWATCH_FAST_SPEED,
   initialCalloutQueueState,
   msUntilCalloutAdvance,
   resetCalloutQueue,
@@ -50,6 +51,7 @@ import {
 import { fighterDisplayName } from '../../replay/confirmedResult';
 import type { AnimationCommand } from '../../replay-playback';
 import type { ReplayPresentationState } from '../../replay/playbackState';
+import type { PlaybackUiState } from '../../replay/playbackControl';
 import { isLiveFightCaptureEnabled } from '../../design-capture';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
@@ -65,7 +67,10 @@ import { useFirstRun } from '../FirstRunContext';
 /**
  * D1 Fight View — arena-first shell.
  * First watch: no back / transport / Continue; KO hold → D2 Result overlay.
- * Rewatch: back re-opens Result overlay; one REPLAY button; mute stays in-arena.
+ * Rewatch: back re-opens Result overlay; band keeps hit call-outs above replay
+ * controls (play/pause, scrub, 2×); mute stays in-arena.
+ * Remounting with the overlay already open (back from Ranking) lands on the
+ * final frame under a settled Result — no replay from frame 0, no re-run intro.
  */
 export function ReplaySlot(): React.ReactElement {
   const {
@@ -101,6 +106,9 @@ export function ReplaySlot(): React.ReactElement {
   const [pendingCount, setPendingCount] = useState(0);
   const [dwellKey, setDwellKey] = useState<number | null>(null);
   const [hp, setHp] = useState({ near: 1, far: 1 });
+  const [mountedOnResult] = useState(() => showResultOverlay);
+  const [transport, setTransport] = useState({ playing: false, progress: 0 });
+  const [speed, setSpeed] = useState(1);
   const handOffOnceRef = useRef(
     createOnceHandoff(() => {
       setShowResultOverlay(true);
@@ -187,7 +195,7 @@ export function ReplaySlot(): React.ReactElement {
   // Live capture: start paused so CI can still replay-start / arena at idle,
   // then auto-play after a short window (avoids start≡first-hit-hold).
   useEffect(() => {
-    if (!liveCapture || !replayChecksum) return;
+    if (!liveCapture || !replayChecksum || mountedOnResult) return;
     console.log(formatReplayIdleLog());
     if (idlePlayTimerRef.current) clearTimeout(idlePlayTimerRef.current);
     idlePlayTimerRef.current = setTimeout(() => {
@@ -197,7 +205,7 @@ export function ReplaySlot(): React.ReactElement {
     return () => {
       if (idlePlayTimerRef.current) clearTimeout(idlePlayTimerRef.current);
     };
-  }, [liveCapture, replayChecksum]);
+  }, [liveCapture, replayChecksum, mountedOnResult]);
 
   const onFxCue = useCallback(
     (family: ArenaFxFamily) => {
@@ -223,26 +231,53 @@ export function ReplaySlot(): React.ReactElement {
   const onCommandApplied = useCallback(
     (cmd: AnimationCommand, presentation: ReplayPresentationState) => {
       attackCtxRef.current = updateCalloutAttackContext(cmd, attackCtxRef.current);
-      // Rewatch band discards callouts — skip enqueue / dwell timers / re-renders.
-      if (!isRewatch) {
-        const fighters =
-          resolution.status === 'confirmed' ? resolution.confirmed.replay.fighters : [];
-        // Queue non-null plates with min dwell; KO preempts; null keeps the plate.
-        const mapped = calloutFromCommand(cmd, fighters, {
-          lastAttackerId: attackCtxRef.current.lastAttackerId,
-          wasHeavy: attackCtxRef.current.wasHeavy,
-        });
-        if (mapped) {
-          const next = enqueueCallout(calloutQueueRef.current, mapped, Date.now());
-          calloutQueueRef.current = next;
-          publishCalloutQueue();
-          scheduleCalloutAdvance();
-        }
+      const fighters =
+        resolution.status === 'confirmed' ? resolution.confirmed.replay.fighters : [];
+      // Queue non-null plates with min dwell; KO preempts; null keeps the plate.
+      const mapped = calloutFromCommand(cmd, fighters, {
+        lastAttackerId: attackCtxRef.current.lastAttackerId,
+        wasHeavy: attackCtxRef.current.wasHeavy,
+      });
+      if (mapped) {
+        const next = enqueueCallout(calloutQueueRef.current, mapped, Date.now());
+        calloutQueueRef.current = next;
+        publishCalloutQueue();
+        scheduleCalloutAdvance();
       }
       setHp({ near: presentation.hp.near, far: presentation.hp.far });
     },
-    [isRewatch, resolution, publishCalloutQueue, scheduleCalloutAdvance],
+    [resolution, publishCalloutQueue, scheduleCalloutAdvance],
   );
+
+  // Scrub / start-at-end: drop stale plates; HP + attacker context follow the jump.
+  const onSeeked = useCallback(
+    (presentation: ReplayPresentationState, skipped: readonly AnimationCommand[]) => {
+      resetVisibleCallout();
+      let ctx: { lastAttackerId: string | null; wasHeavy: boolean } = {
+        lastAttackerId: null,
+        wasHeavy: false,
+      };
+      for (const cmd of skipped) ctx = updateCalloutAttackContext(cmd, ctx);
+      attackCtxRef.current = ctx;
+      setHp({ near: presentation.hp.near, far: presentation.hp.far });
+    },
+    [resetVisibleCallout],
+  );
+
+  const onPlaybackChange = useCallback((state: PlaybackUiState) => {
+    setTransport((prev) =>
+      prev.playing === state.playing && prev.progress === state.progress
+        ? prev
+        : { playing: state.playing, progress: state.progress },
+    );
+  }, []);
+
+  const restartReplay = useCallback(() => {
+    playerRef.current?.replay();
+    resetVisibleCallout();
+    setHp({ near: 1, far: 1 });
+    attackCtxRef.current = { lastAttackerId: null, wasHeavy: false };
+  }, [resetVisibleCallout]);
 
   // E2: when the Result overlay opens, refresh W–L from list_bot_ranking (no invent).
   useEffect(() => {
@@ -355,6 +390,7 @@ export function ReplaySlot(): React.ReactElement {
           musicEnabled={musicEnabled}
           effectsEnabled={effectsEnabled}
           reducedMotion={reducedMotion}
+          skipIntro={mountedOnResult}
           topInset={topInset}
           testID="result-overlay"
         />
@@ -374,10 +410,13 @@ export function ReplaySlot(): React.ReactElement {
             effectsEnabled={effectsEnabled}
             reducedMotion={liveCapture ? false : reducedMotion}
             autoPlay={!liveCapture}
+            initialPosition={mountedOnResult ? 'end' : 'start'}
             showLocalControls={false}
             layoutMode="arenaFirst"
             arenaOverlay={arenaOverlay}
             onCommandApplied={onCommandApplied}
+            onSeeked={onSeeked}
+            onPlaybackChange={onPlaybackChange}
             onFinished={onFinished}
             onFxCue={onFxCue}
             testID="slot-replay-player"
@@ -394,10 +433,9 @@ export function ReplaySlot(): React.ReactElement {
                 setShowResultOverlay(false);
                 setFightViewMode('rewatch');
                 playerRef.current?.playUiTap();
-                playerRef.current?.replay();
-                resetVisibleCallout();
-                setHp({ near: 1, far: 1 });
-                attackCtxRef.current = { lastAttackerId: null, wasHeavy: false };
+                playerRef.current?.setSpeed(1);
+                setSpeed(1);
+                restartReplay();
               }}
               onRanking={() => {
                 playerRef.current?.playUiTap();
@@ -408,17 +446,32 @@ export function ReplaySlot(): React.ReactElement {
           ) : (
             <FightViewBottomBand
               mode={fightViewMode}
-              callout={isRewatch ? null : callout}
-              calloutCount={isRewatch ? 1 : calloutCount}
-              pendingCount={isRewatch ? 0 : pendingCount}
-              dwellKey={isRewatch ? null : dwellKey}
+              callout={callout}
+              calloutCount={calloutCount}
+              pendingCount={pendingCount}
+              dwellKey={dwellKey}
               reducedMotion={reducedMotion}
-              onReplay={() => {
-                playerRef.current?.playUiTap();
-                playerRef.current?.replay();
-                resetVisibleCallout();
-                setHp({ near: 1, far: 1 });
-                attackCtxRef.current = { lastAttackerId: null, wasHeavy: false };
+              transport={{
+                playing: transport.playing,
+                progress: transport.progress,
+                speed,
+                onTogglePlay: () => {
+                  playerRef.current?.playUiTap();
+                  if (!transport.playing && transport.progress >= 1) {
+                    restartReplay();
+                    return;
+                  }
+                  playerRef.current?.togglePlay();
+                },
+                onToggleSpeed: () => {
+                  playerRef.current?.playUiTap();
+                  const next = speed > 1 ? 1 : FIGHT_VIEW_REWATCH_FAST_SPEED;
+                  playerRef.current?.setSpeed(next);
+                  setSpeed(next);
+                },
+                onSeek: (progress) => {
+                  playerRef.current?.seekToProgress(progress);
+                },
               }}
               testID="fight-view-band"
             />

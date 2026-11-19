@@ -28,6 +28,11 @@ export type ResultOverlayProps = {
   readonly musicEnabled?: boolean;
   readonly effectsEnabled?: boolean;
   readonly reducedMotion?: boolean;
+  /**
+   * Mount settled: no plate drop, XP ticks, or NEW RECORD cue (the player
+   * already saw them, e.g. returning from Ranking).
+   */
+  readonly skipIntro?: boolean;
   /** Safe-area top inset — arena is full-bleed under the status bar / notch. */
   readonly topInset?: number;
   /** Fade HUD under the dim (parent should also hide call-outs). */
@@ -45,6 +50,7 @@ export function ResultOverlay({
   musicEnabled = true,
   effectsEnabled = true,
   reducedMotion = false,
+  skipIntro = false,
   topInset = 0,
   rng01,
   nowMs,
@@ -63,11 +69,12 @@ export function ResultOverlay({
     [confirmed.builds.attacker],
   );
   const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
-  const plateDrop = useRef(new Animated.Value(reducedMotion ? 1 : 0)).current;
-  const [stampVisible, setStampVisible] = useState(reducedMotion && card.showNewRecord);
-  const [xpDisplay, setXpDisplay] = useState(reducedMotion ? card.xpAwarded : 0);
+  const settled = reducedMotion || skipIntro;
+  const plateDrop = useRef(new Animated.Value(settled ? 1 : 0)).current;
+  const [stampVisible, setStampVisible] = useState(settled && card.showNewRecord);
+  const [xpDisplay, setXpDisplay] = useState(settled ? card.xpAwarded : 0);
   const [barGainWidth, setBarGainWidth] = useState(
-    reducedMotion ? Math.max(0, card.xpBarNewRatio - card.xpBarOldRatio) : 0,
+    settled ? Math.max(0, card.xpBarNewRatio - card.xpBarOldRatio) : 0,
   );
   const xpGateRef = useRef(createXpTickGate());
   const audioRef = useRef(uiAudio);
@@ -81,7 +88,7 @@ export function ResultOverlay({
   const fightKey = `${confirmed.replay.checksum}|${card.outcomeKind}|${card.xpAwarded}|${card.showNewRecord}`;
 
   useEffect(() => {
-    if (reducedMotion) {
+    if (settled) {
       plateDrop.setValue(1);
       return;
     }
@@ -93,11 +100,15 @@ export function ResultOverlay({
     });
     anim.start();
     return () => anim.stop();
-  }, [plateDrop, reducedMotion, fightKey]);
+  }, [plateDrop, settled, fightKey]);
 
   useEffect(() => {
     if (!card.showNewRecord) {
       setStampVisible(false);
+      return;
+    }
+    if (skipIntro) {
+      setStampVisible(true);
       return;
     }
     if (reducedMotion) {
@@ -122,13 +133,13 @@ export function ResultOverlay({
       audioRef.current.playCue('newRecord');
     }, delayMs);
     return () => clearTimeout(timer);
-  }, [card.showNewRecord, fightKey, reducedMotion]);
+  }, [card.showNewRecord, fightKey, reducedMotion, skipIntro]);
 
   useEffect(() => {
     xpGateRef.current.reset();
     const target = card.xpAwarded;
     const gainSpan = Math.max(0, card.xpBarNewRatio - card.xpBarOldRatio);
-    if (reducedMotion || target <= 0) {
+    if (settled || target <= 0) {
       setXpDisplay(target);
       setBarGainWidth(gainSpan);
       return;
@@ -150,7 +161,7 @@ export function ResultOverlay({
       if (step >= target) clearInterval(timer);
     }, XP_TICK_MIN_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [card.xpAwarded, card.xpBarOldRatio, card.xpBarNewRatio, fightKey, reducedMotion]);
+  }, [card.xpAwarded, card.xpBarOldRatio, card.xpBarNewRatio, fightKey, settled]);
 
   const plateTranslate = plateDrop.interpolate({
     inputRange: [0, 1],

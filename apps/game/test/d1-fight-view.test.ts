@@ -74,7 +74,7 @@ describe('D1 first-watch vs rewatch control sets', () => {
     expect(slot).toContain('toggleMute');
   });
 
-  it('rewatch exposes back + Replay band only', () => {
+  it('rewatch exposes back + replay-controls band', () => {
     expect(slot).toContain('fight-view-back');
     expect(slot).toContain('mode={fightViewMode}');
     expect(slot).toContain('FightViewBottomBand');
