@@ -828,6 +828,17 @@ if [[ "${ATTACKER_WEAPON}" != *axe* ]]; then
   logcat_dump | grep -aE 'BOTORE_CAPTURE_WEAPON_PIN|BOTORE_CAPTURE_FIGHT_' >&2 || true
   exit 1
 fi
+# A4 shapes sealed into fight builds (Customise parity) — head must be present.
+ATTACKER_HEAD="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.attackerHead==null?'':String(j.attackerHead))" "${FIGHT_JSON}")"
+ATTACKER_BODY="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.attackerBody==null?'':String(j.attackerBody))" "${FIGHT_JSON}")"
+write_manifest_line "${MANIFEST}" attacker_head "${ATTACKER_HEAD}"
+write_manifest_line "${MANIFEST}" attacker_body "${ATTACKER_BODY}"
+if [[ -z "${ATTACKER_HEAD}" ]]; then
+  echo "error: sealed fight proof missing attackerHead (Customise shapes not sealed into fight)" >&2
+  logcat_dump | grep -aE 'BOTORE_CAPTURE_FIGHT_JSON' >&2 || true
+  exit 1
+fi
+echo "ok: sealed attacker shapes head=${ATTACKER_HEAD} body=${ATTACKER_BODY:-none}" >&2
 hit_matches=( "${OUT_DIR}"/android-*-replay-fx-hit.png )
 defeat_matches=( "${OUT_DIR}"/android-*-replay-fx-defeat.png )
 if [[ ! -e "${hit_matches[0]:-}" || ! -e "${defeat_matches[0]:-}" ]]; then
