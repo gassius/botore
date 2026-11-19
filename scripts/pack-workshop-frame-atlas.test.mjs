@@ -12,6 +12,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import test from 'node:test';
 import {
+  A4_SHAPES_PARTS_DIR,
+  A4_SHAPE_VARIANT_FOLDERS,
+  a4ShapePackPairs,
   atlasPathForWorkshopKitFile,
   canonicalAtlasPartId,
   workshopFrameKitPackPairs,
@@ -61,6 +64,26 @@ test('pack pairs cover body+wrap+weapon oxide/petrol/materials/mask for v003', (
   assert.ok(pairs.some((p) => p.atlasRelative === 'parts/hand-r-wrap/material-over.png'));
   assert.ok(!pairs.some((p) => p.atlasRelative.includes('weapon_sword')));
   assert.ok(!pairs.some((p) => p.atlasRelative.includes('/v001/')));
+});
+
+test('A4 shape pairs: 9 variant tiles × oxide/materials/mask, hyphenated, sources on disk', () => {
+  const pairs = a4ShapePackPairs();
+  assert.equal(pairs.length, A4_SHAPE_VARIANT_FOLDERS.length * 4);
+  assert.ok(pairs.some((p) => p.atlasRelative === 'parts/torso-boiler/material-under.png'));
+  assert.ok(pairs.some((p) => p.atlasRelative === 'parts/upper-arm-heavy/mask.png'));
+  assert.ok(pairs.every((p) => !p.atlasRelative.includes('_')));
+  assert.ok(pairs.every((p) => p.kit === 'a4-shapes-v2.1'));
+  for (const pair of pairs) {
+    assert.ok(
+      existsSync(join(ROOT, A4_SHAPES_PARTS_DIR, pair.sourceRelative)),
+      pair.sourceRelative,
+    );
+  }
+  const kitIds = new Set(workshopFrameKitPackPairs().map((p) => p.partId));
+  assert.ok(
+    pairs.every((p) => !kitIds.has(p.partId)),
+    'shape tiles never overwrite kit parts',
+  );
 });
 
 test('default atlas version is v1', () => {
@@ -126,6 +149,9 @@ test('pack script overlays kit-v003 into committed v1 without wiping proof bytes
     assert.ok(manifest.parts.torso);
     assert.ok(manifest.parts['hand-r-wrap']);
     assert.ok(manifest.parts['chassis-basic']);
+    assert.equal(manifest.parts['torso-boiler'].kit, 'a4-shapes-v2.1');
+    assert.equal(manifest.parts['head-welder'].images.length, 4);
+    assert.ok(existsSync(join(ROOT, 'supabase/seed/atlas/v1/parts/foot-piston/oxide.png')));
     // Prettier-normalized packer output must match the committed manifest bytes.
     assert.deepEqual(readFileSync(v1Manifest), beforeManifest);
   } finally {
@@ -156,6 +182,7 @@ test('pack script materializes hyphenated atlas tree into alternate seed dir', (
     assert.ok(existsSync(join(out, 'parts/weapon-sword/oxide.png')));
     assert.ok(existsSync(join(out, 'parts/upper-arm-l/mask.png')));
     assert.ok(existsSync(join(out, 'parts/hand-r-wrap/oxide.png')));
+    assert.ok(existsSync(join(out, 'parts/upper-arm-heavy/material-over.png')));
     assert.ok(existsSync(join(out, 'fx/hit.png')));
     assert.ok(existsSync(join(out, 'base/audio/hit.m4a')));
     assert.ok(existsSync(join(out, 'parts/chassis-basic/body.png')));

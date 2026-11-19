@@ -1,7 +1,7 @@
 {
   "version": "v1",
   "status": "draft",
-  "note": "Workshop Frame kit-v003 media keys packed onto F5 parts/<hyphenatedPartId>/… plus v1 proof carry-forward. Single Development atlas. budgets_final stays false.",
+  "note": "Workshop Frame kit-v003 media keys packed onto F5 parts/<hyphenatedPartId>/… plus a4-shapes-v2.1 variant tiles and v1 proof carry-forward. Single Development atlas. budgets_final stays false.",
   "kit": {
     "id": "workshop-frame",
     "version": "v003",
@@ -283,6 +283,105 @@
       "audio": [],
       "soundTags": [],
       "kit": "workshop-frame-v003"
+    },
+    "head-welder": {
+      "images": [
+        "parts/head-welder/oxide.png",
+        "parts/head-welder/material-under.png",
+        "parts/head-welder/material-over.png",
+        "parts/head-welder/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "a4-shapes-v2.1"
+    },
+    "head-can": {
+      "images": [
+        "parts/head-can/oxide.png",
+        "parts/head-can/material-under.png",
+        "parts/head-can/material-over.png",
+        "parts/head-can/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "a4-shapes-v2.1"
+    },
+    "torso-boiler": {
+      "images": [
+        "parts/torso-boiler/oxide.png",
+        "parts/torso-boiler/material-under.png",
+        "parts/torso-boiler/material-over.png",
+        "parts/torso-boiler/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "a4-shapes-v2.1"
+    },
+    "torso-slab": {
+      "images": [
+        "parts/torso-slab/oxide.png",
+        "parts/torso-slab/material-under.png",
+        "parts/torso-slab/material-over.png",
+        "parts/torso-slab/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "a4-shapes-v2.1"
+    },
+    "upper-arm-heavy": {
+      "images": [
+        "parts/upper-arm-heavy/oxide.png",
+        "parts/upper-arm-heavy/material-under.png",
+        "parts/upper-arm-heavy/material-over.png",
+        "parts/upper-arm-heavy/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "a4-shapes-v2.1"
+    },
+    "forearm-heavy": {
+      "images": [
+        "parts/forearm-heavy/oxide.png",
+        "parts/forearm-heavy/material-under.png",
+        "parts/forearm-heavy/material-over.png",
+        "parts/forearm-heavy/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "a4-shapes-v2.1"
+    },
+    "thigh-piston": {
+      "images": [
+        "parts/thigh-piston/oxide.png",
+        "parts/thigh-piston/material-under.png",
+        "parts/thigh-piston/material-over.png",
+        "parts/thigh-piston/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "a4-shapes-v2.1"
+    },
+    "shin-piston": {
+      "images": [
+        "parts/shin-piston/oxide.png",
+        "parts/shin-piston/material-under.png",
+        "parts/shin-piston/material-over.png",
+        "parts/shin-piston/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "a4-shapes-v2.1"
+    },
+    "foot-piston": {
+      "images": [
+        "parts/foot-piston/oxide.png",
+        "parts/foot-piston/material-under.png",
+        "parts/foot-piston/material-over.png",
+        "parts/foot-piston/mask.png"
+      ],
+      "audio": [],
+      "soundTags": [],
+      "kit": "a4-shapes-v2.1"
     }
   }
 }

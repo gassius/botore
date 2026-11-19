@@ -112,6 +112,9 @@ select public.dev_reopen_atlas_version('v1', 'DEVELOPMENT_ONLY_REOPEN');
 
 -- Idempotent workshop-frame kit-v003 manifest entries on draft v1
 select public.register_atlas_v1_workshop_frame_entries();
+
+-- Idempotent A4 shapes v2.1 tile entries on draft v1 (0039)
+select public.register_atlas_v1_a4_shape_entries();
 ```
 
 **Storage API upload + publish** (from a machine with service-role key; never

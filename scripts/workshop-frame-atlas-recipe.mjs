@@ -148,6 +148,53 @@ export function workshopFrameKitPackPairs(opts = {}) {
   return pairs;
 }
 
+/** A4 shapes v2.1 variant tiles (repo-relative). Kit v003.3 stays read-only. */
+export const A4_SHAPES_KIT_ID = 'a4-shapes-v2.1';
+export const A4_SHAPES_PARTS_DIR = 'apps/game/assets/a4-shapes-v2.1/parts/1x';
+
+/** `<kit tile>-<variant>` folders; L/R limbs share one tile. */
+export const A4_SHAPE_VARIANT_FOLDERS = [
+  'head-welder',
+  'head-can',
+  'torso-boiler',
+  'torso-slab',
+  'upper_arm-heavy',
+  'forearm-heavy',
+  'thigh-piston',
+  'shin-piston',
+  'foot-piston',
+];
+
+const A4_SHAPE_LAYERS = [
+  { file: 'oxide', role: 'oxide', dest: 'oxide' },
+  { file: 'under', role: 'material_under', dest: 'material-under' },
+  { file: 'over', role: 'material_over', dest: 'material-over' },
+  { file: 'mask', role: 'mask', dest: 'mask' },
+];
+
+/**
+ * Shape tile source → atlas destination pairs, named like kit parts
+ * (`parts/upper-arm-heavy/material-under.png`). No petrol: variants ship oxide only.
+ */
+export function a4ShapePackPairs() {
+  /** @type {{ sourceRelative: string, atlasRelative: string, partId: string, role: string, assetKey: string, kit: string }[]} */
+  const pairs = [];
+  for (const folder of A4_SHAPE_VARIANT_FOLDERS) {
+    const partId = canonicalAtlasPartId(folder);
+    for (const layer of A4_SHAPE_LAYERS) {
+      pairs.push({
+        sourceRelative: `${folder}/${layer.file}.png`,
+        atlasRelative: `parts/${partId}/${layer.dest}.png`,
+        partId,
+        role: layer.role,
+        assetKey: `parts.${partId}.${layer.role}`,
+        kit: A4_SHAPES_KIT_ID,
+      });
+    }
+  }
+  return pairs;
+}
+
 /** Carry-forward proof-pack relative paths from atlas/v1 (base / arena / FX / catalogue). */
 export const V1_CARRY_FORWARD_PATHS = [
   'manifest.json',
