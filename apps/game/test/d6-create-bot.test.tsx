@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { resolvePaintVisual } from '../src/assembler/paints';
 import { PROOF_PAINTS, PROOF_WEAPONS } from '../src/garage/loadout/proofCatalogue';
 import { CUSTOMISE_CAROUSEL } from '../src/garage-tag/snap/snapMetrics';
-import { mergeIntent, resetCaptureIntentForTests } from '../src/design-capture/captureIntentState';
+import { resetCaptureIntentForTests } from '../src/design-capture/captureIntentState';
 
 const ROOT = process.cwd();
 
