@@ -9,6 +9,8 @@ export type SealedFightBuildSnapshot = {
   readonly soundTags?: readonly string[];
   readonly loadoutVersionId?: string | null;
   readonly atlasVersion?: string;
+  /** Ludus / roster character id — stamped client-side for BT-272 identity checks. */
+  readonly characterId?: string;
 };
 
 /** Successful combat-v1 response (persisted or repeated via F3 idempotency). */

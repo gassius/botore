@@ -27,6 +27,11 @@ import { createFightRequestClient } from './request/createFightRequestClient';
 import type { FightRequestPort } from './request/FightRequestPort';
 import { resolveFightIntent, type FightIntent } from './request/idempotency';
 import type { FightSuccess } from './request/types';
+import {
+  readReplayAttackerId,
+  sealedBuildWithCharacterId,
+  selectedBotMatchesFightAttacker,
+} from './selectedBotFightIdentity';
 
 function isRestorableFightSuccess(value: unknown): value is FightSuccess {
   if (!value || typeof value !== 'object') return false;
@@ -343,34 +348,52 @@ export function FightSessionProvider(props: {
       }
 
       const confirmed = loadoutRef.current.confirmedLoadout;
+      const selectedCharacterId = loadoutRef.current.characterId;
+      const replayAttackerId = readReplayAttackerId(result.fight.replay);
+      if (
+        !selectedBotMatchesFightAttacker({
+          selectedCharacterId,
+          replayAttackerCharacterId: replayAttackerId,
+        })
+      ) {
+        console.warn(
+          `BOTORE_FIGHT_ATTACKER_MISMATCH:selected=${selectedCharacterId ?? 'none'} replay=${replayAttackerId ?? 'none'}`,
+        );
+      }
       const opponent = selectedRef.current;
       const fightWithBuilds: FightSuccess =
         confirmed && opponent
           ? {
               ...result.fight,
               sealedBuilds: {
-                attacker: {
-                  chassis: confirmed.chassis,
-                  paint: confirmed.paint,
-                  weapon: confirmed.weapon,
-                  shield: confirmed.shield,
-                  drone: confirmed.drone,
-                  decals: confirmed.decals,
-                  soundTags: confirmed.soundTags,
-                  loadoutVersionId: loadoutRef.current.confirmedVersionId,
-                  atlasVersion: loadoutRef.current.atlasVersion,
-                },
-                defender: {
-                  chassis: opponent.loadout.chassis,
-                  paint: opponent.loadout.paint,
-                  weapon: opponent.loadout.weapon,
-                  shield: opponent.loadout.shield,
-                  drone: opponent.loadout.drone,
-                  decals: opponent.loadout.decals,
-                  soundTags: opponent.loadout.soundTags,
-                  loadoutVersionId: opponent.loadoutVersionId,
-                  atlasVersion: opponent.atlasVersion ?? 'v1',
-                },
+                attacker: sealedBuildWithCharacterId(
+                  {
+                    chassis: confirmed.chassis,
+                    paint: confirmed.paint,
+                    weapon: confirmed.weapon,
+                    shield: confirmed.shield,
+                    drone: confirmed.drone,
+                    decals: confirmed.decals,
+                    soundTags: confirmed.soundTags,
+                    loadoutVersionId: loadoutRef.current.confirmedVersionId,
+                    atlasVersion: loadoutRef.current.atlasVersion,
+                  },
+                  selectedCharacterId,
+                ),
+                defender: sealedBuildWithCharacterId(
+                  {
+                    chassis: opponent.loadout.chassis,
+                    paint: opponent.loadout.paint,
+                    weapon: opponent.loadout.weapon,
+                    shield: opponent.loadout.shield,
+                    drone: opponent.loadout.drone,
+                    decals: opponent.loadout.decals,
+                    soundTags: opponent.loadout.soundTags,
+                    loadoutVersionId: opponent.loadoutVersionId,
+                    atlasVersion: opponent.atlasVersion ?? 'v1',
+                  },
+                  opponent.characterId,
+                ),
               },
             }
           : result.fight;

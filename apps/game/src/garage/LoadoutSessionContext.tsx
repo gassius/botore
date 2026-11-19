@@ -30,6 +30,7 @@ import {
   type LoadoutPreviewState,
 } from './loadout/loadoutState';
 import { loadoutSavePlayerMessage } from './loadout/loadoutSaveErrors';
+import { applyActiveFlagToOwnedBots } from './loadout/applyActiveFlagToOwnedBots';
 import {
   applyDisplayNameToOwnedBots,
   applyLoadoutToOwnedBots,
@@ -611,11 +612,18 @@ export function GarageSessionProvider(props: {
         const current = await auth.getSession();
         if (!current) return false;
         const epoch = ++selectEpochRef.current;
+        // Optimistic active flag so Find opponent cannot race past a stale
+        // first-bot identity while select_active_character + hydrate run.
+        setOwnedBots((prev) => applyActiveFlagToOwnedBots(prev, characterId));
         const selected = await loadouts.selectActiveBot({
           characterId,
           accessToken: current.accessToken,
         });
-        if (!selected.ok) return false;
+        if (!selected.ok) {
+          // PRR M1: revert stuck optimistic active when the RPC fails.
+          await refreshOwnedBots();
+          return false;
+        }
         if (epoch !== selectEpochRef.current) return false;
         // In-place Ludus select: refresh loadout/owned list without the boot
         // splash gate (D5 carousel snap must keep Stable mounted).

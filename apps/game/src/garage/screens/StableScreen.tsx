@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
@@ -57,6 +57,8 @@ export function StableScreen(props: {
   const [focusedKind, setFocusedKind] = useState<'bot' | 'create'>(() =>
     homeCaptureScenario === 'create-slot' ? 'create' : 'bot',
   );
+  /** In-flight Ludus select — Find opponent awaits so combat-v1 sees active_character_id. */
+  const selectPromiseRef = useRef<Promise<boolean> | null>(null);
 
   const ownedCount = ownedBots.length;
   const cap = botCap > 0 ? botCap : 3;
@@ -111,10 +113,34 @@ export function StableScreen(props: {
   const handleSelectBot = useCallback(
     (characterId: string) => {
       // In-place select (E4 selectActiveBot no longer sets booting).
-      void selectActiveBot(characterId);
+      const pending = selectActiveBot(characterId);
+      selectPromiseRef.current = pending;
+      void pending.finally(() => {
+        if (selectPromiseRef.current === pending) {
+          selectPromiseRef.current = null;
+        }
+      });
     },
     [selectActiveBot],
   );
+
+  const handleFindOpponent = useCallback(() => {
+    const go = () => {
+      uiAudio.playCue('uiConfirm');
+      props.onFindOpponent?.();
+    };
+    const fail = () => uiAudio.playCue('uiError');
+    const pending = selectPromiseRef.current;
+    if (pending) {
+      // PRR M1: only leave Ludus when select resolved true (active bot synced).
+      void pending.then((ok) => {
+        if (ok) go();
+        else fail();
+      }, fail);
+      return;
+    }
+    go();
+  }, [props, uiAudio]);
 
   const handleCreateBot = useCallback(() => {
     if (ownedCount >= cap) {
@@ -187,10 +213,7 @@ export function StableScreen(props: {
       />
       <PrimaryButton
         label="Find opponent"
-        onPress={() => {
-          uiAudio.playCue('uiConfirm');
-          props.onFindOpponent?.();
-        }}
+        onPress={handleFindOpponent}
         disabled={!actionsEnabled || !props.onFindOpponent}
         onDisabledPress={() => uiAudio.playCue('uiError')}
         testID="stable-find-opponent"
