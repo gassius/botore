@@ -24,6 +24,14 @@ import {
 } from './kitMath';
 import { channelColorForPart, patternFillRelPath, resolvePaintVisual } from './paints';
 import { resolveWeaponKit } from './kit';
+import {
+  STOCK_SHAPES,
+  applyShapeKit,
+  shapeComboFromLoadout,
+  shapeComboKey,
+  type ShapeCombo,
+  type ShapedKitAsset,
+} from './shapes';
 import type {
   AssembledBot,
   AssembledLayer,
@@ -32,7 +40,6 @@ import type {
   MotionPose,
 } from './types';
 import type {
-  KitAsset,
   KitPaintId,
   KitPoseEntry,
   KitWeaponKind,
@@ -116,8 +123,17 @@ const DRAW_PART_IDS = [
 
 const EMPTY_POSE: KitPoseEntry = { root: { x: 0, y: 0 }, parts: {} };
 
-function assetMap(manifest: WorkshopFrameManifest): Map<string, KitAsset> {
-  return new Map(manifest.assets.map((a) => [a.id, a]));
+const SHAPED_ASSETS = new Map<string, ReadonlyMap<string, ShapedKitAsset>>();
+
+/** Kit assets with the A4 ShapeKit combo applied (at most 36 combos, cached). */
+function shapedAssetMap(shapes: ShapeCombo): ReadonlyMap<string, ShapedKitAsset> {
+  const key = shapeComboKey(shapes);
+  let assets = SHAPED_ASSETS.get(key);
+  if (!assets) {
+    assets = applyShapeKit(WORKSHOP_FRAME_MANIFEST.assets, shapes);
+    SHAPED_ASSETS.set(key, assets);
+  }
+  return assets;
 }
 
 function resolveKitPaint(paintId: string): KitPaintId {
@@ -164,6 +180,7 @@ export function buildWorkshopFrameWorldMatrices(
   weaponId: string,
   motionPose: MotionPose,
   poseOverride?: KitPoseEntry,
+  shapes: ShapeCombo = STOCK_SHAPES,
 ): {
   paint: KitPaintId;
   weaponKind: KitWeaponKind;
@@ -174,7 +191,7 @@ export function buildWorkshopFrameWorldMatrices(
   anglesCw: Map<string, number>;
 } {
   const manifest = WORKSHOP_FRAME_MANIFEST;
-  const assets = assetMap(manifest);
+  const assets = shapedAssetMap(shapes);
   const paint = resolveKitPaint(paintId);
   const weaponKind = resolveKitWeaponKind(weaponId);
   const weaponAssetId = resolveKitWeaponAssetId(weaponId);
@@ -248,7 +265,7 @@ export function buildWorkshopFrameWorldMatrices(
   return { paint, weaponKind, weaponAssetId, kitPoseKey, pose, matrices, anglesCw };
 }
 
-function layerRole(asset: KitAsset): AssembledLayer['role'] {
+function layerRole(asset: ShapedKitAsset): AssembledLayer['role'] {
   if (asset.role === 'weapon' || asset.id.startsWith('weapon_')) return 'weapon';
   if (asset.id === 'head') return 'head';
   if (asset.id === 'torso') return 'torso';
@@ -257,7 +274,7 @@ function layerRole(asset: KitAsset): AssembledLayer['role'] {
 }
 
 function layerFromAsset(
-  asset: KitAsset,
+  asset: ShapedKitAsset,
   paint: KitPaintId,
   matrix: Mat3,
   rotateCw: number,
@@ -272,7 +289,8 @@ function layerFromAsset(
     WORKSHOP_FRAME_MANIFEST.paint_tokens[paint] ??
     WORKSHOP_FRAME_MANIFEST.paint_tokens['oxide'] ??
     '#E8771C';
-  const patternPath = patternFillRelPath(paint, asset.id);
+  // A6 pattern fills are baked on stock tile silhouettes; A4 tiles tint the mask instead.
+  const patternPath = asset.shapeVariant ? null : patternFillRelPath(paint, asset.id);
   const usePattern = Boolean(patternPath && asset.has_paint);
   return {
     id: asset.id,
@@ -285,7 +303,7 @@ function layerFromAsset(
     height: asset.height,
     color: paintToken,
     isPaintMask: asset.has_paint,
-    label: `${WORKSHOP_FRAME_KIT_ID}:${asset.id}`,
+    label: `${WORKSHOP_FRAME_KIT_ID}:${asset.id}${asset.shapeVariant ? `@${asset.shapeVariant}` : ''}`,
     // Precomposite kept as reference/fallback; live path is under→mask/pattern→over.
     imagePath:
       asset.files[paint] ?? asset.files.oxide ?? asset.files.petrol ?? asset.material_under,
@@ -326,11 +344,12 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
   const facing = input.facing;
   const paintVisual = resolvePaintVisual(paintId);
   const weapon = resolveWeaponKit(weaponId);
+  const shapes = shapeComboFromLoadout(input.loadout);
 
   const { paint, weaponKind, weaponAssetId, kitPoseKey, matrices, anglesCw } =
-    buildWorkshopFrameWorldMatrices(paintId, weaponId, motionPose, input.poseOverride);
+    buildWorkshopFrameWorldMatrices(paintId, weaponId, motionPose, input.poseOverride, shapes);
 
-  const assets = assetMap(WORKSHOP_FRAME_MANIFEST);
+  const assets = shapedAssetMap(shapes);
   const zOverrides = WORKSHOP_FRAME_MANIFEST.weapons[weaponKind]?.z_overrides ?? {};
   const layers: AssembledLayer[] = [];
 
@@ -368,6 +387,7 @@ export function assembleWorkshopFrame(input: AssembleWorkshopFrameInput): Assemb
     paintVisual: paintVisual.visual,
     weaponId: weapon.catalogueId,
     weaponKind: weapon.kind,
+    shapes,
     facing,
     mirrored: facing === 'left',
     motionPose,
@@ -400,6 +420,7 @@ export function listWorkshopFrameGaps(): readonly string[] {
     'Paint path: under→mask-tint(color)→over via kit materials/masks. Precomposited parts/{id}-{paint}.png are fallback only.',
     'A2b Fight View plays animation/clips.json at 30 fps (baked in-betweens + smears); timing.per_weapon kept for legacy adapters.',
     'Shield/drone/decal are reserved only; assembler ignores loadout.shield/drone/decals.',
+    'A4 shapes v2.1 (head/body/arms/legs) swap tiles via ShapeKit at assemble time; A6 hazard/racing pattern fills fall back to mask tint on swapped tiles.',
     'Atlas pack v3 publishes kit media at parts/<hyphenatedPartId>/…; Metro kit remains render fallback until Storage cold-fetch is proven.',
     'MotionPose heavy_* is mapped (C11); heavy_windup / heavy_attack use nested per-weapon pose entries (aliases → windup/strike).',
     'A5 MotionPose `portrait` + A3 MotionPose `victory`/`defeat` remain approved (unchanged vs v003.1).',

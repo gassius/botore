@@ -48,6 +48,16 @@ export {
 } from './workshopFrameAdapter';
 export { ACTIVE_WORKSHOP_FRAME_ASSET_VERSION } from './workshopFramePin';
 export {
+  HEAVIEST_SHAPES,
+  SHAPE_OPTIONS,
+  SHAPE_SLOTS,
+  STOCK_SHAPES,
+  shapeAlias,
+  shapeComboFromLoadout,
+  shapePartId,
+} from './shapes';
+export type { ShapeAlias, ShapeCombo, ShapeSlot } from './shapes';
+export {
   WORKSHOP_FRAME_CLIPS,
   WORKSHOP_FRAME_CLIPS_VERSION,
   hasWorkshopFrameClips,

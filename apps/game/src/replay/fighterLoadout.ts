@@ -13,6 +13,10 @@ export interface SealedBotBuild {
   readonly drone?: string | null;
   readonly decals?: readonly string[];
   readonly soundTags?: readonly string[];
+  readonly head?: string | null;
+  readonly body?: string | null;
+  readonly arms?: string | null;
+  readonly legs?: string | null;
   readonly loadoutVersionId?: string | null;
   readonly atlasVersion?: string;
 }
@@ -44,6 +48,10 @@ export function assemblerLoadoutFromBuild(build: SealedBotBuild): AssemblerLoado
     ...(build.drone !== undefined ? { drone: build.drone } : {}),
     ...(build.decals ? { decals: build.decals } : {}),
     ...(build.soundTags ? { soundTags: build.soundTags } : {}),
+    head: build.head ?? null,
+    body: build.body ?? null,
+    arms: build.arms ?? null,
+    legs: build.legs ?? null,
   };
 }
 

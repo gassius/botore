@@ -99,6 +99,11 @@ export interface AssemblerLoadoutInput {
   readonly drone?: string | null;
   readonly decals?: readonly string[];
   readonly soundTags?: readonly string[];
+  /** A4 shape slots: catalogue id (`head-welder`) or alias (`welder`); missing → stock. */
+  readonly head?: string | null;
+  readonly body?: string | null;
+  readonly arms?: string | null;
+  readonly legs?: string | null;
 }
 
 /**
@@ -198,6 +203,8 @@ export interface AssembledBot {
   readonly paintVisual: SamplePaintVisual;
   readonly weaponId: string;
   readonly weaponKind: 'sword' | 'axe' | 'dagger' | 'mace' | 'hammer' | 'spear' | 'shield';
+  /** Resolved A4 ShapeKit combo (stock when the loadout omits shapes). */
+  readonly shapes: import('./shapes').ShapeCombo;
   readonly facing: BotFacing;
   readonly mirrored: boolean;
   readonly motionPose: MotionPose;

@@ -1,7 +1,13 @@
 import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { View, StyleSheet } from 'react-native';
-import { BotAssembler, isMotionPose, type BotFacing, type MotionPose } from '../assembler';
+import {
+  BotAssembler,
+  isMotionPose,
+  type AssemblerLoadoutInput,
+  type BotFacing,
+  type MotionPose,
+} from '../assembler';
 import type { KitPoseEntry } from '../assembler/workshopFrameTypes';
 import type { FightTimelineSmear } from '../fight/a2FightTimeline';
 
@@ -15,7 +21,7 @@ export type BotAssemblerSlotProps = {
     paintId: string;
     weaponId: string;
     chassisId?: string;
-  };
+  } & Pick<AssemblerLoadoutInput, 'head' | 'body' | 'arms' | 'legs'>;
   facing?: BotFacing;
   paintId?: string;
   weaponId?: string;
@@ -47,6 +53,10 @@ export function BotAssemblerSlot(props: BotAssemblerSlotProps): React.ReactEleme
           chassis: props.loadout.chassisId ?? 'chassis-basic',
           paint,
           weapon,
+          head: props.loadout.head ?? null,
+          body: props.loadout.body ?? null,
+          arms: props.loadout.arms ?? null,
+          legs: props.loadout.legs ?? null,
         }}
         facing={props.facing ?? 'right'}
         paintId={paint}
