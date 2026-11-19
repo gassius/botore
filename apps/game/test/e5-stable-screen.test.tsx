@@ -70,9 +70,17 @@ vi.mock('../src/bot/BotAssemblerSlot', () => ({
     React.createElement('BotAssemblerSlot', { testID: props.testID ?? 'bot' }),
 }));
 
+vi.mock('../src/garage/ludus/LudusBotCarousel', () => ({
+  LudusBotCarousel: (props: { testID?: string }) =>
+    React.createElement('LudusBotCarousel', {
+      testID: props.testID ?? 'ludus-bot-carousel',
+    }),
+}));
+
 const signOut = vi.fn(async () => undefined);
 const onRanking = vi.fn();
 const onSettings = vi.fn();
+const selectActiveBot = vi.fn(async () => true);
 
 vi.mock('../src/garage/LoadoutSessionContext', () => ({
   useGarageSession: () => ({
@@ -90,12 +98,32 @@ vi.mock('../src/garage/LoadoutSessionContext', () => ({
     canProgress: true,
     signOut,
     retryHydration: async () => undefined,
+    ownedBots: [
+      {
+        characterId: 'player-hero',
+        displayName: 'Hero',
+        wins: 12,
+        losses: 6,
+        paint: 'paint-crimson',
+        weapon: 'weapon-sword',
+        atlasVersion: 'v1',
+        isActive: true,
+      },
+    ],
+    botCap: 3,
+    selectActiveBot,
+    refreshOwnedBots: async () => undefined,
+    suggestBotName: async () => 'Rust Baron',
+    createOwnedBot: async () => ({ ok: true as const, characterId: 'player-dev-2' }),
   }),
 }));
 
 vi.mock('../src/first-run/FirstRunContext', () => ({
   useFirstRun: () => ({
     homeCaptureScenario: null,
+    muted: false,
+    musicEnabled: true,
+    effectsEnabled: true,
   }),
 }));
 

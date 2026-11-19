@@ -49,7 +49,9 @@ describe('E5 Ludus home nav + Sign out under More (D5 mockup IA)', () => {
 
     // Create Bot is carousel slot (E4/D5), not a main footer button.
     expect(stable).not.toContain('testID="stable-create-bot"');
-    expect(stable).toMatch(/Create Bot lives in the bot carousel/);
+    expect(stable).toContain('LudusBotCarousel');
+    expect(stable).toContain('ludus-bots-counter');
+    expect(stable).toContain('onCreateBot');
 
     // Sign out / Privacy / Delete live in the More sheet, not the main footer stack.
     const footerBlock = stable.slice(

@@ -7,6 +7,7 @@ import { useDesignCaptureLiveFight } from '../design-capture/useDesignCaptureLiv
 import { FirstRunProvider, useFirstRun } from './FirstRunContext';
 import type { FirstRunRoute } from './routes';
 import { StableSlot } from './slots/StableSlot';
+import { CreateBotSlot } from './slots/CreateBotSlot';
 import { CustomiseSlot } from './slots/CustomiseSlot';
 import { OpponentsSlot } from './slots/OpponentsSlot';
 import { ConfirmFightSlot } from './slots/ConfirmFightSlot';
@@ -19,6 +20,8 @@ function RouteSlot({ route }: { route: FirstRunRoute }): React.ReactElement {
   switch (route) {
     case 'Stable':
       return <StableSlot />;
+    case 'CreateBot':
+      return <CreateBotSlot />;
     case 'Customise':
       return <CustomiseSlot />;
     case 'Opponents':

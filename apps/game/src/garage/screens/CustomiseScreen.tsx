@@ -20,6 +20,11 @@ import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner
 import { useFirstRun } from '../../first-run/FirstRunContext';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
 import {
+  BOT_DISPLAY_NAME_MAX_LEN,
+  BOT_NAME_INPUT_IME_PROPS,
+  clampBotNameDraft,
+} from '../customise/botNameInput';
+import {
   CUSTOMISE_BOT_SIZE,
   CUSTOMISE_SLOTS,
   CUSTOMISE_STAGE_HEIGHT,
@@ -294,7 +299,7 @@ export function CustomiseScreen(props: {
   const onEquip = async () => {
     // Nameplate → rename_owned_character; paint/weapon → save_bot_loadout.
     let ok = true;
-    const nextName = playerFacingDisplayName(pendingName.slice(0, 12) || 'Bot');
+    const nextName = playerFacingDisplayName(clampBotNameDraft(pendingName) || 'Bot');
     if (nameDirty) {
       ok = await renameDisplayName(nextName);
     }
@@ -455,14 +460,15 @@ export function CustomiseScreen(props: {
             {nameEditing ? (
               <TextInput
                 value={pendingName}
-                onChangeText={(text) => setPendingName(text.slice(0, 12))}
-                maxLength={12}
+                onChangeText={(text) => setPendingName(clampBotNameDraft(text))}
+                maxLength={BOT_DISPLAY_NAME_MAX_LEN}
                 autoFocus
                 editable={!editingLocked}
                 onBlur={() => setNameEditing(false)}
                 style={styles.nameInput}
                 testID="customise-nameplate-input"
                 accessibilityLabel="Bot name"
+                {...BOT_NAME_INPUT_IME_PROPS}
               />
             ) : (
               <Nameplate name={displayName} style={styles.nameplate} testID="customise-nameplate" />
@@ -584,6 +590,9 @@ const styles = StyleSheet.create({
     minHeight: 0,
     backgroundColor: garageTag.white,
   },
+  // No textTransform here: Android controlled TextInput + textTransform/IME
+  // composition duplicates characters after a few keystrokes. Nameplate CSS
+  // still uppercases the non-editing display.
   nameInput: {
     minWidth: 140,
     maxWidth: 200,
@@ -596,7 +605,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 1.2,
-    textTransform: 'uppercase',
     color: garageTag.graphite,
     textAlign: 'center',
   },

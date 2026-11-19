@@ -3775,3 +3775,457 @@ begin
 
   raise notice 'TEST-OK D7 rename_owned_character';
 end $$;
+
+-- =============================================================================
+-- E4: multi-bot cap / create / select / list (0037)
+-- =============================================================================
+do $$
+declare
+  v_account uuid := 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeee00e4';
+  v_res jsonb;
+  v_name text;
+  v_id1 text;
+  v_id2 text;
+  v_id3 text;
+  v_cap integer;
+  v_active text;
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'e4-multibot@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+
+  perform tests.assert(
+    exists (select 1 from public.player_bot_config where id is true and bot_limit = 3),
+    'player_bot_config default cap 3'
+  );
+
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.list_owned_characters()', 'EXECUTE'),
+    'authenticated EXECUTE list_owned_characters'
+  );
+  perform tests.assert(
+    not has_function_privilege('anon', 'public.list_owned_characters()', 'EXECUTE'),
+    'anon must not EXECUTE list_owned_characters'
+  );
+  perform tests.assert(
+    has_function_privilege(
+      'authenticated',
+      'public.create_owned_character(text, text, text)',
+      'EXECUTE'
+    ),
+    'authenticated EXECUTE create_owned_character'
+  );
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.select_active_character(text)', 'EXECUTE'),
+    'authenticated EXECUTE select_active_character'
+  );
+  perform tests.assert(
+    has_function_privilege('authenticated', 'public.suggest_bot_name()', 'EXECUTE'),
+    'authenticated EXECUTE suggest_bot_name'
+  );
+  perform tests.assert(
+    not has_table_privilege('authenticated', 'public.player_bot_config', 'SELECT'),
+    'authenticated has no SELECT on player_bot_config'
+  );
+
+  -- Cap TOCTOU: trigger + create must lock the account row before counting.
+  perform tests.assert(
+    pg_get_functiondef('public._enforce_player_bot_cap'::regproc) ~* 'for update',
+    'cap trigger locks account for update'
+  );
+  perform tests.assert(
+    pg_get_functiondef('public.create_owned_character(text, text, text)'::regprocedure)
+      ~* 'for update',
+    'create_owned_character locks account for update'
+  );
+
+  -- Word-boundary deny list: short stems must not reject Peacock / Grapes.
+  perform tests.assert(
+    (public._validate_bot_display_name('Peacock')->>'ok')::boolean,
+    'Peacock allowed'
+  );
+  perform tests.assert(
+    (public._validate_bot_display_name('Grapes')->>'ok')::boolean,
+    'Grapes allowed'
+  );
+  perform tests.assert(
+    public._validate_bot_display_name('dick')->>'ok' = 'false',
+    'standalone dick rejected'
+  );
+  perform tests.assert(
+    public._validate_bot_display_name('rape')->>'ok' = 'false',
+    'standalone rape rejected'
+  );
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  -- First list auto-provisions one bot via ensure.
+  v_res := public.list_owned_characters();
+  perform tests.assert((v_res->>'ok')::boolean, 'list_owned_characters auto-provisions');
+  v_cap := (v_res->>'cap')::integer;
+  perform tests.assert(v_cap = 3, 'list cap is 3');
+  perform tests.assert((v_res->>'ownedCount')::integer = 1, 'first ownedCount is 1');
+  v_id1 := v_res->'bots'->0->>'characterId';
+  v_active := v_res->>'activeCharacterId';
+  perform tests.assert(v_id1 is not null, 'first bot id');
+  perform tests.assert(v_active = v_id1, 'active equals first bot');
+
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'get_owned_character ok');
+  perform tests.assert(v_res->>'characterId' = v_id1, 'get_owned matches active');
+
+  v_res := public.suggest_bot_name();
+  perform tests.assert((v_res->>'ok')::boolean, 'suggest_bot_name ok');
+  v_name := v_res->>'displayName';
+  perform tests.assert(char_length(v_name) between 1 and 12, 'suggested name length');
+
+  v_res := public.create_owned_character(v_name, 'paint-cobalt', 'weapon-axe');
+  perform tests.assert((v_res->>'ok')::boolean, 'create second bot ok');
+  v_id2 := v_res->>'characterId';
+  perform tests.assert(v_id2 is not null and v_id2 <> v_id1, 'second characterId distinct');
+  perform tests.assert(v_res->>'displayName' = v_name, 'create keeps name');
+
+  v_res := public.get_owned_character();
+  perform tests.assert(v_res->>'characterId' = v_id2, 'create sets active');
+
+  v_res := public.create_owned_character(v_name, 'paint-primer', 'weapon-sword');
+  perform tests.assert(v_res->>'ok' = 'false', 'duplicate name rejected');
+  perform tests.assert(v_res->>'code' = 'name_taken', 'duplicate name code');
+
+  v_res := public.create_owned_character('player-hero', 'paint-crimson', 'weapon-sword');
+  perform tests.assert(v_res->>'ok' = 'false', 'reserved name rejected');
+
+  v_res := public.create_owned_character('fuck bot', 'paint-crimson', 'weapon-sword');
+  perform tests.assert(v_res->>'ok' = 'false', 'profanity rejected');
+
+  v_res := public.create_owned_character('', 'paint-crimson', 'weapon-sword');
+  perform tests.assert(v_res->>'ok' = 'false', 'empty name rejected');
+
+  -- Avoid probing characters as authenticated (no table SELECT).
+  v_name := 'Tin Scout';
+  v_res := public.list_owned_characters();
+  if exists (
+    select 1
+      from jsonb_array_elements(coalesce(v_res->'bots', '[]'::jsonb)) b
+     where lower(b->>'displayName') = lower(v_name)
+  ) then
+    v_name := 'Ash Hawk';
+  end if;
+  v_res := public.create_owned_character(v_name, 'paint-navy', 'weapon-dagger');
+  perform tests.assert((v_res->>'ok')::boolean, 'create third bot ok');
+  v_id3 := v_res->>'characterId';
+
+  v_res := public.list_owned_characters();
+  perform tests.assert((v_res->>'ownedCount')::integer = 3, 'ownedCount at cap');
+  perform tests.assert(jsonb_array_length(v_res->'bots') = 3, 'bots array length 3');
+
+  v_res := public.create_owned_character('Cap Breaker', 'paint-crimson', 'weapon-sword');
+  perform tests.assert(v_res->>'ok' = 'false', 'fourth create rejected');
+  perform tests.assert(v_res->>'code' = 'bot_cap_reached', 'fourth create code');
+
+  v_res := public.select_active_character(v_id1);
+  perform tests.assert((v_res->>'ok')::boolean, 'select first bot ok');
+  v_res := public.get_owned_character();
+  perform tests.assert(v_res->>'characterId' = v_id1, 'active persisted');
+
+  v_res := public.select_active_character('opp-sir-bot');
+  perform tests.assert(v_res->>'ok' = 'false', 'opponent select rejected');
+  perform tests.assert(v_res->>'code' = 'not_owned', 'opponent select code');
+
+  -- Cross-account isolation: seed hero cannot be selected by this account
+  v_res := public.select_active_character('player-hero');
+  perform tests.assert(v_res->>'ok' = 'false', 'cross-account select rejected');
+
+  reset role;
+
+  set local role anon;
+  begin
+    perform public.list_owned_characters();
+    raise exception 'ANON FAIL: list_owned_characters allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.create_owned_character('Anon Bot', 'paint-crimson', 'weapon-sword');
+    raise exception 'ANON FAIL: create_owned_character allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  begin
+    perform public.select_active_character('player-hero');
+    raise exception 'ANON FAIL: select_active_character allowed';
+  exception
+    when insufficient_privilege then null;
+    when others then
+      if sqlstate = '42501' then null; else raise; end if;
+  end;
+  reset role;
+
+  raise notice 'TEST-OK E4 multi_bot_cap';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 0038 Loadout Equip Fix: A6 inventory sync on hydrate + save
+-- Cases: pre-A6 returning player; revoke stays unowned; active bot preserved
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-0000000000e8';
+  v_character_id text := 'player-equip-e8';
+  v_res jsonb;
+  v_version uuid;
+  v_loadout jsonb;
+  v_qty integer;
+  v_owned boolean;
+  v_err text;
+begin
+  -- Isolated returning player: character + starter loadout, NO A6 inventory grants.
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'equip-e8@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+
+  insert into public.accounts (id) values (v_account)
+  on conflict (id) do nothing;
+
+  insert into public.characters (
+    character_id, account_id, display_name, is_opponent, owner_is_npc
+  ) values (
+    v_character_id, v_account, 'Pilot', false, false
+  ) on conflict (character_id) do nothing;
+
+  update public.accounts
+     set active_character_id = v_character_id
+   where id = v_account;
+
+  insert into public.character_build_versions (
+    character_id, hp, strength, agility, speed, weapon_kind, weapon_power
+  )
+  select v_character_id, 30, 5, 5, 6, 'sword', 3
+  where not exists (
+    select 1 from public.character_build_versions where character_id = v_character_id
+  );
+
+  -- Minimal pre-A6 inventory only (crimson + sword + chassis).
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  select v_account, p.part_id, 1, 'grant'
+  from (values
+    ('chassis-basic'),
+    ('paint-crimson'),
+    ('weapon-sword')
+  ) as p(part_id)
+  where not exists (
+    select 1 from public.inventory_ledger il
+     where il.account_id = v_account
+       and il.part_id = p.part_id
+       and il.reason in ('grant', 'seed', 'admin', 'purchase')
+       and il.delta > 0
+  );
+
+  insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
+  select
+    v_character_id,
+    '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-sword","shield":null,"drone":null,"decals":[],"soundTags":["chassis.light","weapon.sword"]}'::jsonb,
+    'v1'
+  where not exists (
+    select 1 from public.current_bot_loadouts where character_id = v_character_id
+  );
+
+  select public.owned_part_quantity(v_account, 'weapon-mace') into v_qty;
+  perform tests.assert(v_qty < 1, 'pre: weapon-mace must be unowned before sync');
+  select public.owned_part_quantity(v_account, 'paint-hazard') into v_qty;
+  perform tests.assert(v_qty < 1, 'pre: paint-hazard must be unowned before sync');
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  -- Hydrate path: get_owned_character always ensures → grants A6 inventory.
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'get_owned_character ok for returning player');
+  perform tests.assert(v_res->>'characterId' = v_character_id, 'character id stable');
+  reset role;
+
+  select public.owned_part_quantity(v_account, 'weapon-mace') into v_qty;
+  perform tests.assert(v_qty >= 1, 'hydrate grants weapon-mace');
+  select public.owned_part_quantity(v_account, 'paint-hazard') into v_qty;
+  perform tests.assert(v_qty >= 1, 'hydrate grants paint-hazard');
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  -- Case 1: Equip new weapon (A6 now owned via ensure, not revoke-regrant)
+  v_version := public.save_bot_loadout(
+    v_character_id,
+    '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-mace","soundTags":["chassis.light","weapon.mace"]}'::jsonb,
+    'v1'
+  );
+  perform tests.assert(v_version is not null, 'equip weapon-mace returns version');
+  reset role;
+  select loadout into v_loadout
+    from public.bot_loadout_versions
+   where loadout_version_id = v_version;
+  perform tests.assert(v_loadout->>'weapon' = 'weapon-mace', 'weapon-mace persisted');
+  select loadout into v_loadout
+    from public.current_bot_loadouts
+   where character_id = v_character_id;
+  perform tests.assert(v_loadout->>'weapon' = 'weapon-mace', 'current view shows weapon-mace');
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  -- Case 2: Equip new paint v4
+  v_version := public.save_bot_loadout(
+    v_character_id,
+    '{"chassis":"chassis-basic","paint":"paint-hazard","weapon":"weapon-mace","soundTags":["chassis.light","weapon.mace"]}'::jsonb,
+    'v1'
+  );
+  reset role;
+  select loadout into v_loadout
+    from public.bot_loadout_versions
+   where loadout_version_id = v_version;
+  perform tests.assert(v_loadout->>'paint' = 'paint-hazard', 'paint-hazard persisted');
+  select loadout into v_loadout
+    from public.current_bot_loadouts
+   where character_id = v_character_id;
+  perform tests.assert(v_loadout->>'paint' = 'paint-hazard', 'current view shows paint-hazard');
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  -- Case 3: Equip after bot name was edited
+  v_res := public.rename_owned_character('Rivet');
+  perform tests.assert((v_res->>'ok')::boolean, 'rename before equip ok');
+  perform tests.assert(v_res->>'displayName' = 'Rivet', 'rename Rivet');
+
+  v_version := public.save_bot_loadout(
+    v_character_id,
+    '{"chassis":"chassis-basic","paint":"paint-navy","weapon":"weapon-spear","soundTags":["chassis.light","weapon.spear"]}'::jsonb,
+    'v1'
+  );
+  v_res := public.get_owned_character();
+  perform tests.assert(v_res->>'displayName' = 'Rivet', 'name survives post-rename equip');
+  reset role;
+
+  select loadout into v_loadout
+    from public.bot_loadout_versions
+   where loadout_version_id = v_version;
+  perform tests.assert(v_loadout->>'paint' = 'paint-navy', 'post-rename paint-navy persisted');
+  perform tests.assert(v_loadout->>'weapon' = 'weapon-spear', 'post-rename weapon-spear persisted');
+  select loadout into v_loadout
+    from public.current_bot_loadouts
+   where character_id = v_character_id;
+  perform tests.assert(v_loadout->>'weapon' = 'weapon-spear', 'current view shows post-rename spear');
+
+  select public.owned_part_quantity(v_account, 'weapon-spear') >= 1 into v_owned;
+  perform tests.assert(v_owned, 'save path owned weapon-spear');
+
+  -- B2: revoke stays effective — ensure must NOT regrant.
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  values (v_account, 'paint-hazard', -public.owned_part_quantity(v_account, 'paint-hazard'), 'revoke');
+  select public.owned_part_quantity(v_account, 'paint-hazard') into v_qty;
+  perform tests.assert(v_qty < 1, 'pre: paint-hazard revoked');
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'hydrate after revoke ok');
+  reset role;
+  select public.owned_part_quantity(v_account, 'paint-hazard') into v_qty;
+  perform tests.assert(v_qty < 1, 'revoked paint-hazard stays unowned after hydrate');
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  begin
+    v_version := public.save_bot_loadout(
+      v_character_id,
+      '{"chassis":"chassis-basic","paint":"paint-hazard","weapon":"weapon-spear","soundTags":["chassis.light","weapon.spear"]}'::jsonb,
+      'v1'
+    );
+    perform tests.assert(false, 'equip revoked paint-hazard must raise unowned_part');
+  exception
+    when others then
+      get stacked diagnostics v_err = message_text;
+      perform tests.assert(
+        v_err ilike '%unowned_part%',
+        'equip revoked paint-hazard raises unowned_part'
+      );
+  end;
+  reset role;
+
+  raise notice 'TEST-OK 0038 loadout equip A6 inventory sync (weapon/paint/after-rename/revoke)';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 0038 B1: get_owned_character returns the active (second) bot after select
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-0000000000e9';
+  v_res jsonb;
+  v_id1 text;
+  v_id2 text;
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'equip-e9-active@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+
+  insert into public.accounts (id) values (v_account)
+  on conflict (id) do nothing;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'first hydrate provisions bot');
+  v_id1 := v_res->>'characterId';
+  perform tests.assert(v_id1 is not null and v_id1 <> '', 'first bot id');
+
+  v_res := public.create_owned_character('Zed', 'paint-crimson', 'weapon-sword');
+  perform tests.assert((v_res->>'ok')::boolean, 'create second bot Zed');
+  v_id2 := v_res->>'characterId';
+  perform tests.assert(v_id2 is not null and v_id2 <> v_id1, 'second bot distinct');
+
+  v_res := public.select_active_character(v_id2);
+  perform tests.assert((v_res->>'ok')::boolean, 'select second bot active');
+  perform tests.assert(v_res->>'characterId' = v_id2, 'select returns second');
+
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'get_owned_character after select ok');
+  perform tests.assert(
+    v_res->>'characterId' = v_id2,
+    'get_owned_character returns active second bot (not first)'
+  );
+  reset role;
+
+  raise notice 'TEST-OK 0038 get_owned_character preserves active second bot';
+end $$;

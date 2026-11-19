@@ -301,6 +301,15 @@ capture_named Stable garage 5
 # 1′) E5/D5 Ludus More sheet — Ranking / Privacy / Delete / Sign out (red last)
 capture_named Stable garage-more 5 "" "" "" more
 
+# 1″) D5 Ludus Create slot card (home=create-slot)
+capture_named Stable garage-create-slot 5 "" "" "" create-slot
+
+# 1‴) D6 Create Bot view (at-rest under cap)
+capture_named CreateBot create-bot 6
+
+# 1⁗) D6 Create Bot at-cap blocked copy (home=at-cap)
+capture_named CreateBot create-bot-at-cap 4 "" "" "" at-cap
+
 # 1a) D3 Customise — Paint clean / dirty+dot / Equipped / Weapon Coming soon
 # Capture early so design evidence lands even if later fight frames fail.
 capture_named Customise customise-paint-clean 5 "" "" paint-clean
@@ -701,6 +710,9 @@ missing="${missing:-0}"
 required_labels=(
   garage
   garage-more
+  garage-create-slot
+  create-bot
+  create-bot-at-cap
   customise-paint-clean
   customise-paint-dirty
   customise-equipped

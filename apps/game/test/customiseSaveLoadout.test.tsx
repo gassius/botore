@@ -33,7 +33,20 @@ vi.mock('react-native', async () => {
     TextInput: make('TextInput'),
     Image: make('Image'),
     ActivityIndicator: make('ActivityIndicator'),
-    StyleSheet: { create: (s: object) => s },
+    StyleSheet: {
+      create: (s: object) => s,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      flatten: (style: any) => {
+        if (!style) return {};
+        if (Array.isArray(style)) {
+          return Object.assign(
+            {},
+            ...style.filter(Boolean).map((s: unknown) => (s && typeof s === 'object' ? s : {})),
+          );
+        }
+        return typeof style === 'object' ? style : {};
+      },
+    },
     Linking: { openURL: async () => undefined },
     Platform: { OS: 'web' },
     ScrollView: make('ScrollView'),
@@ -106,8 +119,10 @@ vi.mock('../src/first-run/FirstRunContext', () => ({
 }));
 
 import TestRenderer, { ReactTestRenderer, act } from 'react-test-renderer';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { measureScreenChromeLayout } from '../src/garage-tag/screenChromeLayout';
+import { BOT_DISPLAY_NAME_MAX_LEN } from '../src/garage/customise/botNameInput';
 import { DevAuthAdapter } from '../src/garage/auth/DevAuthAdapter';
 import { GarageSessionProvider, useGarageSession } from '../src/garage/LoadoutSessionContext';
 import { DevLoadoutSaveAdapter } from '../src/garage/loadout/DevLoadoutSaveAdapter';
@@ -308,6 +323,187 @@ describe('E1 Customise Save Loadout (390×844)', () => {
     expect(source).not.toContain('confirmedVersionId');
   });
 
+  it('rejects A6 equip when catalogue ensure is skipped (pre-0038)', async () => {
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const loadouts = new DevLoadoutSaveAdapter();
+    loadouts.ensureCatalogueOnResolve = false;
+    const apiRef: { current: SessionProbe | null } = { current: null };
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <GarageProbe apiRef={apiRef} />
+            <CustomiseScreen onBack={() => undefined} />
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    const api = () => {
+      if (!apiRef.current) throw new Error('probe missing');
+      return apiRef.current;
+    };
+
+    for (let i = 0; i < 40 && (api().booting() || !api().canProgress()); i += 1) {
+      await flush();
+    }
+    expect(api().canProgress()).toBe(true);
+
+    await act(async () => {
+      api().selectWeapon('weapon-mace');
+    });
+    await flush();
+    const saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+    expect(api().confirmedWeapon()).not.toBe('weapon-mace');
+    expect(api().lastError()).toMatch(/do not own that part/i);
+  });
+
+  it('equips A6 weapon-mace and paint-hazard (390×844 Equip path)', async () => {
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const loadouts = new DevLoadoutSaveAdapter();
+    const apiRef: { current: SessionProbe | null } = { current: null };
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <GarageProbe apiRef={apiRef} />
+            <CustomiseScreen onBack={() => undefined} />
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    const api = () => {
+      if (!apiRef.current) throw new Error('probe missing');
+      return apiRef.current;
+    };
+
+    for (let i = 0; i < 40 && (api().booting() || !api().canProgress()); i += 1) {
+      await flush();
+    }
+    expect(api().canProgress()).toBe(true);
+
+    await act(async () => {
+      api().selectWeapon('weapon-mace');
+    });
+    await flush();
+    expect(api().dirty()).toBe(true);
+
+    let saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+    expect(api().confirmedWeapon()).toBe('weapon-mace');
+    expect(api().dirty()).toBe(false);
+    expect(api().lastError()).toBeNull();
+
+    await act(async () => {
+      api().selectPaint('paint-hazard');
+    });
+    await flush();
+    saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+    expect(api().confirmedPaint()).toBe('paint-hazard');
+    expect(api().confirmedWeapon()).toBe('weapon-mace');
+    expect(api().lastError()).toBeNull();
+  });
+
+  it('equips paint+weapon after nameplate rename in one Equip press', async () => {
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const loadouts = new DevLoadoutSaveAdapter();
+    const apiRef: { current: SessionProbe | null } = { current: null };
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <GarageProbe apiRef={apiRef} />
+            <CustomiseScreen onBack={() => undefined} />
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    const api = () => {
+      if (!apiRef.current) throw new Error('probe missing');
+      return apiRef.current;
+    };
+
+    for (let i = 0; i < 40 && (api().booting() || !api().canProgress()); i += 1) {
+      await flush();
+    }
+    expect(api().canProgress()).toBe(true);
+
+    const editBtn = root.root.findByProps({ testID: 'customise-nameplate-edit' });
+    await act(async () => {
+      editBtn.props.onPress();
+    });
+    await flush();
+    const input = root.root.findByProps({ testID: 'customise-nameplate-input' });
+    await act(async () => {
+      input.props.onChangeText('Rivet');
+    });
+    await flush();
+
+    await act(async () => {
+      api().selectPaint('paint-navy');
+      api().selectWeapon('weapon-spear');
+    });
+    await flush();
+    expect(api().dirty()).toBe(true);
+
+    const saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+
+    expect(api().displayName()).toBe('Rivet');
+    expect(api().confirmedPaint()).toBe('paint-navy');
+    expect(api().confirmedWeapon()).toBe('weapon-spear');
+    expect(api().dirty()).toBe(false);
+    expect(api().lastError()).toBeNull();
+  });
+
   it('persists nameplate rename across remount via rename RPC', async () => {
     const auth = new DevAuthAdapter();
     const signed = await auth.signInWithPassword({
@@ -348,8 +544,19 @@ describe('E1 Customise Save Loadout (390×844)', () => {
     });
     await flush();
     const input = root.root.findByProps({ testID: 'customise-nameplate-input' });
+    // M1: rendered contract — no textTransform on controlled input; IME strip off; case preserved.
+    expect(StyleSheet.flatten(input.props.style).textTransform).toBeUndefined();
+    expect(input.props.autoCorrect).toBe(false);
+    expect(input.props.autoComplete).toBe('off');
+    expect(input.props.maxLength).toBe(BOT_DISPLAY_NAME_MAX_LEN);
     await act(async () => {
-      input.props.onChangeText('Rivet');
+      input.props.onChangeText('aBcDe');
+    });
+    await flush();
+    const inputAfterCase = root.root.findByProps({ testID: 'customise-nameplate-input' });
+    expect(inputAfterCase.props.value).toBe('aBcDe');
+    await act(async () => {
+      inputAfterCase.props.onChangeText('Rivet');
     });
     await flush();
 

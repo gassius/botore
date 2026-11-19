@@ -49,8 +49,11 @@ export type DesignCaptureSessionFailure = 'offline' | 'auth_expired';
 export type DesignCaptureCustomiseScenario =
   'paint-clean' | 'paint-dirty' | 'equipped' | 'weapon-soon' | 'paint-hazard' | 'weapon-unlocked';
 
-/** E5/D5: Ludus home capture stills (More sheet open). */
-export type DesignCaptureHomeScenario = 'more';
+/**
+ * E5/D5/D6: Ludus home + Create Bot capture stills
+ * (More sheet / bot card / Create slot / Create Bot at-cap).
+ */
+export type DesignCaptureHomeScenario = 'more' | 'bot' | 'create-slot' | 'at-cap';
 
 /**
  * E3 fight-quota capture stills (Opponents + Confirm).
@@ -169,6 +172,9 @@ export function parseDesignCaptureHomeScenario(
 ): DesignCaptureHomeScenario | null {
   const v = trimPublic(raw ?? undefined)?.toLowerCase();
   if (v === 'more') return 'more';
+  if (v === 'bot' || v === 'ludus' || v === 'carousel') return 'bot';
+  if (v === 'create-slot' || v === 'create' || v === 'create_slot') return 'create-slot';
+  if (v === 'at-cap' || v === 'at_cap' || v === 'full' || v === 'cap') return 'at-cap';
   return null;
 }
 

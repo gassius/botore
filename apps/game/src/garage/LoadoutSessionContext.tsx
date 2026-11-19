@@ -30,8 +30,10 @@ import {
   type LoadoutPreviewState,
 } from './loadout/loadoutState';
 import { loadoutSavePlayerMessage } from './loadout/loadoutSaveErrors';
+import type { OwnedBotSummary } from './loadout/loadoutTypes';
 import { withUpdatedPaint, withUpdatedWeapon } from './loadout/proofCatalogue';
 import { ensureRuntimePacksBestEffort } from '../atlas/atlasPackRuntime';
+import { DEFAULT_PLAYER_BOT_CAP } from '../supabase/multiBotRpcs';
 
 export type AuthBootError = {
   readonly code: string;
@@ -78,6 +80,17 @@ export type GarageSessionContextValue = {
   save: () => Promise<boolean>;
   /** D7 nameplate — persist via rename_owned_character; survives remount. */
   renameDisplayName: (displayName: string) => Promise<boolean>;
+  /** E4 — owned bots for Ludus carousel (cap from server). */
+  readonly ownedBots: readonly OwnedBotSummary[];
+  readonly botCap: number;
+  refreshOwnedBots: () => Promise<void>;
+  selectActiveBot: (characterId: string) => Promise<boolean>;
+  suggestBotName: () => Promise<string | null>;
+  createOwnedBot: (input: {
+    displayName: string;
+    paint: string;
+    weapon: string;
+  }) => Promise<{ ok: true; characterId: string } | { ok: false; message: string }>;
 };
 
 const GarageSessionContext = createContext<GarageSessionContextValue | null>(null);
@@ -99,84 +112,125 @@ export function GarageSessionProvider(props: {
   const [loadout, setLoadout] = useState<LoadoutPreviewState>(() =>
     createUnavailableLoadoutState(),
   );
+  const [ownedBots, setOwnedBots] = useState<readonly OwnedBotSummary[]>([]);
+  const [botCap, setBotCap] = useState(DEFAULT_PLAYER_BOT_CAP);
+  /** Latest-wins token for in-place Ludus select (D5 carousel snaps). */
+  const selectEpochRef = useRef(0);
+  // Equip may await rename then save in one press; read latest snapshot so
+  // save/rename guards are not stuck on a stale useMemo closure.
+  const loadoutRef = useRef(loadout);
+  loadoutRef.current = loadout;
 
-  const hydrate = useCallback(async () => {
+  const refreshOwnedBots = useCallback(async () => {
     const current = await auth.getSession();
-    setSession(current);
     if (!current) {
-      setLoadout(createUnavailableLoadoutState());
-      setBooting(false);
+      setOwnedBots([]);
+      setBotCap(DEFAULT_PLAYER_BOT_CAP);
       return;
     }
-
-    const owned = await loadouts.resolveOwnedCharacter(current.accessToken);
-    if (!owned.ok) {
-      if (isDesignCaptureEnabled()) {
-        console.warn(
-          `BOTORE_CAPTURE_HYDRATE_ERROR:owned code=${owned.code} message=${owned.message}`,
-        );
-      }
-      setLoadout((prev) =>
-        markHydrationUnavailable(prev, {
-          accountId: current.userId,
-          characterId: null,
-          message: owned.message,
-          code: owned.code,
-        }),
-      );
-      setBooting(false);
+    const listed = await loadouts.listOwnedBots(current.accessToken);
+    if (!listed.ok) {
       return;
     }
-
-    const fetched = await loadouts.fetchCurrent({
-      characterId: owned.character.characterId,
-      accessToken: current.accessToken,
-    });
-    if (fetched.ok) {
-      if (isDesignCaptureEnabled()) {
-        console.log(
-          `BOTORE_CAPTURE_HYDRATE_OK:characterId=${owned.character.characterId} version=${fetched.snapshot.loadoutVersionId}`,
-        );
-      }
-      setLoadout(
-        createLoadoutPreviewState({
-          accountId: current.userId,
-          characterId: owned.character.characterId,
-          // C16: never hold platform player ids in garage UI state.
-          // C17: never fall back to character UUID / player-hero as a label.
-          displayName: playerFacingDisplayName(owned.character.displayName),
-          confirmedLoadout: fetched.snapshot.loadout,
-          confirmedVersionId: fetched.snapshot.loadoutVersionId,
-          atlasVersion: fetched.snapshot.atlasVersion,
-        }),
-      );
-      // C13: teach ensurePacks for stable bots (download/cache; never blocks hydrate).
-      void ensureRuntimePacksBestEffort({
-        config: readSupabasePublicConfig(),
-        accessToken: current.accessToken,
-        atlasVersion: fetched.snapshot.atlasVersion,
-        loadouts: [fetched.snapshot.loadout],
-        includeArena: false,
-        includeFx: false,
-      });
-    } else {
-      if (isDesignCaptureEnabled()) {
-        console.warn(
-          `BOTORE_CAPTURE_HYDRATE_ERROR:loadout characterId=${owned.character.characterId} code=${fetched.code} message=${fetched.message}`,
-        );
-      }
-      setLoadout((prev) =>
-        markHydrationUnavailable(prev, {
-          accountId: current.userId,
-          characterId: owned.character.characterId,
-          displayName: playerFacingDisplayName(owned.character.displayName),
-          message: fetched.message,
-          code: fetched.code,
-        }),
-      );
-    }
-    setBooting(false);
+    setOwnedBots(listed.bots);
+    setBotCap(listed.cap);
   }, [auth, loadouts]);
+
+  const hydrate = useCallback(
+    async (opts?: { selectEpoch?: number }) => {
+      const stillCurrent = () =>
+        opts?.selectEpoch === undefined || opts.selectEpoch === selectEpochRef.current;
+
+      const current = await auth.getSession();
+      if (!stillCurrent()) return;
+      setSession(current);
+      if (!current) {
+        setLoadout(createUnavailableLoadoutState());
+        setOwnedBots([]);
+        setBotCap(DEFAULT_PLAYER_BOT_CAP);
+        setBooting(false);
+        return;
+      }
+
+      const listed = await loadouts.listOwnedBots(current.accessToken);
+      if (!stillCurrent()) return;
+      if (listed.ok) {
+        setOwnedBots(listed.bots);
+        setBotCap(listed.cap);
+      }
+
+      const owned = await loadouts.resolveOwnedCharacter(current.accessToken);
+      if (!stillCurrent()) return;
+      if (!owned.ok) {
+        if (isDesignCaptureEnabled()) {
+          console.warn(
+            `BOTORE_CAPTURE_HYDRATE_ERROR:owned code=${owned.code} message=${owned.message}`,
+          );
+        }
+        setLoadout((prev) =>
+          markHydrationUnavailable(prev, {
+            accountId: current.userId,
+            characterId: null,
+            message: owned.message,
+            code: owned.code,
+          }),
+        );
+        setBooting(false);
+        return;
+      }
+
+      const fetched = await loadouts.fetchCurrent({
+        characterId: owned.character.characterId,
+        accessToken: current.accessToken,
+      });
+      if (!stillCurrent()) return;
+      if (fetched.ok) {
+        if (isDesignCaptureEnabled()) {
+          console.log(
+            `BOTORE_CAPTURE_HYDRATE_OK:characterId=${owned.character.characterId} version=${fetched.snapshot.loadoutVersionId}`,
+          );
+        }
+        setLoadout(
+          createLoadoutPreviewState({
+            accountId: current.userId,
+            characterId: owned.character.characterId,
+            // C16: never hold platform player ids in garage UI state.
+            // C17: never fall back to character UUID / player-hero as a label.
+            displayName: playerFacingDisplayName(owned.character.displayName),
+            confirmedLoadout: fetched.snapshot.loadout,
+            confirmedVersionId: fetched.snapshot.loadoutVersionId,
+            atlasVersion: fetched.snapshot.atlasVersion,
+          }),
+        );
+        // C13: teach ensurePacks for stable bots (download/cache; never blocks hydrate).
+        void ensureRuntimePacksBestEffort({
+          config: readSupabasePublicConfig(),
+          accessToken: current.accessToken,
+          atlasVersion: fetched.snapshot.atlasVersion,
+          loadouts: [fetched.snapshot.loadout],
+          includeArena: false,
+          includeFx: false,
+        });
+      } else {
+        if (isDesignCaptureEnabled()) {
+          console.warn(
+            `BOTORE_CAPTURE_HYDRATE_ERROR:loadout characterId=${owned.character.characterId} code=${fetched.code} message=${fetched.message}`,
+          );
+        }
+        setLoadout((prev) =>
+          markHydrationUnavailable(prev, {
+            accountId: current.userId,
+            characterId: owned.character.characterId,
+            displayName: playerFacingDisplayName(owned.character.displayName),
+            message: fetched.message,
+            code: fetched.code,
+          }),
+        );
+      }
+      setBooting(false);
+    },
+    [auth, loadouts],
+  );
 
   const captureAutoSignInStarted = useRef(false);
   const silentAuthStarted = useRef(false);
@@ -336,6 +390,8 @@ export function GarageSessionProvider(props: {
         await auth.signOut();
         setSession(null);
         setLoadout(createUnavailableLoadoutState());
+        setOwnedBots([]);
+        setBotCap(DEFAULT_PLAYER_BOT_CAP);
         setAuthBootError(null);
         setAccountDeletedNotice(false);
         silentAuthStarted.current = false;
@@ -365,6 +421,8 @@ export function GarageSessionProvider(props: {
             await auth.signOut();
             setSession(null);
             setLoadout(createUnavailableLoadoutState());
+            setOwnedBots([]);
+            setBotCap(DEFAULT_PLAYER_BOT_CAP);
             setAuthBootError(null);
             // Hold silent re-auth until Continue (same as real delete).
             setAccountDeletedNotice(true);
@@ -381,6 +439,8 @@ export function GarageSessionProvider(props: {
         await auth.signOut();
         setSession(null);
         setLoadout(createUnavailableLoadoutState());
+        setOwnedBots([]);
+        setBotCap(DEFAULT_PLAYER_BOT_CAP);
         setAuthBootError(null);
         // M4: show success until Continue before silent auth mints a fresh account.
         setAccountDeletedNotice(true);
@@ -421,17 +481,18 @@ export function GarageSessionProvider(props: {
           );
           return false;
         }
-        if (loadout.saving) {
+        const snap = loadoutRef.current;
+        if (snap.saving) {
           return false;
         }
         if (
-          loadout.hydration !== 'ready' ||
-          !loadout.characterId ||
-          !loadout.pendingLoadout ||
-          !loadout.dirty
+          snap.hydration !== 'ready' ||
+          !snap.characterId ||
+          !snap.pendingLoadout ||
+          !snap.dirty
         ) {
           // Never silent when the player asked to save but state is blocked.
-          if (loadout.dirty) {
+          if (snap.dirty) {
             setLoadout((s) =>
               failSave(
                 s,
@@ -445,9 +506,9 @@ export function GarageSessionProvider(props: {
           }
           return false;
         }
-        const pending = loadout.pendingLoadout;
-        const characterId = loadout.characterId;
-        const atlasVersion = loadout.atlasVersion;
+        const pending = snap.pendingLoadout;
+        const characterId = snap.characterId;
+        const atlasVersion = snap.atlasVersion;
         setLoadout((s) => beginSave(s));
         const result = await loadouts.save({
           characterId,
@@ -485,7 +546,8 @@ export function GarageSessionProvider(props: {
           );
           return false;
         }
-        if (loadout.hydration !== 'ready' || !loadout.characterId) {
+        const snap = loadoutRef.current;
+        if (snap.hydration !== 'ready' || !snap.characterId) {
           setLoadout((s) =>
             failSave(
               s,
@@ -513,7 +575,49 @@ export function GarageSessionProvider(props: {
           lastError: null,
           lastErrorCode: null,
         }));
+        await refreshOwnedBots();
         return true;
+      },
+      ownedBots,
+      botCap,
+      refreshOwnedBots,
+      selectActiveBot: async (characterId) => {
+        const current = await auth.getSession();
+        if (!current) return false;
+        const epoch = ++selectEpochRef.current;
+        const selected = await loadouts.selectActiveBot({
+          characterId,
+          accessToken: current.accessToken,
+        });
+        if (!selected.ok) return false;
+        if (epoch !== selectEpochRef.current) return false;
+        // In-place Ludus select: refresh loadout/owned list without the boot
+        // splash gate (D5 carousel snap must keep Stable mounted).
+        await hydrate({ selectEpoch: epoch });
+        return epoch === selectEpochRef.current;
+      },
+      suggestBotName: async () => {
+        const current = await auth.getSession();
+        if (!current) return null;
+        const suggested = await loadouts.suggestBotName(current.accessToken);
+        if (!suggested.ok) return null;
+        return suggested.displayName;
+      },
+      createOwnedBot: async (input) => {
+        const current = await auth.getSession();
+        if (!current) {
+          return { ok: false as const, message: 'Session expired. Sign in again.' };
+        }
+        const created = await loadouts.createOwnedBot({
+          ...input,
+          accessToken: current.accessToken,
+        });
+        if (!created.ok) {
+          return { ok: false as const, message: created.message };
+        }
+        setBooting(true);
+        await hydrate();
+        return { ok: true as const, characterId: created.characterId };
       },
     }),
     [
@@ -525,8 +629,11 @@ export function GarageSessionProvider(props: {
       coldStartHoldTitle,
       coldStartIntentReady,
       loadout,
+      ownedBots,
+      botCap,
       hydrate,
       loadouts,
+      refreshOwnedBots,
       runSilentFirstLaunch,
     ],
   );

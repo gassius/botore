@@ -34,13 +34,13 @@ Map: `apps/game/src/garage-tag/a6Tiles.ts`. Catalogue unlock of all 10+7 is **E7
 
 ## Ludus bot carousel (D5)
 
-| Metric            | Value (pt) |
-| ----------------- | ---------: |
-| `cardWidth`       |    **358** |
-| `cardHeight`      |    **462** |
-| `gap`             |      **0** |
-| **snap interval** |    **358** |
-| `visibleCount`    |      **1** |
+| Metric            |                                                                                Value (pt) |
+| ----------------- | ----------------------------------------------------------------------------------------: |
+| `cardWidth`       |                                                                                   **358** |
+| `cardHeight`      | **400** (mockup was 462; shortened so page dots + ~16pt gap fit above Customise on phone) |
+| `gap`             |                                                                                     **0** |
+| **snap interval** |                                                                                   **358** |
+| `visibleCount`    |                                                                                     **1** |
 
 ## Opponents vertical list (D8 / A6 SCREENS-SPEC)
 

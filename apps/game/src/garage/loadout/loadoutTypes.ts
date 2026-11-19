@@ -59,3 +59,50 @@ export type RenameCharacterResult =
 export type FetchCurrentLoadoutResult =
   | { readonly ok: true; readonly snapshot: ConfirmedLoadoutSnapshot }
   | { readonly ok: false; readonly code: string; readonly message: string };
+
+/** E4 owned-bot row for Ludus carousel (server list_owned_characters). */
+export type OwnedBotSummary = {
+  readonly characterId: string;
+  readonly displayName: string;
+  readonly wins: number;
+  readonly losses: number;
+  readonly paint: string | null;
+  readonly weapon: string | null;
+  readonly atlasVersion: string | null;
+  readonly isActive: boolean;
+};
+
+export type ListOwnedBotsResult =
+  | {
+      readonly ok: true;
+      readonly bots: readonly OwnedBotSummary[];
+      readonly cap: number;
+      readonly ownedCount: number;
+      readonly activeCharacterId: string | null;
+    }
+  | { readonly ok: false; readonly code: string; readonly message: string };
+
+export type SuggestBotNameResult =
+  | { readonly ok: true; readonly displayName: string }
+  | { readonly ok: false; readonly code: string; readonly message: string };
+
+export type CreateOwnedBotInput = {
+  readonly displayName: string;
+  readonly paint: string;
+  readonly weapon: string;
+  readonly accessToken: string;
+};
+
+export type CreateOwnedBotResult =
+  | {
+      readonly ok: true;
+      readonly characterId: string;
+      readonly displayName: string;
+      readonly cap?: number;
+      readonly ownedCount?: number;
+    }
+  | { readonly ok: false; readonly code: string; readonly message: string };
+
+export type SelectActiveBotResult =
+  | { readonly ok: true; readonly characterId: string; readonly displayName: string }
+  | { readonly ok: false; readonly code: string; readonly message: string };

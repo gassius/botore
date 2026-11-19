@@ -60,7 +60,7 @@ describe('E6 snap metrics (A6 TILES-SPEC / D5 / D7 / D8)', () => {
 
   it('documents Ludus one-card carousel interval', () => {
     expect(LUDUS_BOT_CAROUSEL.cardWidth).toBe(358);
-    expect(LUDUS_BOT_CAROUSEL.cardHeight).toBe(462);
+    expect(LUDUS_BOT_CAROUSEL.cardHeight).toBe(400);
     expect(ludusBotCarouselSnapInterval()).toBe(358);
     expect(LUDUS_BOT_CAROUSEL.visibleCount).toBe(1);
   });
