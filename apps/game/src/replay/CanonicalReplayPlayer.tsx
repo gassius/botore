@@ -56,6 +56,8 @@ import {
   initialPlaybackUi,
   pauseState,
   playbackUiAfterAdvance,
+  playbackUiAfterCommandTick,
+  shouldContinuePlaybackLoopAfterTick,
   restartState,
   resumeState,
   togglePlayState,
@@ -361,19 +363,37 @@ export const CanonicalReplayPlayer = forwardRef<
     const tick = (now: number) => {
       sampler?.recordFrame(now);
       const pb = playbackRef.current;
-      if (!pb || pb.finished) {
+      if (!pb) {
         emitPlayback(
           playbackUiAfterAdvance(
             { ...playbackUiRef.current, playing: false },
-            pb?.total ?? playbackUiRef.current.totalCommands,
+            playbackUiRef.current.totalCommands,
           ),
         );
         finishPerfSample(now);
         onFinished?.();
         return;
       }
-      if (now < waitUntilRef.current) {
+      // Honor last-command dwell (victory_screen) before onFinished — check wait
+      // before finished so the loop is not torn down at KO (APK P0).
+      const loopDecision = shouldContinuePlaybackLoopAfterTick({
+        finished: pb.finished,
+        playing: playbackUiRef.current.playing,
+        nowMs: now,
+        waitUntilMs: waitUntilRef.current,
+      });
+      if (loopDecision === 'wait') {
         rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      if (loopDecision === 'finish' || loopDecision === 'stop') {
+        if (loopDecision === 'finish' || pb.finished) {
+          emitPlayback(
+            playbackUiAfterAdvance({ ...playbackUiRef.current, playing: false }, pb.total),
+          );
+          finishPerfSample(now);
+          onFinished?.();
+        }
         return;
       }
       const cmd = pb.advance();
@@ -408,9 +428,9 @@ export const CanonicalReplayPlayer = forwardRef<
       } catch {
         // Call-out hooks must never break playback.
       }
-      // Advance first, then FX cue (may pause). Ref must already be synced so
-      // pause is not overwritten by a stale playing:true emit.
-      emitPlayback(playbackUiAfterAdvance(playbackUiRef.current, pb.position));
+      // Keep playing true through final-command dwell so this effect is not
+      // cleaned up before onFinished (playbackUiAfterAdvance clears playing).
+      emitPlayback(playbackUiAfterCommandTick(playbackUiRef.current, pb.position));
       if (fxFamily) {
         try {
           onFxCue?.(fxFamily);
@@ -419,19 +439,27 @@ export const CanonicalReplayPlayer = forwardRef<
         }
       }
       waitUntilRef.current = now + commandDuration(cmd);
-      if (!playbackUiRef.current.playing) {
-        // FX capture hold (or external pause) — do not schedule the next frame.
+      const afterCmd = shouldContinuePlaybackLoopAfterTick({
+        finished: pb.finished,
+        playing: playbackUiRef.current.playing,
+        nowMs: now,
+        waitUntilMs: waitUntilRef.current,
+      });
+      if (afterCmd === 'stop') {
+        // FX capture hold (or external pause) mid-fight — do not schedule.
         return;
       }
-      if (!pb.finished) {
-        rafRef.current = requestAnimationFrame(tick);
-      } else {
+      if (afterCmd === 'finish') {
+        // Zero-duration final command — finish on this tick.
         emitPlayback(
           playbackUiAfterAdvance({ ...playbackUiRef.current, playing: false }, pb.total),
         );
         finishPerfSample(now);
         onFinished?.();
+        return;
       }
+      // 'wait' (final dwell) or 'advance' — keep the loop alive.
+      rafRef.current = requestAnimationFrame(tick);
     };
 
     rafRef.current = requestAnimationFrame(tick);

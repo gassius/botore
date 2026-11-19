@@ -36,12 +36,14 @@ export {
   initialPlaybackUi,
   pauseState,
   playbackUiAfterAdvance,
+  playbackUiAfterCommandTick,
   progressFromPosition,
   restartState,
   resumeState,
+  shouldContinuePlaybackLoopAfterTick,
   togglePlayState,
 } from './playbackControl';
-export type { PlaybackUiState } from './playbackControl';
+export type { PlaybackLoopTickDecision, PlaybackUiState } from './playbackControl';
 export {
   DEFAULT_REPLAY_CHROME,
   replayContentFits,

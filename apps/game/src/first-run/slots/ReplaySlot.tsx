@@ -447,8 +447,12 @@ const styles = StyleSheet.create({
   band: {
     // FightViewBottomBand locks height to FIGHT_VIEW_BAND_CONTENT_HEIGHT;
     // ResultOverlayBand sizes to its actions (E1). No flexGrow cream gap.
+    // zIndex/elevation above arena overlay so Back to Ludus / Watch again stay
+    // tappable on Android when absolute siblings overlap hit-testing.
     flexGrow: 0,
     flexShrink: 0,
+    zIndex: 10,
+    elevation: 10,
   },
   backWrap: {
     position: 'absolute',

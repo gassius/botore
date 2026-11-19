@@ -34,6 +34,46 @@ export function playbackUiAfterAdvance(prev: PlaybackUiState, nextIndex: number)
   };
 }
 
+/**
+ * rAF tick emit after applying a command.
+ * When the advance lands on/past the final command, keep `playing: true` so the
+ * effect that owns the loop is not torn down before last-command dwell and
+ * `onFinished`. Plain `playbackUiAfterAdvance` clears playing at end for progress
+ * UI — that caused the APK P0 fight-end stuck (KO with no Result overlay).
+ */
+export function playbackUiAfterCommandTick(
+  prev: PlaybackUiState,
+  nextIndex: number,
+): PlaybackUiState {
+  const next = playbackUiAfterAdvance(prev, nextIndex);
+  if (nextIndex >= prev.totalCommands && prev.playing) {
+    return { ...next, playing: true };
+  }
+  return next;
+}
+
+export type PlaybackLoopTickDecision = 'wait' | 'advance' | 'finish' | 'stop';
+
+/**
+ * Decide the next rAF action after a tick gate.
+ * Final-command dwell must continue (`wait` → `finish`) even though progress is
+ * already complete; mid-fight FX pause still returns `stop`.
+ */
+export function shouldContinuePlaybackLoopAfterTick(opts: {
+  readonly finished: boolean;
+  readonly playing: boolean;
+  readonly nowMs: number;
+  readonly waitUntilMs: number;
+}): PlaybackLoopTickDecision {
+  if (opts.nowMs < opts.waitUntilMs) {
+    if (opts.playing || opts.finished) return 'wait';
+    return 'stop';
+  }
+  if (opts.finished) return 'finish';
+  if (!opts.playing) return 'stop';
+  return 'advance';
+}
+
 export function togglePlayState(prev: PlaybackUiState): PlaybackUiState {
   if (prev.progress >= 1 || prev.commandIndex >= prev.totalCommands) {
     return { ...prev, playing: false, progress: 1 };
