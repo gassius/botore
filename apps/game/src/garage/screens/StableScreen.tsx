@@ -377,12 +377,16 @@ const styles = StyleSheet.create({
     minHeight: 0,
     alignItems: 'center',
   },
-  /** Art: ≥16pt between card/dots and Customise footer. */
+  /**
+   * Art: ~16pt below the card to Customise, with page dots in that gap.
+   * marginBottom is the clear space under the dots; carousel root gap is
+   * the space between card and dots.
+   */
   carouselBlock: {
     width: '100%',
     alignItems: 'center',
+    flexShrink: 1,
     marginBottom: 16,
-    paddingBottom: 4,
   },
   counter: {
     textAlign: 'center',

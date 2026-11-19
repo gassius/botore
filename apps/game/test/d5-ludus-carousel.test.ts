@@ -31,9 +31,9 @@ const bot = (id: string, active = false): OwnedBotSummary => ({
 });
 
 describe('D5 Ludus carousel metrics + create slot', () => {
-  it('snaps one 358×462 card at a time', () => {
+  it('snaps one 358×400 card at a time (room for dots + ~16pt gap)', () => {
     expect(LUDUS_BOT_CAROUSEL.cardWidth).toBe(358);
-    expect(LUDUS_BOT_CAROUSEL.cardHeight).toBe(462);
+    expect(LUDUS_BOT_CAROUSEL.cardHeight).toBe(400);
     expect(LUDUS_BOT_CAROUSEL.visibleCount).toBe(1);
     expect(ludusBotCarouselSnapInterval()).toBe(358);
   });

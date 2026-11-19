@@ -21,9 +21,9 @@ export type LudusBotCarouselProps = {
 };
 
 /**
- * D5 Ludus horizontal snap carousel — one 358×462 card at a time + optional
- * Create slot. Page dots + end chevrons inset over the card (art: equal
- * side padding, arrows not flush-left outside the card).
+ * D5 Ludus horizontal snap carousel — one 358×400 card at a time + optional
+ * Create slot. Page dots sit in the ~16pt gap below the card; chevrons inset
+ * over the card edges (art: equal side padding, not flush-left).
  */
 export function LudusBotCarousel({
   bots,
@@ -169,7 +169,8 @@ const styles = StyleSheet.create({
   root: {
     width: '100%',
     alignItems: 'center',
-    gap: 10,
+    // Space between card bottom and page dots (dots live in the footer gap).
+    gap: 8,
   },
   /** Card centred with equal side insets; chevrons overlay inside card edges. */
   stage: {

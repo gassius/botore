@@ -32,7 +32,12 @@ export const CUSTOMISE_CAROUSEL = {
 /** D5 Ludus bot carousel — one full-width card at a time. */
 export const LUDUS_BOT_CAROUSEL = {
   cardWidth: 358,
-  cardHeight: 462,
+  /**
+   * Phone Ludus frame (wordmark + header + counter + footer) cannot fit the
+   * mockup's 462pt card without clipping the page dots into Customise. 400
+   * leaves ~16pt below the card for dots + gap (art: D5 Ludus home).
+   */
+  cardHeight: 400,
   gap: 0,
   sidePadding: 0,
   visibleCount: 1,

@@ -18,7 +18,7 @@ export type LudusBotCardProps = {
 };
 
 /**
- * D5 Ludus bot card — 358×462, ACTIVE tag, name, W–L, paint/weapon chips.
+ * D5 Ludus bot card — 358×400, ACTIVE tag, name, W–L, paint/weapon chips.
  * Never shows character ids (C17).
  */
 function LudusBotCardImpl({ bot, testID }: LudusBotCardProps): React.ReactElement {
@@ -56,7 +56,7 @@ function LudusBotCardImpl({ bot, testID }: LudusBotCardProps): React.ReactElemen
           paintId={paint}
           weaponId={weapon}
           motionPose="idle"
-          size={220}
+          size={200}
           label={bot.displayName}
           testID="ludus-bot-assembler"
         />
