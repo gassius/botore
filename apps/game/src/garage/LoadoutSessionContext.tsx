@@ -114,6 +114,8 @@ export function GarageSessionProvider(props: {
   );
   const [ownedBots, setOwnedBots] = useState<readonly OwnedBotSummary[]>([]);
   const [botCap, setBotCap] = useState(DEFAULT_PLAYER_BOT_CAP);
+  /** Latest-wins token for in-place Ludus select (D5 carousel snaps). */
+  const selectEpochRef = useRef(0);
 
   const refreshOwnedBots = useCallback(async () => {
     const current = await auth.getSession();
@@ -130,8 +132,12 @@ export function GarageSessionProvider(props: {
     setBotCap(listed.cap);
   }, [auth, loadouts]);
 
-  const hydrate = useCallback(async () => {
+  const hydrate = useCallback(async (opts?: { selectEpoch?: number }) => {
+    const stillCurrent = () =>
+      opts?.selectEpoch === undefined || opts.selectEpoch === selectEpochRef.current;
+
     const current = await auth.getSession();
+    if (!stillCurrent()) return;
     setSession(current);
     if (!current) {
       setLoadout(createUnavailableLoadoutState());
@@ -142,12 +148,14 @@ export function GarageSessionProvider(props: {
     }
 
     const listed = await loadouts.listOwnedBots(current.accessToken);
+    if (!stillCurrent()) return;
     if (listed.ok) {
       setOwnedBots(listed.bots);
       setBotCap(listed.cap);
     }
 
     const owned = await loadouts.resolveOwnedCharacter(current.accessToken);
+    if (!stillCurrent()) return;
     if (!owned.ok) {
       if (isDesignCaptureEnabled()) {
         console.warn(
@@ -170,6 +178,7 @@ export function GarageSessionProvider(props: {
       characterId: owned.character.characterId,
       accessToken: current.accessToken,
     });
+    if (!stillCurrent()) return;
     if (fetched.ok) {
       if (isDesignCaptureEnabled()) {
         console.log(
@@ -566,14 +575,17 @@ export function GarageSessionProvider(props: {
       selectActiveBot: async (characterId) => {
         const current = await auth.getSession();
         if (!current) return false;
+        const epoch = ++selectEpochRef.current;
         const selected = await loadouts.selectActiveBot({
           characterId,
           accessToken: current.accessToken,
         });
         if (!selected.ok) return false;
-        setBooting(true);
-        await hydrate();
-        return true;
+        if (epoch !== selectEpochRef.current) return false;
+        // In-place Ludus select: refresh loadout/owned list without the boot
+        // splash gate (D5 carousel snap must keep Stable mounted).
+        await hydrate({ selectEpoch: epoch });
+        return epoch === selectEpochRef.current;
       },
       suggestBotName: async () => {
         const current = await auth.getSession();

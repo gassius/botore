@@ -96,6 +96,9 @@ begin
     return new;
   end if;
 
+  -- Serialize per-account before counting so concurrent creates cannot race the cap.
+  perform 1 from public.accounts a where a.id = new.account_id for update;
+
   v_limit := public._player_bot_limit();
   select count(*)::integer
     into v_count
@@ -162,8 +165,10 @@ begin
     );
   end if;
 
-  -- Curated deny list (case-insensitive whole-word / substring for short insults).
-  if lower(v_name) ~ '(fuck|shit|cunt|nigg|faggot|rape|retard|whore|slut|bastard|asshole|dick|piss|cock|porn|pedo)' then
+  -- Curated deny list: unambiguous stems stay substring; short ambiguous stems
+  -- use word boundaries so Peacock / Grapes / Dickens stay allowed.
+  if lower(v_name) ~ '(fuck|shit|cunt|nigg|faggot|retard|whore|slut|bastard|asshole|porn|pedo)'
+     or lower(v_name) ~ '\m(rape|dick|cock|piss)\M' then
     return jsonb_build_object(
       'ok', false,
       'code', 'invalid_display_name',
@@ -608,8 +613,20 @@ begin
       using errcode = '42501';
   end if;
 
+  -- Lock the account row before ensure / name / cap checks so concurrent
+  -- creates cannot race past the cap or duplicate-name guard (TOCTOU).
   select a.deleted_at into v_deleted_at
-    from public.accounts a where a.id = v_caller;
+    from public.accounts a
+   where a.id = v_caller
+   for update;
+
+  if not found then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'not_found',
+      'message', 'account not found'
+    );
+  end if;
 
   if v_deleted_at is not null then
     return jsonb_build_object(
@@ -683,23 +700,10 @@ begin
     );
   end if;
 
-  -- Must own paint + weapon (inventory ledger). Chassis is always starter-granted.
-  select
-    exists (
-      select 1 from public.inventory_ledger il
-       where il.account_id = v_caller
-         and il.part_id = v_paint
-         and il.reason in ('grant', 'seed', 'admin', 'purchase')
-         and il.delta > 0
-    )
-    and exists (
-      select 1 from public.inventory_ledger il
-       where il.account_id = v_caller
-         and il.part_id = v_weapon
-         and il.reason in ('grant', 'seed', 'admin', 'purchase')
-         and il.delta > 0
-    )
-    into v_owned_parts;
+  -- Net ownership (includes revokes), same as save_bot_loadout.
+  v_owned_parts :=
+    public.owned_part_quantity(v_caller, v_paint) > 0
+    and public.owned_part_quantity(v_caller, v_weapon) > 0;
 
   if not v_owned_parts then
     return jsonb_build_object(

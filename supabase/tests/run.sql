@@ -3834,6 +3834,35 @@ begin
     'authenticated has no SELECT on player_bot_config'
   );
 
+  -- Cap TOCTOU: trigger + create must lock the account row before counting.
+  perform tests.assert(
+    pg_get_functiondef('public._enforce_player_bot_cap'::regproc) ~* 'for update',
+    'cap trigger locks account for update'
+  );
+  perform tests.assert(
+    pg_get_functiondef('public.create_owned_character(text, text, text)'::regprocedure)
+      ~* 'for update',
+    'create_owned_character locks account for update'
+  );
+
+  -- Word-boundary deny list: short stems must not reject Peacock / Grapes.
+  perform tests.assert(
+    (public._validate_bot_display_name('Peacock')->>'ok')::boolean,
+    'Peacock allowed'
+  );
+  perform tests.assert(
+    (public._validate_bot_display_name('Grapes')->>'ok')::boolean,
+    'Grapes allowed'
+  );
+  perform tests.assert(
+    public._validate_bot_display_name('dick')->>'ok' = 'false',
+    'standalone dick rejected'
+  );
+  perform tests.assert(
+    public._validate_bot_display_name('rape')->>'ok' = 'false',
+    'standalone rape rejected'
+  );
+
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   perform set_config('request.jwt.claim.sub', v_account::text, true);
   set local role authenticated;
