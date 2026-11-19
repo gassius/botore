@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveA6OpponentPanelSlug } from '../src/fight/opponents/a6OpponentPanelResolve';
 import {
+  applyDesignCaptureFightQuotaScenario,
   formatRefillCountdown,
   msUntilRefill,
   parseFightQuotaSummary,
@@ -80,6 +81,66 @@ describe('E3 fight quota parse + countdown', () => {
     });
     expect(quota?.fightsRemaining).toBe(0);
     expect(quota?.nextRefillAt).toBe('2026-11-19T00:00:00Z');
+  });
+
+  it('forces design-capture remaining to 2/3 with a future countdown (not Full)', () => {
+    const now = Date.parse('2026-11-19T12:00:00.000Z');
+    const forced = applyDesignCaptureFightQuotaScenario(
+      'remaining',
+      {
+        allowancesRemaining: 3,
+        quota: {
+          fightsRemaining: 3,
+          limit: 3,
+          scope: 'player',
+          refillPolicy: 'daily_utc_midnight',
+          nextRefillAt: '2026-11-19T00:00:00Z', // already due — still must show countdown
+          utcDay: '2026-11-19',
+          allowancesRemaining: 3,
+        },
+      },
+      now,
+    );
+    expect(forced.allowancesRemaining).toBe(2);
+    expect(forced.quota?.fightsRemaining).toBe(2);
+    expect(forced.quota?.limit).toBe(3);
+    expect(forced.quota!.fightsRemaining < forced.quota!.limit).toBe(true);
+    expect(Date.parse(forced.quota!.nextRefillAt)).toBeGreaterThan(now);
+  });
+
+  it('forces design-capture exhausted to 0 while keeping limit', () => {
+    const forced = applyDesignCaptureFightQuotaScenario('exhausted', {
+      allowancesRemaining: 2,
+      quota: {
+        fightsRemaining: 2,
+        limit: 3,
+        scope: 'player',
+        refillPolicy: 'daily_utc_midnight',
+        nextRefillAt: '2026-11-20T00:00:00Z',
+        utcDay: '2026-11-19',
+        allowancesRemaining: 2,
+      },
+    });
+    expect(forced.allowancesRemaining).toBe(0);
+    expect(forced.quota?.fightsRemaining).toBe(0);
+    expect(forced.quota?.limit).toBe(3);
+    expect(forced.quota?.nextRefillAt).toBe('2026-11-20T00:00:00Z');
+  });
+
+  it('leaves quota untouched when no design-capture fightQuota scenario', () => {
+    const input = {
+      allowancesRemaining: 3,
+      quota: {
+        fightsRemaining: 3,
+        limit: 3,
+        scope: 'player' as const,
+        refillPolicy: 'daily_utc_midnight' as const,
+        nextRefillAt: '2026-11-20T00:00:00Z',
+        utcDay: '2026-11-19',
+        allowancesRemaining: 3,
+      },
+    };
+    expect(applyDesignCaptureFightQuotaScenario(null, input)).toEqual(input);
   });
 
   it('resolves opponent panel slug from A6 NPC identity (shared Opponents/ToTT)', () => {

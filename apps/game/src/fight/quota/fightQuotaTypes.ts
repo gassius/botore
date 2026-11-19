@@ -99,3 +99,48 @@ export function msUntilRefill(nextRefillAt: string, nowMs: number = Date.now()):
   if (!Number.isFinite(target)) return 0;
   return Math.max(0, target - nowMs);
 }
+
+/**
+ * Design-capture only: force D8/D9 quota stills (2/3 + countdown, or exhausted).
+ * Applies after any candidates adapter (DEV or live Supabase) so Android live-fight
+ * CI can deep-link `fightQuota=remaining` without mutating server allowance rows.
+ */
+export function applyDesignCaptureFightQuotaScenario(
+  scenario: 'remaining' | 'exhausted' | null | undefined,
+  input: {
+    readonly allowancesRemaining: number;
+    readonly quota: FightQuotaSummary | null;
+  },
+  nowMs: number = Date.now(),
+): { readonly allowancesRemaining: number; readonly quota: FightQuotaSummary | null } {
+  if (scenario !== 'remaining' && scenario !== 'exhausted') return input;
+
+  const baseLimit = Math.max(1, input.quota?.limit ?? 3);
+  // D8 design still: 2 of 3 with a live countdown (not the Full chip).
+  const remaining = scenario === 'exhausted' ? 0 : Math.min(2, Math.max(1, baseLimit - 1));
+  const limit = scenario === 'remaining' ? Math.max(baseLimit, remaining + 1) : baseLimit;
+
+  let nextRefillAt = input.quota?.nextRefillAt ?? '';
+  if (
+    !nextRefillAt ||
+    !Number.isFinite(Date.parse(nextRefillAt)) ||
+    Date.parse(nextRefillAt) <= nowMs
+  ) {
+    // Keep countdown visible for the still when the live seed is already full / due.
+    nextRefillAt = new Date(nowMs + 3 * 3600 * 1000 + 12 * 60 * 1000 + 45 * 1000)
+      .toISOString()
+      .replace(/\.\d{3}Z$/, 'Z');
+  }
+
+  const quota: FightQuotaSummary = {
+    fightsRemaining: remaining,
+    limit,
+    scope: input.quota?.scope ?? 'player',
+    refillPolicy: input.quota?.refillPolicy ?? 'daily_utc_midnight',
+    nextRefillAt,
+    utcDay: input.quota?.utcDay ?? new Date(nowMs).toISOString().slice(0, 10),
+    allowancesRemaining: remaining,
+  };
+
+  return { allowancesRemaining: remaining, quota };
+}

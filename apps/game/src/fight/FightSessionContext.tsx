@@ -23,7 +23,10 @@ import {
   shouldPreserveUnresolvedIntent,
   type InFlightFight,
 } from './fightSessionLifecycle';
-import type { FightQuotaSummary } from './quota/fightQuotaTypes';
+import {
+  applyDesignCaptureFightQuotaScenario,
+  type FightQuotaSummary,
+} from './quota/fightQuotaTypes';
 import { createFightRequestClient } from './request/createFightRequestClient';
 import type { FightRequestPort } from './request/FightRequestPort';
 import { resolveFightIntent, type FightIntent } from './request/idempotency';
@@ -185,7 +188,8 @@ export function FightSessionProvider(props: {
       });
       return;
     }
-    // E3 design-capture: force remaining / exhausted on the shared DEV backend.
+    // E3 design-capture: also nudge the shared DEV backend before list so spent
+    // slots stay consistent across adapters that mutate in-memory state.
     if (isDesignCaptureEnabled() && candidatesPort instanceof DevOpponentCandidatesAdapter) {
       const scenario = peekCaptureIntent().fightQuotaScenario;
       if (scenario === 'exhausted') candidatesPort.allowancesRemaining = 0;
@@ -198,24 +202,36 @@ export function FightSessionProvider(props: {
       accessToken: session.accessToken,
       accountId: session.userId,
     });
+    const captureQuotaScenario = isDesignCaptureEnabled()
+      ? peekCaptureIntent().fightQuotaScenario
+      : null;
     if (!result.ok) {
+      const overridden = applyDesignCaptureFightQuotaScenario(captureQuotaScenario, {
+        allowancesRemaining: result.allowancesRemaining ?? 0,
+        quota: result.quota ?? null,
+      });
       setList({
         status: 'error',
         code: result.code,
         message: result.message,
-        ...(result.allowancesRemaining !== undefined
-          ? { allowancesRemaining: result.allowancesRemaining }
+        ...(result.allowancesRemaining !== undefined || captureQuotaScenario
+          ? { allowancesRemaining: overridden.allowancesRemaining }
           : {}),
-        ...(result.quota ? { quota: result.quota } : {}),
+        ...(overridden.quota ? { quota: overridden.quota } : {}),
       });
       return;
     }
+    const readyQuota = applyDesignCaptureFightQuotaScenario(captureQuotaScenario, {
+      allowancesRemaining: result.allowancesRemaining,
+      quota: result.quota,
+    });
     setList({
       status: 'ready',
       candidates: result.candidates,
-      allowancesRemaining: result.allowancesRemaining,
+      allowancesRemaining: readyQuota.allowancesRemaining,
       utcDay: result.utcDay,
-      quota: result.quota,
+      // Helper only returns null when input.quota is null; live list always has quota.
+      quota: readyQuota.quota ?? result.quota,
     });
     setSelected((prev) => {
       if (!prev) return null;

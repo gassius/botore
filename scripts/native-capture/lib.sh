@@ -40,6 +40,7 @@ capture_url_for_route() {
   local pose_compare="${10:-}"
   local result="${11:-}"
   local home="${12:-}"
+  local fight_quota="${13:-}"
   local query=()
   if [[ "${mute}" == "1" || "${mute}" == "true" ]]; then
     query+=("mute=1")
@@ -73,6 +74,9 @@ capture_url_for_route() {
   fi
   if [[ -n "${home}" ]]; then
     query+=("home=${home}")
+  fi
+  if [[ -n "${fight_quota}" ]]; then
+    query+=("fightQuota=${fight_quota}")
   fi
   if [[ ${#query[@]} -eq 0 ]]; then
     printf '%s/%s' "${SCHEME_CAPTURE_PREFIX}" "${route}"

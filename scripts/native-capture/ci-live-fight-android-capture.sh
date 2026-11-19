@@ -348,6 +348,22 @@ capture_named Settings settings 4
 # 1c) D8 Opponents — live A5 roster names + Botore + W–L (E3 quota panel).
 capture_named Opponents opponents-roster 6
 
+# 1c″) D8 Opponents — design-capture fightQuota=remaining → 2/3 + refill countdown
+# (non-gating design ask; live Supabase path overridden only while DESIGN_CAPTURE=1).
+CAPTURE_SETTLE_SEC=6 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route Opponents \
+  --name opponents-quota-remaining \
+  --fight-quota remaining >/dev/null
+opponents_quota_matches=( "${OUT_DIR}"/android-*-opponents-quota-remaining.png )
+if [[ ! -e "${opponents_quota_matches[0]:-}" ]]; then
+  echo "error: missing PNG for opponents-quota-remaining" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "still.android.opponents-quota-remaining" "${opponents_quota_matches[0]}"
+echo "ok: ${opponents_quota_matches[0]}" >&2
+
 # 1c′) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
 # Need ≥3 whole 175pt cards (185 snap, 150pt robots). Capture before C10
 # offline/auth stills so the pack has a real snapped list.
@@ -720,6 +736,7 @@ required_labels=(
   customise-paint-hazard
   customise-weapon-unlocked
   opponents-snap-rest
+  opponents-quota-remaining
   ranking-bots
   ranking-botores
   ranking-empty
