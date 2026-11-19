@@ -5,6 +5,10 @@ export {
   FIGHT_VIEW_HUD_BELOW_INSET,
   FIGHT_VIEW_BAND_CONTENT_HEIGHT,
   FIGHT_VIEW_CALLOUT_PLATE_HEIGHT,
+  FIGHT_VIEW_REWATCH_CALLOUT_HEIGHT,
+  FIGHT_VIEW_REWATCH_CONTROLS_HEIGHT,
+  FIGHT_VIEW_REWATCH_FAST_SPEED,
+  scrubProgressFromX,
   FIGHT_VIEW_ARENA_NAME,
   FIGHT_VIEW_ARENA_TAG_LEFT,
   FIGHT_VIEW_ARENA_TAG_LEFT_BESIDE_BACK,
@@ -35,8 +39,15 @@ export {
   shouldReopenResultOverlayOnBack,
   shouldScheduleKoHandoff,
   createOnceHandoff,
+  rankingReturnTargetFor,
+  resolveRankingExit,
+  type RankingReturnTarget,
 } from './fightViewNavigation';
 export { FightViewHud, type FightViewHudProps, type FightViewHudSide } from './FightViewHud';
 export { FightViewMuteControl, type FightViewMuteControlProps } from './FightViewMuteControl';
-export { FightViewBottomBand, type FightViewBottomBandProps } from './FightViewBottomBand';
+export {
+  FightViewBottomBand,
+  type FightViewBottomBandProps,
+  type FightViewTransport,
+} from './FightViewBottomBand';
 export { ArenaLocationTag, type ArenaLocationTagProps } from './ArenaLocationTag';

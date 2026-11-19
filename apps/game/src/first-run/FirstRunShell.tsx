@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useRouteMenuMusic } from '../audio/useRouteMenuMusic';
 import { useDesignCaptureDeepLink } from '../design-capture/useDesignCaptureDeepLink';
 import { useDesignCaptureLiveFight } from '../design-capture/useDesignCaptureLiveFight';
+import { useDesignCaptureNavLog } from '../design-capture/useDesignCaptureNavLog';
 import { FirstRunProvider, useFirstRun } from './FirstRunContext';
 import type { FirstRunRoute } from './routes';
 import { StableSlot } from './slots/StableSlot';
@@ -47,6 +48,7 @@ function ShellInner(): React.ReactElement {
   const { route, showResultOverlay } = useFirstRun();
   useDesignCaptureDeepLink();
   useDesignCaptureLiveFight();
+  useDesignCaptureNavLog(route, showResultOverlay);
   useRouteMenuMusic({ route, showResultOverlay });
   return (
     <>

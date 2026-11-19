@@ -48,7 +48,9 @@ import { assemblerLoadoutFromBuild } from './fighterLoadout';
 import { formatArenaReadyLog, fxFamilyFromAnimationCommand } from './fxCaptureHold';
 import {
   applyAnimationCommand,
+  commandIndexForProgress,
   initialPresentationState,
+  presentationAtIndex,
   type ReplayPresentationState,
 } from './playbackState';
 import {
@@ -106,6 +108,19 @@ export interface CanonicalReplayPlayerProps {
     cmd: AnimationCommand,
     presentation: ReplayPresentationState,
   ) => void;
+  /**
+   * Fired after a seek (or start-at-end mount) jumps the presentation without
+   * playing the skipped commands. `skipped` is the queue prefix now applied.
+   */
+  readonly onSeeked?: (
+    presentation: ReplayPresentationState,
+    skipped: readonly AnimationCommand[],
+  ) => void;
+  /**
+   * `end` mounts on the final frame, paused (e.g. returning to the Result
+   * overlay from Ranking). Read once per replay load; `autoPlay` is ignored.
+   */
+  readonly initialPosition?: 'start' | 'end';
   /** Optional overlay rendered above the arena (HUD / mute / back). */
   readonly arenaOverlay?: React.ReactNode;
   readonly testID?: string;
@@ -116,6 +131,10 @@ export type CanonicalReplayPlayerHandle = {
   play: () => void;
   pause: () => void;
   replay: () => void;
+  /** Jump to a fraction (0–1) of the command queue; keeps play/pause state. */
+  seekToProgress: (progress: number) => void;
+  /** Playback rate multiplier for command dwell (1 = recorded timing). */
+  setSpeed: (speed: number) => void;
   playUiTap: () => void;
   /** Result/Customise UI cues (newRecord / xpTick / equip / select). */
   playCue: (id: TrialAudioUiCueId, options?: PlayCueOptions) => void;
@@ -141,6 +160,8 @@ export const CanonicalReplayPlayer = forwardRef<
     onPlaybackChange,
     onFxCue,
     onCommandApplied,
+    onSeeked,
+    initialPosition = 'start',
     arenaOverlay,
     testID = 'canonical-replay-player',
   },
@@ -185,6 +206,8 @@ export const CanonicalReplayPlayer = forwardRef<
   const waitUntilRef = useRef(0);
   const cueSeqRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const speedRef = useRef(1);
+  const initialPositionRef = useRef(initialPosition);
   const presentationRef = useRef(presentation);
   presentationRef.current = presentation;
   const perfEnabled = isPerfSampleEnabled();
@@ -297,8 +320,42 @@ export const CanonicalReplayPlayer = forwardRef<
     [emitPlayback, farFighter.characterId, nearFighter.characterId, queue, trialAudio.reset],
   );
 
+  const seekTo = useCallback(
+    (index: number, playing: boolean) => {
+      const { presentation: jumped, cueSeq } = presentationAtIndex(
+        queue,
+        index,
+        { nearId: nearFighter.characterId, farId: farFighter.characterId },
+        maxHp,
+      );
+      const pb = new PlaybackController(queue);
+      while (pb.position < cueSeq) pb.advance();
+      playbackRef.current = pb;
+      cueSeqRef.current = cueSeq;
+      waitUntilRef.current = 0;
+      presentationRef.current = jumped;
+      setPresentation(jumped);
+      setFxCues([]);
+      emitPlayback({
+        ...playbackUiAfterAdvance(playbackUiRef.current, cueSeq),
+        playing: playing && cueSeq < queue.length,
+      });
+      try {
+        onSeeked?.(jumped, queue.slice(0, cueSeq));
+      } catch {
+        // Shell hooks must never break playback.
+      }
+    },
+    [emitPlayback, farFighter.characterId, maxHp, nearFighter.characterId, onSeeked, queue],
+  );
+
   useEffect(() => {
+    if (initialPositionRef.current === 'end') {
+      seekTo(queue.length, false);
+      return;
+    }
     resetPlayback(autoPlay);
+    // seekTo is omitted: its identity tracks onSeeked, and only a new replay / queue may reload.
   }, [autoPlay, resetPlayback, result.replay.checksum]);
 
   const contact = provisionalContactPoint(placement.near, placement.far);
@@ -438,7 +495,7 @@ export const CanonicalReplayPlayer = forwardRef<
           // Capture hooks must never break playback.
         }
       }
-      waitUntilRef.current = now + commandDuration(cmd);
+      waitUntilRef.current = now + commandDuration(cmd) / speedRef.current;
       const afterCmd = shouldContinuePlaybackLoopAfterTick({
         finished: pb.finished,
         playing: playbackUiRef.current.playing,
@@ -495,6 +552,13 @@ export const CanonicalReplayPlayer = forwardRef<
       play: () => emitPlayback(resumeState(playbackUiRef.current)),
       pause: () => emitPlayback(pauseState(playbackUiRef.current)),
       replay: () => resetPlayback(true),
+      seekToProgress: (progress) => {
+        const cur = playbackUiRef.current;
+        seekTo(commandIndexForProgress(progress, cur.totalCommands), cur.playing);
+      },
+      setSpeed: (speed) => {
+        speedRef.current = Number.isFinite(speed) && speed > 0 ? speed : 1;
+      },
       playUiTap: () => {
         try {
           trialAudio.playUiTap();
@@ -520,7 +584,7 @@ export const CanonicalReplayPlayer = forwardRef<
         );
       },
     }),
-    [emitPlayback, perfLoadKind, resetPlayback, trialAudio.playCue, trialAudio.playUiTap],
+    [emitPlayback, perfLoadKind, resetPlayback, seekTo, trialAudio.playCue, trialAudio.playUiTap],
   );
 
   const onStageLayout = (e: LayoutChangeEvent) => {

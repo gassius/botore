@@ -33,6 +33,41 @@ export function shouldReopenResultOverlayOnBack(
   return route === 'Replay' && fightViewMode === 'rewatch';
 }
 
+/**
+ * Where leaving Ranking lands. `resultOverlay` is the in-arena Result on Replay;
+ * `FightResult` is the capture deep-link Result route.
+ */
+export type RankingReturnTarget = 'Stable' | 'resultOverlay' | 'FightResult';
+
+/** Record the Ranking origin at the moment the player opens it. */
+export function rankingReturnTargetFor(
+  route: FirstRunRoute,
+  showResultOverlay: boolean,
+): RankingReturnTarget {
+  if (route === 'Replay' && showResultOverlay) return 'resultOverlay';
+  if (route === 'FightResult') return 'FightResult';
+  return 'Stable';
+}
+
+/** Route + overlay state to restore when leaving Ranking. */
+export function resolveRankingExit(target: RankingReturnTarget): {
+  readonly route: FirstRunRoute;
+  readonly showResultOverlay: boolean;
+} {
+  switch (target) {
+    case 'resultOverlay':
+      return { route: 'Replay', showResultOverlay: true };
+    case 'FightResult':
+      return { route: 'FightResult', showResultOverlay: false };
+    case 'Stable':
+      return { route: 'Stable', showResultOverlay: false };
+    default: {
+      const _exhaustive: never = target;
+      return _exhaustive;
+    }
+  }
+}
+
 /** First watch schedules the KO → Result handoff; rewatch never does. */
 export function shouldScheduleKoHandoff(mode: FightViewMode): boolean {
   return mode === 'firstWatch';

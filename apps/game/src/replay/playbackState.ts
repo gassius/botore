@@ -89,6 +89,30 @@ export function normalizeHpAfter(hpAfter: number, maxHp: number): number {
 }
 
 /**
+ * Presentation after silently applying `queue[0..index)` (scrub / start-at-end).
+ * FX are dropped so a jump never fires a stale spark; `cueSeq` is the count applied.
+ */
+export function presentationAtIndex(
+  queue: readonly AnimationCommand[],
+  index: number,
+  ids: { readonly nearId: string; readonly farId: string },
+  maxHp: { readonly near: number; readonly far: number },
+): { readonly presentation: ReplayPresentationState; readonly cueSeq: number } {
+  const end = Math.max(0, Math.min(queue.length, Math.floor(index)));
+  let state = initialPresentationState(ids.nearId, ids.farId);
+  for (let i = 0; i < end; i += 1) {
+    state = applyAnimationCommand(state, queue[i]!, i + 1, maxHp);
+  }
+  return { presentation: { ...state, activeFx: [] }, cueSeq: end };
+}
+
+/** Command index for a scrub fraction; clamps to [0, total]. */
+export function commandIndexForProgress(progress: number, total: number): number {
+  if (!Number.isFinite(progress) || total <= 0) return 0;
+  return Math.max(0, Math.min(total, Math.round(progress * total)));
+}
+
+/**
  * Apply one animation command. Identical command streams → identical states.
  * Hit FX only from damage_pop; dodge FX only from dodge_anim; defeat only from defeat_anim.
  */

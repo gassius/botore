@@ -32,6 +32,22 @@ export const FIGHT_VIEW_BAND_CONTENT_HEIGHT = 148;
 /** Fixed call-out plate height inside the band (D10). */
 export const FIGHT_VIEW_CALLOUT_PLATE_HEIGHT = 96;
 
+/**
+ * Rewatch band split inside the same fixed band height: compact call-out plate
+ * (hit messages stay visible) above the replay controls row.
+ */
+export const FIGHT_VIEW_REWATCH_CALLOUT_HEIGHT = 58;
+export const FIGHT_VIEW_REWATCH_CONTROLS_HEIGHT = 48;
+
+/** Rewatch fast-forward rate (toggle between 1× and this). */
+export const FIGHT_VIEW_REWATCH_FAST_SPEED = 2;
+
+/** Scrub fraction for a touch at `x` on a track `width` wide; clamps to [0, 1]. */
+export function scrubProgressFromX(x: number, width: number): number {
+  if (!Number.isFinite(x) || width <= 0) return 0;
+  return Math.max(0, Math.min(1, x / width));
+}
+
 /** Arena place name — shown as an in-arena location tag, not a bottom pill (D10). */
 export const FIGHT_VIEW_ARENA_NAME = 'Repair Yard';
 
