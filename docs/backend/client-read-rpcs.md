@@ -67,11 +67,13 @@ After B5 (`0027_ensure_player_character.sql`), `get_owned_character()`
 `ensure_player_character(auth.uid())` when none exists. Atlas Storage publish
 is **not** required for that starter row.
 
-After 0038 (Loadout Equip Fix), `get_owned_character()` **always** runs
-`ensure_player_character` — including when a character already exists — so
-new starter/A6 catalogue inventory grants sync for returning players on
-hydrate. `save_bot_loadout` also ensures before ownership asserts so Equip
-self-heals without a remount. **Carlos yes** required before apply / merge.
+After 0038 (Loadout Equip Fix), `get_owned_character()` keeps E4 active-bot
+resolution (`_resolve_active_owned_character`) and **always** runs
+`ensure_player_character` so A6 catalogue inventory grants sync for returning
+players on hydrate without changing which bot is active. Grants keep the 0035
+revoke-safe `not exists (positive grant)` predicate. `save_bot_loadout` also
+ensures before ownership asserts so Equip self-heals without a remount.
+**Carlos yes** required before apply / merge.
 
 `list_ranking` is migration `0022_list_ranking.sql` (C5). Ordering is
 server-owned: player characters by `sum(progression_ledger.delta_xp)` desc,

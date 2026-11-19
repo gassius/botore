@@ -3976,8 +3976,9 @@ begin
   raise notice 'TEST-OK E4 multi_bot_cap';
 end $$;
 
+-- ---------------------------------------------------------------------------
 -- 0038 Loadout Equip Fix: A6 inventory sync on hydrate + save
--- Cases: new weapon, new paint, equip after rename (returning player missing grants)
+-- Cases: pre-A6 returning player; revoke stays unowned; active bot preserved
 -- ---------------------------------------------------------------------------
 do $$
 declare
@@ -3988,7 +3989,7 @@ declare
   v_loadout jsonb;
   v_qty integer;
   v_owned boolean;
-  v_part text;
+  v_err text;
 begin
   -- Isolated returning player: character + starter loadout, NO A6 inventory grants.
   insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
@@ -4010,6 +4011,10 @@ begin
     v_character_id, v_account, 'Pilot', false, false
   ) on conflict (character_id) do nothing;
 
+  update public.accounts
+     set active_character_id = v_character_id
+   where id = v_account;
+
   insert into public.character_build_versions (
     character_id, hp, strength, agility, speed, weapon_kind, weapon_power
   )
@@ -4018,8 +4023,7 @@ begin
     select 1 from public.character_build_versions where character_id = v_character_id
   );
 
-  -- Minimal pre-A6 inventory only (crimson + sword + chassis) — mirrors returning player
-  -- who never received 0035 backfill / ensure grants.
+  -- Minimal pre-A6 inventory only (crimson + sword + chassis).
   insert into public.inventory_ledger (account_id, part_id, delta, reason)
   select v_account, p.part_id, 1, 'grant'
   from (values
@@ -4035,7 +4039,6 @@ begin
        and il.delta > 0
   );
 
-  -- Confirm starter loadout without going through save (avoids ensure).
   insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
   select
     v_character_id,
@@ -4045,7 +4048,6 @@ begin
     select 1 from public.current_bot_loadouts where character_id = v_character_id
   );
 
-  -- Prove A6 parts are NOT owned yet (precondition for the three Equip bugs).
   select public.owned_part_quantity(v_account, 'weapon-mace') into v_qty;
   perform tests.assert(v_qty < 1, 'pre: weapon-mace must be unowned before sync');
   select public.owned_part_quantity(v_account, 'paint-hazard') into v_qty;
@@ -4066,27 +4068,11 @@ begin
   select public.owned_part_quantity(v_account, 'paint-hazard') into v_qty;
   perform tests.assert(v_qty >= 1, 'hydrate grants paint-hazard');
 
-  -- Strip A6 grants via append-only revoke (ledger has no DELETE).
-  foreach v_part in array array[
-    'paint-primer','paint-ink','paint-drab','paint-navy','paint-frost','paint-cinder',
-    'paint-hazard','paint-racing','weapon-mace','weapon-hammer','weapon-spear','weapon-shield',
-    'paint-cobalt','weapon-axe','weapon-dagger'
-  ]
-  loop
-    if public.owned_part_quantity(v_account, v_part) > 0 then
-      insert into public.inventory_ledger (account_id, part_id, delta, reason)
-      values (v_account, v_part, -public.owned_part_quantity(v_account, v_part), 'revoke');
-    end if;
-  end loop;
-
-  select public.owned_part_quantity(v_account, 'weapon-mace') into v_qty;
-  perform tests.assert(v_qty < 1, 'pre-equip: weapon-mace unowned again');
-
   perform set_config('request.jwt.claim.role', 'authenticated', true);
   perform set_config('request.jwt.claim.sub', v_account::text, true);
   set local role authenticated;
 
-  -- Case 1: Equip new weapon (#88 E7 unlock)
+  -- Case 1: Equip new weapon (A6 now owned via ensure, not revoke-regrant)
   v_version := public.save_bot_loadout(
     v_character_id,
     '{"chassis":"chassis-basic","paint":"paint-crimson","weapon":"weapon-mace","soundTags":["chassis.light","weapon.mace"]}'::jsonb,
@@ -4094,7 +4080,6 @@ begin
   );
   perform tests.assert(v_version is not null, 'equip weapon-mace returns version');
   reset role;
-  -- Assert by version id (same-tx now() can tie) + current view (0038 tie-break).
   select loadout into v_loadout
     from public.bot_loadout_versions
    where loadout_version_id = v_version;
@@ -4153,7 +4138,94 @@ begin
   perform tests.assert(v_loadout->>'weapon' = 'weapon-spear', 'current view shows post-rename spear');
 
   select public.owned_part_quantity(v_account, 'weapon-spear') >= 1 into v_owned;
-  perform tests.assert(v_owned, 'save path granted weapon-spear');
+  perform tests.assert(v_owned, 'save path owned weapon-spear');
 
-  raise notice 'TEST-OK 0038 loadout equip A6 inventory sync (weapon/paint/after-rename)';
+  -- B2: revoke stays effective — ensure must NOT regrant.
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  values (v_account, 'paint-hazard', -public.owned_part_quantity(v_account, 'paint-hazard'), 'revoke');
+  select public.owned_part_quantity(v_account, 'paint-hazard') into v_qty;
+  perform tests.assert(v_qty < 1, 'pre: paint-hazard revoked');
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'hydrate after revoke ok');
+  reset role;
+  select public.owned_part_quantity(v_account, 'paint-hazard') into v_qty;
+  perform tests.assert(v_qty < 1, 'revoked paint-hazard stays unowned after hydrate');
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  begin
+    v_version := public.save_bot_loadout(
+      v_character_id,
+      '{"chassis":"chassis-basic","paint":"paint-hazard","weapon":"weapon-spear","soundTags":["chassis.light","weapon.spear"]}'::jsonb,
+      'v1'
+    );
+    perform tests.assert(false, 'equip revoked paint-hazard must raise unowned_part');
+  exception
+    when others then
+      get stacked diagnostics v_err = message_text;
+      perform tests.assert(
+        v_err ilike '%unowned_part%',
+        'equip revoked paint-hazard raises unowned_part'
+      );
+  end;
+  reset role;
+
+  raise notice 'TEST-OK 0038 loadout equip A6 inventory sync (weapon/paint/after-rename/revoke)';
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 0038 B1: get_owned_character returns the active (second) bot after select
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-0000000000e9';
+  v_res jsonb;
+  v_id1 text;
+  v_id2 text;
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'equip-e9-active@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+
+  insert into public.accounts (id) values (v_account)
+  on conflict (id) do nothing;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'first hydrate provisions bot');
+  v_id1 := v_res->>'characterId';
+  perform tests.assert(v_id1 is not null and v_id1 <> '', 'first bot id');
+
+  v_res := public.create_owned_character('Zed', 'paint-crimson', 'weapon-sword');
+  perform tests.assert((v_res->>'ok')::boolean, 'create second bot Zed');
+  v_id2 := v_res->>'characterId';
+  perform tests.assert(v_id2 is not null and v_id2 <> v_id1, 'second bot distinct');
+
+  v_res := public.select_active_character(v_id2);
+  perform tests.assert((v_res->>'ok')::boolean, 'select second bot active');
+  perform tests.assert(v_res->>'characterId' = v_id2, 'select returns second');
+
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, 'get_owned_character after select ok');
+  perform tests.assert(
+    v_res->>'characterId' = v_id2,
+    'get_owned_character returns active second bot (not first)'
+  );
+  reset role;
+
+  raise notice 'TEST-OK 0038 get_owned_character preserves active second bot';
 end $$;

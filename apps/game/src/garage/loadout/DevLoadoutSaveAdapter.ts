@@ -21,7 +21,12 @@ import {
   PROOF_ATLAS_VERSION,
   PROOF_CHARACTER_ID,
   PROOF_DISPLAY_NAME,
+  PROOF_PAINTS,
+  PROOF_WEAPONS,
 } from './proofCatalogue';
+
+/** Pre-A6 starter ownership — mirrors a returning player before ensure grants. */
+const DEV_STARTER_OWNED_PARTS = ['chassis-basic', 'paint-crimson', 'weapon-sword'] as const;
 
 const DEV_NAME_LEFT = ['Rust', 'Tin', 'Iron', 'Bolt', 'Oxide', 'Spark'] as const;
 const DEV_NAME_RIGHT = ['Baron', 'Caesar', 'Pilot', 'Knight', 'Rex', 'Scout'] as const;
@@ -30,6 +35,9 @@ const DEV_NAME_RIGHT = ['Baron', 'Caesar', 'Pilot', 'Knight', 'Rex', 'Scout'] as
  * DEV save adapter: simulates server confirmation and a controllable failure
  * path for scaffolding (set forceFailNext / paint-force-fail).
  * The seeded `player-hero` fixture stays inside this adapter only.
+ *
+ * Ownership mirrors 0038: starter parts only until hydrate/ensure grants the
+ * full proof catalogue. `save` rejects unowned parts with `unowned_part`.
  */
 export class DevLoadoutSaveAdapter implements LoadoutSavePort {
   readonly kind = 'dev' as const;
@@ -50,15 +58,31 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
   private names = new Map<string, string>([[PROOF_CHARACTER_ID, PROOF_DISPLAY_NAME]]);
   private activeCharacterId = PROOF_CHARACTER_ID;
   private readonly ownedOrder: string[] = [PROOF_CHARACTER_ID];
+  private ownedParts = new Set<string>(DEV_STARTER_OWNED_PARTS);
   private nameSuggestCursor = 0;
   forceFailNext = false;
   forceFailNextRename = false;
+  /**
+   * When false, resolveOwnedCharacter skips catalogue grants (pre-0038).
+   * Default true so hydrate mirrors always-ensure.
+   */
+  ensureCatalogueOnResolve = true;
   /** Optional second owned character for dual-account tests. */
   extraOwned: { characterId: string; displayName: string; loadout: GarageLoadout } | null = null;
+
+  /** Mirrors ensure_player_character A6 catalogue grants (0038 always-ensure). */
+  ensureCatalogueGrants(): void {
+    this.ownedParts.add('chassis-basic');
+    for (const paint of PROOF_PAINTS) this.ownedParts.add(paint.partId);
+    for (const weapon of PROOF_WEAPONS) this.ownedParts.add(weapon.partId);
+  }
 
   async resolveOwnedCharacter(accessToken: string): Promise<OwnedCharacterResult> {
     if (!accessToken) {
       return { ok: false, code: 'unauthenticated', message: 'Missing access token' };
+    }
+    if (this.ensureCatalogueOnResolve) {
+      this.ensureCatalogueGrants();
     }
     // DEV maps any signed-in session to the seeded proof character unless a
     // second fixture is registered for multi-owner tests.
@@ -75,8 +99,8 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
     return {
       ok: true,
       character: {
-        characterId: PROOF_CHARACTER_ID,
-        displayName: this.names.get(PROOF_CHARACTER_ID) ?? PROOF_DISPLAY_NAME,
+        characterId: this.activeCharacterId,
+        displayName: this.names.get(this.activeCharacterId) ?? PROOF_DISPLAY_NAME,
       },
     };
   }
@@ -133,6 +157,23 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
         code: 'dev_forced_failure',
         message: 'Could not save changes. Your equipped loadout is unchanged.',
       };
+    }
+    // Hydrate may have already granted catalogue parts; Equip self-heal mirrors
+    // save_bot_loadout calling ensure before ownership asserts (0038).
+    if (this.ensureCatalogueOnResolve) {
+      this.ensureCatalogueGrants();
+    }
+    const required = [input.loadout.chassis, input.loadout.paint, input.loadout.weapon].filter(
+      (partId): partId is string => typeof partId === 'string' && partId.length > 0,
+    );
+    for (const partId of required) {
+      if (!this.ownedParts.has(partId)) {
+        return {
+          ok: false,
+          code: 'unowned_part',
+          message: 'You do not own that part yet. Your equipped loadout is unchanged.',
+        };
+      }
     }
     const versionId = `00000000-0000-4000-8000-dev${String(Date.now()).slice(-9)}`;
     this.store.set(input.characterId, {
@@ -243,6 +284,9 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
       paint: input.paint,
       weapon: input.weapon,
     };
+    this.ensureCatalogueGrants();
+    this.ownedParts.add(input.paint);
+    this.ownedParts.add(input.weapon);
     this.store.set(characterId, {
       loadout,
       versionId: `00000000-0000-4000-8000-dev${String(this.ownedOrder.length + 1).padStart(9, '0')}`,

@@ -323,6 +323,55 @@ describe('E1 Customise Save Loadout (390×844)', () => {
     expect(source).not.toContain('confirmedVersionId');
   });
 
+  it('rejects A6 equip when catalogue ensure is skipped (pre-0038)', async () => {
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const loadouts = new DevLoadoutSaveAdapter();
+    loadouts.ensureCatalogueOnResolve = false;
+    const apiRef: { current: SessionProbe | null } = { current: null };
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <GarageProbe apiRef={apiRef} />
+            <CustomiseScreen onBack={() => undefined} />
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    const api = () => {
+      if (!apiRef.current) throw new Error('probe missing');
+      return apiRef.current;
+    };
+
+    for (let i = 0; i < 40 && (api().booting() || !api().canProgress()); i += 1) {
+      await flush();
+    }
+    expect(api().canProgress()).toBe(true);
+
+    await act(async () => {
+      api().selectWeapon('weapon-mace');
+    });
+    await flush();
+    const saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+    expect(api().confirmedWeapon()).not.toBe('weapon-mace');
+    expect(api().lastError()).toMatch(/do not own that part/i);
+  });
+
   it('equips A6 weapon-mace and paint-hazard (390×844 Equip path)', async () => {
     const auth = new DevAuthAdapter();
     const signed = await auth.signInWithPassword({

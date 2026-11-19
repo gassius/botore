@@ -13,21 +13,22 @@
 --   Rename + Equip shares the same save path when new parts are selected.
 --
 -- Fix:
---   1) ensure_player_character grants when owned quantity < 1 (not merely
---      when no historical positive grant row exists — revoke-safe).
---      Quantity is computed with an inline SUM (VOLATILE plpgsql statement),
---      not via STABLE owned_part_quantity inside a mutating INSERT/SELECT.
---   2) get_owned_character always invokes ensure so starter/A6 grants sync
---      for existing characters on hydrate.
+--   1) ensure_player_character keeps the 0035 revoke-safe grant predicate
+--      (not exists positive grant/seed/admin/purchase row). Always-ensure on
+--      hydrate covers returning players who never received A6 grants.
+--   2) get_owned_character is based on 0037 (active-bot via
+--      _resolve_active_owned_character) and always performs ensure so A6
+--      grants sync for existing characters without losing active selection.
 --   3) save_bot_loadout (authenticated owner path) calls ensure before
 --      ownership asserts so Equip self-heals without requiring a remount.
 --   4) bot_loadout_versions.created_at default → clock_timestamp() so same-tx
 --      Equips get distinct timestamps (tx-stable now() was hiding newest row
 --      in current_bot_loadouts; UUID tie-break is not insertion-ordered).
 --   5) current_bot_loadouts still tie-breaks by loadout_version_id desc.
---   6) Idempotent A6 inventory backfill (safe re-run; ledger SUM subquery).
+--   6) Idempotent A6 inventory backfill (0035 not-exists predicate).
 --
--- Prefix: E4 owns 0037; this PR owns 0038. Fight-end / name-input: 0039+.
+-- Stack: #92 (0037) → #93 → #95 → #97 (0038). Fight-end / name-input: 0039+.
+-- 0037 does not redefine ensure_player_character or save_bot_loadout.
 
 -- ---------------------------------------------------------------------------
 -- created_at: clock_timestamp so same-transaction Equips order correctly
@@ -57,7 +58,6 @@ declare
     v_loadout_version_id uuid;
     v_build_count integer;
     v_part_id text;
-    v_qty integer;
     v_today date := (now() at time zone 'utc')::date;
     v_normalized jsonb;
     v_sound_tags jsonb;
@@ -209,22 +209,20 @@ begin
         'weapon-shield'
     ]
     loop
-        -- 0038: grant when current balance < 1 (revoke-safe).
-        -- Inline SUM in this VOLATILE plpgsql statement — do not call STABLE
-        -- owned_part_quantity from a mutating INSERT/SELECT path.
+        -- 0035 revoke-safe predicate: grant only when no positive
+        -- grant/seed/admin/purchase row exists (a prior revoke stays effective).
         if exists (
             select 1 from public.parts_catalogue pc
              where pc.part_id = v_part_id and pc.is_active
-        ) then
-            select coalesce(sum(il.delta), 0)::integer
-              into v_qty
-              from public.inventory_ledger il
+        ) and not exists (
+            select 1 from public.inventory_ledger il
              where il.account_id = p_account_id
-               and il.part_id = v_part_id;
-            if v_qty < 1 then
-                insert into public.inventory_ledger (account_id, part_id, delta, reason)
-                values (p_account_id, v_part_id, 1, 'grant');
-            end if;
+               and il.part_id = v_part_id
+               and il.reason in ('grant', 'seed', 'admin', 'purchase')
+               and il.delta > 0
+        ) then
+            insert into public.inventory_ledger (account_id, part_id, delta, reason)
+            values (p_account_id, v_part_id, 1, 'grant');
         end if;
     end loop;
 
@@ -287,10 +285,10 @@ grant execute on function public.ensure_player_character(uuid)
     to service_role, authenticated;
 
 comment on function public.ensure_player_character(uuid) is
-  'B5+E2+E7+0038: idempotent player character + starter loadout; grants A6 paints/weapons when owned quantity < 1. service_role or owning authenticated.';
+  'B5+E2+E7+0038: idempotent player character + starter loadout; A6 grants use 0035 not-exists predicate (revoke-safe). service_role or owning authenticated.';
 
 -- ---------------------------------------------------------------------------
--- get_owned_character: always ensure (idempotent inventory sync)
+-- get_owned_character: 0037 active-bot body + unconditional ensure (0038)
 -- ---------------------------------------------------------------------------
 create or replace function public.get_owned_character()
 returns jsonb
@@ -323,8 +321,8 @@ begin
     );
   end if;
 
-  -- Always ensure: creates character when missing AND grants any new starter
-  -- catalogue parts (A6 paints/weapons) for returning players.
+  -- Inventory is per-account: always ensure so returning players get A6 grants
+  -- without changing which bot is active.
   v_ensure := public.ensure_player_character(v_caller);
   if coalesce((v_ensure->>'ok')::boolean, false) is not true then
     return jsonb_build_object(
@@ -337,17 +335,20 @@ begin
     );
   end if;
 
-  v_character_id := v_ensure->>'characterId';
-  v_display_name := v_ensure->>'displayName';
+  select r.character_id, r.display_name
+    into v_character_id, v_display_name
+    from public._resolve_active_owned_character(v_caller) r;
 
-  if v_character_id is null or v_character_id = '' then
-    select c.character_id, c.display_name
-      into v_character_id, v_display_name
-      from public.characters c
-     where c.account_id = v_caller
-       and c.is_opponent = false
-     order by c.character_id asc
-     limit 1;
+  if v_character_id is null then
+    -- ensure just provisioned the first bot; pin it active (0037 contract).
+    v_character_id := v_ensure->>'characterId';
+    v_display_name := v_ensure->>'displayName';
+    if v_character_id is not null and v_character_id <> '' then
+      update public.accounts
+         set active_character_id = v_character_id
+       where id = v_caller
+         and (active_character_id is distinct from v_character_id);
+    end if;
   end if;
 
   if v_character_id is null or v_character_id = '' then
@@ -364,12 +365,13 @@ begin
     from public.characters c
    where c.character_id = v_character_id
      and c.account_id = v_caller
-     and c.is_opponent = false;
+     and c.is_opponent = false
+     and coalesce(c.owner_is_npc, false) = false;
 
   return jsonb_build_object(
     'ok', true,
     'characterId', v_character_id,
-    'displayName', coalesce(nullif(v_display_name, ''), v_character_id)
+    'displayName', coalesce(nullif(v_display_name, ''), 'Pilot')
   );
 end;
 $$;
@@ -380,7 +382,7 @@ revoke all on function public.get_owned_character() from service_role;
 grant execute on function public.get_owned_character() to authenticated;
 
 comment on function public.get_owned_character() is
-  'Sanctioned client read: owned player character for auth.uid(). Always runs ensure_player_character so starter/A6 inventory grants sync for returning players (0038).';
+  'E4+0038: sanctioned owned active character for auth.uid(). Always ensures inventory; resolves active via _resolve_active_owned_character. Returns {ok, characterId, displayName}.';
 
 -- ---------------------------------------------------------------------------
 -- save_bot_loadout: ensure inventory before ownership asserts (Equip self-heal)
@@ -614,7 +616,7 @@ comment on view public.current_bot_loadouts is
 
 -- ---------------------------------------------------------------------------
 -- Idempotent A6 inventory backfill (safe if 0035 already applied)
--- Inline ledger SUM — avoid STABLE owned_part_quantity in mutating INSERT.
+-- 0035 revoke-safe predicate: not exists positive grant/seed/admin/purchase.
 -- ---------------------------------------------------------------------------
 insert into public.inventory_ledger (account_id, part_id, delta, reason)
 select c.account_id, p.part_id, 1, 'grant'
@@ -643,9 +645,10 @@ where c.is_opponent = false
     select 1 from public.parts_catalogue pc
      where pc.part_id = p.part_id and pc.is_active
   )
-  and coalesce((
-    select sum(il.delta)::integer
-      from public.inventory_ledger il
+  and not exists (
+    select 1 from public.inventory_ledger il
      where il.account_id = c.account_id
        and il.part_id = p.part_id
-  ), 0) < 1;
+       and il.reason in ('grant', 'seed', 'admin', 'purchase')
+       and il.delta > 0
+  );
