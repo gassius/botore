@@ -1,0 +1,113 @@
+{
+  "seed": 10755586,
+  "parts": {
+    "head-welder@1x": {
+      "mask_px": 16646,
+      "chip_px": 121,
+      "chip_frac": 0.0073,
+      "grime_mean": 0.0526
+    },
+    "head-welder@2x": {
+      "mask_px": 65922,
+      "chip_px": 400,
+      "chip_frac": 0.0061,
+      "grime_mean": 0.053
+    },
+    "head-can@1x": {
+      "mask_px": 18368,
+      "chip_px": 80,
+      "chip_frac": 0.0044,
+      "grime_mean": 0.0476
+    },
+    "head-can@2x": {
+      "mask_px": 72960,
+      "chip_px": 256,
+      "chip_frac": 0.0035,
+      "grime_mean": 0.0479
+    },
+    "torso-boiler@1x": {
+      "mask_px": 41037,
+      "chip_px": 143,
+      "chip_frac": 0.0035,
+      "grime_mean": 0.0537
+    },
+    "torso-boiler@2x": {
+      "mask_px": 163195,
+      "chip_px": 594,
+      "chip_frac": 0.0036,
+      "grime_mean": 0.0541
+    },
+    "torso-slab@1x": {
+      "mask_px": 37415,
+      "chip_px": 141,
+      "chip_frac": 0.0038,
+      "grime_mean": 0.0538
+    },
+    "torso-slab@2x": {
+      "mask_px": 148892,
+      "chip_px": 562,
+      "chip_frac": 0.0038,
+      "grime_mean": 0.0541
+    },
+    "upper_arm-heavy@1x": {
+      "mask_px": 7563,
+      "chip_px": 91,
+      "chip_frac": 0.012,
+      "grime_mean": 0.0376
+    },
+    "upper_arm-heavy@2x": {
+      "mask_px": 29890,
+      "chip_px": 362,
+      "chip_frac": 0.0121,
+      "grime_mean": 0.0383
+    },
+    "forearm-heavy@1x": {
+      "mask_px": 9519,
+      "chip_px": 72,
+      "chip_frac": 0.0076,
+      "grime_mean": 0.0551
+    },
+    "forearm-heavy@2x": {
+      "mask_px": 37698,
+      "chip_px": 372,
+      "chip_frac": 0.0099,
+      "grime_mean": 0.0556
+    },
+    "thigh-piston@1x": {
+      "mask_px": 7863,
+      "chip_px": 77,
+      "chip_frac": 0.0098,
+      "grime_mean": 0.042
+    },
+    "thigh-piston@2x": {
+      "mask_px": 31225,
+      "chip_px": 315,
+      "chip_frac": 0.0101,
+      "grime_mean": 0.0427
+    },
+    "shin-piston@1x": {
+      "mask_px": 4267,
+      "chip_px": 75,
+      "chip_frac": 0.0176,
+      "grime_mean": 0.0593
+    },
+    "shin-piston@2x": {
+      "mask_px": 16984,
+      "chip_px": 237,
+      "chip_frac": 0.014,
+      "grime_mean": 0.0602
+    },
+    "foot-piston@1x": {
+      "mask_px": 7621,
+      "chip_px": 96,
+      "chip_frac": 0.0126,
+      "grime_mean": 0.0577
+    },
+    "foot-piston@2x": {
+      "mask_px": 30236,
+      "chip_px": 290,
+      "chip_frac": 0.0096,
+      "grime_mean": 0.0585
+    }
+  }
+}
