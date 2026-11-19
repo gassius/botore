@@ -89,7 +89,7 @@ export function ReplaySlot(): React.ReactElement {
   } = useFirstRun();
   const insets = useSafeAreaInsets();
   const { lastFight } = useFightSession();
-  const { session, loadout } = useGarageSession();
+  const { session, loadout, refreshOwnedBots } = useGarageSession();
   const [botRecord, setBotRecord] = useState<BotFightRecordSnapshot | null>(null);
   const playerRef = useRef<CanonicalReplayPlayerHandle>(null);
   const fxHoldRef = useRef<FxCaptureHoldState>(initialFxCaptureHoldState());
@@ -432,6 +432,9 @@ export function ReplaySlot(): React.ReactElement {
             <ResultOverlayBand
               onBackToStable={() => {
                 playerRef.current?.playCue('uiConfirm');
+                // Ludus W–L lives in ownedBots; refresh after fight so record updates
+                // without app restart (PRR M2: no Stable mount refetch).
+                void refreshOwnedBots();
                 goTo('Stable');
               }}
               onWatchAgain={() => {
