@@ -30,6 +30,7 @@ import {
   type LoadoutPreviewState,
 } from './loadout/loadoutState';
 import { loadoutSavePlayerMessage } from './loadout/loadoutSaveErrors';
+import { applyActiveFlagToOwnedBots } from './loadout/applyActiveFlagToOwnedBots';
 import {
   applyDisplayNameToOwnedBots,
   applyLoadoutToOwnedBots,
@@ -611,6 +612,9 @@ export function GarageSessionProvider(props: {
         const current = await auth.getSession();
         if (!current) return false;
         const epoch = ++selectEpochRef.current;
+        // Optimistic active flag so Find opponent cannot race past a stale
+        // first-bot identity while select_active_character + hydrate run.
+        setOwnedBots((prev) => applyActiveFlagToOwnedBots(prev, characterId));
         const selected = await loadouts.selectActiveBot({
           characterId,
           accessToken: current.accessToken,

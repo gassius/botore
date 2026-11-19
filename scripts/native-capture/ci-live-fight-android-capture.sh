@@ -459,7 +459,88 @@ if [[ "${rest_bytes}" -lt 60000 ]]; then
 fi
 echo "ok: ${opponents_rest_matches[0]} (${rest_bytes} bytes)" >&2
 
+# 1d) BT-272 — select a non-first owned bot before the live fight.
+# Seed Ash Crown as second bot, set accounts.active_character_id to it, and
+# rename the first bot to Gaskiller so a wrong LIMIT-1 attacker is obvious.
+echo "BT-272: seeding Ash Crown as active (non-first) bot…" >&2
+psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+do $$
+declare
+  uid uuid := '00000000-0000-4000-8000-000000000001';
+  ash text := 'player-ash-crown';
+  v_sound jsonb;
+begin
+  update public.characters
+     set display_name = 'Gaskiller'
+   where character_id = 'player-hero'
+     and account_id = uid;
+
+  insert into public.inventory_ledger (account_id, part_id, delta, reason)
+  select uid, v.p, 1, 'bt272-capture'
+    from (values ('paint-cobalt'), ('weapon-axe')) as v(p)
+   where public.owned_part_quantity(uid, v.p) < 1;
+
+  if not exists (
+    select 1 from public.characters c
+     where c.character_id = ash and c.account_id = uid
+  ) then
+    insert into public.characters (
+      character_id, account_id, display_name, is_opponent, owner_is_npc
+    ) values (ash, uid, 'Ash Crown', false, false);
+
+    insert into public.character_build_versions (
+      character_id, hp, strength, agility, speed, weapon_kind, weapon_power
+    )
+    select ash, 30, 5, 5, 6,
+           coalesce(pc.weapon_kind, 'axe'),
+           coalesce(pc.weapon_power, 5)
+      from public.parts_catalogue pc
+     where pc.part_id = 'weapon-axe'
+       and pc.slot_kind = 'weapon'
+       and pc.is_active;
+
+    select coalesce(jsonb_agg(tag order by tag), '[]'::jsonb)
+      into v_sound
+      from (
+        select distinct jsonb_array_elements_text(pc.sound_tags) as tag
+          from public.parts_catalogue pc
+         where pc.part_id in ('chassis-basic', 'weapon-axe')
+      ) t
+     where tag is not null and tag <> '';
+
+    insert into public.bot_loadout_versions (character_id, loadout, atlas_version)
+    values (
+      ash,
+      jsonb_build_object(
+        'chassis', 'chassis-basic',
+        'paint', 'paint-cobalt',
+        'weapon', 'weapon-axe',
+        'decals', '[]'::jsonb,
+        'soundTags', coalesce(v_sound, '[]'::jsonb),
+        'shield', null,
+        'drone', null
+      ),
+      'v1'
+    );
+  end if;
+
+  update public.accounts
+     set active_character_id = ash
+   where id = uid;
+end $$;
+SQL
+ASH_ACTIVE="$(psql "${DATABASE_URL}" -Atc "select active_character_id from public.accounts where id = '00000000-0000-4000-8000-000000000001'")"
+if [[ "${ASH_ACTIVE}" != "player-ash-crown" ]]; then
+  echo "error: BT-272 active_character_id=${ASH_ACTIVE} (expected player-ash-crown)" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "bt272_active_character_id" "${ASH_ACTIVE}"
+# Cold-start so hydrate picks Ash Crown (not an in-memory Gaskiller loadout).
+adb shell am force-stop "${PACKAGE}" >/dev/null 2>&1 || true
+sleep 1
+
 # 2) Confirm — both bots; deep-link weapon=axe so live-fight pin saves before Replay.
+# Active bot is Ash Crown (non-first) — Confirm nameplate must match.
 CAPTURE_SETTLE_SEC=8 \
   "${SCRIPT_DIR}/android-screencap.sh" \
   --out "${OUT_DIR}" \
@@ -478,6 +559,7 @@ echo "ok: ${confirm_matches[0]}" >&2
 # first hit-hold frame. Settle must stay below FX_CAPTURE_IDLE_BEFORE_PLAY_MS.
 # Then poll fight proof + arena/FX markers; stills land while FX peak is frozen.
 # Weapon=axe keeps the capture pin if Confirm settle raced the save.
+# BT-272: same still proves fight header shows the non-first selected bot.
 CAPTURE_SETTLE_SEC=2 \
   "${SCRIPT_DIR}/android-screencap.sh" \
   --out "${OUT_DIR}" \
@@ -492,7 +574,12 @@ fi
 write_manifest_line "${MANIFEST}" "still.android.replay-start" "${replay_start_matches[0]}"
 # E2 / D10 — quiet call-out band (empty dashed plate + in-arena ARENA · REPAIR YARD).
 write_manifest_line "${MANIFEST}" "still.android.fight-view-callout-quiet" "${replay_start_matches[0]}"
+# Dedicated BT-272 label (same frame: HUD header after non-first bot select).
+cp -f "${replay_start_matches[0]}" "${OUT_DIR}/android-$(date +%Y%m%d-%H%M%S)-replay-selected-bot-header.png"
+selected_header_matches=( "${OUT_DIR}"/android-*-replay-selected-bot-header.png )
+write_manifest_line "${MANIFEST}" "still.android.replay-selected-bot-header" "${selected_header_matches[0]}"
 echo "ok: ${replay_start_matches[0]}" >&2
+echo "ok: ${selected_header_matches[0]} (BT-272 selected-bot fight header)" >&2
 
 FIGHT_LINE=""
 FIGHT_JSON=""
@@ -579,11 +666,44 @@ while (( SECONDS < FX_DEADLINE )); do
       write_manifest_line "${MANIFEST}" fx_events_hit "${FX_HIT}"
       write_manifest_line "${MANIFEST}" fx_events_dodge "${FX_DODGE}"
       write_manifest_line "${MANIFEST}" fx_events_defeat "${FX_DEFEAT}"
-      echo "fight proof: battleId=${BATTLE_ID} xp=${XP} fx hit=${FX_HIT} dodge=${FX_DODGE} defeat=${FX_DEFEAT}" >&2
+      ATTACKER_NAME="$(node -e "const j=JSON.parse(process.argv[1]); console.log(String(j.attackerDisplayName||''))" "${FIGHT_JSON}")"
+      ATTACKER_ID="$(node -e "const j=JSON.parse(process.argv[1]); console.log(String(j.attackerCharacterId||''))" "${FIGHT_JSON}")"
+      SELECTED_ID="$(node -e "const j=JSON.parse(process.argv[1]); console.log(String(j.selectedCharacterId||''))" "${FIGHT_JSON}")"
+      write_manifest_line "${MANIFEST}" bt272_attacker_display_name "${ATTACKER_NAME}"
+      write_manifest_line "${MANIFEST}" bt272_attacker_character_id "${ATTACKER_ID}"
+      write_manifest_line "${MANIFEST}" bt272_selected_character_id "${SELECTED_ID}"
+      echo "fight proof: battleId=${BATTLE_ID} xp=${XP} fx hit=${FX_HIT} dodge=${FX_DODGE} defeat=${FX_DEFEAT} attacker=${ATTACKER_NAME}" >&2
       if [[ "${FX_HIT}" -lt 1 || "${FX_DEFEAT}" -lt 1 ]]; then
         echo "error: sealed replay missing required FX events (hit=${FX_HIT} defeat=${FX_DEFEAT})" >&2
         exit 1
       fi
+      # BT-272: header/record identity must be Ash Crown (non-first selected), not Gaskiller.
+      if [[ "${ATTACKER_ID}" != "player-ash-crown" ]]; then
+        echo "error: BT-272 attackerCharacterId=${ATTACKER_ID} (expected player-ash-crown)" >&2
+        exit 1
+      fi
+      if ! node -e "const n=String(process.argv[1]||'').toLowerCase(); if(!n.includes('ash')) process.exit(2)" "${ATTACKER_NAME}"; then
+        echo "error: BT-272 attackerDisplayName='${ATTACKER_NAME}' (expected Ash Crown)" >&2
+        exit 1
+      fi
+      if [[ -n "${SELECTED_ID}" && "${SELECTED_ID}" != "player-ash-crown" ]]; then
+        echo "error: BT-272 selectedCharacterId=${SELECTED_ID} (expected player-ash-crown)" >&2
+        exit 1
+      fi
+      # Record must land on Ash Crown, not Gaskiller / player-hero.
+      ASH_WINS="$(psql "${DATABASE_URL}" -Atc "select coalesce(wins,0) from public.bot_fight_records where character_id = 'player-ash-crown'")"
+      HERO_DELTA="$(psql "${DATABASE_URL}" -Atc "select count(*) from public.battle_participants bp join public.battles b using (battle_id) where bp.character_id = 'player-hero' and b.battle_id = '${BATTLE_ID}'")"
+      ASH_PART="$(psql "${DATABASE_URL}" -Atc "select count(*) from public.battle_participants where battle_id = '${BATTLE_ID}' and character_id = 'player-ash-crown' and side = 'attacker'")"
+      if [[ "${ASH_PART}" != "1" ]]; then
+        echo "error: BT-272 Ash Crown missing as attacker participant (count=${ASH_PART})" >&2
+        exit 1
+      fi
+      if [[ "${HERO_DELTA}" != "0" ]]; then
+        echo "error: BT-272 player-hero participated in this battle (must be Ash Crown only)" >&2
+        exit 1
+      fi
+      write_manifest_line "${MANIFEST}" bt272_ash_crown_wins "${ASH_WINS}"
+      echo "ok: BT-272 fight identity Ash Crown (wins=${ASH_WINS})" >&2
     fi
   fi
 
@@ -985,6 +1105,8 @@ required_labels=(
   settings
   confirm
   arena-layers
+  replay-start
+  replay-selected-bot-header
   replay-fx-hit
   replay-fx-defeat
   FightView-axe-attack

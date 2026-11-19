@@ -4736,3 +4736,196 @@ begin
   perform set_config('request.jwt.claim.role', '', true);
   raise notice 'TEST-OK 0039 B1 account-scoped backfill + M1 list shapes';
 end $$;
+
+-- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- 0040 prepare_fight_context uses active_character_id (BT-272)
+-- Select non-first bot → prepare attacker + persist record on that bot only.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-0000000000f2';
+  v_id1 text;
+  v_id2 text;
+  v_name1 text := 'Gaskiller';
+  v_name2 text := 'Ash Crown';
+  v_res jsonb;
+  v_ctx jsonb;
+  v_atk_loadout uuid;
+  v_def_loadout uuid;
+  v_battle uuid;
+  v_seed text := 'bt272seedbt272seedbt272seedbt272se';
+  v_checksum text := 'bt272checksumbt272checksumbt272che';
+  v_input_hash text := 'bt272inputbt272inputbt272inputbt27';
+  v_replay jsonb;
+  v_attacker jsonb;
+  v_defender jsonb;
+  v_day date := (now() at time zone 'utc')::date;
+  v_key text := 'bt272-selected-bot-fight';
+  v_wins1 int;
+  v_wins2 int;
+  v_losses1 int;
+  v_losses2 int;
+  v_ledger2 int;
+begin
+  insert into auth.users (id, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+  values (
+    v_account,
+    'bt272-selected@botore.local',
+    crypt('local-only-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb
+  )
+  on conflict (id) do nothing;
+  insert into public.accounts (id) values (v_account)
+  on conflict (id) do nothing;
+
+  insert into public.fight_allowances (account_id, utc_day, slot_index)
+  select v_account, v_day, s
+    from generate_series(1, 3) as s
+  on conflict do nothing;
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+
+  -- Auto-provision first bot + inventory (same as E4 list path).
+  v_res := public.list_owned_characters();
+  perform tests.assert((v_res->>'ok')::boolean, 'BT-272 list auto-provisions');
+  perform tests.assert((v_res->>'ownedCount')::integer >= 1, 'BT-272 has first bot');
+  v_id1 := v_res->'bots'->0->>'characterId';
+  perform tests.assert(v_id1 is not null, 'BT-272 first bot id');
+
+  v_res := public.rename_owned_character(v_name1);
+  perform tests.assert((v_res->>'ok')::boolean, 'BT-272 rename first to Gaskiller');
+
+  v_res := public.create_owned_character(v_name2, 'paint-cobalt', 'weapon-axe');
+  perform tests.assert((v_res->>'ok')::boolean, 'BT-272 create Ash Crown');
+  v_id2 := v_res->>'characterId';
+  perform tests.assert(v_id2 is not null and v_id2 <> v_id1, 'BT-272 second distinct');
+
+  -- Flip active to first, then Ash Crown, proving select drives prepare_fight_context.
+  v_res := public.select_active_character(v_id1);
+  perform tests.assert((v_res->>'ok')::boolean, 'BT-272 select first');
+  reset role;
+
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+  v_ctx := public.prepare_fight_context(v_account, 'opp-sir-bot');
+  perform tests.assert((v_ctx->>'ok')::boolean, 'BT-272 prepare on first ok');
+  perform tests.assert(v_ctx->'attacker'->>'characterId' = v_id1, 'BT-272 attacker is first when active');
+  perform tests.assert(v_ctx->'attacker'->>'displayName' = v_name1, 'BT-272 attacker name first');
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.select_active_character(v_id2);
+  perform tests.assert((v_res->>'ok')::boolean, 'BT-272 select Ash Crown');
+  reset role;
+
+  perform set_config('request.jwt.claim.role', 'service_role', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+  v_ctx := public.prepare_fight_context(v_account, 'opp-sir-bot');
+  perform tests.assert((v_ctx->>'ok')::boolean, 'BT-272 prepare on Ash Crown ok');
+  perform tests.assert(
+    v_ctx->'attacker'->>'characterId' = v_id2,
+    'BT-272 attacker is Ash Crown when selected (not first bot)'
+  );
+  perform tests.assert(
+    v_ctx->'attacker'->>'displayName' = v_name2,
+    'BT-272 attacker displayName is Ash Crown'
+  );
+
+  select loadout_version_id into v_atk_loadout
+    from public.current_bot_loadouts where character_id = v_id2;
+  select loadout_version_id into v_def_loadout
+    from public.current_bot_loadouts where character_id = 'opp-sir-bot';
+  perform tests.assert(v_atk_loadout is not null, 'BT-272 Ash Crown loadout');
+
+  select coalesce(max(wins), 0), coalesce(max(losses), 0) into v_wins1, v_losses1
+    from public.bot_fight_records where character_id = v_id1;
+  select coalesce(max(wins), 0), coalesce(max(losses), 0) into v_wins2, v_losses2
+    from public.bot_fight_records where character_id = v_id2;
+
+  v_attacker := jsonb_build_object(
+    'characterId', v_id2,
+    'hp', 30,
+    'weaponKind', 'axe',
+    'weaponPower', 5,
+    'loadoutVersionId', v_atk_loadout
+  );
+  v_defender := jsonb_build_object(
+    'characterId', 'opp-sir-bot',
+    'hp', 34,
+    'weaponKind', 'sword',
+    'weaponPower', 3,
+    'loadoutVersionId', v_def_loadout
+  );
+  v_battle := gen_random_uuid();
+  v_replay := jsonb_build_object(
+    'replayVersion', 1,
+    'rulesVersion', 'combat-v1',
+    'battleId', v_battle,
+    'seed', v_seed,
+    'inputHash', v_input_hash,
+    'fighters', jsonb_build_array(
+      jsonb_build_object('characterId', v_id2, 'displayName', v_name2, 'hp', 30),
+      jsonb_build_object('characterId', 'opp-sir-bot', 'displayName', 'Rivet Nan', 'hp', 34)
+    ),
+    'events', jsonb_build_array(
+      jsonb_build_object('type', 'battle_started', 'tick', 0),
+      jsonb_build_object(
+        'type', 'damage_applied', 'tick', 1,
+        'target', 'opp-sir-bot', 'targetHpAfter', 0
+      )
+    ),
+    'outcome', jsonb_build_object(
+      'winner', v_id2,
+      'loser', 'opp-sir-bot',
+      'reason', 'defeat'
+    ),
+    'checksum', v_checksum
+  );
+
+  v_res := public.persist_fight_result(
+    v_account, v_key, 'opp-sir-bot', v_battle, v_seed, 'combat-v1',
+    v_replay, v_attacker, v_defender, v_day
+  );
+  perform tests.assert((v_res->>'ok')::boolean, 'BT-272 persist ok');
+
+  select count(*) into v_ledger2
+    from public.progression_ledger
+   where account_id = v_account and battle_id = v_battle and character_id = v_id2;
+  perform tests.assert(v_ledger2 = 1, 'BT-272 ledger on Ash Crown only');
+
+  perform tests.assert(
+    not exists (
+      select 1 from public.progression_ledger
+       where account_id = v_account and battle_id = v_battle and character_id = v_id1
+    ),
+    'BT-272 no ledger on first bot'
+  );
+
+  perform tests.assert(
+    exists (
+      select 1 from public.battle_participants
+       where battle_id = v_battle and character_id = v_id2 and side = 'attacker'
+    ),
+    'BT-272 battle_participants attacker is Ash Crown'
+  );
+
+  perform tests.assert(
+    coalesce((select wins from public.bot_fight_records where character_id = v_id1), 0) = v_wins1
+    and coalesce((select losses from public.bot_fight_records where character_id = v_id1), 0) = v_losses1,
+    'BT-272 first bot W-L unchanged'
+  );
+  perform tests.assert(
+    coalesce((select wins from public.bot_fight_records where character_id = v_id2), 0) = v_wins2 + 1,
+    'BT-272 Ash Crown wins incremented'
+  );
+
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.jwt.claim.role', '', true);
+  raise notice 'TEST-OK 0040 prepare_fight active_character BT-272';
+end $$;

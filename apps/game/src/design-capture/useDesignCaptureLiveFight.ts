@@ -1,5 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useFightSession } from '../fight';
+import {
+  readReplayAttackerDisplayName,
+  readReplayAttackerId,
+} from '../fight/selectedBotFightIdentity';
 import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { useFirstRun } from '../first-run/FirstRunContext';
 import { countFxEventsFromReplay } from '../replay/fxCaptureHold';
@@ -20,6 +24,10 @@ export type CaptureFightProof = {
   readonly attackerWeapon: string;
   readonly defenderPaint: string;
   readonly defenderWeapon: string;
+  /** Sealed replay attacker — must match Ludus-selected bot (BT-272). */
+  readonly attackerCharacterId?: string;
+  readonly attackerDisplayName?: string;
+  readonly selectedCharacterId?: string;
   /** Recorded FX event counts from the sealed replay (not client invent). */
   readonly fxEvents: { readonly hit: number; readonly dodge: number; readonly defeat: number };
 };
@@ -43,6 +51,7 @@ export function useDesignCaptureLiveFight(): void {
   const enabled = isLiveFightCaptureEnabled();
   const { route } = useFirstRun();
   const { canProgress, session, loadout, selectWeapon, save } = useGarageSession();
+  const selectedCharacterId = loadout.characterId;
   const {
     list,
     selected,
@@ -190,6 +199,8 @@ export function useDesignCaptureLiveFight(): void {
     proofLoggedForBattle.current = lastFight.battleId;
     // Persist full fight so FightResult can restore after iOS process relaunch.
     void writeLastFightFile(lastFight);
+    const attackerCharacterId = readReplayAttackerId(lastFight.replay) ?? undefined;
+    const attackerDisplayName = readReplayAttackerDisplayName(lastFight.replay) ?? undefined;
     logFightProof({
       battleId: lastFight.battleId,
       replayChecksum: lastFight.replayChecksum,
@@ -203,7 +214,10 @@ export function useDesignCaptureLiveFight(): void {
       attackerWeapon: lastFight.sealedBuilds.attacker.weapon,
       defenderPaint: lastFight.sealedBuilds.defender.paint,
       defenderWeapon: lastFight.sealedBuilds.defender.weapon,
+      ...(attackerCharacterId ? { attackerCharacterId } : {}),
+      ...(attackerDisplayName ? { attackerDisplayName } : {}),
+      ...(selectedCharacterId ? { selectedCharacterId } : {}),
       fxEvents: countFxEventsFromReplay(lastFight.replay),
     });
-  }, [enabled, lastFight]);
+  }, [enabled, lastFight, selectedCharacterId]);
 }
