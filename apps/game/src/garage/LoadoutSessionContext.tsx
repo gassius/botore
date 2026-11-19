@@ -537,6 +537,9 @@ export function GarageSessionProvider(props: {
             atlasVersion: result.atlasVersion,
           }),
         );
+        // Ludus reads ownedBots (list_owned_characters), not confirmedLoadout.
+        // Refresh so the home card shows paint/weapon/shapes right after Equip.
+        await refreshOwnedBots();
         return true;
       },
       renameDisplayName: async (displayName) => {

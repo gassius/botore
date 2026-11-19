@@ -132,15 +132,24 @@ import { DevLoadoutSaveAdapter } from '../src/garage/loadout/DevLoadoutSaveAdapt
 import { CustomiseScreen } from '../src/garage/screens/CustomiseScreen';
 import { STOCK_SHAPE_LOADOUT } from '../src/garage/loadout/proofCatalogue';
 import type { GarageLoadout } from '../src/garage/loadout/loadoutTypes';
+import { LudusBotCard } from '../src/garage/ludus/LudusBotCard';
+import { HEAVIEST_SHAPES, SHAPE_SLOTS, shapePartId } from '../src/assembler/shapes';
 
 type SessionProbe = {
   selectPaint: (id: string) => void;
   selectWeapon: (id: string) => void;
+  selectShape: (slot: 'head' | 'body' | 'arms' | 'legs', id: string) => void;
   save: () => Promise<boolean>;
   renameDisplayName: (name: string) => Promise<boolean>;
   confirmedPaint: () => string | null;
   confirmedWeapon: () => string | null;
   confirmedLoadout: () => GarageLoadout | null;
+  ownedActiveShapes: () => {
+    head: string | null | undefined;
+    body: string | null | undefined;
+    arms: string | null | undefined;
+    legs: string | null | undefined;
+  } | null;
   displayName: () => string | null;
   lastError: () => string | null;
   dirty: () => boolean;
@@ -154,11 +163,22 @@ function GarageProbe(props: { apiRef: { current: SessionProbe | null } }): null 
   props.apiRef.current = {
     selectPaint: (id) => garage.selectPaint(id),
     selectWeapon: (id) => garage.selectWeapon(id),
+    selectShape: (slot, id) => garage.selectShape(slot, id),
     save: () => garage.save(),
     renameDisplayName: (name) => garage.renameDisplayName(name),
     confirmedPaint: () => garage.loadout.confirmedLoadout?.paint ?? null,
     confirmedWeapon: () => garage.loadout.confirmedLoadout?.weapon ?? null,
     confirmedLoadout: () => garage.loadout.confirmedLoadout,
+    ownedActiveShapes: () => {
+      const active = garage.ownedBots.find((b) => b.isActive) ?? garage.ownedBots[0];
+      if (!active) return null;
+      return {
+        head: active.head,
+        body: active.body,
+        arms: active.arms,
+        legs: active.legs,
+      };
+    },
     displayName: () => garage.loadout.displayName,
     lastError: () => garage.loadout.lastError,
     dirty: () => garage.loadout.dirty,
@@ -328,6 +348,88 @@ describe('E1 Customise Save Loadout (390×844)', () => {
     expect(source).toContain('Equip');
     expect(source).not.toMatch(/Save loadout/i);
     expect(source).not.toContain('confirmedVersionId');
+  });
+
+  it('after Equip, ownedBots / Ludus card carry equipped shapes (not stock)', async () => {
+    const auth = new DevAuthAdapter();
+    const signed = await auth.signInWithPassword({
+      email: 'dev@botore.local',
+      password: 'x',
+    });
+    expect(signed.ok).toBe(true);
+
+    const loadouts = new DevLoadoutSaveAdapter();
+    const apiRef: { current: SessionProbe | null } = { current: null };
+
+    let root!: ReactTestRenderer;
+    await act(async () => {
+      root = TestRenderer.create(
+        <SafeAreaProvider>
+          <GarageSessionProvider auth={auth} loadouts={loadouts}>
+            <GarageProbe apiRef={apiRef} />
+            <CustomiseScreen onBack={() => undefined} />
+          </GarageSessionProvider>
+        </SafeAreaProvider>,
+      );
+    });
+
+    const api = () => {
+      if (!apiRef.current) throw new Error('probe missing');
+      return apiRef.current;
+    };
+
+    for (let i = 0; i < 40 && (api().booting() || !api().canProgress()); i += 1) {
+      await flush();
+    }
+    expect(api().canProgress()).toBe(true);
+    expect(api().ownedActiveShapes()).toEqual(STOCK_SHAPE_LOADOUT);
+
+    await act(async () => {
+      for (const slot of SHAPE_SLOTS) {
+        api().selectShape(slot, HEAVIEST_SHAPES[slot]);
+      }
+    });
+    await flush();
+    expect(api().dirty()).toBe(true);
+
+    const saveBtn = root.root.findByProps({ testID: 'customise-save' });
+    await act(async () => {
+      saveBtn.props.onPress();
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await flush();
+
+    const heaviest = {
+      head: shapePartId('head', HEAVIEST_SHAPES.head),
+      body: shapePartId('body', HEAVIEST_SHAPES.body),
+      arms: shapePartId('arms', HEAVIEST_SHAPES.arms),
+      legs: shapePartId('legs', HEAVIEST_SHAPES.legs),
+    };
+    expect(api().confirmedLoadout()).toEqual(expect.objectContaining(heaviest));
+    // Design blocker: Ludus ownedBots must refresh on save — not stay stock.
+    expect(api().ownedActiveShapes()).toEqual(heaviest);
+    expect(heaviest.body).toBe('body-boiler');
+
+    const listed = await loadouts.listOwnedBots('dev-token');
+    expect(listed.ok).toBe(true);
+    if (!listed.ok) return;
+    const active = listed.bots.find((b) => b.isActive) ?? listed.bots[0]!;
+    expect(active.body).toBe('body-boiler');
+
+    let ludus!: ReactTestRenderer;
+    await act(async () => {
+      ludus = TestRenderer.create(<LudusBotCard bot={active} />);
+    });
+    const assembler = ludus.root.findByProps({ testID: 'ludus-bot-assembler' });
+    expect(assembler.props.loadout).toEqual(
+      expect.objectContaining({
+        body: 'body-boiler',
+        head: 'head-welder',
+        arms: 'arms-heavy',
+        legs: 'legs-piston',
+      }),
+    );
   });
 
   it('rejects A6 equip when catalogue ensure is skipped (pre-0038)', async () => {
