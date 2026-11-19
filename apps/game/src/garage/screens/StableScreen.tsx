@@ -36,8 +36,16 @@ export function StableScreen(props: {
   onRanking?: () => void;
   onCreateBot?: () => void;
 }): React.ReactElement {
-  const { loadout, canProgress, signOut, retryHydration, ownedBots, botCap, selectActiveBot } =
-    useGarageSession();
+  const {
+    loadout,
+    canProgress,
+    signOut,
+    retryHydration,
+    ownedBots,
+    botCap,
+    selectActiveBot,
+    refreshOwnedBots,
+  } = useGarageSession();
   const { homeCaptureScenario, muted, musicEnabled, effectsEnabled } = useFirstRun();
   const uiAudio = useTrialUiAudio({ muted, musicEnabled, effectsEnabled });
   const insets = useSafeAreaInsets();
@@ -45,35 +53,41 @@ export function StableScreen(props: {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [moreOpen, setMoreOpen] = useState(() => homeCaptureScenario === 'more');
-  const [onCreateSlide, setOnCreateSlide] = useState(() => homeCaptureScenario === 'create-slot');
+  /** Derived from carousel focus via onSnap (incl. init) — not a second source of truth. */
+  const [focusedKind, setFocusedKind] = useState<'bot' | 'create'>(() =>
+    homeCaptureScenario === 'create-slot' ? 'create' : 'bot',
+  );
 
   const ownedCount = ownedBots.length;
   const cap = botCap > 0 ? botCap : 3;
+  const onCreateSlide = focusedKind === 'create';
   const actionsEnabled = canProgress && !onCreateSlide;
+  // M2: hydrated loadout but empty owned list → list failure, not a lone Create slot.
+  const ownedListFailed =
+    ownedBots.length === 0 &&
+    loadout.confirmedLoadout != null &&
+    loadout.hydration !== 'unavailable';
 
   const captureInitialIndex = useMemo(() => {
     if (homeCaptureScenario === 'create-slot') {
-      return Math.min(ownedCount, Math.max(0, ownedCount)); // create is last when under cap
-    }
-    if (homeCaptureScenario === 'bot') {
-      const activeIdx = ownedBots.findIndex((b) => b.isActive);
-      return activeIdx >= 0 ? activeIdx : 0;
+      // Create is last when under cap; at cap there is no create slide.
+      return ownedCount < cap ? ownedCount : Math.max(0, ownedCount - 1);
     }
     const activeIdx = ownedBots.findIndex((b) => b.isActive);
     return activeIdx >= 0 ? activeIdx : 0;
-  }, [homeCaptureScenario, ownedBots, ownedCount]);
+  }, [homeCaptureScenario, ownedBots, ownedCount, cap]);
 
   useEffect(() => {
     if (homeCaptureScenario === 'more') {
       setMoreOpen(true);
     } else if (homeCaptureScenario === 'create-slot') {
       setMoreOpen(false);
-      setOnCreateSlide(true);
+      setFocusedKind(ownedCount < cap ? 'create' : 'bot');
     } else if (homeCaptureScenario === 'bot') {
       setMoreOpen(false);
-      setOnCreateSlide(false);
+      setFocusedKind('bot');
     }
-  }, [homeCaptureScenario]);
+  }, [homeCaptureScenario, ownedCount, cap]);
 
   const hydrationKind =
     loadout.hydration === 'unavailable'
@@ -89,13 +103,14 @@ export function StableScreen(props: {
   const handleSnap = useCallback(
     (_index: number, item: LudusCarouselItem) => {
       uiAudio.playCue('uiSnap');
-      setOnCreateSlide(item.kind === 'create');
+      setFocusedKind(item.kind === 'create' ? 'create' : 'bot');
     },
     [uiAudio],
   );
 
   const handleSelectBot = useCallback(
     (characterId: string) => {
+      // In-place select (E4 selectActiveBot no longer sets booting).
       void selectActiveBot(characterId);
     },
     [selectActiveBot],
@@ -110,6 +125,11 @@ export function StableScreen(props: {
     props.onCreateBot?.();
   }, [cap, ownedCount, props, uiAudio]);
 
+  const handleRetryOwnedList = useCallback(() => {
+    uiAudio.playUiTap();
+    void refreshOwnedBots();
+  }, [refreshOwnedBots, uiAudio]);
+
   if (showDeleteAccount) {
     return (
       <DeleteAccountScreen
@@ -123,19 +143,25 @@ export function StableScreen(props: {
   }
 
   const retryFooter =
-    failureKind === 'offline' || loadout.hydration === 'unavailable' ? (
+    failureKind === 'offline' || loadout.hydration === 'unavailable' || ownedListFailed ? (
       <SecondaryButton
         label={
           failureKind === 'offline'
             ? sessionFailureCopy('offline').actionLabel
             : failureKind === 'auth_expired'
               ? sessionFailureCopy('auth_expired').actionLabel
-              : 'Retry load'
+              : ownedListFailed
+                ? 'Retry bots'
+                : 'Retry load'
         }
         onPress={() => {
           uiAudio.playUiTap();
           if (failureKind === 'auth_expired') {
             void signOut();
+            return;
+          }
+          if (ownedListFailed) {
+            handleRetryOwnedList();
             return;
           }
           void retryHydration();
@@ -217,15 +243,23 @@ export function StableScreen(props: {
               }
               testID="stable-hydration-error"
             />
-          ) : (
-            <LudusBotCarousel
-              bots={ownedBots}
-              cap={cap}
-              initialIndex={captureInitialIndex}
-              onSelectBot={handleSelectBot}
-              onCreateBot={handleCreateBot}
-              onSnap={handleSnap}
+          ) : ownedListFailed ? (
+            <StatusErrorBanner
+              title="Could not load your bots"
+              detail="Your Ludus list failed to load. Retry, or open Customise after refresh."
+              testID="stable-owned-list-error"
             />
+          ) : (
+            <View style={styles.carouselBlock}>
+              <LudusBotCarousel
+                bots={ownedBots}
+                cap={cap}
+                initialIndex={captureInitialIndex}
+                onSelectBot={handleSelectBot}
+                onCreateBot={handleCreateBot}
+                onSnap={handleSnap}
+              />
+            </View>
           )}
         </View>
       </ScreenChrome>
@@ -342,6 +376,13 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 0,
     alignItems: 'center',
+  },
+  /** Art: ≥16pt between card/dots and Customise footer. */
+  carouselBlock: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 4,
   },
   counter: {
     textAlign: 'center',

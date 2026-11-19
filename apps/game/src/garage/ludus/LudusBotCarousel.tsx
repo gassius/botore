@@ -22,7 +22,8 @@ export type LudusBotCarouselProps = {
 
 /**
  * D5 Ludus horizontal snap carousel — one 358×462 card at a time + optional
- * Create slot. Page dots + end chevrons.
+ * Create slot. Page dots + end chevrons inset over the card (art: equal
+ * side padding, arrows not flush-left outside the card).
  */
 export function LudusBotCarousel({
   bots,
@@ -38,13 +39,17 @@ export function LudusBotCarousel({
   const [index, setIndex] = useState(() =>
     Math.min(Math.max(0, initialIndex), Math.max(0, items.length - 1)),
   );
+  const onSnapRef = useRef(onSnap);
+  onSnapRef.current = onSnap;
 
   useEffect(() => {
     const max = Math.max(0, items.length - 1);
     const next = Math.min(Math.max(0, initialIndex), max);
     setIndex(next);
     carouselRef.current?.scrollToIndex(next, false);
-  }, [initialIndex, items.length]);
+    const item = items[next];
+    if (item) onSnapRef.current?.(next, item);
+  }, [initialIndex, items]);
 
   const handleSnap = useCallback(
     (next: number) => {
@@ -59,32 +64,31 @@ export function LudusBotCarousel({
     [items, onSelectBot, onSnap],
   );
 
+  const keyExtractor = useCallback(
+    (item: LudusCarouselItem, i: number) =>
+      item.kind === 'bot' ? `bot-${item.bot.characterId}` : `create-${i}`,
+    [],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: LudusCarouselItem }) =>
+      item.kind === 'bot' ? (
+        <LudusBotCard bot={item.bot} />
+      ) : (
+        <LudusCreateSlotCard slotNumber={item.slotNumber} cap={item.cap} onPress={onCreateBot} />
+      ),
+    [onCreateBot],
+  );
+
   const atStart = index <= 0;
   const atEnd = index >= items.length - 1;
   const current = items[index];
   const onCreateSlide = current?.kind === 'create';
+  const dotsLabel = `Bot ${index + 1} of ${items.length}`;
 
   return (
     <View style={styles.root} testID={testID ?? 'ludus-bot-carousel'}>
-      <View style={styles.track}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Previous bot"
-          disabled={atStart}
-          onPress={() => {
-            if (atStart) return;
-            const next = index - 1;
-            carouselRef.current?.scrollToIndex(next, true);
-            handleSnap(next);
-          }}
-          style={[styles.chevron, atStart ? styles.chevronDisabled : null]}
-          testID="ludus-carousel-prev"
-        >
-          <Text style={styles.chevronText} allowFontScaling>
-            ‹
-          </Text>
-        </Pressable>
-
+      <View style={styles.stage}>
         <SnapCarousel
           ref={carouselRef}
           data={items}
@@ -94,23 +98,28 @@ export function LudusBotCarousel({
           designVisibleCount={1}
           initialIndex={index}
           onSnapIndexChange={handleSnap}
-          keyExtractor={(item, i) =>
-            item.kind === 'bot' ? `bot-${item.bot.characterId}` : `create-${i}`
-          }
-          renderItem={({ item }) =>
-            item.kind === 'bot' ? (
-              <LudusBotCard bot={item.bot} />
-            ) : (
-              <LudusCreateSlotCard
-                slotNumber={item.slotNumber}
-                cap={item.cap}
-                onPress={onCreateBot}
-              />
-            )
-          }
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
           style={styles.carousel}
           testID="ludus-snap-carousel"
         />
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Previous bot"
+          disabled={atStart}
+          onPress={() => {
+            if (atStart) return;
+            // scrollToIndex → emitIndex → onSnapIndexChange → handleSnap (once).
+            carouselRef.current?.scrollToIndex(index - 1, true);
+          }}
+          style={[styles.chevron, styles.chevronLeft, atStart ? styles.chevronDisabled : null]}
+          testID="ludus-carousel-prev"
+        >
+          <Text style={styles.chevronText} allowFontScaling>
+            ‹
+          </Text>
+        </Pressable>
 
         <Pressable
           accessibilityRole="button"
@@ -118,11 +127,9 @@ export function LudusBotCarousel({
           disabled={atEnd}
           onPress={() => {
             if (atEnd) return;
-            const next = index + 1;
-            carouselRef.current?.scrollToIndex(next, true);
-            handleSnap(next);
+            carouselRef.current?.scrollToIndex(index + 1, true);
           }}
-          style={[styles.chevron, atEnd ? styles.chevronDisabled : null]}
+          style={[styles.chevron, styles.chevronRight, atEnd ? styles.chevronDisabled : null]}
           testID="ludus-carousel-next"
         >
           <Text style={styles.chevronText} allowFontScaling>
@@ -131,7 +138,12 @@ export function LudusBotCarousel({
         </Pressable>
       </View>
 
-      <View style={styles.dots} testID="ludus-carousel-dots">
+      <View
+        style={styles.dots}
+        testID="ludus-carousel-dots"
+        accessible
+        accessibilityLabel={dotsLabel}
+      >
         {items.map((item, i) => (
           <View
             key={item.kind === 'bot' ? item.bot.characterId : 'create'}
@@ -140,7 +152,6 @@ export function LudusBotCarousel({
         ))}
       </View>
 
-      {/* Expose whether create slide is focused for footer disable wiring. */}
       <View
         testID={onCreateSlide ? 'ludus-on-create-slide' : 'ludus-on-bot-slide'}
         style={styles.srOnly}
@@ -151,31 +162,45 @@ export function LudusBotCarousel({
   );
 }
 
+const CHEVRON = 36;
+const CHEVRON_INSET = 10;
+
 const styles = StyleSheet.create({
   root: {
+    width: '100%',
     alignItems: 'center',
     gap: 10,
   },
-  track: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
+  /** Card centred with equal side insets; chevrons overlay inside card edges. */
+  stage: {
+    width: LUDUS_BOT_CAROUSEL.cardWidth,
+    height: LUDUS_BOT_CAROUSEL.cardHeight,
+    alignSelf: 'center',
+    position: 'relative',
   },
   carousel: {
     width: LUDUS_BOT_CAROUSEL.cardWidth,
     height: LUDUS_BOT_CAROUSEL.cardHeight,
   },
   chevron: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    position: 'absolute',
+    top: '50%',
+    marginTop: -(CHEVRON / 2),
+    width: CHEVRON,
+    height: CHEVRON,
+    borderRadius: CHEVRON / 2,
     borderWidth: 2,
     borderColor: garageTag.graphite,
     backgroundColor: garageTag.paper,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 2,
+  },
+  chevronLeft: {
+    left: CHEVRON_INSET,
+  },
+  chevronRight: {
+    right: CHEVRON_INSET,
   },
   chevronDisabled: {
     opacity: 0.35,

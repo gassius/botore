@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { resolvePaintVisual } from '../../assembler/paints';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
@@ -21,7 +21,7 @@ export type LudusBotCardProps = {
  * D5 Ludus bot card — 358×462, ACTIVE tag, name, W–L, paint/weapon chips.
  * Never shows character ids (C17).
  */
-export function LudusBotCard({ bot, testID }: LudusBotCardProps): React.ReactElement {
+function LudusBotCardImpl({ bot, testID }: LudusBotCardProps): React.ReactElement {
   const paint = bot.paint ?? 'paint-crimson';
   const weapon = bot.weapon ?? 'weapon-sword';
   const paintVisual = resolvePaintVisual(paint);
@@ -29,9 +29,15 @@ export function LudusBotCard({ bot, testID }: LudusBotCardProps): React.ReactEle
   const weaponAlias = weaponUiAlias(weapon);
   const swatch = paintSwatchSource(paintAlias);
   const glyph = weaponGlyphSource(weaponAlias);
+  const a11yLabel = `${bot.displayName}${bot.isActive ? ', active bot' : ''}, ${bot.wins} wins, ${bot.losses} losses`;
 
   return (
-    <View style={styles.card} testID={testID ?? 'ludus-bot-card'}>
+    <View
+      style={styles.card}
+      testID={testID ?? 'ludus-bot-card'}
+      accessible
+      accessibilityLabel={a11yLabel}
+    >
       {bot.isActive ? (
         <View style={styles.activeTag} testID="ludus-active-tag">
           <Text style={styles.activeTagText} allowFontScaling>
@@ -82,6 +88,8 @@ export function LudusBotCard({ bot, testID }: LudusBotCardProps): React.ReactEle
     </View>
   );
 }
+
+export const LudusBotCard = memo(LudusBotCardImpl);
 
 const styles = StyleSheet.create({
   card: {

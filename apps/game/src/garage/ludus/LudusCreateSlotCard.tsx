@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { garageTag } from '../../garage-tag';
 import { LUDUS_BOT_CAROUSEL } from '../../garage-tag/snap';
@@ -12,7 +12,7 @@ export type LudusCreateSlotCardProps = {
 };
 
 /** D5 dashed + CREATE BOT carousel card — shown only while owned < cap. */
-export function LudusCreateSlotCard({
+function LudusCreateSlotCardImpl({
   slotNumber,
   cap,
   onPress,
@@ -40,6 +40,8 @@ export function LudusCreateSlotCard({
     </Pressable>
   );
 }
+
+export const LudusCreateSlotCard = memo(LudusCreateSlotCardImpl);
 
 const styles = StyleSheet.create({
   card: {

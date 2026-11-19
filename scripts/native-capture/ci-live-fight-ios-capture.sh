@@ -418,6 +418,10 @@ capture_named() {
 capture_named Stable garage 5
 # E5/D5 Ludus More sheet — Ranking / Privacy / Delete / Sign out (red last)
 capture_named Stable garage-more 5 "" "" "" "" more
+# D5 Ludus Create slot card (home=create-slot)
+capture_named Stable garage-create-slot 5 "" "" "" "" create-slot
+# D6 Create Bot view (at-rest under cap)
+capture_named CreateBot create-bot 6
 # D3 Customise — early so PNG artifacts upload even if the live fight later fails.
 capture_named Customise customise-paint-clean 6 "" "" paint-clean
 capture_named Customise customise-paint-dirty 6 "" "" paint-dirty
@@ -503,7 +507,10 @@ missing=0
 for label in \
   garage \
   garage-more \
-  customise-paint-clean \  customise-paint-dirty \
+  garage-create-slot \
+  create-bot \
+  customise-paint-clean \
+  customise-paint-dirty \
   customise-equipped \
   customise-weapon-soon \
   customise-paint-hazard \

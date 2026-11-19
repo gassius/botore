@@ -51,4 +51,29 @@ describe('D5 Ludus carousel metrics + create slot', () => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
   });
+
+  it('selectActiveBot path does not set booting (source gate for D5 snap)', () => {
+    // PRR B1: carousel snap must keep Ludus mounted — LoadoutSessionContext
+    // selectActiveBot must not call setBooting(true).
+    const src = require('fs').readFileSync(
+      require('path').join(__dirname, '../src/garage/LoadoutSessionContext.tsx'),
+      'utf8',
+    );
+    const selectBlock = src.slice(
+      src.indexOf('selectActiveBot: async'),
+      src.indexOf('suggestBotName: async'),
+    );
+    expect(selectBlock).toContain('hydrate({ selectEpoch: epoch })');
+    expect(selectBlock).not.toContain('setBooting(true)');
+  });
+
+  it('chevrons do not double-fire handleSnap (source)', () => {
+    const src = require('fs').readFileSync(
+      require('path').join(__dirname, '../src/garage/ludus/LudusBotCarousel.tsx'),
+      'utf8',
+    );
+    expect(src).toContain('scrollToIndex(index - 1, true)');
+    expect(src).toContain('scrollToIndex(index + 1, true)');
+    expect(src).not.toMatch(/scrollToIndex\([^)]+\);\s*handleSnap\(/);
+  });
 });
