@@ -228,7 +228,17 @@ cross join (
     ('weapon-mace'),
     ('weapon-hammer'),
     ('weapon-spear'),
-    ('weapon-shield')
+    ('weapon-shield'),
+    ('head-visor'),
+    ('head-welder'),
+    ('head-can'),
+    ('body-chassis'),
+    ('body-boiler'),
+    ('body-slab'),
+    ('arms-stock'),
+    ('arms-heavy'),
+    ('legs-stock'),
+    ('legs-piston')
 ) as p(part_id)
 where not exists (
   select 1 from public.inventory_ledger il
