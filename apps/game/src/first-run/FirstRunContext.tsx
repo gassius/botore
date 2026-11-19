@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import {
   type DesignCaptureCustomiseScenario,
+  type DesignCaptureFightQuotaScenario,
   type DesignCaptureHomeScenario,
   type DesignCaptureRankingScenario,
   type DesignCaptureSessionFailure,
@@ -73,6 +74,12 @@ export type FirstRunContextValue = {
   homeCaptureScenario: DesignCaptureHomeScenario | null;
   setHomeCaptureScenario: (scenario: DesignCaptureHomeScenario | null) => void;
   /**
+   * E3/D8 design-capture: Opponents/ToTT fightQuota remaining|exhausted overlay.
+   * Replaced (or cleared) on every capture deep link — never sticky across stills.
+   */
+  fightQuotaCaptureScenario: DesignCaptureFightQuotaScenario | null;
+  setFightQuotaCaptureScenario: (scenario: DesignCaptureFightQuotaScenario | null) => void;
+  /**
    * D1 Fight View mode — firstWatch hides transport/back; rewatch shows back + Replay only.
    * Set by ConfirmFight (firstWatch) / Result Watch again (rewatch).
    */
@@ -120,6 +127,8 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
   const [homeCaptureScenario, setHomeCaptureScenario] = useState<DesignCaptureHomeScenario | null>(
     () => pending.homeScenario ?? null,
   );
+  const [fightQuotaCaptureScenario, setFightQuotaCaptureScenario] =
+    useState<DesignCaptureFightQuotaScenario | null>(() => pending.fightQuotaScenario ?? null);
   const [fightViewMode, setFightViewMode] = useState<FightViewMode>('firstWatch');
   const [showResultOverlay, setShowResultOverlay] = useState(false);
 
@@ -178,6 +187,8 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       setResultCaptureScenario,
       homeCaptureScenario,
       setHomeCaptureScenario,
+      fightQuotaCaptureScenario,
+      setFightQuotaCaptureScenario,
       fightViewMode,
       setFightViewMode,
       showResultOverlay,
@@ -207,6 +218,7 @@ export function FirstRunProvider({ children }: { children: React.ReactNode }): R
       customiseCaptureScenario,
       resultCaptureScenario,
       homeCaptureScenario,
+      fightQuotaCaptureScenario,
     ],
   );
 

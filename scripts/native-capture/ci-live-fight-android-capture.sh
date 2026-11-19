@@ -349,20 +349,23 @@ capture_named Settings settings 4
 capture_named Opponents opponents-roster 6
 
 # 1c″) D8 Opponents — design-capture fightQuota=remaining → 2/3 + refill countdown
-# (non-gating design ask; live Supabase path overridden only while DESIGN_CAPTURE=1).
-CAPTURE_SETTLE_SEC=6 \
-  "${SCRIPT_DIR}/android-screencap.sh" \
-  --out "${OUT_DIR}" \
-  --route Opponents \
-  --name opponents-quota-remaining \
-  --fight-quota remaining >/dev/null
-opponents_quota_matches=( "${OUT_DIR}"/android-*-opponents-quota-remaining.png )
-if [[ ! -e "${opponents_quota_matches[0]:-}" ]]; then
-  echo "error: missing PNG for opponents-quota-remaining" >&2
+# Same-route after opponents-roster: deep-link, wait for quota marker (Full fails CI),
+# then screencap the current frame (do not race the first paint).
+adb logcat -c >/dev/null 2>&1 || true
+# args: route mute paint weapon ranking fail_closed session_failure fight_view
+#        customise pose_compare result home fight_quota
+QUOTA_URL="$(capture_url_for_route Opponents "" "" "" "" "" "" "" "" "" "" "" remaining)"
+echo "opening ${QUOTA_URL}" >&2
+adb shell am start -a android.intent.action.VIEW -d "${QUOTA_URL}" >/dev/null
+QUOTA_MARKER='BOTORE_CAPTURE_QUOTA:remaining=2 limit=3'
+if ! wait_logcat_marker "${QUOTA_MARKER}" 45; then
+  echo "error: missing ${QUOTA_MARKER} after fightQuota=remaining — still would show Full 3/3" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_QUOTA|BOTORE_CAPTURE_ROUTE' >&2 || true
   exit 1
 fi
-write_manifest_line "${MANIFEST}" "still.android.opponents-quota-remaining" "${opponents_quota_matches[0]}"
-echo "ok: ${opponents_quota_matches[0]}" >&2
+sleep 2
+capture_current opponents-quota-remaining
+echo "ok: opponents-quota-remaining gated on ${QUOTA_MARKER}" >&2
 
 # 1c′) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
 # Need ≥3 whole 175pt cards (185 snap, 150pt robots). Capture before C10

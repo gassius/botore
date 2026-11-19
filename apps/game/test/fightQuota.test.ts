@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveA6OpponentPanelSlug } from '../src/fight/opponents/a6OpponentPanelResolve';
 import {
   applyDesignCaptureFightQuotaScenario,
+  formatDesignCaptureQuotaLog,
   formatRefillCountdown,
   msUntilRefill,
   parseFightQuotaSummary,
@@ -125,6 +126,10 @@ describe('E3 fight quota parse + countdown', () => {
     expect(forced.quota?.fightsRemaining).toBe(0);
     expect(forced.quota?.limit).toBe(3);
     expect(forced.quota?.nextRefillAt).toBe('2026-11-20T00:00:00Z');
+  });
+
+  it('formats the Android CI quota marker CI waits on', () => {
+    expect(formatDesignCaptureQuotaLog(2, 3)).toBe('BOTORE_CAPTURE_QUOTA:remaining=2 limit=3');
   });
 
   it('leaves quota untouched when no design-capture fightQuota scenario', () => {

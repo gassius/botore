@@ -144,3 +144,11 @@ export function applyDesignCaptureFightQuotaScenario(
 
   return { allowancesRemaining: remaining, quota };
 }
+
+/** Logcat / simctl marker for Android D8 2/3 stills — CI waits on this exact string. */
+export function formatDesignCaptureQuotaLog(
+  remaining: number,
+  limit: number,
+): `BOTORE_CAPTURE_QUOTA:remaining=${number} limit=${number}` {
+  return `BOTORE_CAPTURE_QUOTA:remaining=${remaining} limit=${limit}`;
+}

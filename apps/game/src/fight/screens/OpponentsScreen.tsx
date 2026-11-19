@@ -24,6 +24,7 @@ import { canContinueToConfirm } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
 import type { OpponentCandidate } from '../candidates/types';
 import { FightsRemainingPanel } from '../quota/FightsRemainingPanel';
+import { useDesignCaptureFightQuota } from '../quota/useDesignCaptureFightQuota';
 
 /** Opponents domain — E6 SnapVerticalList + E3 Fights Remaining + E7 shared presentation + E8 UI cues. */
 export function OpponentsScreen(props: {
@@ -43,14 +44,23 @@ export function OpponentsScreen(props: {
     refreshCandidates,
     selectOpponent,
   } = useFightSession();
+  const { displayAllowancesRemaining, displayQuota } = useDesignCaptureFightQuota(list);
   const [snapIndex, setSnapIndex] = useState(0);
 
   useEffect(() => {
     void refreshCandidates();
   }, [refreshCandidates]);
 
+  const allowancesRemaining =
+    displayAllowancesRemaining ??
+    (list.status === 'ready'
+      ? list.allowancesRemaining
+      : list.status === 'error'
+        ? (list.allowancesRemaining ?? 0)
+        : 0);
+
   const noAllowance =
-    list.status === 'ready' && list.allowancesRemaining < 1
+    list.status === 'ready' && allowancesRemaining < 1
       ? true
       : list.status === 'error' && list.code === 'allowance_exhausted';
 
@@ -78,7 +88,7 @@ export function OpponentsScreen(props: {
       selected,
       listReady: list.status === 'ready',
       emptyCandidates,
-      allowancesRemaining: list.status === 'ready' ? list.allowancesRemaining : 0,
+      allowancesRemaining: list.status === 'ready' ? allowancesRemaining : 0,
       pendingIntent,
     });
 
@@ -155,9 +165,9 @@ export function OpponentsScreen(props: {
           </View>
         ) : null}
 
-        {list.status === 'ready' ? (
+        {list.status === 'ready' && displayQuota ? (
           <FightsRemainingPanel
-            quota={list.quota}
+            quota={displayQuota}
             testID="opponents-fights-remaining"
             onRefillDue={() => {
               void refreshCandidates();
