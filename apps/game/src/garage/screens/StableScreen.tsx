@@ -130,11 +130,8 @@ export function StableScreen(props: {
     void refreshOwnedBots();
   }, [refreshOwnedBots, uiAudio]);
 
-  // Ludus focus: refresh owned list silently so Equip/save from Customise is
-  // visible on Back without switching bots. Does not clear carousel first.
-  useEffect(() => {
-    void refreshOwnedBots();
-  }, [refreshOwnedBots]);
+  // Equip patches ownedBots + awaits refreshOwnedBots while Customise is up
+  // (PRR M2) — no mount refresh (avoids racing select + double uiSnap).
 
   if (showDeleteAccount) {
     return (

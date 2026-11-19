@@ -44,6 +44,8 @@ export function LudusBotCarousel({
   /** Preserve the same bot when ownedBots refreshes after Equip (no carousel jump). */
   const focusedKeyRef = useRef<string | null>(null);
   const prevInitialRef = useRef(initialIndex);
+  const indexRef = useRef(index);
+  indexRef.current = index;
 
   useEffect(() => {
     const max = Math.max(0, items.length - 1);
@@ -61,12 +63,14 @@ export function LudusBotCarousel({
     }
 
     const item = items[next];
-    if (item) {
-      focusedKeyRef.current = item.kind === 'bot' ? item.bot.characterId : 'create';
-    }
+    const nextKey = item ? (item.kind === 'bot' ? item.bot.characterId : 'create') : null;
+    const focusChanged = nextKey !== focusedKeyRef.current || next !== indexRef.current;
+    if (nextKey) focusedKeyRef.current = nextKey;
     setIndex(next);
     carouselRef.current?.scrollToIndex(next, false);
-    if (item) onSnapRef.current?.(next, item);
+    // PRR M2: only fire onSnap (uiSnap) when focus actually changes — not on
+    // every ownedBots array refresh with the same bot still centered.
+    if (focusChanged && item) onSnapRef.current?.(next, item);
   }, [initialIndex, items]);
 
   const handleSnap = useCallback(

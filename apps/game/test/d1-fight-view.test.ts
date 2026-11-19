@@ -148,9 +148,7 @@ describe('D1 goBack routing (behavioural)', () => {
     expect(resolveFirstRunGoBackTarget('Opponents', 'firstWatch', prevRoute('Opponents'))).toBe(
       'Stable',
     );
-    expect(resolveFirstRunGoBackTarget('Opponents', 'firstWatch', 'Customise')).not.toBe(
-      'Customise',
-    );
+    expect(resolveFirstRunGoBackTarget('Opponents', 'firstWatch', 'Customise')).toBe('Stable');
   });
 
   it('Customise goBack returns Ludus (Stable) as side-entry', () => {

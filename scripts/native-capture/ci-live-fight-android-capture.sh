@@ -327,22 +327,21 @@ capture_named Customise customise-shape-equipped 6 "" "" shape-equipped
 # Ludus card after Equip — must show heaviest shapes (not stock silhouette).
 capture_named Stable garage-shapes-equipped 5 "" "" "" bot
 
-# Ludus freshness: before Customise, after Equip on Customise, Ludus immediately on Back.
+# Ludus freshness: before Customise → Equip still → hardware Back → Ludus
+# (must prove Back-after-Equip, not a fresh Stable deep-link — PRR M3).
 capture_named Stable ludus-before-customise 4 "" "" "" bot
 capture_named Customise customise-weapon-equipped-fresh 6 "" "" equipped
-CAPTURE_SETTLE_SEC=3 \
-  "${SCRIPT_DIR}/android-screencap.sh" \
-  --out "${OUT_DIR}" \
-  --route Stable \
-  --name ludus-after-equip-back \
-  --home bot >/dev/null
-ludus_after_matches=( "${OUT_DIR}"/android-*-ludus-after-equip-back.png )
-if [[ ! -e "${ludus_after_matches[0]:-}" ]]; then
-  echo "error: missing PNG for ludus-after-equip-back" >&2
+adb logcat -c >/dev/null 2>&1 || true
+NAV_LUDUS_FRESH='BOTORE_CAPTURE_NAV:route=Stable overlay=0'
+adb shell input keyevent 4 >/dev/null
+if ! wait_logcat_marker "${NAV_LUDUS_FRESH}" 20; then
+  echo "error: Customise hardware Back did not land on Ludus after Equip still" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_NAV' >&2 || true
   exit 1
 fi
-write_manifest_line "${MANIFEST}" "still.android.ludus-after-equip-back" "${ludus_after_matches[0]}"
-echo "ok: ${ludus_after_matches[0]}" >&2
+sleep 1
+capture_current ludus-after-equip-back
+echo "ok: ludus-after-equip-back (Customise Back → Ludus after Equip)" >&2
 
 # 1a″) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
 # Need ≥3 whole 175pt cards (185 snap, 150pt robots). Seed has Sir/Dex/Tank.
@@ -408,7 +407,8 @@ capture_current opponents-quota-exhausted
 echo "ok: opponents-quota-exhausted gated on ${QUOTA_EXHAUSTED_MARKER}" >&2
 
 # 1c⁗) Opponents → hardware Back → Ludus (must not land on Customise).
-adb logcat -c >/dev/null 2>&1 || true
+# Open Opponents first, then clear logcat so the Stable marker can only come
+# from Back (PRR M3 — not a stale deep-link boot line).
 CAPTURE_SETTLE_SEC=4 \
   "${SCRIPT_DIR}/android-screencap.sh" \
   --out "${OUT_DIR}" \
@@ -421,17 +421,21 @@ if [[ ! -e "${opponents_before_back[0]:-}" ]]; then
 fi
 write_manifest_line "${MANIFEST}" "still.android.opponents-before-back" "${opponents_before_back[0]}"
 NAV_LUDUS_MARKER='BOTORE_CAPTURE_NAV:route=Stable overlay=0'
-ludus_before_back="$(adb logcat -d 2>/dev/null | tr -d '\r' | grep -aFc "${NAV_LUDUS_MARKER}" || true)"
+NAV_CUSTOMISE_MARKER='BOTORE_CAPTURE_NAV:route=Customise overlay=0'
+adb logcat -c >/dev/null 2>&1 || true
 adb shell input keyevent 4 >/dev/null
 if ! wait_logcat_marker "${NAV_LUDUS_MARKER}" 20; then
   echo "error: Opponents hardware Back did not land on Ludus (Stable)" >&2
   adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_NAV' >&2 || true
   exit 1
 fi
-# Prefer a new Stable nav after Back (baseline may already include prior Stable stills).
+if adb logcat -d 2>/dev/null | tr -d '\r' | grep -aFq "${NAV_CUSTOMISE_MARKER}"; then
+  echo "error: Opponents hardware Back landed on Customise (must be Ludus)" >&2
+  exit 1
+fi
 sleep 1
 capture_current opponents-back-to-ludus
-echo "ok: opponents-back-to-ludus (hardware Back → Ludus; baseline=${ludus_before_back})" >&2
+echo "ok: opponents-back-to-ludus (hardware Back → Ludus; logcat cleared pre-Back)" >&2
 
 # 1c′) E6 / D8 Opponents — seeded online roster at rest (NOT sessionFailure).
 # Need ≥3 whole 175pt cards (185 snap, 150pt robots). Capture before C10

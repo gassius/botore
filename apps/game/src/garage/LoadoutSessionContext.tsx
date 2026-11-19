@@ -129,13 +129,18 @@ export function GarageSessionProvider(props: {
   loadoutRef.current = loadout;
 
   const refreshOwnedBots = useCallback(async () => {
+    // Newest-wins vs in-place Ludus select: a late list_owned_characters must
+    // not overwrite hydrate's active bot / flip the carousel (PRR M1).
+    const epoch = selectEpochRef.current;
     const current = await auth.getSession();
+    if (epoch !== selectEpochRef.current) return;
     if (!current) {
       setOwnedBots([]);
       setBotCap(DEFAULT_PLAYER_BOT_CAP);
       return;
     }
     const listed = await loadouts.listOwnedBots(current.accessToken);
+    if (epoch !== selectEpochRef.current) return;
     if (!listed.ok) {
       return;
     }
