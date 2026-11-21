@@ -35,7 +35,7 @@ import { isServerPlaybackReady } from '../../replay/serverPlayback';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
-import { CONFIRM_FACE_OFF } from '../confirmFaceOff';
+import { CONFIRM_FACE_OFF, confirmFaceOffKitTop, confirmFaceOffScale } from '../confirmFaceOff';
 import { computeConfirmFightControls, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
 import { FightsRemainingPanel } from '../quota/FightsRemainingPanel';
@@ -501,14 +501,6 @@ export function ConfirmFightScreen(props: {
           />
         ) : null}
 
-        {noAllowance || allowanceError ? (
-          <StatusErrorBanner
-            title="No fights remaining"
-            detail="The server reports zero remaining fights. No fight was started."
-            testID="confirm-no-allowance"
-          />
-        ) : null}
-
         {failureKind ? (
           <SessionFailureBanner
             kind={failureKind}
@@ -570,6 +562,12 @@ export function ConfirmFightScreen(props: {
               {candidatesKind === 'dev' ? ' · DEV' : ''}
             </Text>
           )}
+          {/* B3: exhausted copy stays above START FIGHT — never over the tape table. */}
+          {noAllowance || allowanceError ? (
+            <Text style={styles.zeroFightsHint} testID="confirm-no-allowance" allowFontScaling>
+              No fights remaining
+            </Text>
+          ) : null}
           <PrimaryButton
             label={submitting ? 'Starting…' : recoverable ? 'Recover fight' : 'Start fight'}
             disabled={startDisabled}
@@ -665,11 +663,13 @@ const styles = StyleSheet.create({
   },
   botMount: {
     position: 'absolute',
-    bottom: CONFIRM_FACE_OFF.bandHeight - CONFIRM_FACE_OFF.groundY - 4,
+    // Plant kit ground_y on the shared ground line (not canvas bottom — that
+    // leaves ~145 rig px / ~50+ pt of empty padding under the soles).
+    top: confirmFaceOffKitTop(),
     width: CONFIRM_FACE_OFF.bodySize,
     height: CONFIRM_FACE_OFF.bodySize,
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
   botNear: {
     zIndex: 3,
@@ -679,12 +679,22 @@ const styles = StyleSheet.create({
   },
   contactShadow: {
     position: 'absolute',
-    bottom: 2,
+    // Under the soles: kitGroundY from canvas top, slightly below the line.
+    top: CONFIRM_FACE_OFF.kitGroundY * confirmFaceOffScale() - 4,
     width: CONFIRM_FACE_OFF.bodySize * 0.55,
     height: 14,
     borderRadius: 999,
     backgroundColor: 'rgba(26, 30, 34, 0.28)',
     zIndex: 0,
+  },
+  zeroFightsHint: {
+    marginHorizontal: 12,
+    marginTop: 4,
+    textAlign: 'center',
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.4,
+    color: garageTag.steel,
   },
   bandRule: {
     height: 4,
