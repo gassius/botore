@@ -7,6 +7,10 @@
  *
  * Kit numbers match workshop-frame-v003.3 manifest (`canvas`, `ground_y`) —
  * kept as literals so this module stays free of the assembler / RN graph.
+ *
+ * Design B1 (397f932 re-review): opaque head→sole on stills read short of the
+ * sprite-box estimate (~214 / ~236 pt). Bump kit scale ×1.12 and lower the
+ * ground line to ~385 so stock ≈260 and heaviest ≥240 with soles still planted.
  */
 /** Workshop Frame kit-v003.3 rig canvas width. */
 const KIT_CANVAS = 640;
@@ -14,11 +18,16 @@ const KIT_CANVAS = 640;
 const KIT_GROUND_Y = 495;
 /** Idle head sprite top in rig px (assembleBot idle; weapons may extend higher). */
 const KIT_IDLE_HEAD_TOP = 38;
-/** Target visible head→sole height (pt). */
+/** Target visible head→sole height (pt) before still-calibration bump. */
 const BODY_HEIGHT = 260;
+/**
+ * Design-sheet calibration vs 397f932 Android stills (opaque bounds shorter
+ * than sprite-box). 1.12× → stock ≈260, heaviest ≥240.
+ */
+const VISIBLE_SCALE_BUMP = 1.12;
 const BODY_PX = KIT_GROUND_Y - KIT_IDLE_HEAD_TOP;
-/** BotAssembler `size` so BODY_PX × (size/canvas) ≈ BODY_HEIGHT. */
-const KIT_SIZE = Math.round((KIT_CANVAS * BODY_HEIGHT) / BODY_PX);
+/** BotAssembler `size` so calibrated visible body meets BODY_HEIGHT. */
+const KIT_SIZE = Math.round(((KIT_CANVAS * BODY_HEIGHT) / BODY_PX) * VISIBLE_SCALE_BUMP);
 
 export const CONFIRM_FACE_OFF = {
   /** Full-width band under the status bar (pt). */
@@ -35,11 +44,16 @@ export const CONFIRM_FACE_OFF = {
   kitGroundY: KIT_GROUND_Y,
   /** Idle head-top in kit rig px used for bodyHeight→kitSize. */
   kitIdleHeadTop: KIT_IDLE_HEAD_TOP,
+  /** Still-calibration bump applied to kit size (design B1). */
+  visibleScaleBump: VISIBLE_SCALE_BUMP,
   /** Body centre x on a 390-wide band (player left, opponent right). */
   leftCenterX: 98,
   rightCenterX: 292,
-  /** Shared ground line y within the band (feet + contact shadows). */
-  groundY: 332,
+  /**
+   * Shared ground line y within the band (feet + contact shadows).
+   * Lowered to ~385 so the 1.12× bots fill the band without empty floor.
+   */
+  groundY: 385,
   /** VS badge vertical centre within the band. */
   vsCenterY: 176,
   /** Name plate width — fits a 16-character bot name without clipping. */
@@ -57,7 +71,7 @@ export function confirmFaceOffKitTop(): number {
   return CONFIRM_FACE_OFF.groundY - CONFIRM_FACE_OFF.kitGroundY * confirmFaceOffScale();
 }
 
-/** Visible head→sole height at the shared scale (pt). */
+/** Sprite-box head→sole height at the shared scale (pt); opaque stills read ~1/1.12 of this. */
 export function confirmFaceOffVisibleBodyHeight(): number {
   return (CONFIRM_FACE_OFF.kitGroundY - CONFIRM_FACE_OFF.kitIdleHeadTop) * confirmFaceOffScale();
 }

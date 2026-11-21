@@ -22,8 +22,19 @@ describe('D11 Confirm Fight face-off v2', () => {
     expect(CONFIRM_FACE_OFF.bandHeight).toBeGreaterThanOrEqual(410);
     expect(CONFIRM_FACE_OFF.bodyHeight).toBeGreaterThanOrEqual(CONFIRM_FACE_OFF.bodySizeMin);
     expect(CONFIRM_FACE_OFF.bodyHeight).toBeGreaterThanOrEqual(240);
-    expect(confirmFaceOffVisibleBodyHeight()).toBeGreaterThanOrEqual(240);
-    expect(confirmFaceOffVisibleBodyHeight()).toBeCloseTo(CONFIRM_FACE_OFF.bodyHeight, 0);
+    // Design B1 (397f932): 1.12× bump + groundY ~385 so opaque stills clear ≥240 / ~260.
+    expect(CONFIRM_FACE_OFF.visibleScaleBump).toBeCloseTo(1.12, 2);
+    expect(CONFIRM_FACE_OFF.groundY).toBeGreaterThanOrEqual(380);
+    expect(CONFIRM_FACE_OFF.groundY).toBeLessThanOrEqual(390);
+    // Sprite-box estimate is bumped; opaque stills read ~1/1.12 of that (~260 stock).
+    expect(confirmFaceOffVisibleBodyHeight()).toBeGreaterThanOrEqual(260);
+    expect(CONFIRM_FACE_OFF.bodySize).toBeGreaterThanOrEqual(
+      Math.round(
+        ((CONFIRM_FACE_OFF.kitCanvas * 260) /
+          (CONFIRM_FACE_OFF.kitGroundY - CONFIRM_FACE_OFF.kitIdleHeadTop)) *
+          1.12,
+      ) - 1,
+    );
     // Kit `size` is canvas width — larger than visible body once padding is cropped by scale.
     expect(CONFIRM_FACE_OFF.bodySize).toBeGreaterThan(CONFIRM_FACE_OFF.bodyHeight);
     expect(CONFIRM_FACE_OFF.plateWidth).toBeGreaterThanOrEqual(168);
@@ -34,6 +45,9 @@ describe('D11 Confirm Fight face-off v2', () => {
     const kitTop = confirmFaceOffKitTop();
     const soleY = kitTop + CONFIRM_FACE_OFF.kitGroundY * scale;
     expect(soleY).toBeCloseTo(CONFIRM_FACE_OFF.groundY, 5);
+    // Headroom above the taller bots — tops stay under the back FAB (~75pt available).
+    expect(kitTop).toBeGreaterThanOrEqual(40);
+    expect(kitTop).toBeLessThan(100);
     const src = readSource('src/fight/screens/ConfirmFightScreen.tsx');
     expect(src).toContain('confirmFaceOffKitTop');
     expect(src).toContain('kitGroundY');
