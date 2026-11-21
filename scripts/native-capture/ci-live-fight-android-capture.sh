@@ -623,6 +623,56 @@ write_manifest_line "${MANIFEST}" "still.android.confirm-ash-crown-shapes" "${co
 echo "ok: ${confirm_matches[0]}" >&2
 echo "ok: ${confirm_shapes_matches[0]} (Ash Crown Confirm shapes)" >&2
 
+# D11 Confirm face-off v2 evidence (390×844): default / heaviest / spear / 0-fights.
+cp -f "${confirm_matches[0]}" "${OUT_DIR}/android-$(date +%Y%m%d-%H%M%S)-confirm-d11-default.png"
+d11_default_matches=( "${OUT_DIR}"/android-*-confirm-d11-default.png )
+write_manifest_line "${MANIFEST}" "still.android.confirm-d11-default" "${d11_default_matches[0]}"
+echo "ok: ${d11_default_matches[0]} (D11 default)" >&2
+
+CAPTURE_SETTLE_SEC=8 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route ConfirmFight \
+  --name confirm-d11-heaviest \
+  --customise shape-heaviest \
+  --weapon axe >/dev/null
+d11_heaviest_matches=( "${OUT_DIR}"/android-*-confirm-d11-heaviest.png )
+if [[ ! -e "${d11_heaviest_matches[0]:-}" ]]; then
+  echo "error: missing PNG for confirm-d11-heaviest" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "still.android.confirm-d11-heaviest" "${d11_heaviest_matches[0]}"
+echo "ok: ${d11_heaviest_matches[0]} (D11 heaviest combo)" >&2
+
+CAPTURE_SETTLE_SEC=8 \
+  "${SCRIPT_DIR}/android-screencap.sh" \
+  --out "${OUT_DIR}" \
+  --route ConfirmFight \
+  --name confirm-d11-spear \
+  --weapon spear >/dev/null
+d11_spear_matches=( "${OUT_DIR}"/android-*-confirm-d11-spear.png )
+if [[ ! -e "${d11_spear_matches[0]:-}" ]]; then
+  echo "error: missing PNG for confirm-d11-spear" >&2
+  exit 1
+fi
+write_manifest_line "${MANIFEST}" "still.android.confirm-d11-spear" "${d11_spear_matches[0]}"
+echo "ok: ${d11_spear_matches[0]} (D11 spear)" >&2
+
+# D11 0-fights: deep-link fightQuota=exhausted, wait for quota marker, then still.
+adb logcat -c >/dev/null 2>&1 || true
+D11_ZERO_URL="$(capture_url_for_route ConfirmFight "" "" "" "" "" "" "" "" "" "" "" exhausted)"
+echo "opening ${D11_ZERO_URL}" >&2
+adb shell am start -a android.intent.action.VIEW -d "${D11_ZERO_URL}" >/dev/null
+D11_ZERO_MARKER='BOTORE_CAPTURE_QUOTA:remaining=0 limit=3'
+if ! wait_logcat_marker "${D11_ZERO_MARKER}" 45; then
+  echo "error: missing ${D11_ZERO_MARKER} after ConfirmFight fightQuota=exhausted" >&2
+  adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_QUOTA|BOTORE_CAPTURE_ROUTE' >&2 || true
+  exit 1
+fi
+sleep 2
+capture_current confirm-d11-0-fights
+echo "ok: confirm-d11-0-fights gated on ${D11_ZERO_MARKER}" >&2
+
 # 3) Replay — live-capture starts paused (~3s idle) so replay-start is NOT the
 # first hit-hold frame. Settle must stay below FX_CAPTURE_IDLE_BEFORE_PLAY_MS.
 # Then poll fight proof + arena/FX markers; stills land while FX peak is frozen.
@@ -1205,6 +1255,10 @@ required_labels=(
   ludus-after-equip-back
   customise-ash-crown-welder
   confirm-ash-crown-shapes
+  confirm-d11-default
+  confirm-d11-heaviest
+  confirm-d11-spear
+  confirm-d11-0-fights
   ludus-after-fight-wl
   opponents-snap-rest
   opponents-quota-remaining
