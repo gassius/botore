@@ -5016,3 +5016,49 @@ begin
   perform set_config('request.jwt.claim.role', '', true);
   raise notice 'TEST-OK 0041 list_bot_ranking A4 shape portraits';
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- 0042 D11: paint display names + get_owned_character.botoreName
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  v_account uuid := '00000000-0000-4000-8000-000000000001';
+  v_res jsonb;
+  v_name text;
+begin
+  select display_name into v_name from public.parts_catalogue where part_id = 'paint-navy';
+  perform tests.assert(v_name = 'Cobalt', '0042 paint-navy display Cobalt');
+  select display_name into v_name from public.parts_catalogue where part_id = 'paint-cobalt';
+  perform tests.assert(v_name = 'Petrol', '0042 paint-cobalt display Petrol');
+  select display_name into v_name from public.parts_catalogue where part_id = 'paint-crimson';
+  perform tests.assert(v_name = 'Oxide', '0042 paint-crimson display Oxide');
+  perform tests.assert(
+    not exists (
+      select 1 from public.parts_catalogue
+       where slot_kind = 'paint'
+         and display_name in ('Navy', 'Crimson')
+    ),
+    '0042 no Navy or Crimson paint labels'
+  );
+  perform tests.assert(
+    (
+      select count(*)::int from public.parts_catalogue
+       where slot_kind = 'paint' and display_name = 'Cobalt'
+    ) = 1,
+    '0042 exactly one Cobalt paint (paint-navy)'
+  );
+
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  perform set_config('request.jwt.claim.sub', v_account::text, true);
+  set local role authenticated;
+  v_res := public.get_owned_character();
+  perform tests.assert((v_res->>'ok')::boolean, '0042 get_owned_character ok');
+  perform tests.assert(
+    coalesce(nullif(v_res->>'botoreName', ''), '') <> '',
+    '0042 get_owned_character returns botoreName'
+  );
+  reset role;
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.jwt.claim.role', '', true);
+  raise notice 'TEST-OK 0042 paint display names + botoreName';
+end $$;

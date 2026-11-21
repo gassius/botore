@@ -32,7 +32,7 @@ const PROOF: CataloguePart[] = [
   part({
     partId: 'paint-crimson',
     slotKind: 'paint',
-    displayName: 'Crimson',
+    displayName: 'Oxide',
     weaponKind: null,
     weaponPower: null,
     soundTags: [],
@@ -41,7 +41,7 @@ const PROOF: CataloguePart[] = [
   part({
     partId: 'paint-cobalt',
     slotKind: 'paint',
-    displayName: 'Cobalt',
+    displayName: 'Petrol',
     weaponKind: null,
     weaponPower: null,
     soundTags: [],

@@ -5,8 +5,12 @@ import { garageTag } from './tokens';
 
 export type NameplateProps = {
   name: string;
+  /** Lanista / Botore name under the bot name. */
+  subtitle?: string;
   /** Optional ownership / role cue (e.g. YOU) — not paint colour. */
   badge?: string;
+  /** Player plate: Oxide `#E8771C` rim (D11 Confirm face-off). */
+  oxideRim?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
@@ -15,10 +19,24 @@ export type NameplateProps = {
  * Riveted name-tag geometry with native text (never baked into PNG).
  * C16: never renders Game Center / Play Games / device-fallback platform ids.
  */
-export function Nameplate({ name, badge, style, testID }: NameplateProps): React.ReactElement {
+export function Nameplate({
+  name,
+  subtitle,
+  badge,
+  oxideRim = false,
+  style,
+  testID,
+}: NameplateProps): React.ReactElement {
   const safeName = playerFacingDisplayName(name);
+  const safeSubtitle =
+    typeof subtitle === 'string' && subtitle.trim().length > 0
+      ? playerFacingDisplayName(subtitle)
+      : null;
   return (
-    <View style={[styles.tag, style]} testID={testID}>
+    <View
+      style={[styles.tag, oxideRim ? styles.oxideRim : null, style]}
+      testID={testID}
+    >
       <View style={[styles.rivet, styles.rivetL]} />
       <View style={[styles.rivet, styles.rivetR]} />
       {badge ? (
@@ -26,9 +44,20 @@ export function Nameplate({ name, badge, style, testID }: NameplateProps): React
           {badge}
         </Text>
       ) : null}
-      <Text style={styles.name} numberOfLines={2} allowFontScaling>
+      <Text
+        style={styles.name}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.72}
+        allowFontScaling
+      >
         {safeName}
       </Text>
+      {safeSubtitle ? (
+        <Text style={styles.subtitle} numberOfLines={1} allowFontScaling>
+          {safeSubtitle}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -36,7 +65,7 @@ export function Nameplate({ name, badge, style, testID }: NameplateProps): React
 const styles = StyleSheet.create({
   tag: {
     minHeight: 48,
-    paddingHorizontal: 28,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: garageTag.paper,
     borderWidth: garageTag.outline,
@@ -45,6 +74,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
+  },
+  oxideRim: {
+    borderColor: garageTag.oxide,
   },
   rivet: {
     position: 'absolute',
@@ -57,8 +89,8 @@ const styles = StyleSheet.create({
     top: '50%',
     marginTop: -garageTag.rivetRadius,
   },
-  rivetL: { left: 10 },
-  rivetR: { right: 10 },
+  rivetL: { left: 8 },
+  rivetR: { right: 8 },
   badge: {
     fontSize: 11,
     fontWeight: '800',
@@ -74,5 +106,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: garageTag.graphite,
     textAlign: 'center',
+    width: '100%',
+  },
+  subtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: garageTag.steel,
+    textAlign: 'center',
+    width: '100%',
   },
 });

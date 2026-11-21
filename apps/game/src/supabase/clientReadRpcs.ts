@@ -24,6 +24,8 @@ export type OwnedCharacterRpcOk = {
   readonly ok: true;
   readonly characterId: string;
   readonly displayName: string;
+  /** Lanista / Botore name from profiles.display_name (D11). */
+  readonly botoreName?: string | null;
 };
 
 export type OpponentRosterEntry = {

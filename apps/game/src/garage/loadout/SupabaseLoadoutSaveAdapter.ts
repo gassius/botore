@@ -106,11 +106,16 @@ export class SupabaseLoadoutSaveAdapter implements LoadoutSavePort {
         typeof body.displayName === 'string' && body.displayName.trim().length > 0
           ? body.displayName.trim()
           : null;
+      const rawBotore =
+        typeof body.botoreName === 'string' && body.botoreName.trim().length > 0
+          ? body.botoreName.trim()
+          : null;
       // C16/C17: never fall back to character UUID / player-hero as a label.
       const displayName = playerFacingDisplayName(rawName);
+      const botoreName = rawBotore ? playerFacingDisplayName(rawBotore) : null;
       return {
         ok: true,
-        character: { characterId, displayName },
+        character: { characterId, displayName, botoreName },
       };
     } catch (err) {
       return {

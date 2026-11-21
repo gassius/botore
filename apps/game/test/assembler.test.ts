@@ -140,7 +140,7 @@ describe('Workshop Frame kit-v003.3 adapter (ACTIVE pin)', () => {
     expect(channelColorForPart('oxide', 'weapon_hammer').toLowerCase()).toBe('#3a2e28');
     expect(channelColorForPart('oxide', 'weapon_spear').toLowerCase()).toBe('#3a2e28');
     expect(channelColorForPart('oxide', 'weapon_shield').toLowerCase()).toBe('#e8771c');
-    expect(resolvePaintVisual('paint-navy').label).toBe('Navy');
+    expect(resolvePaintVisual('paint-navy').label).toBe('Cobalt');
     expect(patternFillRelPath('hazard', 'torso')).toBe(
       'a6-paints-v4/pattern-fills/hazard/torso.png',
     );

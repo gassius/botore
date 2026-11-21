@@ -2,8 +2,8 @@
  * A6 paints v4 — 8 solids + hazard/racing patterns.
  *
  * Catalogue aliases: paint-crimson→oxide, paint-cobalt→petrol (legacy).
- * New catalogue ids: paint-primer, paint-ink, paint-drab, paint-navy (cobalt
- * visual — avoids collision with paint-cobalt=petrol), paint-frost,
+ * New catalogue ids: paint-primer, paint-ink, paint-drab, paint-navy (Cobalt
+ * visual — avoids collision with paint-cobalt=Petrol), paint-frost,
  * paint-cinder, paint-hazard, paint-racing.
  *
  * Assembler tints kit paint masks by channel (main/trim/accent). Pattern paints
