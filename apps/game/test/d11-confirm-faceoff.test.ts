@@ -49,12 +49,29 @@ describe('D11 Confirm Fight face-off v2', () => {
     expect(src).toContain('oxideRim');
     expect(src).toContain('CONFIRM_FACE_OFF.bodySize');
     expect(src).toContain('CONFIRM_FACE_OFF.bandHeight');
+    // PRR B1: mid column scrolls under the fixed band; footer stays pinned.
+    expect(src).toContain('confirm-mid-scroll');
+    expect(src).toContain('ScrollView');
     // 0-fights copy lives in the footer, not a mid-screen StatusErrorBanner over the tape.
     expect(src).toContain('confirm-no-allowance');
     expect(src).toMatch(
       /zeroFightsHint[\s\S]*confirm-no-allowance|confirm-no-allowance[\s\S]*zeroFightsHint/,
     );
     expect(src).not.toMatch(/StatusErrorBanner\s*\n\s*title=["']No fights remaining["']/);
+  });
+
+  it('seed does not mask migration 0042 with trailing paint display_name updates', () => {
+    const seed = readFileSync(join(process.cwd(), '../../supabase/seed.sql'), 'utf8');
+    expect(seed).toContain("'paint-navy', 'paint', 'Cobalt'");
+    expect(seed).not.toMatch(
+      /update public\.parts_catalogue set display_name = 'Cobalt' where part_id = 'paint-navy'/i,
+    );
+    expect(seed).not.toMatch(
+      /update public\.parts_catalogue set display_name = 'Petrol' where part_id = 'paint-cobalt'/i,
+    );
+    expect(seed).not.toMatch(
+      /update public\.parts_catalogue set display_name = 'Oxide' where part_id = 'paint-crimson'/i,
+    );
   });
 
   it('paint-navy displays Cobalt; no Navy / Crimson / Cobalt-for-Petrol labels', () => {

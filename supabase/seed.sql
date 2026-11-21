@@ -875,9 +875,3 @@ begin
     end loop;
   end loop;
 end $$;
-
--- D11: keep player-facing paint names aligned even when earlier inserts used
--- ON CONFLICT DO NOTHING against an older catalogue row.
-update public.parts_catalogue set display_name = 'Cobalt' where part_id = 'paint-navy';
-update public.parts_catalogue set display_name = 'Petrol' where part_id = 'paint-cobalt';
-update public.parts_catalogue set display_name = 'Oxide' where part_id = 'paint-crimson';

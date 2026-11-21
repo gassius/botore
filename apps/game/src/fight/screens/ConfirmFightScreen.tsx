@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { MotionPose } from '../../assembler';
 import { HEAVIEST_SHAPES, shapePartId } from '../../assembler/shapes';
@@ -437,109 +437,131 @@ export function ConfirmFightScreen(props: {
 
         <View style={styles.bandRule} />
 
-        {!confirmed || !canProgress ? (
-          <StatusErrorBanner
-            title="Equipped loadout unavailable"
-            detail={
-              loadout.lastError ??
-              'Server-confirmed loadout is required before starting a fight (F8 hydration).'
-            }
-            testID="confirm-hydration-blocked"
-          />
-        ) : (
-          <View style={styles.belowBand} testID="confirm-tott">
-            <View style={styles.namePlates} testID="confirm-nameplates">
-              <Nameplate
-                name={playerName}
-                {...(playerBotoreName ? { subtitle: playerBotoreName } : {})}
-                oxideRim
-                style={styles.plate}
-                testID="confirm-nameplate-you"
-              />
-              <Nameplate
-                name={opponentName}
-                {...(opponentBotoreName ? { subtitle: opponentBotoreName } : {})}
-                style={styles.plate}
-                testID="confirm-nameplate-opponent"
+        {/* PRR B1: bounded scroll under the fixed 410pt band; footer stays pinned. */}
+        <ScrollView
+          style={styles.midScroll}
+          contentContainerStyle={styles.midScrollContent}
+          keyboardShouldPersistTaps="handled"
+          testID="confirm-mid-scroll"
+        >
+          {!confirmed || !canProgress ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Equipped loadout unavailable"
+                detail={
+                  loadout.lastError ??
+                  'Server-confirmed loadout is required before starting a fight (F8 hydration).'
+                }
+                testID="confirm-hydration-blocked"
               />
             </View>
-
-            <View style={styles.tape} testID="confirm-tape">
-              <View style={styles.tapeHeader}>
-                <Text style={styles.tapeHeadYou} allowFontScaling numberOfLines={1}>
-                  You
-                </Text>
-                <Text style={styles.tapeHeadLabel} allowFontScaling>
-                  {' '}
-                </Text>
-                <Text style={styles.tapeHeadThem} allowFontScaling numberOfLines={1}>
-                  Them
-                </Text>
+          ) : (
+            <View style={styles.belowBand} testID="confirm-tott">
+              <View style={styles.namePlates} testID="confirm-nameplates">
+                <Nameplate
+                  name={playerName}
+                  {...(playerBotoreName ? { subtitle: playerBotoreName } : {})}
+                  oxideRim
+                  style={styles.plate}
+                  testID="confirm-nameplate-you"
+                />
+                <Nameplate
+                  name={opponentName}
+                  {...(opponentBotoreName ? { subtitle: opponentBotoreName } : {})}
+                  style={styles.plate}
+                  testID="confirm-nameplate-opponent"
+                />
               </View>
-              {tapeRows.map((row) => (
-                <View key={row.label} style={styles.tapeRow} testID={`confirm-tape-${row.label}`}>
-                  <Text style={styles.tapeYou} allowFontScaling numberOfLines={1}>
-                    {row.you}
+
+              <View style={styles.tape} testID="confirm-tape">
+                <View style={styles.tapeHeader}>
+                  <Text style={styles.tapeHeadYou} allowFontScaling numberOfLines={1}>
+                    You
                   </Text>
-                  <Text style={styles.tapeLabel} allowFontScaling numberOfLines={1}>
-                    {row.label}
+                  <Text style={styles.tapeHeadLabel} allowFontScaling>
+                    {' '}
                   </Text>
-                  <Text style={styles.tapeThem} allowFontScaling numberOfLines={1}>
-                    {row.them}
+                  <Text style={styles.tapeHeadThem} allowFontScaling numberOfLines={1}>
+                    Them
                   </Text>
                 </View>
-              ))}
+                {tapeRows.map((row) => (
+                  <View key={row.label} style={styles.tapeRow} testID={`confirm-tape-${row.label}`}>
+                    <Text style={styles.tapeYou} allowFontScaling numberOfLines={1}>
+                      {row.you}
+                    </Text>
+                    <Text style={styles.tapeLabel} allowFontScaling numberOfLines={1}>
+                      {row.label}
+                    </Text>
+                    <Text style={styles.tapeThem} allowFontScaling numberOfLines={1}>
+                      {row.them}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {recoverable && (allowances === null || allowances < 1) ? (
-          <StatusErrorBanner
-            title="Recover previous fight"
-            detail="A fight may already be committed for this opponent. Start/Retry reuses the same idempotency key — it will not spend another slot."
-            testID="confirm-recover-intent"
-          />
-        ) : null}
+          {recoverable && (allowances === null || allowances < 1) ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Recover previous fight"
+                detail="A fight may already be committed for this opponent. Start/Retry reuses the same idempotency key — it will not spend another slot."
+                testID="confirm-recover-intent"
+              />
+            </View>
+          ) : null}
 
-        {failureKind ? (
-          <SessionFailureBanner
-            kind={failureKind}
-            {...(submit.status === 'error' ? { detail: submit.message } : {})}
-            testID={`confirm-session-${failureKind}`}
-          />
-        ) : null}
+          {failureKind ? (
+            <View style={styles.bannerPad}>
+              <SessionFailureBanner
+                kind={failureKind}
+                {...(submit.status === 'error' ? { detail: submit.message } : {})}
+                testID={`confirm-session-${failureKind}`}
+              />
+            </View>
+          ) : null}
 
-        {otherError ? (
-          <StatusErrorBanner
-            title="Fight request failed"
-            detail={otherError.message}
-            testID="confirm-error"
-          />
-        ) : null}
+          {otherError ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Fight request failed"
+                detail={otherError.message}
+                testID="confirm-error"
+              />
+            </View>
+          ) : null}
 
-        {eligMessage && !allowanceError && !noAllowance ? (
-          <StatusErrorBanner
-            title="Not eligible"
-            detail={eligMessage}
-            testID="confirm-eligibility-error"
-          />
-        ) : null}
+          {eligMessage && !allowanceError && !noAllowance ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Not eligible"
+                detail={eligMessage}
+                testID="confirm-eligibility-error"
+              />
+            </View>
+          ) : null}
 
-        {playbackBlocked ? (
-          <StatusErrorBanner
-            title="Server fight required"
-            detail={playbackBlocked}
-            testID="confirm-playback-blocked"
-          />
-        ) : null}
+          {playbackBlocked ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Server fight required"
+                detail={playbackBlocked}
+                testID="confirm-playback-blocked"
+              />
+            </View>
+          ) : null}
 
-        {fightKind === 'unavailable' || candidatesKind === 'unavailable' ? (
-          <StatusErrorBanner
-            title="Backend required"
-            detail="EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set. DEV fight scaffolds are not used on playable builds."
-            testID="confirm-misconfigured"
-          />
-        ) : null}
+          {fightKind === 'unavailable' || candidatesKind === 'unavailable' ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Backend required"
+                detail="EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set. DEV fight scaffolds are not used on playable builds."
+                testID="confirm-misconfigured"
+              />
+            </View>
+          ) : null}
+        </ScrollView>
 
         <View style={styles.footer}>
           {eligLoading ? (
@@ -701,12 +723,22 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: garageTag.graphite,
   },
+  midScroll: {
+    flex: 1,
+  },
+  midScrollContent: {
+    gap: 8,
+    paddingBottom: 8,
+    flexGrow: 1,
+  },
+  bannerPad: {
+    marginHorizontal: 12,
+  },
   belowBand: {
     width: '100%',
     paddingHorizontal: 12,
     paddingTop: 8,
     gap: 8,
-    flexShrink: 1,
   },
   namePlates: {
     flexDirection: 'row',
@@ -783,7 +815,6 @@ const styles = StyleSheet.create({
     color: garageTag.graphite,
   },
   footer: {
-    marginTop: 'auto',
     paddingHorizontal: 12,
     paddingTop: 8,
     paddingBottom: 4,
