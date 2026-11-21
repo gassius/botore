@@ -44,7 +44,11 @@ describe('ticket B client-read RPC adapters', () => {
     const result = await adapter.resolveOwnedCharacter('user-jwt');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.character).toEqual({ characterId: 'player-hero', displayName: 'Hero' });
+    expect(result.character).toEqual({
+      characterId: 'player-hero',
+      displayName: 'Hero',
+      botoreName: null,
+    });
     expect(fetches).toEqual([`http://127.0.0.1:54321/rest/v1/rpc/${OWNED_CHARACTER_RPC}`]);
     expect(fetches.some((u) => u.includes('/rest/v1/characters'))).toBe(false);
   });
