@@ -33,10 +33,7 @@ export function Nameplate({
       ? playerFacingDisplayName(subtitle)
       : null;
   return (
-    <View
-      style={[styles.tag, oxideRim ? styles.oxideRim : null, style]}
-      testID={testID}
-    >
+    <View style={[styles.tag, oxideRim ? styles.oxideRim : null, style]} testID={testID}>
       <View style={[styles.rivet, styles.rivetL]} />
       <View style={[styles.rivet, styles.rivetR]} />
       {badge ? (

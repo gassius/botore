@@ -133,21 +133,29 @@ export function ConfirmFightScreen(props: {
   activeNavGenRef.current = navigationGeneration;
 
   const { displayAllowancesRemaining, displayQuota } = useDesignCaptureFightQuota(list);
+  // Design-capture fightQuota=exhausted/remaining must win over prepareEligibility
+  // so Confirm 0-fights stills are not stuck on the live 3/3 Full panel.
   const allowancesFromList =
     displayAllowancesRemaining ?? (list.status === 'ready' ? list.allowancesRemaining : null);
   const allowances =
     submit.status === 'error' && submit.allowancesRemaining !== undefined
       ? submit.allowancesRemaining
-      : (eligAllowances ?? allowancesFromList);
+      : (displayAllowancesRemaining ?? eligAllowances ?? allowancesFromList);
   const quotaFromList = displayQuota ?? (list.status === 'ready' ? list.quota : null);
   const confirmQuota: FightQuotaSummary | null =
-    quotaFromList && allowances !== null
+    displayQuota && displayAllowancesRemaining !== null
       ? {
-          ...quotaFromList,
-          fightsRemaining: allowances,
-          allowancesRemaining: allowances,
+          ...displayQuota,
+          fightsRemaining: displayAllowancesRemaining,
+          allowancesRemaining: displayAllowancesRemaining,
         }
-      : quotaFromList;
+      : quotaFromList && allowances !== null
+        ? {
+            ...quotaFromList,
+            fightsRemaining: allowances,
+            allowancesRemaining: allowances,
+          }
+        : quotaFromList;
   const posePair = capturePosePair();
   const captureWeaponId =
     isDesignCaptureEnabled() && peekCaptureIntent().weaponId
@@ -341,7 +349,11 @@ export function ConfirmFightScreen(props: {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']} testID="slot-confirm">
+    <SafeAreaView
+      style={styles.safe}
+      edges={['top', 'left', 'right', 'bottom']}
+      testID="slot-confirm"
+    >
       <View style={styles.column}>
         <View style={styles.faceOffBand} testID="confirm-fighters">
           <View style={styles.wall} />

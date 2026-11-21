@@ -624,11 +624,15 @@ echo "ok: ${confirm_matches[0]}" >&2
 echo "ok: ${confirm_shapes_matches[0]} (Ash Crown Confirm shapes)" >&2
 
 # D11 Confirm face-off v2 evidence (390×844): default / heaviest / spear / 0-fights.
+# default = Ash Crown confirm (already captured). Heaviest forces Welder+Boiler+piston
+# via customise=shape-heaviest (ConfirmFight applies capture override). Spear pins weapon.
+# 0-fights waits for BOTORE_CAPTURE_QUOTA remaining=0 (design-capture overlay).
 cp -f "${confirm_matches[0]}" "${OUT_DIR}/android-$(date +%Y%m%d-%H%M%S)-confirm-d11-default.png"
 d11_default_matches=( "${OUT_DIR}"/android-*-confirm-d11-default.png )
 write_manifest_line "${MANIFEST}" "still.android.confirm-d11-default" "${d11_default_matches[0]}"
 echo "ok: ${d11_default_matches[0]} (D11 default)" >&2
 
+adb logcat -c >/dev/null 2>&1 || true
 CAPTURE_SETTLE_SEC=8 \
   "${SCRIPT_DIR}/android-screencap.sh" \
   --out "${OUT_DIR}" \
@@ -644,6 +648,7 @@ fi
 write_manifest_line "${MANIFEST}" "still.android.confirm-d11-heaviest" "${d11_heaviest_matches[0]}"
 echo "ok: ${d11_heaviest_matches[0]} (D11 heaviest combo)" >&2
 
+adb logcat -c >/dev/null 2>&1 || true
 CAPTURE_SETTLE_SEC=8 \
   "${SCRIPT_DIR}/android-screencap.sh" \
   --out "${OUT_DIR}" \
@@ -669,8 +674,14 @@ if ! wait_logcat_marker "${D11_ZERO_MARKER}" 45; then
   adb logcat -d 2>/dev/null | tr -d '\r' | grep -aE 'BOTORE_CAPTURE_QUOTA|BOTORE_CAPTURE_ROUTE' >&2 || true
   exit 1
 fi
-sleep 2
+sleep 3
 capture_current confirm-d11-0-fights
+d11_zero_matches=( "${OUT_DIR}"/android-*-confirm-d11-0-fights.png )
+# Sanity: file must differ from the spear still (quota overlay changed the frame).
+if [[ -e "${d11_zero_matches[0]:-}" ]] && cmp -s "${d11_spear_matches[0]}" "${d11_zero_matches[0]}"; then
+  echo "error: confirm-d11-0-fights is byte-identical to spear — quota overlay did not paint" >&2
+  exit 1
+fi
 echo "ok: confirm-d11-0-fights gated on ${D11_ZERO_MARKER}" >&2
 
 # 3) Replay — live-capture starts paused (~3s idle) so replay-start is NOT the
