@@ -13,7 +13,7 @@ import {
   parseDesignCaptureUrl,
 } from './captureEnv';
 import { consumeCaptureRoute, mergeIntent, peekCaptureIntent } from './captureIntentState';
-import { armDesignCaptureIntentListener } from './pendingCaptureIntent';
+import { applyWebCaptureQuery, armDesignCaptureIntentListener } from './pendingCaptureIntent';
 import { consumeCaptureIntentFile, loadCaptureIntentFile } from './readCaptureIntentFile';
 
 /**
@@ -176,7 +176,33 @@ export function useDesignCaptureDeepLink(): void {
 
     const applyUrl = (url: string | null) => {
       if (!url) return;
+      // Web: Linking may pass http(s)://…/?capture=botore://…&result=…. That is
+      // not a botore: URL — parseDesignCaptureUrl would EMPTY-wipe fixtures.
+      if (/^https?:\/\//i.test(url)) {
+        try {
+          applyWebCaptureQuery(new URL(url).search);
+        } catch {
+          return;
+        }
+        const pendingHttp = peekCaptureIntent();
+        applyPaintWeaponMute(pendingHttp);
+        applyRouteIfNew(pendingHttp.route, false);
+        return;
+      }
       const parsed = parseDesignCaptureUrl(url);
+      if (
+        !parsed.route &&
+        parsed.resultScenario == null &&
+        parsed.rankingScenario == null &&
+        parsed.customiseScenario == null &&
+        parsed.homeScenario == null &&
+        parsed.fightQuotaScenario == null &&
+        parsed.sessionFailure == null &&
+        parsed.paintId == null &&
+        parsed.weaponId == null
+      ) {
+        return;
+      }
       applyPaintWeaponMute(parsed);
       // Persist for ConfirmFight / C10 session-failure / capture consumers.
       // Always write sessionFailure (null clears sticky auth_expired).

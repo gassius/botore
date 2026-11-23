@@ -59,11 +59,11 @@ describe('C7 design-capture helpers', () => {
   it('parses web-preview ?route= / ?capture= query (cheap CI stills)', () => {
     expect(parseWebCaptureSearch('?route=ConfirmFight')).toEqual({
       route: 'ConfirmFight',
-      captureUrl: null,
+      captureUrl: 'botore://capture/ConfirmFight',
     });
     expect(parseWebCaptureSearch('captureRoute=Customise')).toEqual({
       route: 'Customise',
-      captureUrl: null,
+      captureUrl: 'botore://capture/Customise',
     });
     expect(parseWebCaptureSearch('?capture=botore://capture/Ranking')).toEqual({
       route: null,
@@ -71,6 +71,24 @@ describe('C7 design-capture helpers', () => {
     });
     expect(parseWebCaptureSearch('')).toBeNull();
     expect(parseWebCaptureSearch('?foo=1')).toBeNull();
+  });
+
+  it('forwards ?route=Replay&result=victory so resultScenario seeds (PRR B2)', () => {
+    const parsed = parseWebCaptureSearch('?route=Replay&result=victory');
+    expect(parsed).toEqual({
+      route: 'Replay',
+      captureUrl: 'botore://capture/Replay?result=victory',
+    });
+    expect(parseDesignCaptureUrl(parsed!.captureUrl!)).toMatchObject({
+      route: 'Replay',
+      resultScenario: 'victory',
+    });
+    expect(
+      parseDesignCaptureUrl(parseWebCaptureSearch('?route=FightResult&result=defeat')!.captureUrl!),
+    ).toMatchObject({
+      route: 'FightResult',
+      resultScenario: 'defeat',
+    });
   });
 
   it('parses botore://capture deep links used by adb/simctl scripts', () => {

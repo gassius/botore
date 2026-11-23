@@ -209,11 +209,12 @@ async function assertNoGuardBanners(page, route) {
 }
 
 function captureUrlForRoute(base, route) {
-  const params = new URLSearchParams({ route });
-  // Same design-capture fixtures native stills use for Result / Replay golden.
-  if (route === 'FightResult' || route === 'Replay') {
-    params.set('result', 'victory');
-  }
+  // Prefer the supported design-capture deep link so fixture query params
+  // (`result=victory`, …) flow through parseDesignCaptureUrl. Flat
+  // `?route=&result=` also works once parseWebCaptureSearch forwards them.
+  const deepQuery = route === 'FightResult' || route === 'Replay' ? '?result=victory' : '';
+  const deep = `botore://capture/${route}${deepQuery}`;
+  const params = new URLSearchParams({ capture: deep });
   return `${base}/?${params.toString()}`;
 }
 

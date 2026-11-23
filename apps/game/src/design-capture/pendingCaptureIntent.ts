@@ -30,7 +30,32 @@ let listening = false;
 
 function applyUrl(url: string | null): void {
   if (!url) return;
+  // Expo web Linking often delivers the full http(s) page URL. Parsing that as
+  // botore:// returns EMPTY and would wipe resultScenario (PRR B2). Route the
+  // search string through parseWebCaptureSearch instead.
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      applyWebCaptureQuery(new URL(url).search);
+    } catch {
+      /* ignore malformed */
+    }
+    return;
+  }
   const parsed = parseDesignCaptureUrl(url);
+  // Ignore non-capture URLs so empty parses cannot clear seeded fixtures.
+  if (
+    !parsed.route &&
+    parsed.resultScenario == null &&
+    parsed.rankingScenario == null &&
+    parsed.customiseScenario == null &&
+    parsed.homeScenario == null &&
+    parsed.fightQuotaScenario == null &&
+    parsed.sessionFailure == null &&
+    parsed.paintId == null &&
+    parsed.weaponId == null
+  ) {
+    return;
+  }
   mergeIntent({
     route: parsed.route,
     paintId: parsed.paintId,
@@ -50,8 +75,11 @@ function applyUrl(url: string | null): void {
 }
 
 /**
- * Web-preview query → capture intent (`?route=ConfirmFight` or full
- * `?capture=botore://capture/…`). No-op outside browsers / when disabled.
+ * Web-preview query → capture intent (`?route=ConfirmFight`,
+ * `?route=Replay&result=victory`, or full `?capture=botore://capture/…`).
+ * Fixture query params ride on the synthetic captureUrl from
+ * `parseWebCaptureSearch` so result/ranking/customise scenarios apply.
+ * No-op outside browsers / when disabled.
  */
 export function applyWebCaptureQuery(
   search: string | null | undefined = readBrowserSearch(),
