@@ -107,6 +107,7 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
         character: {
           characterId: id,
           displayName: this.names.get(id) ?? this.extraOwned.displayName,
+          botoreName: 'Dev Player',
         },
       };
     }
@@ -115,6 +116,7 @@ export class DevLoadoutSaveAdapter implements LoadoutSavePort {
       character: {
         characterId: this.activeCharacterId,
         displayName: this.names.get(this.activeCharacterId) ?? PROOF_DISPLAY_NAME,
+        botoreName: 'Dev Player',
       },
     };
   }

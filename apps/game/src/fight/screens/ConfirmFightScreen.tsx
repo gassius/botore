@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { MotionPose } from '../../assembler';
+import { HEAVIEST_SHAPES, shapePartId } from '../../assembler/shapes';
 import type { KitPoseEntry, KitWeaponKind } from '../../assembler/workshopFrameTypes';
 import { useTrialUiAudio } from '../../audio/useTrialUiAudio';
 import { BotAssemblerSlot } from '../../bot/BotAssemblerSlot';
@@ -18,12 +20,14 @@ import { useFirstRun } from '../../first-run/FirstRunContext';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import { paintDisplayLabel, weaponDisplayLabel } from '../../garage/loadout/proofCatalogue';
 import {
+  GlyphButton,
   Nameplate,
   PrimaryButton,
   ScreenChrome,
   ScreenHeader,
   StatusErrorBanner,
   garageTag,
+  uiKitAssets,
 } from '../../garage-tag';
 import { resolveOpponentPresentation } from '../../garage-tag/a6OpponentPresentation';
 import { playerFacingDisplayName } from '../../identity/platformPlayerId';
@@ -31,9 +35,9 @@ import { isServerPlaybackReady } from '../../replay/serverPlayback';
 import { classifySessionFailure, sessionFailureCopy } from '../../session-failure';
 import { SessionFailureBanner } from '../../session-failure/SessionFailureBanner';
 import { useForcedSessionFailure } from '../../session-failure/useForcedSessionFailure';
+import { CONFIRM_FACE_OFF, confirmFaceOffKitTop, confirmFaceOffScale } from '../confirmFaceOff';
 import { computeConfirmFightControls, shouldAcceptFightNavigation } from '../fightSessionLifecycle';
 import { useFightSession } from '../FightSessionContext';
-import { resolveA6OpponentPanel } from '../opponents/a6OpponentPanelAssets';
 import { FightsRemainingPanel } from '../quota/FightsRemainingPanel';
 import type { FightQuotaSummary } from '../quota/fightQuotaTypes';
 import { useDesignCaptureFightQuota } from '../quota/useDesignCaptureFightQuota';
@@ -72,7 +76,25 @@ function captureClipStill(weaponId: string): {
   return designCaptureClipPresentation(kitWeaponFromId(weaponId), mode);
 }
 
-/** ConfirmFight → D9 Tale of the Tape; starts combat-v1. */
+/** Design-capture heaviest A4 combo for clipping evidence stills. */
+function captureHeaviestShapes(): {
+  head: string;
+  body: string;
+  arms: string;
+  legs: string;
+} | null {
+  if (!isDesignCaptureEnabled()) return null;
+  const scenario = peekCaptureIntent().customiseScenario;
+  if (scenario !== 'shape-heaviest' && scenario !== 'shape-equipped') return null;
+  return {
+    head: shapePartId('head', HEAVIEST_SHAPES.head),
+    body: shapePartId('body', HEAVIEST_SHAPES.body),
+    arms: shapePartId('arms', HEAVIEST_SHAPES.arms),
+    legs: shapePartId('legs', HEAVIEST_SHAPES.legs),
+  };
+}
+
+/** Confirm Fight face-off — starts combat-v1. */
 export function ConfirmFightScreen(props: {
   onBack: () => void;
   onFightStarted: () => void;
@@ -99,6 +121,10 @@ export function ConfirmFightScreen(props: {
   // Inherit F8 hydration — never invent a confirmed loadout here.
   const confirmed = loadout.confirmedLoadout;
   const playerName = playerFacingDisplayName(loadout.displayName);
+  const playerBotoreName =
+    typeof loadout.botoreName === 'string' && loadout.botoreName.trim().length > 0
+      ? playerFacingDisplayName(loadout.botoreName)
+      : null;
   const [eligMessage, setEligMessage] = useState<string | null>(null);
   const [eligAllowances, setEligAllowances] = useState<number | null>(null);
   const [eligLoading, setEligLoading] = useState(false);
@@ -107,21 +133,29 @@ export function ConfirmFightScreen(props: {
   activeNavGenRef.current = navigationGeneration;
 
   const { displayAllowancesRemaining, displayQuota } = useDesignCaptureFightQuota(list);
+  // Design-capture fightQuota=exhausted/remaining must win over prepareEligibility
+  // so Confirm 0-fights stills are not stuck on the live 3/3 Full panel.
   const allowancesFromList =
     displayAllowancesRemaining ?? (list.status === 'ready' ? list.allowancesRemaining : null);
   const allowances =
     submit.status === 'error' && submit.allowancesRemaining !== undefined
       ? submit.allowancesRemaining
-      : (eligAllowances ?? allowancesFromList);
+      : (displayAllowancesRemaining ?? eligAllowances ?? allowancesFromList);
   const quotaFromList = displayQuota ?? (list.status === 'ready' ? list.quota : null);
   const confirmQuota: FightQuotaSummary | null =
-    quotaFromList && allowances !== null
+    displayQuota && displayAllowancesRemaining !== null
       ? {
-          ...quotaFromList,
-          fightsRemaining: allowances,
-          allowancesRemaining: allowances,
+          ...displayQuota,
+          fightsRemaining: displayAllowancesRemaining,
+          allowancesRemaining: displayAllowancesRemaining,
         }
-      : quotaFromList;
+      : quotaFromList && allowances !== null
+        ? {
+            ...quotaFromList,
+            fightsRemaining: allowances,
+            allowancesRemaining: allowances,
+          }
+        : quotaFromList;
   const posePair = capturePosePair();
   const captureWeaponId =
     isDesignCaptureEnabled() && peekCaptureIntent().weaponId
@@ -131,6 +165,7 @@ export function ConfirmFightScreen(props: {
   const nearPose: MotionPose = clipStill?.motionPose ?? posePair?.near ?? 'idle';
   const farPose: MotionPose = posePair?.far ?? 'idle';
   const nearWeaponId = captureWeaponId ?? confirmed?.weapon ?? 'sword';
+  const heaviest = captureHeaviestShapes();
 
   const opponentPresentation = useMemo(() => {
     if (!selected) return null;
@@ -141,16 +176,6 @@ export function ConfirmFightScreen(props: {
       weaponId: selected.loadout.weapon,
     });
   }, [selected]);
-
-  const opponentPanelArt = useMemo(() => {
-    if (!selected || !opponentPresentation) return null;
-    return resolveA6OpponentPanel({
-      characterId: selected.characterId,
-      displayName: selected.displayName,
-      paintId: opponentPresentation.paintId,
-      weaponId: opponentPresentation.weaponId,
-    });
-  }, [selected, opponentPresentation]);
 
   const tapeRows = useMemo(() => {
     if (!confirmed || !selected || !opponentPresentation) return [];
@@ -276,6 +301,10 @@ export function ConfirmFightScreen(props: {
     submit.status === 'error' && failureKind === null && !allowanceError ? submit : null;
   const { startDisabled, showRetry, retryDisabled, recoverable } = controls;
   const opponentName = playerFacingDisplayName(selected.displayName);
+  const opponentBotoreName =
+    typeof selected.botoreName === 'string' && selected.botoreName.trim().length > 0
+      ? playerFacingDisplayName(selected.botoreName)
+      : null;
 
   const runStart = () => {
     clearSubmitError();
@@ -312,11 +341,229 @@ export function ConfirmFightScreen(props: {
     props.onBack();
   };
 
+  const playerShapes = {
+    head: heaviest?.head ?? confirmed?.head ?? null,
+    body: heaviest?.body ?? confirmed?.body ?? null,
+    arms: heaviest?.arms ?? confirmed?.arms ?? null,
+    legs: heaviest?.legs ?? confirmed?.legs ?? null,
+  };
+
   return (
-    <ScreenChrome
+    <SafeAreaView
+      style={styles.safe}
+      edges={['top', 'left', 'right', 'bottom']}
       testID="slot-confirm"
-      footer={
-        <>
+    >
+      <View style={styles.column}>
+        <View style={styles.faceOffBand} testID="confirm-fighters">
+          <View style={styles.wall} />
+          <View style={styles.floor} />
+          <View style={styles.groundLine} />
+          <GlyphButton
+            source={uiKitAssets.glyphBack}
+            accessibilityLabel="Back"
+            onPress={onBack}
+            style={styles.backFab}
+            testID="confirm-back-fab"
+          />
+          <Text style={styles.vs} allowFontScaling accessibilityRole="text">
+            VS
+          </Text>
+          {confirmed && canProgress ? (
+            <>
+              <View
+                style={[
+                  styles.botMount,
+                  styles.botNear,
+                  { left: CONFIRM_FACE_OFF.leftCenterX - CONFIRM_FACE_OFF.bodySize / 2 },
+                ]}
+                testID="confirm-fighter-you"
+              >
+                <View style={styles.contactShadow} />
+                <BotAssemblerSlot
+                  loadout={{
+                    chassisId: confirmed.chassis,
+                    paintId: confirmed.paint,
+                    weaponId: nearWeaponId,
+                    head: playerShapes.head,
+                    body: playerShapes.body,
+                    arms: playerShapes.arms,
+                    legs: playerShapes.legs,
+                  }}
+                  facing="right"
+                  paintId={confirmed.paint}
+                  weaponId={nearWeaponId}
+                  size={CONFIRM_FACE_OFF.bodySize}
+                  reducedMotion
+                  motionPose={nearPose}
+                  {...(clipStill?.poseOverride ? { poseOverride: clipStill.poseOverride } : {})}
+                  {...(clipStill?.smearOverlay ? { smearOverlay: clipStill.smearOverlay } : {})}
+                  label="You"
+                  testID="confirm-you"
+                />
+              </View>
+              <View
+                style={[
+                  styles.botMount,
+                  styles.botFar,
+                  { left: CONFIRM_FACE_OFF.rightCenterX - CONFIRM_FACE_OFF.bodySize / 2 },
+                ]}
+                testID="confirm-fighter-opponent"
+              >
+                <View style={styles.contactShadow} />
+                <BotAssemblerSlot
+                  loadout={{
+                    chassisId: selected.loadout.chassis,
+                    paintId: opponentPresentation?.paintId ?? selected.loadout.paint,
+                    weaponId: opponentPresentation?.weaponId ?? selected.loadout.weapon,
+                    head: selected.loadout.head,
+                    body: selected.loadout.body,
+                    arms: selected.loadout.arms,
+                    legs: selected.loadout.legs,
+                  }}
+                  facing="left"
+                  paintId={opponentPresentation?.paintId ?? selected.loadout.paint}
+                  weaponId={opponentPresentation?.weaponId ?? selected.loadout.weapon}
+                  size={CONFIRM_FACE_OFF.bodySize}
+                  reducedMotion
+                  motionPose={farPose}
+                  label={opponentName}
+                  testID="confirm-opponent"
+                />
+              </View>
+            </>
+          ) : null}
+        </View>
+
+        <View style={styles.bandRule} />
+
+        {/* PRR B1: bounded scroll under the fixed 410pt band; footer stays pinned. */}
+        <ScrollView
+          style={styles.midScroll}
+          contentContainerStyle={styles.midScrollContent}
+          keyboardShouldPersistTaps="handled"
+          testID="confirm-mid-scroll"
+        >
+          {!confirmed || !canProgress ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Equipped loadout unavailable"
+                detail={
+                  loadout.lastError ??
+                  'Server-confirmed loadout is required before starting a fight (F8 hydration).'
+                }
+                testID="confirm-hydration-blocked"
+              />
+            </View>
+          ) : (
+            <View style={styles.belowBand} testID="confirm-tott">
+              <View style={styles.namePlates} testID="confirm-nameplates">
+                <Nameplate
+                  name={playerName}
+                  {...(playerBotoreName ? { subtitle: playerBotoreName } : {})}
+                  oxideRim
+                  style={styles.plate}
+                  testID="confirm-nameplate-you"
+                />
+                <Nameplate
+                  name={opponentName}
+                  {...(opponentBotoreName ? { subtitle: opponentBotoreName } : {})}
+                  style={styles.plate}
+                  testID="confirm-nameplate-opponent"
+                />
+              </View>
+
+              <View style={styles.tape} testID="confirm-tape">
+                <View style={styles.tapeHeader}>
+                  <Text style={styles.tapeHeadYou} allowFontScaling numberOfLines={1}>
+                    You
+                  </Text>
+                  <Text style={styles.tapeHeadLabel} allowFontScaling>
+                    {' '}
+                  </Text>
+                  <Text style={styles.tapeHeadThem} allowFontScaling numberOfLines={1}>
+                    Them
+                  </Text>
+                </View>
+                {tapeRows.map((row) => (
+                  <View key={row.label} style={styles.tapeRow} testID={`confirm-tape-${row.label}`}>
+                    <Text style={styles.tapeYou} allowFontScaling numberOfLines={1}>
+                      {row.you}
+                    </Text>
+                    <Text style={styles.tapeLabel} allowFontScaling numberOfLines={1}>
+                      {row.label}
+                    </Text>
+                    <Text style={styles.tapeThem} allowFontScaling numberOfLines={1}>
+                      {row.them}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {recoverable && (allowances === null || allowances < 1) ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Recover previous fight"
+                detail="A fight may already be committed for this opponent. Start/Retry reuses the same idempotency key — it will not spend another slot."
+                testID="confirm-recover-intent"
+              />
+            </View>
+          ) : null}
+
+          {failureKind ? (
+            <View style={styles.bannerPad}>
+              <SessionFailureBanner
+                kind={failureKind}
+                {...(submit.status === 'error' ? { detail: submit.message } : {})}
+                testID={`confirm-session-${failureKind}`}
+              />
+            </View>
+          ) : null}
+
+          {otherError ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Fight request failed"
+                detail={otherError.message}
+                testID="confirm-error"
+              />
+            </View>
+          ) : null}
+
+          {eligMessage && !allowanceError && !noAllowance ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Not eligible"
+                detail={eligMessage}
+                testID="confirm-eligibility-error"
+              />
+            </View>
+          ) : null}
+
+          {playbackBlocked ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Server fight required"
+                detail={playbackBlocked}
+                testID="confirm-playback-blocked"
+              />
+            </View>
+          ) : null}
+
+          {fightKind === 'unavailable' || candidatesKind === 'unavailable' ? (
+            <View style={styles.bannerPad}>
+              <StatusErrorBanner
+                title="Backend required"
+                detail="EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set. DEV fight scaffolds are not used on playable builds."
+                testID="confirm-misconfigured"
+              />
+            </View>
+          ) : null}
+        </ScrollView>
+
+        <View style={styles.footer}>
           {eligLoading ? (
             <View style={styles.eligRow}>
               <ActivityIndicator color={garageTag.mustard} />
@@ -337,6 +584,12 @@ export function ConfirmFightScreen(props: {
               {candidatesKind === 'dev' ? ' · DEV' : ''}
             </Text>
           )}
+          {/* B3: exhausted copy stays above START FIGHT — never over the tape table. */}
+          {noAllowance || allowanceError ? (
+            <Text style={styles.zeroFightsHint} testID="confirm-no-allowance" allowFontScaling>
+              No fights remaining
+            </Text>
+          ) : null}
           <PrimaryButton
             label={submitting ? 'Starting…' : recoverable ? 'Recover fight' : 'Start fight'}
             disabled={startDisabled}
@@ -363,216 +616,139 @@ export function ConfirmFightScreen(props: {
               testID="confirm-retry"
             />
           ) : null}
-        </>
-      }
-    >
-      <ScreenHeader title="Tale of the Tape" onBack={onBack} />
-
-      {!confirmed || !canProgress ? (
-        <StatusErrorBanner
-          title="Equipped loadout unavailable"
-          detail={
-            loadout.lastError ??
-            'Server-confirmed loadout is required before starting a fight (F8 hydration).'
-          }
-          testID="confirm-hydration-blocked"
-        />
-      ) : (
-        <View style={styles.tott} testID="confirm-tott">
-          <View style={styles.faceOff} testID="confirm-fighters">
-            <View style={styles.near} testID="confirm-fighter-you">
-              <BotAssemblerSlot
-                loadout={{
-                  chassisId: confirmed.chassis,
-                  paintId: confirmed.paint,
-                  weaponId: nearWeaponId,
-                  head: confirmed.head,
-                  body: confirmed.body,
-                  arms: confirmed.arms,
-                  legs: confirmed.legs,
-                }}
-                facing="right"
-                paintId={confirmed.paint}
-                weaponId={nearWeaponId}
-                size={150}
-                reducedMotion
-                motionPose={nearPose}
-                {...(clipStill?.poseOverride ? { poseOverride: clipStill.poseOverride } : {})}
-                {...(clipStill?.smearOverlay ? { smearOverlay: clipStill.smearOverlay } : {})}
-                label="You"
-                testID="confirm-you"
-              />
-              <Nameplate name={playerName} badge="You" />
-            </View>
-            <Text style={styles.vs} allowFontScaling>
-              VS
-            </Text>
-            <View style={styles.far} testID="confirm-fighter-opponent">
-              {opponentPanelArt ? (
-                <Image
-                  source={opponentPanelArt}
-                  style={styles.opponentPanelArt}
-                  resizeMode="contain"
-                  accessibilityIgnoresInvertColors
-                  testID="confirm-opponent-a6-panel"
-                />
-              ) : (
-                <BotAssemblerSlot
-                  loadout={{
-                    chassisId: selected.loadout.chassis,
-                    paintId: opponentPresentation?.paintId ?? selected.loadout.paint,
-                    weaponId: opponentPresentation?.weaponId ?? selected.loadout.weapon,
-                    head: selected.loadout.head,
-                    body: selected.loadout.body,
-                    arms: selected.loadout.arms,
-                    legs: selected.loadout.legs,
-                  }}
-                  facing="left"
-                  paintId={opponentPresentation?.paintId ?? selected.loadout.paint}
-                  weaponId={opponentPresentation?.weaponId ?? selected.loadout.weapon}
-                  size={150}
-                  reducedMotion
-                  motionPose={farPose}
-                  label={opponentName}
-                  testID="confirm-opponent"
-                />
-              )}
-              <Nameplate name={opponentName} />
-            </View>
-          </View>
-
-          <View style={styles.tape} testID="confirm-tape">
-            <View style={styles.tapeHeader}>
-              <Text style={styles.tapeHeadYou} allowFontScaling numberOfLines={1}>
-                You
-              </Text>
-              <Text style={styles.tapeHeadLabel} allowFontScaling>
-                {' '}
-              </Text>
-              <Text style={styles.tapeHeadThem} allowFontScaling numberOfLines={1}>
-                Them
-              </Text>
-            </View>
-            {tapeRows.map((row) => (
-              <View key={row.label} style={styles.tapeRow} testID={`confirm-tape-${row.label}`}>
-                <Text style={styles.tapeYou} allowFontScaling numberOfLines={1}>
-                  {row.you}
-                </Text>
-                <Text style={styles.tapeLabel} allowFontScaling numberOfLines={1}>
-                  {row.label}
-                </Text>
-                <Text style={styles.tapeThem} allowFontScaling numberOfLines={1}>
-                  {row.them}
-                </Text>
-              </View>
-            ))}
-          </View>
         </View>
-      )}
-
-      {recoverable && (allowances === null || allowances < 1) ? (
-        <StatusErrorBanner
-          title="Recover previous fight"
-          detail="A fight may already be committed for this opponent. Start/Retry reuses the same idempotency key — it will not spend another slot."
-          testID="confirm-recover-intent"
-        />
-      ) : null}
-
-      {noAllowance || allowanceError ? (
-        <StatusErrorBanner
-          title="No fights remaining"
-          detail="The server reports zero remaining fights. No fight was started."
-          testID="confirm-no-allowance"
-        />
-      ) : null}
-
-      {failureKind ? (
-        <SessionFailureBanner
-          kind={failureKind}
-          {...(submit.status === 'error' ? { detail: submit.message } : {})}
-          testID={`confirm-session-${failureKind}`}
-        />
-      ) : null}
-
-      {otherError ? (
-        <StatusErrorBanner
-          title="Fight request failed"
-          detail={otherError.message}
-          testID="confirm-error"
-        />
-      ) : null}
-
-      {eligMessage && !allowanceError && !noAllowance ? (
-        <StatusErrorBanner
-          title="Not eligible"
-          detail={eligMessage}
-          testID="confirm-eligibility-error"
-        />
-      ) : null}
-
-      {playbackBlocked ? (
-        <StatusErrorBanner
-          title="Server fight required"
-          detail={playbackBlocked}
-          testID="confirm-playback-blocked"
-        />
-      ) : null}
-
-      {fightKind === 'unavailable' || candidatesKind === 'unavailable' ? (
-        <StatusErrorBanner
-          title="Backend required"
-          detail="EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set. DEV fight scaffolds are not used on playable builds."
-          testID="confirm-misconfigured"
-        />
-      ) : null}
-    </ScreenChrome>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  tott: {
-    width: '100%',
-    gap: 12,
+  safe: {
+    flex: 1,
+    backgroundColor: garageTag.cream,
   },
-  faceOff: {
+  column: {
+    flex: 1,
+  },
+  faceOffBand: {
     width: '100%',
-    minHeight: 260,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    backgroundColor: garageTag.paper,
+    height: CONFIRM_FACE_OFF.bandHeight,
+    overflow: 'visible',
+    backgroundColor: '#3F463C',
+  },
+  wall: {
+    ...StyleSheet.absoluteFillObject,
+    bottom: '40%',
+    backgroundColor: '#59604F',
+  },
+  floor: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '40%',
+    backgroundColor: '#CBB48A',
+  },
+  groundLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: CONFIRM_FACE_OFF.groundY,
+    height: 2,
+    backgroundColor: '#9C8660',
+  },
+  backFab: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    zIndex: 20,
+    backgroundColor: garageTag.cream,
     borderWidth: garageTag.outline,
     borderColor: garageTag.graphite,
-    borderRadius: garageTag.cutCorner,
-    paddingHorizontal: 8,
-    paddingBottom: 10,
-    paddingTop: 12,
-  },
-  near: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-    zIndex: 2,
-  },
-  far: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-    zIndex: 1,
-  },
-  /** Same A6 panel art source/size as Opponents card (shared resolver). */
-  opponentPanelArt: {
-    width: 150,
-    height: 150,
+    borderRadius: 8,
   },
   vs: {
-    alignSelf: 'center',
+    position: 'absolute',
+    top: CONFIRM_FACE_OFF.vsCenterY - 28,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
     fontWeight: '900',
-    fontSize: 18,
-    letterSpacing: 1.2,
-    color: garageTag.graphite,
-    paddingHorizontal: 4,
-    paddingBottom: 48,
+    fontSize: 46,
+    fontStyle: 'italic',
+    letterSpacing: 2,
+    color: garageTag.mustard,
+    zIndex: 15,
+    textShadowColor: garageTag.graphite,
+    textShadowOffset: { width: 3, height: 3 },
+    textShadowRadius: 0,
+  },
+  botMount: {
+    position: 'absolute',
+    // Plant kit ground_y on the shared ground line (not canvas bottom — that
+    // leaves ~145 rig px / ~50+ pt of empty padding under the soles).
+    top: confirmFaceOffKitTop(),
+    width: CONFIRM_FACE_OFF.bodySize,
+    height: CONFIRM_FACE_OFF.bodySize,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  botNear: {
+    zIndex: 3,
+  },
+  botFar: {
+    zIndex: 2,
+  },
+  contactShadow: {
+    position: 'absolute',
+    // Under the soles: kitGroundY from canvas top, slightly below the line.
+    top: CONFIRM_FACE_OFF.kitGroundY * confirmFaceOffScale() - 4,
+    width: CONFIRM_FACE_OFF.bodySize * 0.55,
+    height: 14,
+    borderRadius: 999,
+    backgroundColor: 'rgba(26, 30, 34, 0.28)',
+    zIndex: 0,
+  },
+  zeroFightsHint: {
+    marginHorizontal: 12,
+    marginTop: 4,
+    textAlign: 'center',
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.4,
+    color: garageTag.steel,
+  },
+  bandRule: {
+    height: 4,
+    width: '100%',
+    backgroundColor: garageTag.graphite,
+  },
+  midScroll: {
+    flex: 1,
+  },
+  midScrollContent: {
+    gap: 8,
+    paddingBottom: 8,
+    flexGrow: 1,
+  },
+  bannerPad: {
+    marginHorizontal: 12,
+  },
+  belowBand: {
+    width: '100%',
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    gap: 8,
+  },
+  namePlates: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  plate: {
+    width: CONFIRM_FACE_OFF.plateWidth,
+    minHeight: CONFIRM_FACE_OFF.plateHeight,
+    alignSelf: 'flex-start',
   },
   tape: {
     width: '100%',
@@ -580,14 +756,14 @@ const styles = StyleSheet.create({
     borderColor: garageTag.graphite,
     borderRadius: garageTag.cutCorner,
     backgroundColor: garageTag.white,
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 10,
-    gap: 4,
+    gap: 2,
   },
   tapeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   tapeHeadYou: {
     flex: 1,
@@ -613,7 +789,7 @@ const styles = StyleSheet.create({
   tapeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 28,
+    minHeight: 26,
   },
   tapeYou: {
     flex: 1,
@@ -637,6 +813,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 14,
     color: garageTag.graphite,
+  },
+  footer: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 4,
+    gap: 8,
   },
   eligText: {
     textAlign: 'center',

@@ -8,6 +8,8 @@ export type LoadoutPreviewState = {
   readonly accountId: string | null;
   readonly characterId: string | null;
   readonly displayName: string | null;
+  /** Lanista / Botore name for Confirm face-off plates (profiles.display_name). */
+  readonly botoreName: string | null;
   readonly confirmedLoadout: GarageLoadout | null;
   readonly pendingLoadout: GarageLoadout | null;
   readonly confirmedVersionId: string | null;
@@ -49,6 +51,7 @@ export function createUnavailableLoadoutState(input?: {
     accountId: null,
     characterId: null,
     displayName: null,
+    botoreName: null,
     confirmedLoadout: null,
     pendingLoadout: null,
     confirmedVersionId: null,
@@ -65,6 +68,7 @@ export function createLoadoutPreviewState(input: {
   accountId: string;
   characterId: string;
   displayName: string;
+  botoreName?: string | null;
   confirmedLoadout: GarageLoadout;
   confirmedVersionId?: string | null;
   atlasVersion?: string;
@@ -74,6 +78,7 @@ export function createLoadoutPreviewState(input: {
     accountId: input.accountId,
     characterId: input.characterId,
     displayName: input.displayName,
+    botoreName: input.botoreName ?? null,
     confirmedLoadout: input.confirmedLoadout,
     pendingLoadout: input.confirmedLoadout,
     confirmedVersionId: input.confirmedVersionId ?? null,
@@ -97,6 +102,7 @@ export function markHydrationUnavailable(
     accountId: string | null;
     characterId: string | null;
     displayName?: string | null;
+    botoreName?: string | null;
     message: string;
     code?: string | null;
   },
@@ -114,6 +120,7 @@ export function markHydrationUnavailable(
       ...previous,
       hydration: 'unavailable',
       displayName: input.displayName ?? previous.displayName,
+      botoreName: input.botoreName ?? previous.botoreName,
       pendingLoadout: previous.confirmedLoadout,
       dirty: false,
       saving: false,
@@ -128,6 +135,7 @@ export function markHydrationUnavailable(
     accountId: input.accountId,
     characterId: input.characterId,
     displayName: input.displayName ?? null,
+    botoreName: input.botoreName ?? null,
     confirmedLoadout: null,
     pendingLoadout: null,
     confirmedVersionId: null,

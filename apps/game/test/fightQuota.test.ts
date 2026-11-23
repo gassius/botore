@@ -110,6 +110,7 @@ describe('E3 fight quota parse + countdown', () => {
   });
 
   it('forces design-capture exhausted to 0 while keeping limit', () => {
+    const futureRefill = '2099-01-01T00:00:00Z';
     const forced = applyDesignCaptureFightQuotaScenario('exhausted', {
       allowancesRemaining: 2,
       quota: {
@@ -117,7 +118,7 @@ describe('E3 fight quota parse + countdown', () => {
         limit: 3,
         scope: 'player',
         refillPolicy: 'daily_utc_midnight',
-        nextRefillAt: '2026-11-20T00:00:00Z',
+        nextRefillAt: futureRefill,
         utcDay: '2026-11-19',
         allowancesRemaining: 2,
       },
@@ -125,7 +126,8 @@ describe('E3 fight quota parse + countdown', () => {
     expect(forced.allowancesRemaining).toBe(0);
     expect(forced.quota?.fightsRemaining).toBe(0);
     expect(forced.quota?.limit).toBe(3);
-    expect(forced.quota?.nextRefillAt).toBe('2026-11-20T00:00:00Z');
+    // Future refill timestamps are preserved; past ones are regenerated for countdown.
+    expect(forced.quota?.nextRefillAt).toBe(futureRefill);
   });
 
   it('formats the Android CI quota marker CI waits on', () => {

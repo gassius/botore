@@ -210,6 +210,9 @@ export function GarageSessionProvider(props: {
             // C16: never hold platform player ids in garage UI state.
             // C17: never fall back to character UUID / player-hero as a label.
             displayName: playerFacingDisplayName(owned.character.displayName),
+            botoreName: owned.character.botoreName
+              ? playerFacingDisplayName(owned.character.botoreName)
+              : null,
             confirmedLoadout: fetched.snapshot.loadout,
             confirmedVersionId: fetched.snapshot.loadoutVersionId,
             atlasVersion: fetched.snapshot.atlasVersion,
@@ -235,6 +238,9 @@ export function GarageSessionProvider(props: {
             accountId: current.userId,
             characterId: owned.character.characterId,
             displayName: playerFacingDisplayName(owned.character.displayName),
+            botoreName: owned.character.botoreName
+              ? playerFacingDisplayName(owned.character.botoreName)
+              : null,
             message: fetched.message,
             code: fetched.code,
           }),

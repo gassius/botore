@@ -121,8 +121,12 @@ describe('C17 player-facing id / debug scrub', () => {
   it('part display labels never echo catalogue ids', () => {
     expect(paintDisplayLabel('paint-crimson')).toBe('Oxide');
     expect(paintDisplayLabel('paint-cobalt')).toBe('Petrol');
+    expect(paintDisplayLabel('paint-navy')).toBe('Cobalt');
     expect(paintDisplayLabel('paint-oxide')).toBe('Oxide');
     expect(paintDisplayLabel('paint-petrol')).toBe('Petrol');
+    expect(paintDisplayLabel('paint-navy')).not.toBe('Navy');
+    expect(paintDisplayLabel('paint-cobalt')).not.toBe('Cobalt');
+    expect(paintDisplayLabel('paint-crimson')).not.toBe('Crimson');
     expect(weaponDisplayLabel('weapon-sword')).toBe('Sword');
     expect(weaponDisplayLabel('weapon-axe')).toBe('Axe');
   });

@@ -26,6 +26,8 @@ export type ConfirmedLoadoutSnapshot = {
 export type OwnedCharacter = {
   readonly characterId: string;
   readonly displayName: string;
+  /** Lanista / Botore display name from profiles (D11 Confirm name plates). */
+  readonly botoreName?: string | null;
 };
 
 export type OwnedCharacterResult =

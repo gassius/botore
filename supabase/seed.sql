@@ -119,12 +119,12 @@ insert into public.parts_catalogue (
     'parts/chassis-basic', true
   ),
   (
-    'paint-crimson', 'paint', 'Crimson', null, null,
+    'paint-crimson', 'paint', 'Oxide', null, null,
     '[]'::jsonb, '{}'::jsonb,
     'parts/paint-crimson', true
   ),
   (
-    'paint-cobalt', 'paint', 'Cobalt', null, null,
+    'paint-cobalt', 'paint', 'Petrol', null, null,
     '[]'::jsonb, '{}'::jsonb,
     'parts/paint-cobalt', true
   ),
@@ -144,7 +144,7 @@ insert into public.parts_catalogue (
     'parts/paint-drab', true
   ),
   (
-    'paint-navy', 'paint', 'Navy', null, null,
+    'paint-navy', 'paint', 'Cobalt', null, null,
     '[]'::jsonb, '{}'::jsonb,
     'parts/paint-navy', true
   ),
@@ -421,12 +421,12 @@ insert into public.parts_catalogue (
     'parts/chassis-basic', true
   ),
   (
-    'paint-crimson', 'paint', 'Crimson', null, null,
+    'paint-crimson', 'paint', 'Oxide', null, null,
     '[]'::jsonb, '{}'::jsonb,
     'parts/paint-crimson', true
   ),
   (
-    'paint-cobalt', 'paint', 'Cobalt', null, null,
+    'paint-cobalt', 'paint', 'Petrol', null, null,
     '[]'::jsonb, '{}'::jsonb,
     'parts/paint-cobalt', true
   ),
