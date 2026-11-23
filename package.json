@@ -27,7 +27,7 @@
     "test:web-preview-map": "node --test scripts/web-preview-capture/map-changed-routes.test.mjs",
     "verify": "bash infra/verify.sh",
     "verify:affected": "VERIFY_AFFECTED=1 bash infra/verify.sh",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install || true"
   },
   "devDependencies": {
     "@types/node": "^24.10.9",

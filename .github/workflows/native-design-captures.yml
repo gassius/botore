@@ -37,8 +37,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
 
+# Unrelated `labeled` events get their own concurrency group (run_id) so they
+# cannot cancel an in-flight capture run started by run-native-captures (M1).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name != 'run-native-captures' && github.run_id || 'captures' }}
   cancel-in-progress: true
 
 permissions:
@@ -93,6 +95,8 @@ jobs:
         id: gate
         env:
           EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action || '' }}
+          LABEL_NAME: ${{ github.event.label.name || '' }}
           HAS_LABEL: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-native-captures') }}
           PATHS_MATCH: ${{ github.event_name == 'pull_request' && steps.filter.outputs.game_ui || 'false' }}
         run: |
@@ -102,9 +106,26 @@ jobs:
             echo "Running: ${EVENT_NAME}"
             exit 0
           fi
+          # M1: labeled events only count when the added label is run-native-captures.
+          if [[ "${EVENT_NAME}" == "pull_request" && "${EVENT_ACTION}" == "labeled" ]]; then
+            if [[ "${LABEL_NAME}" != "run-native-captures" ]]; then
+              echo "run=false" >> "$GITHUB_OUTPUT"
+              echo "Skipping: labeled '${LABEL_NAME}' (need run-native-captures)"
+              exit 0
+            fi
+            if [[ "${PATHS_MATCH}" == "true" ]]; then
+              echo "run=true" >> "$GITHUB_OUTPUT"
+              echo "Running: newly labeled run-native-captures with game UI/asset path changes"
+              exit 0
+            fi
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: run-native-captures labeled but paths do not match"
+            exit 0
+          fi
+          # opened / synchronize / reopened: sticky label + paths.
           if [[ "${EVENT_NAME}" == "pull_request" && "${HAS_LABEL}" == "true" && "${PATHS_MATCH}" == "true" ]]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "Running: PR labeled run-native-captures with game UI/asset path changes"
+            echo "Running: PR has run-native-captures + game UI/asset path changes (${EVENT_ACTION})"
             exit 0
           fi
           echo "run=false" >> "$GITHUB_OUTPUT"

@@ -1,5 +1,8 @@
 # Cheap per-push Expo web + Playwright 390×844 stills for design review.
 # NOT native acceptance — label artifacts as web preview only.
+#
+# B1: starts local Supabase (like API integration) so design-capture can sign
+# in; capture-routes.mjs fails closed on SessionAuthError / misconfigured.
 name: Web preview screenshots
 
 on:
@@ -19,11 +22,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Prefer PR head SHA over the merge ref (M4).
+  WEB_PREVIEW_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   web-preview-screenshots:
     name: Expo web · Playwright 390×844
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,16 +72,40 @@ jobs:
       - name: Build game workspace deps
         run: pnpm --filter @botore/game^... run build
 
-      - name: Expo web export (design-capture)
+      - name: Install postgresql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Start Supabase local stack
+        run: pnpm exec supabase start --ignore-health-check || pnpm exec supabase start
+
+      - name: Reset database (migrations + seed)
+        run: |
+          export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          pnpm exec supabase db reset --local
+
+      - name: Repair design-capture auth fixture
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          SUPABASE_URL: http://127.0.0.1:54321
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env | sed -E 's/^([A-Z0-9_]+)=/export \1=/')"
+          export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$ANON_KEY}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SERVICE_ROLE_KEY}"
+          node scripts/web-preview-capture/prepare-web-preview-backend.mjs
+          {
+            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+          } >> "$GITHUB_ENV"
+
+      - name: Expo web export (design-capture + local Supabase)
         working-directory: apps/game
         env:
           EXPO_PUBLIC_DESIGN_CAPTURE: '1'
           EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
           EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD: '1'
           EXPO_PUBLIC_CRASH_REPORTING: '0'
-          # Placeholder public env so web boot is not fail-closed.
-          EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co'
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.smoke'
+          EXPO_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321'
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
         run: pnpm run export:web
 
       - name: Install Playwright Chromium
@@ -88,6 +119,7 @@ jobs:
           WEB_PREVIEW_OUT_DIR: artifacts/web-preview-captures
           WEB_PREVIEW_BASE_URL: http://127.0.0.1:4173
           WEB_PREVIEW_SETTLE_MS: '5000'
+          WEB_PREVIEW_HEAD_SHA: ${{ env.WEB_PREVIEW_HEAD_SHA }}
         run: |
           set -euo pipefail
           pnpm exec serve -l 4173 apps/game/dist > /tmp/web-preview-serve.log 2>&1 &
@@ -106,7 +138,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: web-preview-captures-${{ github.sha }}
+          name: web-preview-captures-${{ env.WEB_PREVIEW_HEAD_SHA }}
           path: artifacts/web-preview-captures/
           if-no-files-found: warn
           retention-days: 14
