@@ -169,7 +169,7 @@ Run the checker: `node scripts/check-boundaries.mjs`.
 ## Commands
 
 ```bash
-pnpm install            # after clone
+pnpm install            # after clone (also installs lefthook pre-push → pnpm verify)
 pnpm build              # turbo build
 pnpm lint               # eslint + prettier check
 pnpm typecheck          # tsc everywhere
@@ -177,8 +177,19 @@ pnpm test               # unit/property/golden tests (no DB needed)
 pnpm env:up             # supabase start + connection info
 pnpm db:reset           # migrations + seed + DB tests
 pnpm verify             # format/lint/typecheck/test/boundaries/secrets/licenses
+pnpm verify:affected    # same gate, turbo scoped to workspaces changed vs origin/main
 pnpm test:integration   # requires env:up && db:reset && DATABASE_URL
 ```
+
+## Local verify before commit / push
+
+Agents **MUST** run `pnpm verify` and keep it green **before every commit and
+every push**. Never push a red tip. When the change touches
+`supabase/migrations/**` or `supabase/seed.sql`, also run Supabase DB tests
+(`pnpm env:up` → `pnpm db:reset` → DB coverage / logged `run.sql`) green before
+push. Pre-push is enforced by lefthook (`lefthook.yml`). Do not use
+`--no-verify` unless Carlos explicitly authorizes an emergency. See
+`.cursor/rules/verify-before-push.mdc`.
 
 ## Safe database practices
 

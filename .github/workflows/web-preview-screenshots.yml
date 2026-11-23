@@ -1,0 +1,112 @@
+# Cheap per-push Expo web + Playwright 390×844 stills for design review.
+# NOT native acceptance — label artifacts as web preview only.
+name: Web preview screenshots
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      routes:
+        description: Comma-separated FirstRunRoute ids (empty = map from changed files)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-preview-screenshots:
+    name: Expo web · Playwright 390×844
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Resolve capture routes
+        id: routes
+        env:
+          INPUT_ROUTES: ${{ github.event.inputs.routes || '' }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${INPUT_ROUTES}" ]]; then
+            echo "routes=${INPUT_ROUTES}" >> "$GITHUB_OUTPUT"
+            echo "Using workflow_dispatch routes: ${INPUT_ROUTES}"
+            exit 0
+          fi
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+            mapfile -t FILES < <(git diff --name-only "${BASE}...${HEAD}" || true)
+          else
+            mapfile -t FILES < <(git diff --name-only origin/main...HEAD || true)
+          fi
+          ROUTES="$(printf '%s\n' "${FILES[@]:-}" | node scripts/web-preview-capture/map-changed-routes.mjs)"
+          echo "routes=${ROUTES}" >> "$GITHUB_OUTPUT"
+          echo "Mapped routes: ${ROUTES}"
+
+      - name: Build game workspace deps
+        run: pnpm --filter @botore/game^... run build
+
+      - name: Expo web export (design-capture)
+        working-directory: apps/game
+        env:
+          EXPO_PUBLIC_DESIGN_CAPTURE: '1'
+          EXPO_PUBLIC_DESIGN_CAPTURE_ROUTE: Stable
+          EXPO_PUBLIC_ALLOW_DEV_SCAFFOLD: '1'
+          EXPO_PUBLIC_CRASH_REPORTING: '0'
+          # Placeholder public env so web boot is not fail-closed.
+          EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co'
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.smoke'
+        run: pnpm run export:web
+
+      - name: Install Playwright Chromium
+        run: |
+          set -euo pipefail
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Serve export + capture 390×844 stills
+        env:
+          WEB_PREVIEW_ROUTES: ${{ steps.routes.outputs.routes }}
+          WEB_PREVIEW_OUT_DIR: artifacts/web-preview-captures
+          WEB_PREVIEW_BASE_URL: http://127.0.0.1:4173
+          WEB_PREVIEW_SETTLE_MS: '5000'
+        run: |
+          set -euo pipefail
+          pnpm exec serve -l 4173 apps/game/dist > /tmp/web-preview-serve.log 2>&1 &
+          echo $! > /tmp/web-preview-serve.pid
+          for i in $(seq 1 60); do
+            if curl -sf "http://127.0.0.1:4173/" >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -sf "http://127.0.0.1:4173/" >/dev/null
+          node scripts/web-preview-capture/capture-routes.mjs
+          kill "$(cat /tmp/web-preview-serve.pid)" || true
+
+      - name: Upload web preview artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-preview-captures-${{ github.sha }}
+          path: artifacts/web-preview-captures/
+          if-no-files-found: warn
+          retention-days: 14

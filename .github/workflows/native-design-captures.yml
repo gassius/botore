@@ -2,6 +2,12 @@
 # Produces Android emulator + iOS Simulator stills for human design review.
 # No pixel-exact layout assertions.
 #
+# Cost gate (2026-11-23): do NOT run on every pull_request push. Triggers are
+# label `run-native-captures`, workflow_dispatch, nightly schedule (~03:00
+# Europe/Madrid = 02:00 UTC), AND (for PRs) a job-level paths filter on
+# apps/game UI/asset paths. Cheap web preview stills live in
+# web-preview-screenshots.yml.
+#
 # reactivecircus/android-emulator-runner runs each `script:` newline in its own
 # `sh -c` — keep `script:` as a single line that invokes the committed bash job.
 name: Native design captures
@@ -25,20 +31,19 @@ on:
         description: Record splash→title cold-start (expensive)
         required: false
         default: 'true'
+  schedule:
+    # ~03:00 Europe/Madrid in winter (CET=UTC+1) → 02:00 UTC.
+    - cron: '0 2 * * *'
   pull_request:
-    paths:
-      - 'apps/game/**'
-      - 'scripts/native-capture/**'
-      - '.github/workflows/native-design-captures.yml'
-      - 'docs/architecture/native-design-captures.md'
-      - 'apps/game/eas.json'
+    types: [opened, synchronize, reopened, labeled]
 
 concurrency:
-  group: native-captures-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
   # Sibling jobs poll/upload artifacts within the same run (Ubuntu tunnel ↔ macOS).
   actions: read
 
@@ -63,8 +68,52 @@ env:
   SENTRY_DISABLE_AUTO_UPLOAD: 'true'
 
 jobs:
+  should-run:
+    name: Gate native captures
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+    steps:
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            game_ui:
+              - 'apps/game/src/**'
+              - 'apps/game/assets/**'
+              - 'apps/game/App.tsx'
+              - 'apps/game/index.js'
+              - 'apps/game/app.json'
+              - 'apps/game/eas.json'
+              - 'scripts/native-capture/**'
+              - '.github/workflows/native-design-captures.yml'
+              - 'docs/architecture/native-design-captures.md'
+      - name: Decide whether to run expensive native jobs
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HAS_LABEL: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-native-captures') }}
+          PATHS_MATCH: ${{ github.event_name == 'pull_request' && steps.filter.outputs.game_ui || 'false' }}
+        run: |
+          set -euo pipefail
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" || "${EVENT_NAME}" == "schedule" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Running: ${EVENT_NAME}"
+            exit 0
+          fi
+          if [[ "${EVENT_NAME}" == "pull_request" && "${HAS_LABEL}" == "true" && "${PATHS_MATCH}" == "true" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Running: PR labeled run-native-captures with game UI/asset path changes"
+            exit 0
+          fi
+          echo "run=false" >> "$GITHUB_OUTPUT"
+          echo "Skipping native captures (need label run-native-captures + UI/asset paths, or dispatch/nightly)"
+
   android-emulator-captures:
     name: Android emulator captures
+    needs: should-run
+    if: needs.should-run.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -196,6 +245,8 @@ jobs:
   # No `needs:` between backend and ios — they start in parallel; iOS polls for the tunnel artifact.
   ios-live-fight-backend:
     name: iOS live-fight backend (tunnel)
+    needs: should-run
+    if: needs.should-run.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -239,9 +290,11 @@ jobs:
 
   ios-simulator-captures:
     name: iOS Simulator captures
-    # C7b/C7c: run on pull_request (path-gated) and workflow_dispatch.
+    # C7b/C7c: label / dispatch / nightly only (see should-run gate).
     # macos-14 retired; public repo has free macOS minutes on macos-15.
     # Starts in parallel with ios-live-fight-backend (polls for tunnel artifact).
+    needs: should-run
+    if: needs.should-run.outputs.run == 'true'
     runs-on: macos-15
     timeout-minutes: 120
     steps:

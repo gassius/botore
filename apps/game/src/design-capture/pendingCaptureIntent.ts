@@ -1,5 +1,5 @@
 import { Linking } from 'react-native';
-import { isDesignCaptureEnabled, parseDesignCaptureUrl } from './captureEnv';
+import { isDesignCaptureEnabled, parseDesignCaptureUrl, parseWebCaptureSearch } from './captureEnv';
 import {
   consumeCaptureRoute,
   mergeCaptureFileIntent,
@@ -21,6 +21,9 @@ export {
  * Capture deep-link / file intent that arrives before FirstRunShell mounts
  * (auth gate). iOS Simulator often delivers `getInitialURL` during Garage
  * boot; reading it only inside the shell left every still on Stable.
+ *
+ * Cheap web preview CI also reads `?route=Stable` (or `?capture=botore://…`)
+ * from the browser location — not native acceptance evidence.
  */
 
 let listening = false;
@@ -46,10 +49,35 @@ function applyUrl(url: string | null): void {
   });
 }
 
+/**
+ * Web-preview query → capture intent (`?route=ConfirmFight` or full
+ * `?capture=botore://capture/…`). No-op outside browsers / when disabled.
+ */
+export function applyWebCaptureQuery(
+  search: string | null | undefined = readBrowserSearch(),
+): void {
+  if (!isDesignCaptureEnabled()) return;
+  const parsed = parseWebCaptureSearch(search);
+  if (!parsed) return;
+  if (parsed.captureUrl) {
+    applyUrl(parsed.captureUrl);
+    return;
+  }
+  if (parsed.route) {
+    mergeIntent({ route: parsed.route });
+  }
+}
+
+function readBrowserSearch(): string | null {
+  const loc = (globalThis as { location?: { search?: string } }).location;
+  return typeof loc?.search === 'string' ? loc.search : null;
+}
+
 /** Start listening as early as App/GarageRoot mounts (idempotent). */
 export function armDesignCaptureIntentListener(): void {
   if (!isDesignCaptureEnabled() || listening) return;
   listening = true;
+  applyWebCaptureQuery();
   void Linking.getInitialURL().then(applyUrl);
   // App-lifetime subscription — capture builds only; no teardown needed.
   Linking.addEventListener('url', (event) => {
@@ -59,6 +87,7 @@ export function armDesignCaptureIntentListener(): void {
   void (async () => {
     for (let i = 0; i < 20; i++) {
       await new Promise((r) => setTimeout(r, 200));
+      applyWebCaptureQuery();
       const url = await Linking.getInitialURL();
       if (url) applyUrl(url);
       if (peekCaptureIntent().route) return;

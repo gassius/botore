@@ -24,6 +24,7 @@ export {
   parseDesignCaptureRankingScenario,
   parseDesignCaptureSessionFailure,
   parseDesignCaptureUrl,
+  parseWebCaptureSearch,
   readDesignCaptureConfig,
   readDesignCaptureInitialPaint,
   readDesignCaptureInitialRoute,

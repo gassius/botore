@@ -19,5 +19,6 @@ allowBuilds:
   # Needed by @sentry/react-native for EAS/native source-map + debug-symbol upload (R3).
   '@sentry/cli': true
   esbuild: true
+  lefthook: true
   sharp: true
   unrs-resolver: true

@@ -144,9 +144,14 @@ fast path for PR evidence; EAS is optional for a cloud binary.
 
 Workflow: `.github/workflows/native-design-captures.yml`
 
-- Triggers: `pull_request` (path-gated on `apps/game/**`, capture scripts, this
-  workflow, docs, `eas.json`) and `workflow_dispatch` (manual; saves macOS
-  minutes when iterating docs-only)
+- **Does not run on every PR push** (CI cost gate). Triggers:
+  - PR label `run-native-captures` **and** job-level paths filter on
+    `apps/game` UI/asset paths (plus capture scripts / this workflow / docs /
+    `eas.json`)
+  - `workflow_dispatch` (manual)
+  - Nightly `schedule` on `main` at **02:00 UTC** (~03:00 Europe/Madrid CET)
+- Cheap per-push design stills: `.github/workflows/web-preview-screenshots.yml`
+  (Expo web export + Playwright 390×844). **Web is not native acceptance.**
 - Not part of the required PR quality gate (`lint · typecheck · unit tests`)
 - **Android** (`ubuntu-latest`): single-line
   `scripts/native-capture/ci-android-emulator-capture.sh` via
