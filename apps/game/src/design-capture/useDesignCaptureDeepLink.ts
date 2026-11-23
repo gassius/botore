@@ -90,7 +90,10 @@ export function useDesignCaptureDeepLink(): void {
       if (parsed.resultScenario !== lastResultScenario.current) {
         lastResultScenario.current = parsed.resultScenario ?? null;
         setResultCaptureScenario(parsed.resultScenario ?? null);
-      } else if (parsed.route === 'FightResult' && parsed.resultScenario) {
+      } else if (
+        (parsed.route === 'FightResult' || parsed.route === 'Replay') &&
+        parsed.resultScenario
+      ) {
         setResultCaptureScenario(parsed.resultScenario);
       }
       // Ludus More sheet stills — refresh even on same-route Stable captures.

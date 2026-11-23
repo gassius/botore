@@ -50,6 +50,20 @@ const ROUTE_ROOT_TEST_IDS = {
 
 const FAIL_CLOSED_TEST_IDS = ['session-auth-error', 'playable-misconfigured'];
 
+/** Guard banners that mean design-capture fixtures were not seeded. */
+const FAIL_CLOSED_GUARD_TEXTS = [
+  'No opponent selected',
+  'Server fight required',
+  'Backend result required',
+];
+
+/** Per-route ready signal (beyond the slot root) so guards cannot pass as “visible”. */
+const ROUTE_READY_TEST_IDS = {
+  ConfirmFight: 'confirm-fighters',
+  Replay: 'fight-view-arena',
+  FightResult: 'fight-result',
+};
+
 function routesFromEnv() {
   const raw = process.env.WEB_PREVIEW_ROUTES || 'Stable';
   return [
@@ -68,8 +82,13 @@ function headSha() {
 }
 
 /**
- * Reserve phone chrome: pad the app root only and paint opaque inset bars.
- * Must NOT select the inset bars themselves via `body > *` (B1).
+ * Reserve phone chrome ONCE: pad `#root` only and paint opaque inset bars.
+ *
+ * Must NOT use `body > *` — that also matches:
+ * - the fixed inset bars (B1 blank stills), and
+ * - react-native-safe-area-context's web probe div (`env(safe-area-inset-*)`),
+ *   whose computed padding becomes the app's SafeArea insets → double inset
+ *   (cream panel ~628pt instead of ~749pt usable).
  */
 async function applyPhoneInsets(page) {
   await page.evaluate(
@@ -87,9 +106,8 @@ async function applyPhoneInsets(page) {
           overflow: hidden !important;
           background: #000 !important;
         }
-        /* App root only — never the fixed inset bars (data-botore-phone-inset). */
-        body > *:not([data-botore-phone-inset]),
-        body > #root {
+        /* Expo web root only — never inset bars or the RNSAC probe div. */
+        #root {
           box-sizing: border-box !important;
           padding-top: ${top}px !important;
           padding-bottom: ${bottom}px !important;
@@ -179,11 +197,32 @@ async function assertRouteHitAtCenter(page, route) {
   }
 }
 
+async function assertNoGuardBanners(page, route) {
+  for (const text of FAIL_CLOSED_GUARD_TEXTS) {
+    const hit = page.getByText(text, { exact: true });
+    if (await hit.isVisible().catch(() => false)) {
+      throw new Error(
+        `Web preview fail-closed: saw guard text "${text}" while capturing ${route} (seed design-capture fixtures)`,
+      );
+    }
+  }
+}
+
+function captureUrlForRoute(base, route) {
+  const params = new URLSearchParams({ route });
+  // Same design-capture fixtures native stills use for Result / Replay golden.
+  if (route === 'FightResult' || route === 'Replay') {
+    params.set('result', 'victory');
+  }
+  return `${base}/?${params.toString()}`;
+}
+
 async function assertRouteVisible(page, route) {
   const rootId = ROUTE_ROOT_TEST_IDS[route];
   if (!rootId) {
     throw new Error(`No root testID mapping for route ${route}`);
   }
+  const readyId = ROUTE_READY_TEST_IDS[route];
 
   const deadline = Date.now() + 90_000;
   while (Date.now() < deadline) {
@@ -197,13 +236,28 @@ async function assertRouteVisible(page, route) {
     }
     const root = page.getByTestId(rootId);
     if (await root.isVisible().catch(() => false)) {
+      if (readyId) {
+        const ready = page.getByTestId(readyId);
+        if (!(await ready.isVisible().catch(() => false))) {
+          // Opponent / sealed-fight fixtures may still be seeding — keep waiting
+          // rather than fail-closed on a transient guard banner.
+          await page.waitForTimeout(500);
+          continue;
+        }
+      }
+      // Ready (or no ready gate): guard banners must be gone.
+      await assertNoGuardBanners(page, route);
       await assertRouteHitAtCenter(page, route);
       return;
     }
     await page.waitForTimeout(500);
   }
+  // Prefer a clear fixture-seed error over a generic timeout when a guard stuck.
+  await assertNoGuardBanners(page, route);
   throw new Error(
-    `Web preview fail-closed: timed out waiting for testID=${rootId} on route ${route}`,
+    `Web preview fail-closed: timed out waiting for testID=${rootId}${
+      readyId ? ` + ${readyId}` : ''
+    } on route ${route}`,
   );
 }
 
@@ -376,7 +430,7 @@ async function main() {
   const written = [];
 
   for (const route of routes) {
-    const url = `${base}/?route=${encodeURIComponent(route)}`;
+    const url = captureUrlForRoute(base, route);
     console.log(`capturing ${route} ← ${url}`);
     await page.goto(url, { waitUntil: 'networkidle', timeout: 120_000 });
     await applyPhoneInsets(page);
