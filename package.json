@@ -24,7 +24,7 @@
     "vendor:edge-combat": "node scripts/vendor-edge-combat.mjs",
     "test:edge-runtime": "node scripts/edge-combat-runtime-check.mjs",
     "test:smoke-combat-assert": "node --test scripts/smoke-combat-assert.test.mjs",
-    "test:web-preview-map": "node --test scripts/web-preview-capture/map-changed-routes.test.mjs",
+    "test:web-preview-map": "node --test scripts/web-preview-capture/map-changed-routes.test.mjs scripts/web-preview-capture/capture-routes.paint.test.mjs",
     "verify": "bash infra/verify.sh",
     "verify:affected": "VERIFY_AFFECTED=1 bash infra/verify.sh",
     "prepare": "lefthook install || true"

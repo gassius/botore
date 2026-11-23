@@ -50,8 +50,9 @@ jobs:
           node --test scripts/smoke-combat-assert.test.mjs
           node --test scripts/wait-edge-health.test.mjs scripts/pipefail-db-log.test.mjs
           node --test scripts/native-capture/png-diff.test.mjs scripts/native-capture/android-ui-find.test.mjs
-          # Same route-map unit test as infra/verify.sh (M2).
+          # Same web-preview unit tests as infra/verify.sh.
           node --test scripts/web-preview-capture/map-changed-routes.test.mjs
+          node --test scripts/web-preview-capture/capture-routes.paint.test.mjs
 
       - name: Architecture boundary check
         run: node scripts/check-boundaries.mjs
