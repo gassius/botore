@@ -5,11 +5,15 @@ Expo / React Native client (`apps/game`).
 
 ## Design-review captures (C7)
 
-Use the dispatch workflow and scripts documented in:
+Native captures are **opt-in** (label `run-native-captures` + UI paths,
+`workflow_dispatch`, or nightly). Per-push cheap stills use web preview
+(`.github/workflows/web-preview-screenshots.yml`) — not native acceptance.
 
 - `docs/architecture/native-design-captures.md`
 - `.github/workflows/native-design-captures.yml`
+- `.github/workflows/web-preview-screenshots.yml`
 - `scripts/native-capture/`
+- `scripts/web-preview-capture/`
 - `apps/game/eas.json` (`design-review` profile)
 
 ## Release boot smoke (launch stay-alive)

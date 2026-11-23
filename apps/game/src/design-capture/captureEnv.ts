@@ -491,3 +491,27 @@ export function buildDesignCaptureUrl(
 export function listCaptureRoutes(): readonly FirstRunRoute[] {
   return FIRST_RUN_ROUTES;
 }
+
+/**
+ * Parse browser query for cheap web-preview captures.
+ * Supports `?route=Stable` / `?captureRoute=…` or `?capture=botore://capture/…`.
+ * Returns null when the search string has no capture intent.
+ */
+export function parseWebCaptureSearch(search: string | null | undefined): {
+  route: FirstRunRoute | null;
+  captureUrl: string | null;
+} | null {
+  if (search == null || search === '') return null;
+  const raw = search.startsWith('?') ? search.slice(1) : search;
+  if (!raw) return null;
+  const params = new URLSearchParams(raw);
+  const capture = params.get('capture');
+  if (capture) {
+    return { route: null, captureUrl: capture };
+  }
+  const routeRaw = params.get('route') ?? params.get('captureRoute');
+  if (routeRaw && isFirstRunRoute(routeRaw)) {
+    return { route: routeRaw, captureUrl: null };
+  }
+  return null;
+}

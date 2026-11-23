@@ -1,0 +1,6 @@
+# Local delivery gate — agents and humans must not push a red tip.
+# Install: pnpm install (runs `lefthook install` via prepare).
+pre-push:
+  commands:
+    verify:
+      run: pnpm verify

@@ -4,34 +4,27 @@
 # Not the design-capture workflow: DESIGN_CAPTURE is intentionally unset so
 # collectPlatformProof / device-fallback silent auth runs.
 #
+# Required check: path filtering is job-internal (dorny/paths-filter). The
+# named smoke job always runs on pull_request so the check reports; heavy
+# emulator steps are skipped when paths don't match.
+#
 # reactivecircus/android-emulator-runner runs each `script:` newline in its own
 # `sh -c` — keep `script:` as a single line that invokes the committed bash job.
 name: Android release boot smoke
 
 on:
   pull_request:
-    paths:
-      - 'apps/game/**'
-      - 'scripts/native-capture/**'
-      - '.github/workflows/android-release-boot-smoke.yml'
-      - 'packages/replay/**'
-      - 'packages/rng/**'
-      - 'packages/domain/**'
-      - 'packages/combat-engine/**'
-      - 'packages/contracts/**'
   push:
     branches: [main]
-    paths:
-      - 'apps/game/**'
-      - 'scripts/native-capture/**'
-      - '.github/workflows/android-release-boot-smoke.yml'
+  workflow_dispatch:
 
 concurrency:
-  group: android-boot-smoke-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  pull-requests: read
 
 env:
   CAPTURE_API_LEVEL: '34'
@@ -44,28 +37,72 @@ env:
   EXPO_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.smoke'
 
 jobs:
+  changes:
+    name: Detect boot-smoke paths
+    runs-on: ubuntu-latest
+    outputs:
+      smoke: ${{ steps.decide.outputs.smoke }}
+    steps:
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            smoke:
+              - 'apps/game/**'
+              - 'scripts/native-capture/**'
+              - '.github/workflows/android-release-boot-smoke.yml'
+              - 'packages/replay/**'
+              - 'packages/rng/**'
+              - 'packages/domain/**'
+              - 'packages/combat-engine/**'
+              - 'packages/contracts/**'
+      - name: Decide smoke
+        id: decide
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "smoke=true" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ steps.filter.outputs.smoke }}" == "true" ]]; then
+            echo "smoke=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "smoke=false" >> "$GITHUB_OUTPUT"
+          fi
+
   android-release-boot-smoke:
     name: Android release boot smoke
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Skip emulator when paths unchanged
+        if: needs.changes.outputs.smoke != 'true'
+        run: |
+          echo "No boot-smoke path changes on this tip; reporting success without emulator."
+          exit 0
+
       - uses: actions/checkout@v4
+        if: needs.changes.outputs.smoke == 'true'
 
       - uses: pnpm/action-setup@v4
+        if: needs.changes.outputs.smoke == 'true'
         with:
           version: 11.7.0
 
       - uses: actions/setup-node@v4
+        if: needs.changes.outputs.smoke == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - uses: actions/setup-java@v4
+        if: needs.changes.outputs.smoke == 'true'
         with:
           distribution: temurin
           java-version: 17
 
       - name: Gradle cache
+        if: needs.changes.outputs.smoke == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -76,6 +113,7 @@ jobs:
             ${{ runner.os }}-gradle-boot-smoke-
 
       - name: AVD cache
+        if: needs.changes.outputs.smoke == 'true'
         uses: actions/cache@v4
         id: avd-cache
         with:
@@ -85,18 +123,22 @@ jobs:
           key: ${{ runner.os }}-avd-${{ env.CAPTURE_API_LEVEL }}-x86_64-pixel6-boot-smoke
 
       - name: Install workspace
+        if: needs.changes.outputs.smoke == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Build game workspace deps (dist/ for Metro)
+        if: needs.changes.outputs.smoke == 'true'
         run: pnpm --filter @botore/game^... run build
 
       - name: Enable KVM
+        if: needs.changes.outputs.smoke == 'true'
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
       - name: Release APK boot smoke on emulator
+        if: needs.changes.outputs.smoke == 'true'
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
           api-level: ${{ env.CAPTURE_API_LEVEL }}

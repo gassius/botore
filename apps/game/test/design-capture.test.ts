@@ -11,6 +11,7 @@ import {
   isLiveFightCaptureEnabled,
   listCaptureRoutes,
   parseDesignCaptureUrl,
+  parseWebCaptureSearch,
   readDesignCaptureConfig,
 } from '../src/design-capture/captureEnv';
 import { FIRST_RUN_ROUTES } from '../src/first-run/routes';
@@ -53,6 +54,23 @@ describe('C7 design-capture helpers', () => {
       initialPaintId: 'petrol',
       initialWeaponId: 'axe',
     });
+  });
+
+  it('parses web-preview ?route= / ?capture= query (cheap CI stills)', () => {
+    expect(parseWebCaptureSearch('?route=ConfirmFight')).toEqual({
+      route: 'ConfirmFight',
+      captureUrl: null,
+    });
+    expect(parseWebCaptureSearch('captureRoute=Customise')).toEqual({
+      route: 'Customise',
+      captureUrl: null,
+    });
+    expect(parseWebCaptureSearch('?capture=botore://capture/Ranking')).toEqual({
+      route: null,
+      captureUrl: 'botore://capture/Ranking',
+    });
+    expect(parseWebCaptureSearch('')).toBeNull();
+    expect(parseWebCaptureSearch('?foo=1')).toBeNull();
   });
 
   it('parses botore://capture deep links used by adb/simctl scripts', () => {
