@@ -6,6 +6,10 @@
  * Fail closed: waits for the route root testID; exits non-zero if
  * SessionAuthErrorScreen or PlayableMisconfiguredScreen is shown.
  *
+ * Phone-ish frame (design polish after #110):
+ * - deviceScaleFactor 3 (~native px/pt)
+ * - 24 pt top + 48 pt bottom insets so fit/clipping can be judged
+ *
  * Env:
  *   WEB_PREVIEW_BASE_URL  (default http://127.0.0.1:4173)
  *   WEB_PREVIEW_ROUTES    comma-separated FirstRunRoute ids (default Stable)
@@ -19,6 +23,11 @@ import { chromium } from 'playwright';
 
 const WIDTH = 390;
 const HEIGHT = 844;
+/** ~native Pixel density (design: native ≈ 2.77 px/pt). */
+const DEVICE_SCALE_FACTOR = 3;
+/** Simulated status bar / Android nav bar (pt). */
+const INSET_TOP_PT = 24;
+const INSET_BOTTOM_PT = 48;
 
 /** First-run route → root testID (RN web maps testID → data-testid). */
 const ROUTE_ROOT_TEST_IDS = {
@@ -50,6 +59,64 @@ function routesFromEnv() {
 function headSha() {
   const raw = process.env.WEB_PREVIEW_HEAD_SHA || process.env.GITHUB_SHA || 'local';
   return raw;
+}
+
+/**
+ * Reserve phone chrome: pad the document and paint opaque inset bars so
+ * design review can judge "fits above nav" / clipping against ~780 pt usable.
+ */
+async function applyPhoneInsets(page) {
+  await page.evaluate(
+    ({ top, bottom }) => {
+      const STYLE_ID = 'botore-web-preview-phone-insets';
+      document.getElementById(STYLE_ID)?.remove();
+      const style = document.createElement('style');
+      style.id = STYLE_ID;
+      style.textContent = `
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          height: 100% !important;
+          box-sizing: border-box !important;
+          overflow: hidden !important;
+          background: #000 !important;
+        }
+        /* Keep app content in the usable band between insets. */
+        body > * {
+          box-sizing: border-box !important;
+          padding-top: ${top}px !important;
+          padding-bottom: ${bottom}px !important;
+          min-height: 100% !important;
+          height: 100% !important;
+          overflow: hidden !important;
+        }
+        #botore-web-preview-inset-top,
+        #botore-web-preview-inset-bottom {
+          position: fixed;
+          left: 0;
+          right: 0;
+          z-index: 2147483647;
+          pointer-events: none;
+          background: #000;
+        }
+        #botore-web-preview-inset-top { top: 0; height: ${top}px; }
+        #botore-web-preview-inset-bottom { bottom: 0; height: ${bottom}px; }
+      `;
+      document.head.appendChild(style);
+      for (const [id, where] of [
+        ['botore-web-preview-inset-top', 'top'],
+        ['botore-web-preview-inset-bottom', 'bottom'],
+      ]) {
+        if (!document.getElementById(id)) {
+          const bar = document.createElement('div');
+          bar.id = id;
+          bar.setAttribute('data-botore-phone-inset', where);
+          document.body.appendChild(bar);
+        }
+      }
+    },
+    { top: INSET_TOP_PT, bottom: INSET_BOTTOM_PT },
+  );
 }
 
 async function assertRouteVisible(page, route) {
@@ -92,7 +159,7 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: WIDTH, height: HEIGHT },
-    deviceScaleFactor: 1,
+    deviceScaleFactor: DEVICE_SCALE_FACTOR,
   });
   const page = await context.newPage();
   const written = [];
@@ -101,9 +168,12 @@ async function main() {
     const url = `${base}/?route=${encodeURIComponent(route)}`;
     console.log(`capturing ${route} ← ${url}`);
     await page.goto(url, { waitUntil: 'networkidle', timeout: 120_000 });
+    await applyPhoneInsets(page);
     await assertRouteVisible(page, route);
     if (Number.isFinite(settleMs) && settleMs > 0) {
       await page.waitForTimeout(settleMs);
+      // Re-apply after settle (SPA remounts can wipe injected chrome).
+      await applyPhoneInsets(page);
       // Re-check after settle — auth can still race into the error screen.
       await assertRouteVisible(page, route);
     }
@@ -117,6 +187,9 @@ async function main() {
     `commit=${fullSha}`,
     `platform=web-preview`,
     `viewport=${WIDTH}x${HEIGHT}`,
+    `deviceScaleFactor=${DEVICE_SCALE_FACTOR}`,
+    `insets=top${INSET_TOP_PT},bottom${INSET_BOTTOM_PT}`,
+    `usable≈${HEIGHT - INSET_TOP_PT - INSET_BOTTOM_PT}pt`,
     `honesty=NOT native acceptance — Expo web / Chromium only`,
     `routes=${routes.join(',')}`,
     ...written.map((f) => `file=${f}`),

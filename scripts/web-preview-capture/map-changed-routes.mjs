@@ -9,9 +9,29 @@
  *
  * Prints comma-separated FirstRunRoute ids (Stable default when UI touched
  * but no finer mapping matches).
+ *
+ * When capture tooling / route map / design-capture helpers change, captures
+ * every first-run route (design review #110).
  */
 import path from 'node:path';
 import { createInterface } from 'node:readline';
+
+/** Full first-run set — keep in sync with apps/game/src/first-run/routes.ts. */
+export const ALL_FIRST_RUN_ROUTES = [
+  'Stable',
+  'CreateBot',
+  'Customise',
+  'Opponents',
+  'ConfirmFight',
+  'Replay',
+  'FightResult',
+  'Ranking',
+  'Settings',
+];
+
+/** Capture tooling / map / design-capture → prove every route on web. */
+const CAPTURE_TOOLING_RE =
+  /(^|\/)scripts\/web-preview-capture\/|(^|\/)\.github\/workflows\/web-preview-screenshots\.yml$|(^|\/)apps\/game\/src\/design-capture\//;
 
 /** @type {ReadonlyArray<{ re: RegExp, routes: readonly string[] }>} */
 const RULES = [
@@ -56,11 +76,14 @@ const DEFAULT_UI_ROUTES = ['Stable', 'Customise', 'Opponents', 'ConfirmFight'];
  * @returns {string[]}
  */
 export function mapChangedFilesToRoutes(files) {
+  const trimmed = files.map((f) => f.trim()).filter(Boolean);
+  if (trimmed.some((f) => CAPTURE_TOOLING_RE.test(f))) {
+    return [...ALL_FIRST_RUN_ROUTES];
+  }
+
   const routes = new Set();
   let touchedGameUi = false;
-  for (const file of files) {
-    const f = file.trim();
-    if (!f) continue;
+  for (const f of trimmed) {
     if (
       f.startsWith('apps/game/src/') ||
       f.startsWith('apps/game/assets/') ||
