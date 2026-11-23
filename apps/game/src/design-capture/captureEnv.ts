@@ -495,6 +495,12 @@ export function listCaptureRoutes(): readonly FirstRunRoute[] {
 /**
  * Parse browser query for cheap web-preview captures.
  * Supports `?route=Stable` / `?captureRoute=…` or `?capture=botore://capture/…`.
+ *
+ * When `?route=Replay&result=victory` (and other fixture params) are present,
+ * they are forwarded as a synthetic `botore://capture/…` URL so
+ * `parseDesignCaptureUrl` seeds `resultScenario` / ranking / customise / etc.
+ * Dropping those params left Replay/FightResult on guard banners in CI.
+ *
  * Returns null when the search string has no capture intent.
  */
 export function parseWebCaptureSearch(search: string | null | undefined): {
@@ -511,7 +517,15 @@ export function parseWebCaptureSearch(search: string | null | undefined): {
   }
   const routeRaw = params.get('route') ?? params.get('captureRoute');
   if (routeRaw && isFirstRunRoute(routeRaw)) {
-    return { route: routeRaw, captureUrl: null };
+    const forward = new URLSearchParams(params);
+    forward.delete('route');
+    forward.delete('captureRoute');
+    forward.delete('capture');
+    const q = forward.toString();
+    const captureUrl = `${DESIGN_CAPTURE_SCHEME}://${DESIGN_CAPTURE_HOST}/${routeRaw}${
+      q ? `?${q}` : ''
+    }`;
+    return { route: routeRaw, captureUrl };
   }
   return null;
 }

@@ -23,8 +23,9 @@ pnpm exec prettier --check .
 echo "==> turbo lint/typecheck/test"
 pnpm exec turbo run lint typecheck test "${TURBO_FILTER_ARGS[@]}"
 
-echo "==> web-preview route map unit tests"
+echo "==> web-preview route map + paint unit tests"
 node --test scripts/web-preview-capture/map-changed-routes.test.mjs
+node --test scripts/web-preview-capture/capture-routes.paint.test.mjs
 
 echo "==> architecture boundary check"
 node scripts/check-boundaries.mjs

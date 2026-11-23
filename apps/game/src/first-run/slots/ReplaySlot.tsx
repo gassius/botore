@@ -53,11 +53,12 @@ import { selectedBotFightHeaderName } from '../../fight/selectedBotFightIdentity
 import type { AnimationCommand } from '../../replay-playback';
 import type { ReplayPresentationState } from '../../replay/playbackState';
 import type { PlaybackUiState } from '../../replay/playbackControl';
-import { isLiveFightCaptureEnabled } from '../../design-capture';
+import { isDesignCaptureEnabled, isLiveFightCaptureEnabled } from '../../design-capture';
 import { resolveFirstRunConfirmedResult } from '../../replay/resolveSessionResult';
 import { useGarageSession } from '../../garage/LoadoutSessionContext';
 import { readSupabasePublicConfig } from '../../garage/auth/supabasePublicConfig';
 import {
+  confirmedResultForResultCapture,
   fetchCurrentBotFightRecord,
   ResultOverlay,
   ResultOverlayBand,
@@ -86,6 +87,7 @@ export function ReplaySlot(): React.ReactElement {
     setFightViewMode,
     showResultOverlay,
     setShowResultOverlay,
+    resultCaptureScenario,
   } = useFirstRun();
   const insets = useSafeAreaInsets();
   const { lastFight } = useFightSession();
@@ -160,7 +162,17 @@ export function ReplaySlot(): React.ReactElement {
     });
   }, [setShowResultOverlay]);
 
-  const resolution = useMemo(() => resolveFirstRunConfirmedResult(lastFight), [lastFight]);
+  // Web/native design-capture: `?result=victory|defeat` seeds the same golden
+  // sealed replay FightResult uses, so Replay stills are not the guard banner.
+  const resolution = useMemo(() => {
+    if (isDesignCaptureEnabled() && resultCaptureScenario) {
+      return {
+        status: 'confirmed' as const,
+        confirmed: confirmedResultForResultCapture(resultCaptureScenario),
+      };
+    }
+    return resolveFirstRunConfirmedResult(lastFight);
+  }, [lastFight, resultCaptureScenario]);
   const replayChecksum =
     resolution.status === 'confirmed' ? resolution.confirmed.replay.checksum : null;
 

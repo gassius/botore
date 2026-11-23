@@ -7,7 +7,7 @@ import {
 import { useGarageSession } from '../garage/LoadoutSessionContext';
 import { useFirstRun } from '../first-run/FirstRunContext';
 import { countFxEventsFromReplay } from '../replay/fxCaptureHold';
-import { isLiveFightCaptureEnabled } from './captureEnv';
+import { isDesignCaptureEnabled, isLiveFightCaptureEnabled } from './captureEnv';
 import { loadoutHasCaptureWeapon, resolveCaptureWeaponCatalogueId } from './captureWeapon';
 import { writeFightProofFile, writeLastFightFile } from './readCaptureIntentFile';
 
@@ -44,16 +44,23 @@ function logFightProof(proof: CaptureFightProof): void {
 }
 
 /**
- * C3 live-fight capture orchestrator (opt-in only).
+ * Design-capture fight fixtures (C3 + web preview).
+ *
+ * Always (design-capture):
+ * - On ConfirmFight: refresh roster + select first fight-ready opponent so the
+ *   Confirm still is not the "No opponent selected" guard.
  *
  * When `EXPO_PUBLIC_DESIGN_CAPTURE_LIVE_FIGHT=1` and Supabase public env is baked:
  * - Pin capture weapon (e.g. axe) onto the confirmed loadout before combat-v1.
- * - On ConfirmFight: refresh roster + select first fight-ready opponent (dual-bot still).
  * - On Replay: start combat-v1 once if needed so playback is server-precomputed.
  * - Emit fight proof to logcat for the CI manifest.
+ *
+ * Web preview Replay/FightResult stills use `?result=` golden fixtures instead
+ * of live combat-v1 (no Edge Function required).
  */
 export function useDesignCaptureLiveFight(): void {
-  const enabled = isLiveFightCaptureEnabled();
+  const liveFight = isLiveFightCaptureEnabled();
+  const designCapture = isDesignCaptureEnabled();
   const { route } = useFirstRun();
   const { canProgress, session, loadout, selectWeapon, save } = useGarageSession();
   const selectedCharacterId = loadout.characterId;
@@ -76,8 +83,10 @@ export function useDesignCaptureLiveFight(): void {
   const wantedWeapon = resolveCaptureWeaponCatalogueId();
 
   useEffect(() => {
-    if (!enabled) return;
-    if (route !== 'ConfirmFight' && route !== 'Replay' && route !== 'FightResult') return;
+    if (!designCapture) return;
+    const needRoster =
+      route === 'ConfirmFight' || (liveFight && (route === 'Replay' || route === 'FightResult'));
+    if (!needRoster) return;
     if (!session) {
       if (!progressBlockedLogged.current) {
         progressBlockedLogged.current = true;
@@ -99,7 +108,8 @@ export function useDesignCaptureLiveFight(): void {
     candidatesRequested.current = true;
     void refreshCandidates();
   }, [
-    enabled,
+    designCapture,
+    liveFight,
     session,
     canProgress,
     route,
@@ -111,7 +121,7 @@ export function useDesignCaptureLiveFight(): void {
   // A2b: pin axe (or other capture weapon) on confirmed loadout before startFight
   // so Fight View sealed builds show the right blade + smears.
   useEffect(() => {
-    if (!enabled || !canProgress || !session) return;
+    if (!liveFight || !canProgress || !session) return;
     if (route !== 'ConfirmFight' && route !== 'Replay' && route !== 'Customise') return;
     if (!wantedWeapon) return;
     if (loadoutHasCaptureWeapon(loadout.confirmedLoadout?.weapon, wantedWeapon)) return;
@@ -137,7 +147,7 @@ export function useDesignCaptureLiveFight(): void {
         weaponSaveInFlight.current = false;
       });
   }, [
-    enabled,
+    liveFight,
     canProgress,
     session,
     route,
@@ -151,15 +161,16 @@ export function useDesignCaptureLiveFight(): void {
   ]);
 
   useEffect(() => {
-    if (!enabled || !canProgress) return;
-    if (route !== 'ConfirmFight' && route !== 'Replay') return;
+    if (!designCapture || !canProgress) return;
+    const needSelect = route === 'ConfirmFight' || (liveFight && route === 'Replay');
+    if (!needSelect) return;
     if (list.status !== 'ready' || list.candidates.length < 1) return;
     if (selected) return;
     selectOpponent(list.candidates[0]!);
-  }, [enabled, canProgress, route, list, selected, selectOpponent]);
+  }, [designCapture, liveFight, canProgress, route, list, selected, selectOpponent]);
 
   useEffect(() => {
-    if (!enabled || !canProgress || !session) return;
+    if (!liveFight || !canProgress || !session) return;
     if (route !== 'Replay') return;
     if (lastFight) return;
     if (!selected || fightInFlight) return;
@@ -185,7 +196,7 @@ export function useDesignCaptureLiveFight(): void {
       }
     });
   }, [
-    enabled,
+    liveFight,
     canProgress,
     session,
     route,
@@ -199,7 +210,7 @@ export function useDesignCaptureLiveFight(): void {
   ]);
 
   useEffect(() => {
-    if (!enabled || !lastFight?.sealedBuilds) return;
+    if (!liveFight || !lastFight?.sealedBuilds) return;
     if (proofLoggedForBattle.current === lastFight.battleId) return;
     proofLoggedForBattle.current = lastFight.battleId;
     // Persist full fight so FightResult can restore after iOS process relaunch.
@@ -228,5 +239,5 @@ export function useDesignCaptureLiveFight(): void {
       ...(selectedCharacterId ? { selectedCharacterId } : {}),
       fxEvents: countFxEventsFromReplay(lastFight.replay),
     });
-  }, [enabled, lastFight, selectedCharacterId]);
+  }, [liveFight, lastFight, selectedCharacterId]);
 }
